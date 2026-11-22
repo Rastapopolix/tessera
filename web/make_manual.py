@@ -12,7 +12,7 @@ page's text, with no network. Headings keep GitHub's anchors (lower case, punctu
 
 Links: MANUAL.md, GETTING_STARTED.md and PLUGIN.md to these pages; the manual's PDF (docs/manual/tessera-manual.pdf, made by
 tools/gen_manual_pdf.py) to its copy at manual/tessera-manual.pdf (make_site.py puts it there); every other file of
-the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand, assets/guides) to the site's media/ (web/make_site.py copies them there).
+the repository (RECIPES.md, docs/...) to it on GitHub; the pictures (assets/gallery, assets/brand, assets/guides, assets/plugin) to the site's media/ (web/make_site.py copies them there).
 
   web/make_manual.py OUT_DIR            (web/make_site.py calls it; needs markdown-it-py: pip install markdown-it-py)
 """
@@ -53,7 +53,8 @@ def link(url, here):
         return f"../{PAGES[path]}/" + (f"#{frag}" if frag else "")
     if path == PDF_SRC:
         return "../manual/" + PDF_NAME
-    for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/")):
+    for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/"),
+                     ("assets/plugin/", "media/plugin/")):
         if path.startswith(src):
             return "../" + dst + path[len(src):]
     return REPO + path + (f"#{frag}" if frag else "")

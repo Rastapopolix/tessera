@@ -4,7 +4,7 @@ name: Plugin site (downloads)
 # tagged plugin-v... is published (Plugin release makes it a draft; publishing it on GitHub fires this), its files go
 # into web/plugin_release.json, the page is made again from that release's PLUGIN.md with its download buttons on
 # those files, its picture of EXPANDED is drawn again from that release's own build (the render test's window, STILL
-# TIDE playing, on a screen wide enough for EXPANDED: assets/gallery/plugin-expanded.png), and the change goes to main
+# TIDE playing, on a screen wide enough for EXPANDED: assets/plugin/plugin-expanded.png), and the change goes to main
 # as a site pull request (branch site/plugin-<version>): merging it makes it live. A run by hand (Actions > Plugin site > Run workflow) does the same for a release already out.
 #
 # The pull request needs "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General);
@@ -59,9 +59,9 @@ jobs:
             "$RUNNER_TEMP/st.wav" "$RUNNER_TEMP/window.ppm" || true
           rm -rf ~/.config/tessera
           python3 -c "from PIL import Image; im = Image.open('$RUNNER_TEMP/window.ppm'); print('window', im.size); \
-            assert im.size[0] >= 1400, 'not EXPANDED'; im.save('$GITHUB_WORKSPACE/assets/gallery/plugin-expanded.png', optimize=True)"
-          mkdir -p "$GITHUB_WORKSPACE/docs/media/gallery"
-          cp "$GITHUB_WORKSPACE/assets/gallery/plugin-expanded.png" "$GITHUB_WORKSPACE/docs/media/gallery/plugin-expanded.png"
+            assert im.size[0] >= 1400, 'not EXPANDED'; im.save('$GITHUB_WORKSPACE/assets/plugin/plugin-expanded.png', optimize=True)"
+          mkdir -p "$GITHUB_WORKSPACE/docs/media/plugin"
+          cp "$GITHUB_WORKSPACE/assets/plugin/plugin-expanded.png" "$GITHUB_WORKSPACE/docs/media/plugin/plugin-expanded.png"
       - name: The release's files and its PLUGIN.md; the page
         run: |
           V="${TAG#plugin-v}"
@@ -91,7 +91,7 @@ jobs:
       - name: The site pull request
         run: |
           git worktree remove --force "$RUNNER_TEMP/rel" || true
-          if [ -z "$(git status --porcelain -- web/plugin_release.json docs/plugin PLUGIN.md assets/gallery docs/media/gallery)" ]; then
+          if [ -z "$(git status --porcelain -- web/plugin_release.json docs/plugin PLUGIN.md assets/plugin docs/media/plugin)" ]; then
             echo "The plugin page already shows $TAG" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -99,8 +99,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$b"
-          git add web/plugin_release.json docs/plugin/index.html PLUGIN.md assets/gallery/plugin-expanded.png \
-                  docs/media/gallery/plugin-expanded.png
+          git add web/plugin_release.json docs/plugin/index.html PLUGIN.md assets/plugin/plugin-expanded.png \
+                  docs/media/plugin/plugin-expanded.png
           git commit -m "site: the plugin page on $TAG (its downloads, its PLUGIN.md, its picture)"
           git push -f origin "$b"
           body="The plugin page's download buttons on [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG), and its text from that release's PLUGIN.md (made by .github/workflows/plugin-site.yml). Merging makes it live."

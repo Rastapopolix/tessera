@@ -5,7 +5,7 @@ instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is t
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
-[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/gallery/plugin-expanded.png)](assets/gallery/plugin-expanded.png)
+[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
 
 *EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (0.1-beta2 playing STILL TIDE).*
 
