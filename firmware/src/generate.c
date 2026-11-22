@@ -15,8 +15,9 @@
  *     heaviest choice of every list)
  *   - before / after: the project before the press, kept as its own .tsp in RAM (no list of fields to go stale), and
  *     swapped with what is there now (generate_swap)
- *   - left to the player: QNT (the rolls forced WHITE), the transport (never started), the tempo when asked
- *     (GEN_KEEP_TEMPO: a DAW or MIDI clock drives), the voice BUDGET setting
+ *   - left to the player: the transport (never started), the tempo when asked (GEN_KEEP_TEMPO: a DAW or MIDI clock
+ *     drives), the voice BUDGET setting, the undo levels (a new project drops them: generate_swap is the undo). QNT is
+ *     the rolls' WHITE (rnd_in_key): a piece starts from a new project, so it overrides no choice of the player's
  *   - the cost rules (rnd_cpu, rnd_tails: one FM6 and one ORACLE, short notes on fast tracks) only on a target with a
  *     voice budget (MELODEE_VOICE_BUDGET; the plugin has none). The CPU guard and DRIFT are not ported: the long-form
  *     layers move the piece (generate_layers), and DRIFT is to be decided after listening
@@ -4039,6 +4040,13 @@ static void rnd_balance(void)
 /* the tempo of the rolls that kept yours (asked 2026-11-09: every roll starts at its own): FALL slow, LOOPS slow,
  * ORBIT 100 to 120, RND anywhere from 80 to 130. (The others set theirs: TIDE 64-84, WOZZA 72-84, HALO MIRROR STATIC
  * 100-120, CRATE 80-100, PHASE by its cell.) Held REC brings yours back */
+/* every track's QNT WHITE but the chords' (QNT CHRD) */
+static void rnd_in_key(void)
+{
+    uint32_t tr;
+    for (tr = 0; tr < RND_NT; tr++)
+        if (trk[tr].p[P_QUANT] != Q_CHRD) rnd_tp(tr, P_QUANT, Q_WHITE);
+}
 static void rnd_tempo(void)
 {
     if (rnd_fall) pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(64, 80));
@@ -4200,6 +4208,8 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
     rnd_orc_levels();
     rnd_no_pitch();
     rnd_expression();
+    rnd_in_key();                                   /* (QNT WHITE: the rolls' key; a new project's QNT is OFF, which
+                                                     * lets a SERIES or a FOLLOW step off the scale, measured) */
     rnd_chord_prime();
     rnd_balance();
     rnd_tempo();                                    /* (GEN_KEEP_TEMPO: generate puts the tempo back) */

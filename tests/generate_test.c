@@ -9,7 +9,8 @@
  *   - it plays (GEN_SECS seconds each, GEN_PLAY seeds a style, the first at VARIATION 0): nothing clips, each of the
  *     four tracks sounds, the generators' notes are in the track's scale (a note tessera_snap_note leaves as it is
  *     with QNT SNAP, the track's TRANS less its octaves: a track a fifth up plays its line in key; a STEP track's notes
- *     are not seen), and after STOP every voice dies away
+ *     are not seen; two, or 2 %, may pass: a chord tone of a chord borrowed from outside the key), and after STOP every
+ *     voice dies away
  *   GEN_SEEDS (50) seeds a style for the checks without sound. Exit 0: every check passed */
 #define TESSERA_NOTE_HOOK gt_note
 #include "../platform/core/core_unit.c"
@@ -150,7 +151,7 @@ int main(void)
                            (unsigned)t + 1u, tessera.mode[t] == TESS_ENG_BOUNCE ? "BOUNCE" : "CONSTELLATION",
                            (unsigned)tessera.evolve[t].every);
                 else CHECK(db[t] > -80.0, "%s seed %u: track %u silent", nm, (unsigned)seed, (unsigned)t + 1u);
-            CHECK(notes_out * 100u <= notes_all, "%s seed %u: %u of %u notes out of key", nm, (unsigned)seed,
+            CHECK(notes_out <= 2u || notes_out * 50u <= notes_all, "%s seed %u: %u of %u notes out of key", nm, (unsigned)seed,
                   (unsigned)notes_out, (unsigned)notes_all);
             CHECK(!STEMS || tl < 0.001f || tl2 < tl * 0.6f, "%s seed %u: a note hangs after STOP (%.4f at 10 s, %.4f at 20 s)", nm,
                   (unsigned)seed, tl, tl2);
