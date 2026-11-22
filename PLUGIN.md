@@ -179,6 +179,9 @@ SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer key
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
 shows **5-8**, inverted, before the track dots.
 
+All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
+FM-1 skips, so the FM-1 still opens the file as its four tracks).
+
 ## Automation: the parameters
 
 Almost every project setting is a DAW parameter you can automate, about 1,700 in all:
@@ -246,8 +249,6 @@ sounding at once take about 18 % of a core.
 
 ## Not there yet
 
-- **Tracks 5 to 8's steps** aren't saved yet. Their settings are saved with the DAW song, but a `.tsp` holds tracks 1
-  to 4 only.
 - **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **One window size**, the FM-1's. A larger, wider window is planned.
 - **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.

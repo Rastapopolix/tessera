@@ -1,8 +1,8 @@
 # Tessera as a plugin
 
 Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument and, through
-[clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3 and a standalone app. This is the first step
-(phases 0 and 1): it plays, and its window is the FM-1.
+[clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3, an Audio Unit (macOS) and a standalone app (Windows, macOS). It plays the whole firmware at up to 8
+tracks, in TESSERA's own window or the FM-1's.
 
 ## What works
 
@@ -25,8 +25,8 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
   `demos/`) or an **FM-1 backup** (`.json` from the backup page or the Hub: its slots A..D go into the plugin's
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
-  another Tessera. On Windows the system's dialogs (a file dropped on the window opens too); on Linux zenity or
-  kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
+  another Tessera. On Windows and macOS the system's dialogs (a file dropped on the window opens too); on Linux
+  zenity or kdialog, whichever is installed. The DAW is told its saved state changed.
 - **The window** (Windows, Linux and macOS): TESSERA's own shell by default (shell 0: flat, the project page's
   colours, a menu under the mark for SHELL / INK / MODE / SIZE / ABOUT, a MIDI lamp), or the FM-1 as the web
   simulator draws it, in any of its eight shells (the swatches
@@ -71,17 +71,17 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
-  while the DAW plays. With CLK on MIDI, the MIDI master's clock rules and the DAW only starts and stops it.
+  while the DAW plays. CLK stays INT in the plugin (not a parameter), so the DAW is always the clock.
 - **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too), then
-  **every project setting** by its central ID (about 930): each track's ("T1 LEVEL", "T3 TURING LENGTH", in the
-  modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song"); not the device's own (A4, the
-  MIDI routing). Values read as the FM-1 shows them ("SAW", "1/16", "-6dB") and can be typed that way. ENGINE 1..8 mean
+  **every project setting** by its central ID (about 1,700): each of the 8 tracks' ("T1 LEVEL", "T3 TURING LENGTH",
+  in the modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song", TUNE, ROUT and MIDI
+  INPUT among them; not CLK, held at INT). Values read as the FM-1 shows them ("SAW", "1/16", "-6dB") and can be typed that way. ENGINE 1..8 mean
   what the track's engine makes them (their range is the widest any engine has). Changed on the panel, by a project or
   by the core, a value is sent back to the DAW (MASTER and the MACROs at once, the rest within ~20 blocks). Ids are
-  stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 a track, 4 the song).
+  stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 tracks 1..4, 4 the song, 5..8 tracks 5..8).
 
-- **Track outputs:** besides the main mix, TRACK 1..4 each alone (the FM-1's USB stems: the track after its level,
-  before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
+- **Track outputs:** besides the main mix, TRACK 1..8 each alone (`NSTEMS = NTRACKS`: the FM-1's USB stems, the
+  track after its level, before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; AUTO is the track's own 1..8 here,
   whatever ROUT takes in), to drive other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes
   too); MENU can set KEYS or OFF. Channel messages only (no clock or system messages). The notes left on when the host
@@ -97,7 +97,9 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 
 ## Not yet
 
-- No window on macOS (it plays as in phase 0).
+The list for players is PLUGIN.md's "Not there yet". Here: the window (Windows, Linux, macOS: `gui_win32.cpp`,
+`gui_x11.cpp`, `gui_mac.mm`) is the FM-1's size only; the standalone app is Windows and macOS only; the builds are
+not signed.
 
 ## Build
 
