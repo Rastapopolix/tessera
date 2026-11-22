@@ -17,7 +17,8 @@
  *     by its central ID (pid.h), each track's and the song's, with the FM-1's names and values; changed on the panel
  *     or by the core, they are sent back to the host;
  *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1; OPEN and
- *     SAVE under the keys open a .tsp or an FM-1 backup (its slots A..D and its music) and save a .tsp;
+ *     SAVE under the keys open a .tsp or an FM-1 backup (its slots A..D and its music) and save a .tsp; MIDI
+ *     writes the notes played since PLAY as a MIDI clip (midifile.h) to drag into the DAW;
  *   - the window (gui.h, Windows, Linux and macOS) shows the FM-1: its screen, buttons, keys and knobs. The audio thread owns
  *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
  * Several instances: each takes one of the plugin's private copies of the core (core_copies.h; TESS_PLUGIN_COPIES of
@@ -31,6 +32,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <filesystem>
 #include <mutex>
 #include <random>
 #include <string>
@@ -42,6 +45,7 @@
 
 #include "core_copies.h"
 #include "gui.h"
+#include "midifile.h"
 #include "projfile.h"
 #include "resample.h"
 
@@ -104,6 +108,9 @@ struct Tessera : GuiLink
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
     uint32_t view_due = 0;               // host frames until the next view
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
+    midifile::Recorder clip;              // core_lock: the notes MIDI OUT sent since PLAY (or a jump back), for MIDI
+    bool clip_playing = false;
+    double clip_beat = 0;                 // the song's position at the last block
     std::unique_ptr<Gui> gui;
 
     void next_core_frame(float *f)
@@ -137,6 +144,13 @@ struct Tessera : GuiLink
         uint32_t pkt, frame;
         while (core->midi_out(&pkt, &frame))
             midi_wait.emplace_back(pkt, frame);
+        // the clip: begun again when PLAY starts or the song jumps back (a loop, a locate); each note at its beat
+        bool playing = core->playing() != 0;
+        double pos = core->position(), bpm = core->bpm(), now = core->frames(), crate = core->rate();
+        if (playing && (!clip_playing || pos < clip_beat - 0.5))
+            clip.clear();
+        clip_playing = playing;
+        clip_beat = pos;
         size_t keep = 0;
         for (auto &m : midi_wait)
         {
@@ -150,6 +164,9 @@ struct Tessera : GuiLink
             }
             if ((m.first >> 8 & 0xF0u) == 0xF0u)
                 continue;   // (system messages, a clock: the DAW keeps time; only the tracks' notes go out)
+            if (playing)
+                clip.add(pos - (now - m.second) / crate * bpm / 60.0, (uint8_t)(m.first >> 8),
+                         (uint8_t)(m.first >> 16 & 127), (uint8_t)(m.first >> 24 & 127));
             int64_t t = (int64_t)n - 1 + (int64_t)std::lround(ahead);
             if (t > (int64_t)n - 1) t = (int64_t)n - 1;
             if (out)
@@ -221,6 +238,7 @@ struct Tessera : GuiLink
     std::string open_file(const std::string &path) override;
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
+    std::string export_midi() override;
     void changed_by_file(const char *what = "OPEN PROJECT");   // (what: the host's undo step's name)
     // the shell (gui.h): the last one picked in any window, from the plugin's settings
     int shell_i = 0;
@@ -331,6 +349,33 @@ std::string Tessera::save_file(const std::string &path)
     if (!projfile::write_file(path, b))
         return "CANNOT WRITE THAT FILE";
     return "SAVED " + (name.empty() ? std::string("THE PROJECT") : name);
+}
+
+// MIDI under the keys: the clip as a .mid in Documents/Tessera/MIDI, named after the project and the time
+std::string Tessera::export_midi()
+{
+    std::string name;
+    projfile::tsp_name(record_of(this), name);
+    std::vector<midifile::Ev> ev;
+    double bpm;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        ev = clip.take();
+        bpm = core->bpm();
+    }
+    std::vector<uint8_t> f = midifile::smf(ev, bpm, name);
+    if (f.empty())
+        return "NO NOTES YET: PLAY, THEN MIDI";
+    std::string dir = midifile::folder();
+    if (dir.empty())
+        return "NO DOCUMENTS FOLDER FOR THE CLIP";
+    char stamp[32];
+    std::time_t tt = std::time(nullptr);
+    std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H%M%S", std::localtime(&tt));
+    std::string file = midifile::file_name(name, stamp);
+    if (!projfile::write_file((std::filesystem::u8path(dir) / std::filesystem::u8path(file)).u8string(), f))
+        return "CANNOT WRITE THE CLIP";
+    return "CLIP SAVED IN DOCUMENTS/TESSERA/MIDI";
 }
 
 std::string Tessera::file_name()

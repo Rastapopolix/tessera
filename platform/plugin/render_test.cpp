@@ -29,7 +29,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <vector>
+
+#include "midifile.h"
 
 static int fails = 0;
 #define CHECK(c, ...)                                                                                                  \
@@ -713,6 +718,44 @@ int main(int argc, char **argv)
                 CHECK(differ(s0, s2) == 0, "GENERATE held: the project before the piece again (%zu differ)", differ(s0, s2));
                 CHECK(undo_steps.size() == 2 && undo_steps[0] == "GENERATE" && undo_steps[1] == "GENERATE: BEFORE",
                       "the DAW's undo told of each: GENERATE, GENERATE: BEFORE (%zu)", undo_steps.size());
+                // MIDI under the keys: the notes played since PLAY, a .mid in Documents/Tessera/MIDI (HOME: a new folder)
+                {
+                    namespace fs = std::filesystem;
+                    std::string old_home = std::getenv("HOME") ? std::getenv("HOME") : "";
+                    fs::path home = fs::temp_directory_path() / "tessera-render-test-midi";
+                    fs::remove_all(home);
+                    fs::create_directories(home);
+                    setenv("HOME", home.c_str(), 1);
+                    ticks(200);   // (some notes)
+                    auto click_at = [&](int x, int y) {
+                        for (int down = 1; down >= 0; down--)
+                        {
+                            XEvent e{};
+                            e.type = down ? ButtonPress : ButtonRelease;
+                            e.xbutton.window = child;
+                            e.xbutton.x = x, e.xbutton.y = y, e.xbutton.button = Button1;
+                            XSendEvent(d, child, False, down ? ButtonPressMask : ButtonReleaseMask, &e);
+                            XSync(d, False);
+                            ticks(2);
+                        }
+                    };
+                    click_at(550, 605);   // (MIDI: the third of OPEN SAVE MIDI, centred under the keys, 4 or 8 tracks)
+                    ticks(4);
+                    int files = 0, tracks = 0, notes = 0;
+                    double q = 0;
+                    std::error_code ec;
+                    for (auto &f : fs::directory_iterator(home / "Documents" / "Tessera" / "MIDI", ec))
+                    {
+                        std::ifstream in(f.path(), std::ios::binary);
+                        std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        files += midifile::read_back(b, tracks, notes, q);
+                        std::printf("midi: %s, %zu bytes, %d tracks, %d notes, %.1f quarters\n",
+                                    f.path().filename().c_str(), b.size(), tracks, notes, q);
+                    }
+                    CHECK(files == 1 && tracks >= 2 && notes > 0, "MIDI clicked: a clip with notes (%d files)", files);
+                    setenv("HOME", old_home.c_str(), 1);
+                    fs::remove_all(home);
+                }
             }
             gui->destroy(p);
             XDestroyWindow(d, parent);
