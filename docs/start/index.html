@@ -1,0 +1,300 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Made by web/make_manual.py from GETTING_STARTED.md: edit that file, not this one. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started with Tessera</title>
+<link rel="icon" href="../media/brand/logo.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+:root {
+  /* the Mono look: one ink on near-black (Settings COLOR, YELLOW the default; tools/gen_ui_palettes.py) for headings,
+     labels and buttons, the body text a soft off-white (easier on the eyes in long text), the rest the ink at lower strengths; the four tracks as the device's fills: solid, hatched, dotted, striped */
+  --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+  --dim: #8e877a;
+  --p1: var(--ink);
+  --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+  --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+  --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+  --pixel: "Tessera Mono", ui-monospace, monospace;
+  --gap: 6px; --max: 1120px;
+}
+:root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.skip { position: absolute; left: 8px; top: -60px; z-index: 5; padding: 6px 10px; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); }
+.skip:focus { top: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+header { position: sticky; top: 0; z-index: 3; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font: 16px/1 var(--pixel); }
+header .home { color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; }
+header a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
+header a[aria-current] { color: var(--bg); background: var(--ink); }
+.theme, .contents { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; }
+.theme:hover, .contents:hover { color: var(--bg); background: var(--ink); }
+.contents { display: none; }
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+nav.side { position: sticky; top: 49px; align-self: start; max-height: calc(100vh - 49px); overflow: auto; padding: 16px 12px 40px 16px;
+  border-right: 1px solid var(--line); font-size: 14px; line-height: 1.4; }
+nav.side input { width: 100%; font: inherit; color: var(--text); background: var(--surf); border: 1px solid var(--line); padding: 6px 8px; margin-bottom: 12px; }
+.toc, .toc ol { list-style: none; margin: 0; padding: 0; }
+.toc > li { margin: 0 0 4px; }
+.toc ol { display: none; margin: 2px 0 6px 12px; }
+.toc li.open > ol { display: block; }
+.toc a { display: block; color: var(--mid); text-decoration: none; padding: 2px 4px; }
+.toc a:hover { color: var(--bg); }
+.toc li.open > a, .toc a.here { color: var(--ink); }
+.toc li.group { margin: 16px 0 4px; padding: 0 4px; color: var(--dim); font: 14px/1.2 var(--pixel); }
+.toc li.group:first-child { margin-top: 0; }
+.results { list-style: none; margin: 0; padding: 0; }
+.results li { margin: 0 0 10px; }
+.results small { display: block; color: var(--dim); }
+.results mark { background: var(--ink); color: var(--bg); }
+main { padding: 8px 32px 80px; min-width: 0; max-width: 900px; }
+main li { margin: 0 0 10px; }
+main li > p { margin: 6px 0; }
+main li > strong:first-child { color: var(--ink); }
+main h1, main h2, main h3, main h4 { color: var(--ink); font-family: var(--pixel); font-weight: 400; line-height: 1.2; }
+main h1 { font-size: clamp(28px, 4vw, 44px); margin: 24px 0 12px; }
+main h2 { font-size: clamp(22px, 3vw, 32px); margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+main h3 { font-size: 20px; margin: 36px 0 8px; }
+main h4 { font-size: 16px; margin: 24px 0 6px; }
+main img { max-width: 100%; height: auto; image-rendering: pixelated; }
+main p[align="center"] { text-align: center; }
+main p[align="center"] img { display: inline-block; margin: 4px; }
+main sub { color: var(--dim); font-size: 13px; }
+main .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+main .videos figure { margin: 0; }
+main .videos figure.on { grid-column: 1 / -1; }
+main .videos figcaption { color: var(--dim); font-size: 13px; margin-top: 4px; }
+main .videos .play { position: relative; display: block; line-height: 0; border: 1px solid var(--line); }
+main .videos .play:hover, main .videos .play:focus-visible { border-color: var(--ink); }
+main .videos .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+main .videos .play img { width: 100%; image-rendering: auto; }
+main .videos .play::before { content: ""; position: absolute; right: 4px; bottom: 4px; width: 36px; height: 24px; background: var(--bg); border: 1px solid var(--ink); }
+main .videos .play::after { content: ""; position: absolute; right: 16px; bottom: 10px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--ink); }
+main .videos iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--ink); }
+main table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }
+main th, main td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+main th { background: var(--surf); color: var(--ink); font-weight: 400; }
+main code { background: var(--surf); padding: 1px 4px; }
+main pre { background: var(--surf); padding: 12px; overflow-x: auto; }
+main pre code { padding: 0; }
+main blockquote { margin: 12px 0; padding: 8px 14px; border-left: 4px solid var(--ink); background: var(--surf); }
+main blockquote p { margin: 0; }
+main details { margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line); }
+main details[open] { background: var(--surf); }
+main summary { cursor: pointer; color: var(--ink); }
+main hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+.next { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .layout { display: block; }
+  .contents { display: inline-block; }
+  nav.side { display: none; position: fixed; top: 49px; left: 0; right: 0; bottom: 0; max-height: none; z-index: 2; background: var(--bg); border: 0; }
+  body.toc-open nav.side { display: block; }
+  main { padding: 8px 16px 60px; }
+}
+@media (max-width: 600px) {
+  header { gap: 6px; }
+  header .home { font-size: 18px; }
+  header .wide { display: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the text</a>
+<header>
+  <a class="home" href="../">TESSERA</a>
+  <a href="../start/" aria-current="page">START</a>
+  <a href="../manual/">MANUAL</a>
+  <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
+  <a class="wide" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES</a>
+  <a class="wide" href="../webapp/sim/">SIMULATOR</a>
+  <button class="contents" id="contents" type="button" aria-expanded="false" aria-controls="side">CONTENTS</button>
+  <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
+</header>
+<div class="layout">
+<nav class="side" id="side" aria-label="Contents">
+  <input id="search-q" type="search" placeholder="Search this guide" aria-label="Search this guide" autocomplete="off">
+  <p class="sr" id="found" aria-live="polite"></p>
+  <ol class="results" id="results" hidden></ol>
+  <ol class="toc"><li><a href="#1-install">1. Install</a></li><li><a href="#2-hear-it">2. Hear it</a></li><li><a href="#3-let-a-generator-play">3. Let a generator play</a></li><li><a href="#4-find-a-line-you-like">4. Find a line you like</a></li><li><a href="#5-let-it-play-itself">5. Let it play itself</a></li><li><a href="#6-watch-it">6. Watch it</a></li><li><a href="#7-save-it">7. Save it</a></li><li><a href="#where-next">Where next</a></li></ol>
+</nav>
+<main id="main" tabindex="-1">
+<h1 id="getting-started-with-tessera">Getting started with Tessera</h1>
+<p>Your first half hour: from a fresh install to a piece that plays itself, one step at a time. Each step takes a minute
+or two, and you can stop after any of them. The <a href="../manual/">manual</a> has every detail when you want it.</p>
+<p><strong>No FM-1 to hand?</strong> The <a href="https://rastapopolix.github.io/tessera/webapp/sim/">web simulator</a> runs the same firmware
+in your browser, so you can follow along there.</p>
+<p><strong>Three things to know first.</strong> <strong>ALGORITHM</strong> picks the track (1 to 4) on every page. <strong>KNOB 1 to 4</strong> are the four knobs from left
+to right, and each page shows what they do along the top of the screen. A page button (SEQ, ARP, GLO...) opens its
+first page, and tapping it again steps through the rest.</p>
+<h2 id="1-install">1. Install</h2>
+<p>You need the FM-1, a USB cable and Chrome or Edge on a computer.</p>
+<ol>
+<li>Connect the FM-1 directly by USB (not through a hub).</li>
+<li>Open the <strong><a href="https://rastapopolix.github.io/tessera/webapp/installer/">web installer</a></strong> and follow it. Choose the
+standard build; the single-core one is for the few FM-1s that crash with it.</li>
+<li>Don't unplug the FM-1 while it is writing.</li>
+</ol>
+<p>The installer can also take you back to the official firmware later, with a backup first.</p>
+<h2 id="2-hear-it">2. Hear it</h2>
+<p>Power on. Tessera starts with four sounds: <strong>KUGO HARP</strong> on track 1, <strong>KOTO WARM</strong> on track 2, <strong>FLUTE</strong> on track 3
+and the <strong>808 KIT</strong> on track 4, in the KUMOI scale on E. Play the keys: you hear the selected track.</p>
+<p align="center"><img src="../media/gallery/home.png" alt="HOME: the four tracks" width="240"><br><sub>HOME: the four tracks at a glance. SELECT sets the tempo here.</sub></p>
+<p><strong>Try:</strong> turn <strong>ALGORITHM</strong> to each track in turn and play a few notes.</p>
+<h2 id="3-let-a-generator-play">3. Let a generator play</h2>
+<p>A generator writes the notes for you, always in the project's scale.</p>
+<ol>
+<li>Track 1 (KUGO HARP). Tap <strong>SEQ</strong>: this is GEN, the page that says what the track plays.</li>
+<li>Turn <strong>MODE</strong> (KNOB 1) to <strong>TURING</strong>, then press <strong>PLAY</strong>. A melody loops.</li>
+<li>Turn <strong>PROB</strong> to about 20: the loop changes a little each time round. At 0 it holds still.</li>
+</ol>
+<p align="center"><img src="../media/gallery/gen_turing.png" alt="GEN with TURING" width="240"><br><sub>GEN with MODE on TURING.</sub></p>
+<p><strong>Try:</strong> track 4 (the 808 KIT), MODE <strong>ATLAS</strong>, <strong>DENS</strong> at 50: a drum groove underneath.</p>
+<h2 id="4-find-a-line-you-like">4. Find a line you like</h2>
+<p>Every generator line comes from a seed: a number you can come back to.</p>
+<ol>
+<li>Track 1, tap <strong>ARP</strong>: this is EVOLVE.</li>
+<li>Turn <strong>ROLL</strong> (KNOB 4) one click at a time. Each click is a new line; turn back for the last one.</li>
+<li>When you like it, note the number. That line is yours.</li>
+<li>Set <strong>EVERY</strong> to 4 and <strong>AMOUNT</strong> to about 30: now the line changes a little every four bars, so it never wears
+out.</li>
+</ol>
+<p align="center"><img src="../media/gallery/gen_evolve.png" alt="EVOLVE" width="240"><br><sub>EVOLVE: how often the line changes, how much, and its seed.</sub></p>
+<p><strong>Try:</strong> tap <strong>SEL</strong> on track 1 to change the scale. Every generator follows at once.</p>
+<h2 id="5-let-it-play-itself">5. Let it play itself</h2>
+<p>Three pages turn a loop into a piece that changes over minutes or hours. Each one starts switched off.</p>
+<ol>
+<li><strong>ARP</strong>, tap to <strong>ENERGY</strong>, and turn <strong>ARC</strong> to about 50: the tracks get sparser and busier in a slow tide.</li>
+<li><strong>GLO</strong>, tap to <strong>ENTRIES</strong>, and turn <strong>ENTRIES</strong> to about 50: tracks drop out and come back in on the phrase
+lines, like a band arranging itself.</li>
+<li><strong>GLO</strong>, tap to <strong>PIECE</strong>: <strong>10</strong> minutes, shape <strong>ARCH</strong>, END <strong>STOP</strong>. Now it has a beginning, a peak and an
+end, and stops by itself.</li>
+</ol>
+<p align="center"><img src="../media/gallery/glo_entries.png" alt="ENTRIES" width="240"> <img src="../media/gallery/glo_piece.png" alt="PIECE" width="240"><br><sub>ENTRIES shows which tracks are in and out; PIECE shows the shape of the whole piece.</sub></p>
+<p><strong>Try:</strong> press <strong>PLAY</strong> and leave it for ten minutes.</p>
+<h2 id="6-watch-it">6. Watch it</h2>
+<p><strong>GLO</strong>, tap to <strong>LANDSCAPE</strong>: a night sea drawn by the music. Notes fall as rain, the moon crosses the sky as the
+piece goes on. The keys are the mixer's: the black keys mute tracks 1 to 4,
+<strong>C4</strong> brings them all back.</p>
+<p align="center"><img src="../media/gallery/glo_land_rain.png" alt="LANDSCAPE" width="240"><br><sub>LANDSCAPE while the music plays.</sub></p>
+<h2 id="7-save-it">7. Save it</h2>
+<p>Hold <strong>SAVE</strong> to save the project. Everything is kept: the sounds, the generators and their seeds, and every page you
+set.</p>
+<p>To start afresh: tap <strong>SAVE</strong> to the <strong>PROJECT</strong> page, turn <strong>KNOB 1</strong> to <strong>New song</strong> and press <strong>OCT+</strong>. Tessera
+asks for a key, a scale and a tempo, then a role for each track (drums, bass, chords, lead or pad).</p>
+<p align="center"><img src="../media/gallery/project.png" alt="SAVE > PROJECT" width="240"><br><sub>SAVE > PROJECT: your projects, and New song.</sub></p>
+<h2 id="where-next">Where next</h2>
+<ul>
+<li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#first-steps-you-have-a-loop-what-next">First steps: you have a loop, what next?</a></strong>: the next six
+moves, from live mutes to song sections.</li>
+<li><strong><a href="../manual/#tessera-in-plain-words">Tessera in plain words</a></strong>: what every page is for, and which generator to
+reach for.</li>
+<li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES</a></strong>: drones, chords that lead, pieces that play for hours, driving other synths.</li>
+<li><strong><a href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf">The cheat sheet</a></strong>:
+every button and combination on one printable page.</li>
+<li><strong><a href="https://rastapopolix.github.io/tessera/manual/tessera-manual.pdf">The manual as a PDF</a></strong>: the whole manual, to
+print or read offline.</li>
+</ul>
+
+<p class="next">Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.</p>
+</main>
+</div>
+<script>/* the contents: the chapter on screen opened and marked; on a narrow screen, CONTENTS shows them */
+(function () {
+  var links = [].slice.call(document.querySelectorAll(".toc a")), byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  var heads = [].slice.call(document.querySelectorAll("main h2[id], main h3[id]")).filter(function (h) { return byId[h.id]; });
+  function mark() {
+    var cur = null;
+    for (var i = 0; i < heads.length; i++) { if (heads[i].getBoundingClientRect().top < 90) cur = heads[i]; else break; }
+    links.forEach(function (a) { a.classList.remove("here"); a.parentNode.classList.remove("open"); });
+    if (!cur) return;
+    var a = byId[cur.id]; a.classList.add("here");
+    var li = a.parentNode; while (li && li.tagName === "LI") { li.classList.add("open"); li = li.parentNode.parentNode; }
+  }
+  var busy = false;
+  window.addEventListener("scroll", function () { if (!busy) { busy = true; requestAnimationFrame(function () { busy = false; mark(); }); } });
+  mark();
+  var b = document.getElementById("contents");
+  b.addEventListener("click", function () { var o = document.body.classList.toggle("toc-open"); b.setAttribute("aria-expanded", o); });
+  document.getElementById("side").addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { document.body.classList.remove("toc-open"); b.setAttribute("aria-expanded", "false"); }
+  });
+})();
+/* a table or code block wider than the page scrolls sideways: it then takes the keyboard focus, so the arrow keys
+   scroll it */
+(function () {
+  var boxes = [].slice.call(document.querySelectorAll("main table, main pre"));
+  function fit() {
+    boxes.forEach(function (b) { if (b.scrollWidth > b.clientWidth + 1) b.tabIndex = 0; else b.removeAttribute("tabindex"); });
+  }
+  fit(); window.addEventListener("resize", fit);
+})();
+/* the search: every section's text (from its heading to the next), the matching ones listed with a line of each */
+(function () {
+  var q = document.getElementById("search-q"), out = document.getElementById("results"), found = document.getElementById("found"), toc = document.querySelector(".toc"), secs = [], cur = null;
+  [].forEach.call(document.getElementById("main").children, function (el) {
+    if (/^H[1-4]$/.test(el.tagName) && el.id) { cur = { id: el.id, title: el.textContent, text: "" }; secs.push(cur); }
+    else if (cur) cur.text += " " + el.textContent;
+  });
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  q.addEventListener("input", function () {
+    var w = q.value.trim().toLowerCase();
+    if (w.length < 2) { out.hidden = true; toc.hidden = false; found.textContent = ""; return; }
+    var html = "", n = 0;
+    secs.forEach(function (s) {
+      if (n >= 40) return;
+      var t = s.text.replace(/\s+/g, " "), i = t.toLowerCase().indexOf(w), inTitle = s.title.toLowerCase().indexOf(w) >= 0;
+      if (i < 0 && !inTitle) return;
+      n++;
+      var line = i < 0 ? "" : esc(t.slice(Math.max(0, i - 40), i)) + "<mark>" + esc(t.substr(i, w.length)) + "</mark>" + esc(t.substr(i + w.length, 60));
+      html += '<li><a href="#' + s.id + '">' + esc(s.title) + "</a>" + (line ? "<small>&hellip;" + line + "&hellip;</small>" : "") + "</li>";
+    });
+    out.innerHTML = html || "<li><small>Nothing found.</small></li>";
+    found.textContent = n ? n + (n >= 40 ? "+" : "") + (n === 1 ? " section found" : " sections found") : "Nothing found";
+    out.hidden = false; toc.hidden = true;
+  });
+  q.addEventListener("keydown", function (e) { if (e.key === "Escape") { q.value = ""; q.dispatchEvent(new Event("input")); } });
+})();
+/* the guided clips: a thumbnail (a link to YouTube without script) becomes the player when played; nothing is
+   fetched from YouTube before that, and the player takes the focus */
+(function () {
+  [].forEach.call(document.querySelectorAll("main .videos .play"), function (a) {
+    a.addEventListener("click", function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      var f = document.createElement("iframe"), fig = a.parentNode;
+      f.src = "https://www.youtube-nocookie.com/embed/" + a.dataset.video + "?autoplay=1&rel=0";
+      f.title = a.getAttribute("aria-label").replace("Play the video: ", "Video: ");
+      f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      f.allowFullscreen = true;
+      fig.className = "on";
+      fig.replaceChild(f, a);
+      f.focus();
+    });
+  });
+})();
+/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme), as on the project page */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  function show() { b.textContent = light() ? "DARK" : "LIGHT"; }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+</body>
+</html>
