@@ -184,6 +184,11 @@ class GuiX11 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
         std::string cmd = dialog_command(req, req == Panel::FILE_SAVE ? link->file_name() : std::string());
         if (cmd.empty())
         {

@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* What Tessera costs per instance: a minimal CLAP host (POSIX) over the built Tessera.clap runs 1, 4 and 8 instances,
- * each playing the project it starts with (STILL TIDE) with the host's transport, and prints for each count:
+ * each playing STILL TIDE (demos/still-tide.tsp, loaded as the host's state: a new instance starts empty) with the
+ * host's transport, and prints for each count:
  *   - one thread: the time per instance as a share of real time (a DAW running every instance on one core);
  *   - a thread per instance: the time for all of them at once, as a share of real time;
  *   - the slowest block of one instance on one thread, against the block's real time (what a DAW's buffer holds).
  * It measures; it passes or fails nothing (the machine sets the numbers).
- * usage: tessera-cpu-bench path/to/Tessera.clap [seconds] [rate] [block] */
+ * usage: tessera-cpu-bench path/to/Tessera.clap [seconds] [rate] [block]   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <dlfcn.h>
 
@@ -26,6 +27,17 @@ static const clap_event_header_t *ev_get(const clap_input_events_t *, uint32_t) 
 static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *) { return true; }
 static const clap_input_events_t no_events = {nullptr, ev_size, ev_get};
 static const clap_output_events_t out_events = {nullptr, out_try_push};
+
+// STILL TIDE as a state for each instance (a new one starts from a new project and would play nothing)
+static std::vector<uint8_t> demo;
+static size_t demo_r;
+static int64_t demo_read(const clap_istream_t *, void *p, uint64_t n)
+{
+    size_t k = demo.size() - demo_r < n ? demo.size() - demo_r : (size_t)n;
+    std::memcpy(p, demo.data() + demo_r, k);
+    demo_r += k;
+    return (int64_t)k;
+}
 
 using Clock = std::chrono::steady_clock;
 static uint32_t rate = 48000, block = 256;
@@ -49,6 +61,10 @@ struct Inst
         ch[1] = R.data();
         p = fac->create_plugin(fac, &host, id);
         if (!p || !p->init(p) || !p->activate(p, rate, block, block) || !p->start_processing(p)) return false;
+        auto *st = (const clap_plugin_state_t *)p->get_extension(p, CLAP_EXT_STATE);
+        demo_r = 0;
+        clap_istream_t is = {nullptr, demo_read};
+        if (!st || !st->load(p, &is)) return false;
         out.data32 = ch;
         out.channel_count = 2;
         tr.header = {sizeof tr, 0, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_TRANSPORT, 0};
@@ -98,6 +114,17 @@ int main(int argc, char **argv)
     }
     auto *entry = (const clap_plugin_entry_t *)dlsym(lib, "clap_entry");
     if (!entry || !entry->init(argv[1])) return 1;
+    if (FILE *f = std::fopen("demos/still-tide.tsp", "rb"))
+    {
+        uint8_t c[4096];
+        for (size_t n; (n = std::fread(c, 1, sizeof c, f)) > 0;) demo.insert(demo.end(), c, c + n);
+        std::fclose(f);
+    }
+    if (demo.size() < 64)
+    {
+        std::printf("demos/still-tide.tsp not found: run from the repository's top\n");
+        return 1;
+    }
     auto *fac = (const clap_plugin_factory_t *)entry->get_factory(CLAP_PLUGIN_FACTORY_ID);
     const char *id = fac->get_plugin_descriptor(fac, 0)->id;
     const uint32_t blocks = (uint32_t)(seconds * rate / block);

@@ -58,6 +58,8 @@ jobs:
         run: build/plugin/tessera-fm1-test
       - name: Resample test (the core's 44.1 kHz to the host's rate)
         run: build/plugin/tessera-resample-test
+      - name: MIDI clip test (MIDI under the keys: the .mid written)
+        run: build/plugin/tessera-midifile-test
       - name: Render test (with the window, on a virtual display)
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)
@@ -100,6 +102,7 @@ jobs:
           build/plugin/Release/tessera-projfile-test.exe
           build/plugin/Release/tessera-fm1-test.exe
           build/plugin/Release/tessera-resample-test.exe
+          build/plugin/Release/tessera-midifile-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort
@@ -133,6 +136,7 @@ jobs:
           build/plugin/tessera-projfile-test
           build/plugin/tessera-fm1-test
           build/plugin/tessera-resample-test
+          build/plugin/tessera-midifile-test
       - name: Render test (with the window)
         run: build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)

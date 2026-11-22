@@ -21,8 +21,8 @@ enum { TESS_CORE_BLOCK = 32 };       /* frames of tess_core_block: Tessera's con
 uint32_t tess_core_rate(void);
 /* the build's tracks: 4 as the FM-1, or 8 (CORE_TRACKS 8: the plugin, Andamento) */
 uint32_t tess_core_tracks(void);
-/* power-on, once: the device's start (its BPM, scales, the default ink), stopped. The web simulator and the plugin
- * then load their demos (tess_core_slot_put, tess_core_slot_load) */
+/* power-on, once: the device's start (its BPM, scales, the default ink), stopped. The web simulator puts its demos in
+ * slots A and B and loads A; the plugin puts them there and starts from a new project (web/sim/sim.c) */
 void tess_core_boot(void);
 
 /* ---- audio out. Audio time drives the device's clock, so an offline render plays as real time does. Use one of
@@ -120,6 +120,7 @@ uint32_t tess_core_tsp_max(void);
 uint32_t tess_core_slot_get(uint32_t slot, uint8_t *out, uint32_t cap);   /* its length, 0 = empty */
 uint32_t tess_core_slot_put(uint32_t slot, const uint8_t *in, uint32_t len);   /* 0 done, 1 not a record */
 void tess_core_slot_load(uint32_t slot);                                /* as SAVE > PROJECT > LOAD */
+void tess_core_project_new(void);                                       /* a new project: nothing plays (slots kept) */
 /* the device's MIDI and tuning setup (ROUT, DRUM's channel, NOTES OUT, TUNE), which a project load leaves alone: for a
  * front end to keep with its own state (the plugin's, in the DAW project). save: its length, 0 = cap too small;
  * load: 0 done, 1 not a setup this core reads */

@@ -14,7 +14,9 @@ static void web_demos_load(void);
 #include "sim_demos.h"                       /* (web/sim/build.sh: demos/still-tide.tsp, koto-garden.tsp) */
 
 /* the demos in the slots, as the backup page would put them there: A STILL TIDE (the first in the demo video),
- * B KOTO GARDEN; then A loaded, so the simulator starts with STILL TIDE (SAVE > PROJECT loads B) */
+ * B KOTO GARDEN; then A loaded, so the simulator starts with STILL TIDE (SAVE > PROJECT loads B). The plugin
+ * (TESS_PLUGIN_IO) keeps them in the slots but starts from a new project, as an FM-1 with nothing saved does: a
+ * new instrument in a DAW plays nothing until it gets notes (the standalone app loads A itself, tessera_clap.cpp) */
 static void web_demos_load(void)
 {
     memcpy(proj_bank_slot[0], SIM_DEMO_A, sizeof SIM_DEMO_A);
@@ -23,7 +25,11 @@ static void web_demos_load(void)
     proj_bank_len[1] = sizeof SIM_DEMO_B;
     proj_fetch(0);
     proj_fetch(1);
+#ifdef TESS_PLUGIN_IO
+    project_new_blank();
+#else
     project_load(0);
+#endif
 }
 
 #ifdef __EMSCRIPTEN__

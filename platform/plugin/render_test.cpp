@@ -2,7 +2,9 @@
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Tessera.clap and checks
  *   - one instance: a second create is refused while the first lives;
- *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
+ *   - a new instance starts from a new project: with the host's transport playing it is silent;
+ *   - with the host's transport playing at 48 kHz, STILL TIDE (demos/still-tide.tsp, loaded as the host's state)
+ *     makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
  *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
@@ -12,7 +14,7 @@
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
- * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
+ * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <clap/ext/draft/undo.h>
 #include <dlfcn.h>
@@ -29,7 +31,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <vector>
+
+#include "midifile.h"
 
 static int fails = 0;
 #define CHECK(c, ...)                                                                                                  \
@@ -234,6 +241,36 @@ int main(int argc, char **argv)
     out_frames = block;
     proc.in_events = &in;
     proc.out_events = &oe;
+
+    // a new Tessera opens on a new project, as an FM-1 with nothing saved: the DAW playing, it plays nothing
+    auto *st0 = (const clap_plugin_state_t *)p->get_extension(p, CLAP_EXT_STATE);
+    {
+        double e0 = 0;
+        for (int b = 0; b < 300; b++)   // (3 s)
+        {
+            CHECK(p->process(p, &proc) == CLAP_PROCESS_CONTINUE, "process");
+            for (uint32_t k = 0; k < block; k++) e0 += (double)L[k] * L[k] + (double)R[k] * R[k];
+        }
+        std::printf("a new instance, the DAW playing 3 s: energy %.9f\n", e0);
+        CHECK(e0 < 1e-6, "a new Tessera plays nothing until it gets notes (energy %.9f)", e0);
+        // then STILL TIDE, as a DAW's saved song brings it back (its state), played from the DAW's zero
+        tr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // (stopped)
+        p->process(p, &proc);
+        Buf demo;
+        if (FILE *f = std::fopen("demos/still-tide.tsp", "rb"))
+        {
+            uint8_t c[4096];
+            for (size_t n; (n = std::fread(c, 1, sizeof c, f)) > 0;) demo.b.insert(demo.b.end(), c, c + n);
+            std::fclose(f);
+        }
+        CHECK(demo.b.size() > 64, "demos/still-tide.tsp (run from the repository's top)");
+        clap_istream_t dis = {&demo, is_read};
+        CHECK(st0 && st0->load(p, &dis), "STILL TIDE loads as the state");
+        p->on_main_thread(p);   // (as a host answers the load's request: its parameters' texts rescanned)
+        tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+        if (fails)
+            return 1;
+    }
 
     uint32_t blocks = (uint32_t)(seconds * rate / block);
     double sum2 = 0, peak = 0;
@@ -713,6 +750,44 @@ int main(int argc, char **argv)
                 CHECK(differ(s0, s2) == 0, "GENERATE held: the project before the piece again (%zu differ)", differ(s0, s2));
                 CHECK(undo_steps.size() == 2 && undo_steps[0] == "GENERATE" && undo_steps[1] == "GENERATE: BEFORE",
                       "the DAW's undo told of each: GENERATE, GENERATE: BEFORE (%zu)", undo_steps.size());
+                // MIDI under the keys: the notes played since PLAY, a .mid in Documents/Tessera/MIDI (HOME: a new folder)
+                {
+                    namespace fs = std::filesystem;
+                    std::string old_home = std::getenv("HOME") ? std::getenv("HOME") : "";
+                    fs::path home = fs::temp_directory_path() / "tessera-render-test-midi";
+                    fs::remove_all(home);
+                    fs::create_directories(home);
+                    setenv("HOME", home.c_str(), 1);
+                    ticks(200);   // (some notes)
+                    auto click_at = [&](int x, int y) {
+                        for (int down = 1; down >= 0; down--)
+                        {
+                            XEvent e{};
+                            e.type = down ? ButtonPress : ButtonRelease;
+                            e.xbutton.window = child;
+                            e.xbutton.x = x, e.xbutton.y = y, e.xbutton.button = Button1;
+                            XSendEvent(d, child, False, down ? ButtonPressMask : ButtonReleaseMask, &e);
+                            XSync(d, False);
+                            ticks(2);
+                        }
+                    };
+                    click_at(550, 605);   // (MIDI: the third of OPEN SAVE MIDI, centred under the keys, 4 or 8 tracks)
+                    ticks(4);
+                    int files = 0, tracks = 0, notes = 0;
+                    double q = 0;
+                    std::error_code ec;
+                    for (auto &f : fs::directory_iterator(home / "Documents" / "Tessera" / "MIDI", ec))
+                    {
+                        std::ifstream in(f.path(), std::ios::binary);
+                        std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        files += midifile::read_back(b, tracks, notes, q);
+                        std::printf("midi: %s, %zu bytes, %d tracks, %d notes, %.1f quarters\n",
+                                    f.path().filename().c_str(), b.size(), tracks, notes, q);
+                    }
+                    CHECK(files == 1 && tracks >= 2 && notes > 0, "MIDI clicked: a clip with notes (%d files)", files);
+                    setenv("HOME", old_home.c_str(), 1);
+                    fs::remove_all(home);
+                }
             }
             gui->destroy(p);
             XDestroyWindow(d, parent);
