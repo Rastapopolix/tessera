@@ -137,6 +137,11 @@
 #                   LENGTH FREE with the rest turned plays the same notes, a 10-minute ARCH (intro, top, outro, the
 #                   CHAIN home for its last 15 %, ENERGY its curve, CONTRAST near the top), END STOP / LOOP / NEW / FREE,
 #                   a tempo change, the PIECE knobs.
+# GENERATE (tests/generate_test.c): GENERATE (generate.c, LEMONADE SANDWICH's rolls) on the core API as the plugin builds
+#                   it, every style: the same style, seed and VARIATION the same .tsp whatever came before, before / after
+#                   byte for byte both ways, VARIATION 0 repeatable; played a minute: no clipping, each track sounding
+#                   (KNOWN: a slow BOUNCE or CONSTELLATION under EVOLVE can stay silent, as in the rolls), the
+#                   generators' notes in key, every voice dying away after STOP. Then a 4-track build with the cost rules.
 # LONG-FORM (tests/longform_test.c): eight hours of ten patches left playing (notes only: the sequencer without the
 #                   voices, checked against mix_block for the first two minutes): no long silence, no collapse to one
 #                   note, no loop replayed for minutes, not thinning out by the last hour; a table of every measure in
@@ -168,7 +173,7 @@ start=$(date +%s)
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
-G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test"
+G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
@@ -211,7 +216,8 @@ qmap() {
         firmware/src/gen*.[ch] | firmware/src/tessera.[ch] | firmware/src/pat_gen.c | firmware/src/answer.c | \
             firmware/src/organic.c | firmware/src/vary.c | firmware/src/page_random.c) QSEL="$QSEL $G_GEN" ;;
         firmware/src/form_chain.c) QSEL="$QSEL chain_test entries_test planner_test" ;;
-        firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test" ;;
+        firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test generate_test" ;;
+        firmware/src/generate.c | tests/generate_test.c) QSEL="$QSEL generate_test" ;;
         firmware/src/storage*.c | firmware/src/project*.c | firmware/src/settings_persist.c | firmware/src/fm6_store.c | \
             firmware/src/upreset.c | firmware/src/favorites.c) QSEL="$QSEL $G_STORE" ;;
         firmware/src/midi_*.c) QSEL="$QSEL $G_MIDI" ;;
@@ -691,6 +697,15 @@ if core && [ $TABLES = 1 ]; then
     t "RECIPES: GENERATIVE.md's Krell and Long gates played: a note each LFO cycle; a voice in and out with a bus's sum"         recipes_test -O2 $FW
     t "PIECE: the planner: the SHAPEs, FREE unchanged, ENERGY / Entries / the CHAIN steered, END STOP LOOP NEW FREE, tempo" \
         planner_test -O2 $FW
+    t "GENERATE: every style repeatable, before / after exact, plays in key, no clipping or hanging notes (the plugin's build)" \
+        generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DTESS_TARGET=TESS_T_PLUGIN -DTESS_HOST_CLOCK=1 \
+        -DTESS_PLUGIN_IO=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+        -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PHASE=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 \
+        '-DMELODEE_VERSION="plugin"'
+    t "GENERATE, 4 tracks with a voice budget: the cost rules; repeatable, before / after exact" \
+        generate_test_4:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 \
+        -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="web"' -- env GEN_SEEDS=10 GEN_PLAY=1 \
+        "$OUT/generate_test_4"
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \

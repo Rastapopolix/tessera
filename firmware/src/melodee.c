@@ -134,6 +134,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "upreset.c"             /* user presets (RAM mirror; flash with MELODEE_FLASH) */
 #include "project.c"
 #include "fm6_store.c"            /* FM6: DX7 SysEx, the STORE shortcut to user presets */
+#include "generate.c"             /* GENERATE (TESS_GENERATE: the plugin's; nothing on the FM-1) */
 #if MELODEE_OTA
 #define OTA_SCRATCH proj_wire_borrow()   /* the update entry stages in the project staging RAM */
 #include "ota.c"

@@ -9,6 +9,7 @@
  *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *     the host sizes it to 200 % (a dragged frame snapped to the nearest of 100, 150, 200 %) and back;
+ *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
@@ -602,6 +603,57 @@ int main(int argc, char **argv)
                 CHECK(cw == 2000 && ch == 1248, "the plugin's X window at 200 %% (%ux%u)", cw, ch);
                 CHECK(!gui->set_size(p, 1234, 567), "a size not one of the three refused");
                 CHECK(gui->set_size(p, 1000, 624), "back to 100 %%");
+            }
+            // GENERATE (TESSERA's strip): a click on it makes a new piece, held half a second the project before it
+            // comes back (the DAW's state: another project, then the one before again)
+            {
+                Window root_r, parent_r, *kids = nullptr;
+                unsigned nk = 0;
+                XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                Window child = nk ? kids[0] : 0;
+                if (kids) XFree(kids);
+                auto state_now = [&] {   // (the project's settings, as the DAW reads them: the parameters past the first 5)
+                    std::vector<double> vals;
+                    clap_param_info_t pi;
+                    for (uint32_t i = 5; pa && i < pa->count(p); i++)
+                    {
+                        double x = 0;
+                        pa->get_info(p, i, &pi);
+                        pa->get_value(p, pi.id, &x);
+                        vals.push_back(x);
+                    }
+                    return vals;
+                };
+                auto differ = [](const std::vector<double> &a, const std::vector<double> &b) {
+                    size_t n = 0;
+                    for (size_t i = 0; i < a.size() && i < b.size(); i++) n += a[i] != b[i];
+                    return n;
+                };
+                auto press = [&](bool down) {
+                    XEvent e{};
+                    e.type = down ? ButtonPress : ButtonRelease;
+                    e.xbutton.window = child;
+                    e.xbutton.x = 370, e.xbutton.y = 24, e.xbutton.button = Button1;
+                    XSendEvent(d, child, False, down ? ButtonPressMask : ButtonReleaseMask, &e);
+                    XSync(d, False);
+                };
+                auto ticks = [&](int n) {
+                    for (int i = 0; i < n; i++)
+                    {
+                        for (int b = 0; b < 3; b++) p->process(p, &proc);
+                        tim->on_timer(p, 0);
+                    }
+                };
+                CHECK(child != 0, "the plugin's window in the parent");
+                std::vector<double> s0 = state_now();
+                press(true), ticks(2), press(false), ticks(40);
+                std::vector<double> s1 = state_now();
+                press(true), ticks(20), press(false), ticks(40);
+                std::vector<double> s2 = state_now();
+                std::printf("generate: a click changed %zu of %zu settings; held, %zu differ from before it\n",
+                            differ(s0, s1), s0.size(), differ(s0, s2));
+                CHECK(differ(s0, s1) > 50, "GENERATE clicked: a new piece (%zu settings changed)", differ(s0, s1));
+                CHECK(differ(s0, s2) == 0, "GENERATE held: the project before the piece again (%zu differ)", differ(s0, s2));
             }
             gui->destroy(p);
             XDestroyWindow(d, parent);

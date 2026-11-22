@@ -6,6 +6,8 @@
  *   - a knob dragged turns its encoder; a key clicked sounds;
  *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB, SIZE), the MIDI lamp; the window
  *     at 150 and 200 % (Panel::scale);
+ *   - GENERATE's strip in it: a click asks for a piece, a hold for before / after, the style's list and arrows, VAR,
+ *     the seed's wheel; a piece made through the core shows its seed (none of it in an FM-1 shell or without styles);
  *   - the screen's zones: the mouse over FX's MIX outlines it, with a card under the screen; the wheel there, a drag and a
  *     double-click reach the core as that knob's turns and its default;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
@@ -549,6 +551,91 @@ int main(int argc, char **argv)
                         v.zones[mix].value);
             CHECK(std::string(v.zones[mix].value) != v2, "%s back to its default (%s)", m.name, v.zones[mix].value);
         }
+    }
+
+    // GENERATE's strip (TESSERA's shell, a build with styles)
+    {
+        Panel g;
+        g.set_inks(inks);
+        g.set_tracks((int)tess_core_tracks());
+        g.set_version("0.1-beta2");
+        std::vector<std::string> names;
+        for (uint32_t i = 0; i < tess_core_gen_styles(); i++) names.emplace_back(tess_core_gen_style(i));
+        CHECK(names.size() == 15 && names[0] == "AUTUMN", "fifteen styles, AUTUMN first (%d)", (int)names.size());
+        tess_core_view(&v);
+        g.draw(px.data(), v);
+        int strip = 0;
+        for (int y = 10; y < 38; y++)
+            for (int x = 316; x < 820; x++) strip += px[y * Panel::W + x] == 0xFFFFD020u;
+        CHECK(strip == 0, "no strip before the styles are known");
+        g.set_gen_styles(names);
+        Panel::GenState st;
+        st.style = 2;
+        st.variation = 100;
+        g.set_gen(st);
+        g.draw(px.data(), v);
+        for (int y = 10; y < 38; y++)
+            for (int x = 316; x < 820; x++) strip += px[y * Panel::W + x] == 0xFFFFD020u;
+        CHECK(strip > 400, "the strip drawn (%d yellow pixels)", strip);
+        // a click: a new piece in WOZZA at VAR 100
+        g.down(370, 24);
+        for (int i = 0; i < 5; i++) g.draw(px.data(), v);
+        g.up(370, 24);
+        Panel::GenRequest r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_MAKE && r.style == 2 && r.variation == 100, "a click on GENERATE asks for a piece (%d %d %d)",
+              r.what, r.style, r.variation);
+        CHECK(g.take_gen_request().what == Panel::GEN_NONE, "asked once");
+        // held half a second: before / after, and no piece when let go
+        g.down(370, 24);
+        for (int i = 0; i < 16; i++) g.draw(px.data(), v);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_SWAP, "GENERATE held half a second: before / after (%d)", r.what);
+        g.up(370, 24);
+        CHECK(g.take_gen_request().what == Panel::GEN_NONE, "let go after the hold: no new piece");
+        // the style: the arrows, the wheel, the list
+        g.down(440, 24), g.up(440, 24);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_SET && r.style == 1, "the left arrow: SHORE (%d)", r.style);
+        g.wheel(520, 24, -2);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_SET && r.style == 3, "the wheel down twice: ORBIT (%d)", r.style);
+        g.down(520, 24), g.up(520, 24);
+        g.move(500, 44 + 10 + 7 * 26 + 12);
+        g.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/13_generate_list.ppm", px);
+        g.down(500, 44 + 10 + 7 * 26 + 12), g.up(500, 44 + 10 + 7 * 26 + 12);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_SET && r.style == 7 && names[7] == "INTERLOCK", "INTERLOCK picked from the list (%d)", r.style);
+        g.key(0x01, true);
+        // VAR: the wheel, a drag; the seed's wheel: the pieces before
+        g.wheel(650, 24, -2);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_SET && r.variation == 90, "VAR down two detents: 90 (%d)", r.variation);
+        g.down(650, 24);
+        for (int i = 1; i <= 2; i++) g.move(650, 24 + 8 * i);
+        g.up(650, 40);
+        r = g.take_gen_request();
+        CHECK(r.variation == 80, "VAR dragged down 16 px: 80 (%d)", r.variation);
+        g.wheel(760, 24, 1);
+        r = g.take_gen_request();
+        CHECK(r.what == Panel::GEN_RECALL && r.dir == -1, "the seed's wheel up: an older piece (%d %d)", r.what, r.dir);
+        // a piece made through the core: its seed shown
+        CHECK(tess_core_generate(7, 0x1A2B3C4Du, 80, 0) == 0, "INTERLOCK made");
+        run(g, 1.0);
+        tess_core_view(&v);
+        st.style = 7, st.variation = 80, st.seed = 0x1A2B3C4Du, st.made = 1, st.at = 0;
+        g.set_gen(st);
+        g.note("HOLD GENERATE FOR BEFORE");
+        g.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/13_generate.ppm", px);
+        uint32_t sty, sd, var;
+        CHECK(tess_core_gen_last(&sty, &sd, &var) && sty == 7 && sd == 0x1A2B3C4Du && var == 80, "the core's last piece");
+        CHECK(tess_core_gen_swap() == 0, "before / after through the core");
+        // not in an FM-1 shell
+        g.set_shell(1);
+        g.draw(px.data(), v);
+        g.down(370, 24), g.up(370, 24);
+        CHECK(g.take_gen_request().what == Panel::GEN_NONE, "no GENERATE in an FM-1 shell");
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

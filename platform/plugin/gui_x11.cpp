@@ -272,6 +272,7 @@ class GuiX11 : public Gui
         link->view(view);
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
+        gui_gen_tick(panel, link);
         ink_check();
         gui_size_tick(panel, link);
         panel.draw(px.data(), view);

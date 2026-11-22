@@ -45,6 +45,16 @@ struct GuiLink
      * or 200): the instance remembers it for every window and asks the host for the new size */
     virtual int size_halves() { return 2; }
     virtual void size_pick(int pct) { (void)pct; }
+    /* GENERATE (TESSERA's strip; on the host's main thread): the styles' names (none: a build without it); a new piece
+     * in a style at a VARIATION, from a new seed; before / after; a piece made before made again (dir -1 an older one,
+     * +1 a newer); the style and VARIATION picked (remembered for the next window). Each returns what to show under the
+     * keys (empty: nothing). gen_state: what the window shows */
+    virtual std::vector<std::string> gen_styles() { return {}; }
+    virtual std::string generate(int style, int variation) { (void)style; (void)variation; return ""; }
+    virtual std::string gen_swap() { return ""; }
+    virtual std::string gen_recall(int dir) { (void)dir; return ""; }
+    virtual void gen_pick(int style, int variation) { (void)style; (void)variation; }
+    virtual Panel::GenState gen_state() { return {}; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
     virtual bool keys_on() { return projfile::setting_get("keys") != "0"; }
     virtual void keys_set(bool on) { projfile::setting_put("keys", on ? "1" : "0"); }
@@ -67,6 +77,28 @@ inline void gui_size_tick(Panel &panel, GuiLink *link)
     if (pct > 0)
         link->size_pick(pct);
     panel.set_size_pct(Panel::size_pct(link->size_halves()));
+}
+
+/* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */
+inline void gui_gen_tick(Panel &panel, GuiLink *link)
+{
+    if (!panel.gen_known())
+    {
+        panel.set_gen_styles(link->gen_styles());
+        panel.gen_asked();
+    }
+    Panel::GenRequest r = panel.take_gen_request();
+    if (r.what != Panel::GEN_NONE)
+    {
+        link->gen_pick(r.style, r.variation);
+        std::string said = r.what == Panel::GEN_MAKE   ? link->generate(r.style, r.variation)
+                           : r.what == Panel::GEN_SWAP   ? link->gen_swap()
+                           : r.what == Panel::GEN_RECALL ? link->gen_recall(r.dir)
+                                                         : std::string();
+        if (!said.empty())
+            panel.note(said);
+    }
+    panel.set_gen(link->gen_state());
 }
 
 /* the plugin's version, for the window's ABOUT (TESS_VERSION, CMakeLists.txt) */

@@ -56,6 +56,16 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   an instance's first activate, not at init, so a DAW's plugin scan opens no ports. No firmware change.
   `tessera-fm1-test`: the decoder over captured byte streams, the port names, the link with a stand-in FM-1.
 
+- **GENERATE** (TESSERA's shell, the strip at the top): one click, a whole piece (LEMONADE SANDWICH's fifteen
+  styles, `firmware/src/generate.c`): the four tracks' sounds, generators, key, cords and the long-form layers, from a
+  new project, all ordinary settings. GENERATE makes a new piece in the style shown from a new seed; **held** half a
+  second, the project before the piece comes back (held again: the piece). The style: click its name for the list, or
+  the arrows / the wheel. **VAR** 0..100: how wide each pick is in its range (100 the styles as tuned, 0 the middle of
+  every range; drag or wheel, double-click 100). The seed shows the piece's; the wheel over it makes the pieces made
+  before again, exactly (the last 16 of this instance). While a DAW drives, the piece keeps the DAW's tempo; the
+  standalone app takes the style's. The style and VAR picked are remembered for every window (files `gen_style`,
+  `gen_variation` beside `shell`), not in the project; a piece is saved as any project is. A press marks the DAW's
+  state changed. Not yet: KEEP a track, make one track again, typing a seed.
 - **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
