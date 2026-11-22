@@ -493,12 +493,12 @@ int main(int argc, char **argv)
         f.set_shell(1);
         int fy = 0;
         for (int yy = 560; yy < 624 && !fy; yy++)   // (the FM-1 USB button: under the keys, after 5-8)
-            if (f.down(400, yy), f.up(400, yy), f.take_fm1_request() == 1)
+            if (f.down(480, yy), f.up(480, yy), f.take_fm1_request() == 1)
                 fy = yy;
         CHECK(fy > 0, "the FM-1 shells' FM-1 USB button asks for on");
         f.set_fm1(true, true, true, "FM-1 CONNECTED");
-        f.down(400, fy);
-        f.up(400, fy);
+        f.down(480, fy);
+        f.up(480, fy);
         CHECK(f.take_fm1_request() == 0, "lit, it asks for off");
     }
 
