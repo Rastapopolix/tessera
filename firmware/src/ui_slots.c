@@ -180,8 +180,12 @@ static void slot_draw(void)
     if (!ui.force && sig == slv.sig)
         return;
     slv.sig = sig;
+    UZ(uz_list_set(EN_K1, -1, (int32_t)cur, (int32_t)slv.first, 1));   /* (zones: KNOB 1 the slot, OCT+ its sheet) */
+    UZ(uz_begin(UZ_G_LIST));
     for (r = slv.first, y = SL_Y0; r < slv.first + vis; r++) {
         int used = slot_row(k, r, tag, nm), on = r == cur;
+        UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, y / 2, 118, (on ? SL_CARD : SL_ROW) / 2, EN_K1, -1, (int32_t)r, tag,
+                  used ? nm : "Empty"));
         if (on) {                                       /* the card: the name larger, a line about it */
             char d[24];
             int32_t nw = 196 - (boot == r + 1u ? 44 : 0);
