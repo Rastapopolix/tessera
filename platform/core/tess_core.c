@@ -422,6 +422,31 @@ uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2)
     mi_w++;
     return 1;
 }
+uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v)
+{
+#if TESS_MPE
+    uint32_t c, ok = 1;
+    v = v > 127u ? 127u : v;
+    for (c = 0; c < 16u; c++) {
+        if (ch >= 0 && (uint32_t)ch != c)
+            continue;
+        if (key < 0)                       /* (every key: the channel's pressure or CC74, as an MPE member channel's) */
+            ok &= tess_core_midi(kind ? 0xB0u | c : 0xD0u | c, kind ? 74u : v, kind ? v : 0u);
+        else if (kind == TESS_EXPR_PRESSURE)
+            ok &= tess_core_midi(0xA0u | c, (uint32_t)key & 127u, v);   /* (Poly AT) */
+        else if (mi_w - mi_r >= MQ)
+            ok = 0;
+        else {                             /* (one key's slide: no MIDI 1.0 message, so code index 0: seq.c) */
+            midi_in_q[mi_w % MQ] = (0xA0u | c) << 8 | ((uint32_t)key & 127u) << 16 | v << 24;
+            mi_w++;
+        }
+    }
+    return ok;
+#else
+    (void)kind; (void)ch; (void)key; (void)v;
+    return 0;
+#endif
+}
 void tess_core_transport(int play)
 {
     if (play && !song.playing)
