@@ -83,14 +83,17 @@ void tess_core_screen(tess_screen_t *s);
  * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn or wheel: a drag, the wheel; double-click: its
  * default); ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn, a drag: its value, or the
  * list moves when the row is the value; wheel: the list moves, a row a notch, up the wheel up the list); KEY: OK,
- * BACK, YES, NO (click); TRACK: HOME's column (click: that track) */
+ * BACK, YES, NO (click); TRACK: HOME's column (click: that track); CELL: a place in a grid (PATTERNS, SONG: click,
+ * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
+ * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre) */
 enum { TESS_ZONES = 48 };
-enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN };
+                                     /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
     int8_t role, vrole;              /* (the core's: the knob it turns, a row's value knob) */
-    int16_t row;                     /* (the core's: a row's place, a key's button label, a track) */
+    int16_t row;                     /* (the core's: a row's place, a key's button label, a track, a cell's turns) */
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL };

@@ -176,6 +176,20 @@ static void core_ui_input(void)
     ui_input();
 }
 
+#if TESS_HAS_POINTER || (TESS_SCR_COUNT > 1 && MELODEE_LOOK)
+/* track tr's M (GLO's black key: MENU MUTES' now, bar or phrase) or S (its solo latched, or let go), as TRACKS' and
+ * MIXER's zones click them */
+static void core_mute_solo(uint32_t kind, uint32_t tr)
+{
+    if (kind == TESS_ZONE_MUTE) {
+        mute_press(tr, 0);
+    } else {
+        solo_latch ^= (uint8_t)(1u << tr);
+        track_solo = (uint8_t)(track_solo ^ (1u << tr));   /* (at once: layer_keys keeps it from the next pass) */
+    }
+    ui.force = 1;
+}
+#endif
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
@@ -223,6 +237,36 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_TRACK:
         if (action != TESS_ZA_TURN)
             tess_core_track_select((uint32_t)z->row);
+        break;
+    case TESS_ZONE_MUTE:                              /* MIXER's strips: as TRACKS' M, S */
+    case TESS_ZONE_SOLO:
+        if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NTRK)
+            core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_LEVEL:                             /* MIXER's strips: a track's level, pan */
+    case TESS_ZONE_PAN:
+        if (z->row >= 0 && z->row < (int32_t)NTRK && (action == TESS_ZA_TURN || action == TESS_ZA_DOUBLE)) {
+            uint32_t p = z->kind == TESS_ZONE_LEVEL ? (uint32_t)P_LEVEL : (uint32_t)P_PAN;
+            const param_desc_t *pd = pid_desc(p, (uint32_t)z->row);
+            int32_t v = action == TESS_ZA_DOUBLE ? pd->def : (int32_t)trk[z->row].p[p] + n;
+            pid_set(p, (uint32_t)z->row, v < pd->min ? pd->min : v > pd->max ? pd->max : v);
+            ui.force = 1;
+        }
+        break;
+    case TESS_ZONE_CELL:                              /* a place in a grid: its knobs turned to it, a detent each */
+        if (action == TESS_ZA_TURN) {
+            zq_turn(z->role, n);
+            break;
+        }
+        {
+            int32_t turn[2] = {(int8_t)(uint8_t)((uint16_t)z->row & 0xFFu), (int8_t)(uint8_t)((uint16_t)z->row >> 8)};
+            int32_t role[2] = {z->role, z->vrole}, j;
+            for (j = 0; j < 2; j++)
+                for (k = 0, d = turn[j]; role[j] >= 0 && k < (d < 0 ? -d : d) && k < 64; k++)
+                    zq_put(ZQ_STEP, (uint32_t)role[j], d);
+            uz_begin(z->group);                       /* (its grid's cells go until it is drawn again: a second click
+                                                       * counts from there, not from the turns already on their way) */
+        }
         break;
     }
 #else
@@ -564,9 +608,10 @@ void tess_core_view(tess_view_t *v)
     v->zone_gen = 0;
 #if TESS_HAS_POINTER
     {                                             /* the zones, in the order a hit is looked for: a list over the
-                                                   * page, a dialog's or a screen's keys, the page's columns, a
-                                                   * screen's two lists, HOME's tracks */
-        static const uint8_t ORDER[UZ_GROUPS] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_SIDES, UZ_G_TRACKS};
+                                                   * page, a dialog's or a screen's keys, the page's columns,
+                                                   * MIXER's strips, a screen's two lists, HOME's tracks */
+        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS};
+        _Static_assert(sizeof ORDER == UZ_GROUPS, "every zone group in ORDER, once");
         uint32_t g, n = 0;
         for (g = 0; g < UZ_GROUPS; g++)
             for (i = 0; i < uz_n && n < TESS_ZONES; i++)
@@ -636,11 +681,8 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
         return;
     if (z->kind == TESS_ZONE_TRACK && click) {
         tess_core_track_select(tr);
-    } else if (z->kind == TESS_ZONE_MUTE && click) {
-        mute_press(tr, 0);                            /* (GLO's black key: MENU MUTES' now, bar or phrase) */
-    } else if (z->kind == TESS_ZONE_SOLO && click) {
-        solo_latch ^= (uint8_t)(1u << tr);
-        track_solo = (uint8_t)(track_solo ^ (1u << tr));   /* (at once: layer_keys keeps it from the next pass) */
+    } else if ((z->kind == TESS_ZONE_MUTE || z->kind == TESS_ZONE_SOLO) && click) {
+        core_mute_solo(z->kind, tr);
     } else if (z->kind == TESS_ZONE_LEVEL && !click && n) {
         int32_t v = (trk[tr].p[P_LEVEL] & 127) + n;
         pid_set(P_LEVEL, tr, v < 0 ? 0 : v > 127 ? 127 : v);
