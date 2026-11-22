@@ -470,6 +470,15 @@ uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v)
     return 0;
 #endif
 }
+uint32_t tess_core_note_tune(int32_t ch, int32_t key, int32_t cents)
+{
+#if TESS_MPE
+    return mpe_tune_put(ch, key, cents * 256 / 100);
+#else
+    (void)ch; (void)key; (void)cents;
+    return 0;
+#endif
+}
 void tess_core_transport(int play)
 {
     if (play && !song.playing)

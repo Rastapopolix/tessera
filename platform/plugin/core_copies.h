@@ -18,7 +18,7 @@ extern "C" {
     X(slot_load) X(param_count) X(param_at) X(param_info) X(param_get) X(param_set) X(param_text) X(host) X(macro)   \
     X(macro_set) X(position) X(bpm) X(ink) X(ink_at) X(tracks) X(track) X(track_select)  \
     X(setup_save) X(setup_load) X(notes_off) X(zone_do) X(gen_styles) X(gen_style) X(generate) X(gen_swap)           \
-    X(gen_last) X(note_expr) X(project_new)
+    X(gen_last) X(note_expr) X(note_tune) X(project_new)
 
 #define TESS_CORE_VT_MEMBER(n) __typeof__(tess_core_##n) *n;
 typedef struct tess_core_vt {
