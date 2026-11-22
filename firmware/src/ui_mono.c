@@ -449,12 +449,14 @@ static void mo_head(void)
     mo_head_line(9, hold);
 }
 /* a value as its column shows it: five characters at most (MORPH, 0.25); longer, a number loses its last decimals
- * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, cut (1: the Mono
- * lint reports it) */
+ * (128.00: 128.0) and a word its vowels from the end (MARKOV: MARKV, REVERB: REVRB), then an H; still longer, its first word
+ * when that fits whole (SYNC ECHO: SYNC), else cut (1: the Mono lint reports it) */
 static int mo_fit(char *d, const char *s)
 {
     uint32_t n, i, j;
-    str_cpy(d, s, 16);
+    char w[16];                                         /* (s as given: d may be s) */
+    str_cpy(w, s, sizeof w);
+    str_cpy(d, w, 16);
     n = str_len(d);
     if (n > 5u && (d[0] == '-' || d[0] == '+' || (d[0] >= '0' && d[0] <= '9'))) {
         for (i = 0; d[i] && d[i] != '.'; i++) ;
@@ -475,6 +477,13 @@ static int mo_fit(char *d, const char *s)
         }
     if (n <= 5u)
         return 0;
+    for (i = 0; w[i] && w[i] != ' '; i++) ;             /* still too long: its first word, if that fits whole (SYNC
+                                                         * ECHO: SYNC), not five characters cut mid-word */
+    if (w[i] == ' ' && i >= 3u && i <= 5u) {
+        for (j = 0; j < i; j++) d[j] = w[j];
+        d[i] = 0;
+        return 0;
+    }
     d[5] = 0;
     return 1;
 }
