@@ -12,7 +12,7 @@
  *   - TRACKS, the second screen (tess_core_tracks_view, EXPANDED mode): 480 x 240, a row, M, S and a level zone a
  *     track, M, S and the levels before the rows; a row's click selects its track, M mutes and unmutes (stopped: at
  *     once), S latches a solo that stays, the wheel on the level turns it; 128 x 64 (Andamento's screen) draws too.
- * usage: tessera-zones-test [tracks.ppm] (the TRACKS page as a picture) */
+ * usage: tessera-zones-test [tracks.ppm] [mosaic.ppm] (the TRACKS page as a picture, and in MOSAIC) */
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -159,6 +159,100 @@ static void tracks(const char *ppm)
     CHECK(tv.w == 128 && tv.h == 64 && lit > 300, "TRACKS at 128 x 64 (%u x %u, %d pixels)", tv.w, tv.h, lit);
 }
 
+static void hold(int b, int blocks)
+{
+    tess_core_buttons(1u << b);
+    run(blocks);
+    tess_core_buttons(0);
+    run(20);
+}
+static std::string ink_name()   // the ink now, by its name (tess_core_ink_at)
+{
+    const char *n = nullptr;
+    uint32_t rgb[4];
+    tess_core_ink_at(v.ink, &n, rgb);
+    return n ? n : "?";
+}
+static void settings()
+{
+    tap(B_HOME);
+    hold(B_HOME, 120);   // (HOME held: SETTINGS)
+    int rows = count(TESS_ZONE_ROW);
+    CHECK(rows >= 8, "SETTINGS: a zone a row (%d)", rows);
+    // the wheel moves the list, a row a notch (down: down the list), and changes no value
+    int c = find("COLOR", TESS_ZONE_ROW);
+    std::string ink = c >= 0 ? v.zones[c].value : "?";
+    act(c, TESS_ZA_WHEEL, -3);
+    int g = find("GROUND", TESS_ZONE_ROW);
+    act(g, TESS_ZA_WHEEL, -6, 60);   // (past the screen's last row: the list scrolls)
+    c = find("COLOR", TESS_ZONE_ROW);
+    CHECK(c < 0, "the wheel scrolls SETTINGS past its first screen (COLOR off it)");
+    bool later = false;
+    for (uint32_t i = 0; i < v.zone_count; i++) later |= v.zones[i].row >= 9;
+    CHECK(later, "the wheel brings the rows below into view");
+    act(find("LIGHTS", TESS_ZONE_ROW) >= 0 ? find("LIGHTS", TESS_ZONE_ROW) : 0, TESS_ZA_WHEEL, 20, 80);   // back to the top
+    c = find("COLOR", TESS_ZONE_ROW);
+    CHECK(c >= 0 && ink == v.zones[c].value, "the wheel back to the top; COLOR unchanged (%s, %s)", ink.c_str(),
+          c >= 0 ? v.zones[c].value : "?");
+
+    // COLOR's sheet (KNOB 2 on COLOR): a zone an ink; a click picks it, the wheel steps through them
+    tess_core_enc(4, 1);   // (KNOB 2: the sheet open, the next ink)
+    run(30);
+    int inks = count(TESS_ZONE_ROW);
+    CHECK(inks >= 9 && find("COLOR", TESS_ZONE_ROW) < 0, "the INK sheet: a zone an ink (%d)", inks);
+    int w = find("WHITE", TESS_ZONE_ROW), m = find("MOSAIC", TESS_ZONE_ROW);
+    CHECK(w >= 0 && m >= 0, "the INK sheet: WHITE and MOSAIC among them");
+    act(m, TESS_ZA_CLICK, 0, 60);
+    std::string now = ink_name();
+    CHECK(now == "MOSAIC", "a click on MOSAIC picks it (%s)", now.c_str());
+    act(find("WHITE", TESS_ZONE_ROW), TESS_ZA_CLICK, 0, 60);
+    now = ink_name();
+    CHECK(now == "WHITE", "a click on WHITE picks it (%s)", now.c_str());
+    act(find("WHITE", TESS_ZONE_ROW), TESS_ZA_WHEEL, -1, 30);
+    std::string next = ink_name();
+    CHECK(next != "WHITE", "the wheel down on the sheet: the next ink (%s)", next.c_str());
+    hold(B_HOME, 120);   // (SETTINGS shut)
+}
+
+// MOSAIC with 8 tracks: tracks 5..8 a step lighter than 1..4 (T1 and T5 told apart on TRACKS), one ink alike
+static uint16_t row_ink(int track)   // the colour of a track's number on TRACKS (its row's first lit pixel)
+{
+    int i = tfind(TESS_ZONE_TRACK, track);
+    if (i < 0) return 0;
+    const tess_zone_t &z = tv.zones[i];
+    for (uint32_t x = z.x; x < (uint32_t)(z.x + z.w) && x < tv.w; x++)
+        for (uint32_t y = z.y; y < (uint32_t)(z.y + z.h) && y < tv.h; y++)
+            if (uint16_t c = tv.screen[y * tv.w + x]) return c;
+    return 0;
+}
+static void mosaic(const char *ppm)
+{
+    if (tess_core_tracks() < 8) return;
+    CHECK(tess_core_ink("MOSAIC"), "the ink MOSAIC");
+    run(30);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    uint16_t t1 = row_ink(0), t5 = row_ink(4), t2 = row_ink(1), t6 = row_ink(5);
+    std::printf("MOSAIC on TRACKS: T1 %04x T5 %04x, T2 %04x T6 %04x\n", t1, t5, t2, t6);
+    CHECK(t1 && t5 && t1 != t5 && t2 != t6, "MOSAIC: tracks 5..8 not tracks 1..4's colours");
+    if (ppm)
+        if (FILE *f = std::fopen(ppm, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", tv.w, tv.h);
+            for (uint32_t k = 0; k < tv.w * tv.h; k++)
+            {
+                uint16_t c = tv.screen[k];
+                unsigned char rgb[3] = {(unsigned char)((c >> 11) * 255 / 31), (unsigned char)(((c >> 5) & 63) * 255 / 63),
+                                        (unsigned char)((c & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    CHECK(tess_core_ink("YELLOW"), "the ink YELLOW");
+    run(30);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    CHECK(row_ink(0) == row_ink(4), "one ink: tracks 5..8 the same ink as 1..4 (%04x, %04x)", row_ink(0), row_ink(4));
+}
+
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -242,7 +336,9 @@ int main(int argc, char **argv)
               want.c_str(), q >= 0 ? v.zones[q].value : "?");
     }
 
+    settings();
     tracks(argc > 1 ? argv[1] : nullptr);
+    mosaic(argc > 2 ? argv[2] : nullptr);
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;
