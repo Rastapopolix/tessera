@@ -34,6 +34,9 @@ static struct {
     uint32_t seed;                                    /* the SEEDs' hash, at PLAY */
     uint8_t ok;                                       /* now / before hold */
     uint8_t pc_sent;                                  /* SECTION PC: the section last sent + 1, 0 none since PLAY */
+#if TESS_PC_IN
+    uint8_t cue;                                      /* a Program Change in's section + 1 (tessera_pc_in), 0 none */
+#endif
 } fchain __attribute__((section(".pool")));
 
 static uint32_t fc_bars(void) { return FC_PHRASE_BARS[tessera.fc_phrase < FC_PHRASES ? tessera.fc_phrase : 1u]; }
@@ -72,6 +75,19 @@ static void fc_begin(fc_st_t *s, uint32_t p)          /* phrase p is A, the FORM
     s->left = (uint8_t)(fc_rep(0) - 1u);
     s->fresh_ok = 1;
     s->heard = 1;
+#if TESS_PC_IN
+    if (fchain.cue && song.playing) {                 /* (a Program Change in while stopped: PLAY starts on its letter) */
+        uint32_t c = fchain.cue - 1u;
+        fchain.cue = 0;
+        if (c && fc_letter_at(fc_first(c)) == c) {
+            s->pos = (uint8_t)fc_first(c);
+            s->left = (uint8_t)(fc_rep(s->pos) - 1u);
+            s->heard |= (uint8_t)(1u << c);
+            s->fresh_ok = 0;
+            s->away = 1;
+        }
+    }
+#endif
 }
 
 static int planner_home(uint32_t p);                 /* (planner.c: the piece's last 15 %, A for good) */
@@ -80,11 +96,27 @@ static uint32_t planner_contrast(uint32_t p);         /* (planner.c: a new secti
 static void fc_step(fc_st_t *s)
 {
     uint32_t n = fc_len(), cur, nx, c, q = s->p + 1u;
+#if TESS_PC_IN
+    uint32_t next = q == fchain.now.p + 1u;           /* (the next phrase line: a cue's; ENTRIES' copies see it too) */
+#endif
     s->p = q;
     s->moved = (uint16_t)(s->moved << 1);
     if (!n) return;
     if (s->pos >= n) s->pos = 0;                      /* (FORM shorter since) */
     cur = fc_letter_at(s->pos);
+#if TESS_PC_IN
+    c = next ? fchain.cue : 0u;                       /* (a Program Change in: tessera_pc_in; over WANDER and the plan) */
+    if (s == &fchain.now) fchain.cue = 0;             /* (the phrase played takes it; a look ahead leaves it) */
+    if (c-- && fc_letter_at(fc_first(c)) == c) {      /* (the FORM may have changed since) */
+        if (c == cur) {                               /* (the letter playing: it holds, its count from the start) */
+            s->left = (uint8_t)(fc_rep(s->pos) - 1u);
+            if (cur) s->away++;
+            return;
+        }
+        nx = fc_first(c);
+        goto fc_move;
+    }
+#endif
     if (planner_home(q)) {                            /* (a planned piece's end: A, held) */
         if (cur) {
             s->pos = 0;
@@ -116,6 +148,9 @@ static void fc_step(fc_st_t *s)
             nx = fc_first(c);
         }
     }
+#if TESS_PC_IN
+fc_move:
+#endif
     c = fc_letter_at(nx);
     s->pos = (uint8_t)nx;
     s->left = (uint8_t)(fc_rep(nx) - 1u);
@@ -247,6 +282,24 @@ static void fc_pc_tick(void)
         midi_out_event(0x0Cu | (0xC0u | ch) << 8 | c << 16);
     }
 }
+
+#if TESS_PC_IN
+/* Program Change in (the plugin: a DAW's, on any channel; midi_control.c midi_event), the mirror of SECTION PC out:
+ *   0..2   the CHAIN's section A, B or C from the next phrase line (FORM on and the letter in the FORM, else nothing;
+ *          while stopped, the next PLAY starts on it). The letter playing holds and starts its count again.
+ *   8..15  every track's pattern bank 1..8, as the PATTERNS page queues it (motion.c pattern_request: each track when
+ *          its pattern comes round, at once while stopped, not while SONG runs).
+ * Other numbers do nothing. Nothing is saved: a DAW sends its changes again as it plays */
+void tessera_pc_in(uint32_t n)
+{
+    uint32_t i;
+    if (n < 3u) {
+        if (tessera.fc_form && fc_len() && fc_letter_at(fc_first(n)) == n) fchain.cue = (uint8_t)(n + 1u);
+    } else if (n >= 8u && n < 8u + NPAT) {
+        for (i = 0; i < NTRK; i++) (void)pattern_request(&trk[i], n - 8u);
+    }
+}
+#endif
 
 /* the CHAIN page's picture: the FORM's letters (n, 0 OFF), the place playing and the phrases left of it (stopped: the
  * top) */

@@ -141,6 +141,19 @@ Tessera follows the DAW's transport:
 - **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Tessera neither follows nor sends
   a MIDI clock.
 
+### Sections and banks from the DAW (Program Change)
+
+A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+MIDI OUT's sheet:
+
+| Program | Does |
+|---|---|
+| **0, 1, 2** | The CHAIN goes to section **A, B or C** at the next phrase line, whatever WANDER or the piece's plan would have picked. Then the FORM goes on from that letter's place. Sent while stopped, the next PLAY starts on it. Sending the letter already playing holds it for another phrase. It does nothing with FORM OFF or for a letter the FORM doesn't have. |
+| **8 .. 15** | Every track goes to pattern bank **1 .. 8**, as the PATTERNS page does: each track switches when its pattern comes round, at once while stopped, not while a SONG runs. |
+
+Other numbers do nothing. Nothing is saved: put the changes in a clip and the DAW sends them again each time it plays.
+To land on a phrase line, send the change during the phrase before it.
+
 ## Saving, and project files
 
 **The DAW saves Tessera with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
