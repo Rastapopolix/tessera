@@ -55,6 +55,9 @@ uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2);
  * own AT and SLIDE in the mods (a note not from MIDI keeps the track's). 0 = the queue was full */
 enum { TESS_EXPR_PRESSURE, TESS_EXPR_SLIDE };
 uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v);
+/* a note's own tuning (TESS_MPE: a CLAP note's TUNING; else nothing, 0): cents (-12000..12000) added to the bend of
+ * the notes from channel ch (-1: every channel) and key (-1: every key), until their next note-on. 0 = queue full */
+uint32_t tess_core_note_tune(int32_t ch, int32_t key, int32_t cents);
 /* the transport: 1 play (from where the song is), 0 stop. Does nothing if it is already so */
 void tess_core_transport(int play);
 uint32_t tess_core_playing(void);

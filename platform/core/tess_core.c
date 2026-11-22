@@ -31,6 +31,28 @@ uint32_t tess_core_tracks(void) { return NTRK; }
 static uint32_t core_booted, core_last_frame, core_samples_due;
 static uint32_t core_track_req = 0xFFu;           /* tess_core_track_select: the track asked for (0xFF none) */
 
+/* every track its seed now (a new project's tracks 1..4 have none until first used; tessera_reset gives 5..8 theirs):
+ * EVOLVE ROLL in its range 1..128, not 0, for a DAW that reads the start's values as the parameters' defaults */
+static void core_seeds(void)
+{
+    uint32_t k;
+    for (k = 0; k < TESSERA_TRACKS; k++)
+        tess_seed_fresh(k);
+#if MELODEE_FM6
+    {                                             /* a track not on FM6 keeps FM6's INIT VOICE in its record, not the
+                                                   * core's zeros: their name would come back as spaces after a load,
+                                                   * and a state saved, loaded and saved again must be the same bytes
+                                                   * (as generate.c gen_patches_reset does for a piece) */
+        uint8_t v[FP_SIZE + 1u];
+        for (k = 0; k < PROJ_NTRK; k++)
+            if (trk[k].eng_req != ENGI_FM6) {
+                fm6_unpack(FM6_INIT, v);
+                fm6_put_patch(k, v, 1);
+            }
+    }
+#endif
+}
+
 /* power-on (main.c melodee_init via host_boot.h's ui_power_on, with the device's BPM and scale), in the default ink */
 void tess_core_boot(void)
 {
@@ -56,6 +78,7 @@ void tess_core_boot(void)
     settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
     song.g[G_ROUTE] = 1;                          /* ROUT SEL: a DAW sends on channel 1, and the notes play the selected
                                                    * track, as the panel's keys do (GLO > SYSTEM can set the ranges) */
+    core_seeds();                                 /* (the plugin starts on a new project: tess_core_project_new's) */
 #endif
 }
 
@@ -447,6 +470,15 @@ uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v)
     return 0;
 #endif
 }
+uint32_t tess_core_note_tune(int32_t ch, int32_t key, int32_t cents)
+{
+#if TESS_MPE
+    return mpe_tune_put(ch, key, cents * 256 / 100);
+#else
+    (void)ch; (void)key; (void)cents;
+    return 0;
+#endif
+}
 void tess_core_transport(int play)
 {
     if (play && !song.playing)
@@ -622,6 +654,7 @@ void tess_core_slot_load(uint32_t slot)
 void tess_core_project_new(void)
 {
     project_new_blank();
+    core_seeds();
     ui.force = 1;
 }
 

@@ -72,12 +72,34 @@ static void midi_expression(track_t *t, const midi_channel_t *c)
     t->bend_raw = c->bend;                        /* (FM6 bends by its own range: its DX7 function settings) */
 }
 
+#if TESS_MPE
+/* channel ch's bend as its own notes take it (TESS_MPE): Q8 semitones by its RPN 0 range (MPE's members: 48) */
+static int32_t mpe_bend_q8(uint32_t ch)
+{
+    const midi_channel_t *c = midi_channel(ch);
+    int32_t range = ((int32_t)c->semis * 100 + c->cents) * 256 / 100;
+    return (int32_t)c->bend * range / (c->bend < 0 ? 8192 : 8191);
+}
+/* the notes that came in on channel ch bend by its bend (key < 0) */
+static void mpe_bend_channel(uint32_t ch)
+{
+    uint32_t i, k;
+    int32_t b = mpe_bend_q8(ch);
+    for (i = 0; i < NPART; i++)
+        for (k = 0; k < NVOICE; k++)
+            if (trk[i].v[k].active && trk[i].v[k].mch == ch + 1u) trk[i].v[k].mbt = (int16_t)b;
+}
+#endif
+
 static void midi_expression_channel(uint32_t ch)
 {
     uint32_t i, mask = midi_targets(ch);
     for (i = 0; i < NPART; i++)
         if (mask & (1u << i))
             midi_expression(&trk[i], midi_channel(ch));
+#if TESS_MPE
+    mpe_bend_channel(ch);
+#endif
 }
 
 /* a MIDI note of track t sounds note: one played as itself, or a tone of one played as a chord (chord.c) */
@@ -325,9 +347,28 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
         c->rpn_msb = c->rpn_lsb = 127;
         break;
     case 6: case 38:
-        if (!c->rpn_msb && !c->rpn_lsb) {           /* RPN 0: +/-0..24 semitones, 0..99 cents */
+#if TESS_MPE
+        if (!c->rpn_msb && c->rpn_lsb == 6u && cc == 6u && (ch == 0u || ch == 15u)) {   /* MPE's configuration (MCM):
+                                                    * VALUE member channels after (lower zone) or before (upper) the
+                                                    * master; their bend range 48 semitones, the master's 2 */
+            uint32_t k;
+            for (k = 1; k <= value && k < 16u; k++) {
+                midi_channel_t *m = midi_channel(ch ? 15u - k : k);
+                m->semis = 48;
+                m->cents = 0;
+                mpe_bend_channel(ch ? 15u - k : k);     /* (its notes sounding: the new range at once) */
+            }
+            c->semis = 2;
+            c->cents = 0;
+        }
+#endif
+        if (!c->rpn_msb && !c->rpn_lsb) {           /* RPN 0: +/-0..24 semitones, 0..99 cents (TESS_MPE: 96, MPE's) */
             if (cc == 6u)
+#if TESS_MPE
+                c->semis = (uint8_t)(value > 96u ? 96u : value);
+#else
                 c->semis = (uint8_t)(value > 24u ? 24u : value);
+#endif
             else
                 c->cents = (uint8_t)(value > 99u ? 99u : value);
             midi_expression_channel(ch);
@@ -352,6 +393,33 @@ static void mpe_set(uint32_t ch, int32_t key, uint32_t kind, uint32_t v)
             else x->mat = (uint8_t)v;
         }
 }
+/* a CLAP note's TUNING (tess_core_note_tune), Q8 semitones: a queue of its own (the MIDI queue's packets have no room
+ * for a key and a signed value), taken after the block's MIDI (seq.c), so after the note-on it follows */
+#define MPE_TQ 64u
+static struct { int8_t ch, key; int16_t q8; } mpe_tq[MPE_TQ];
+static volatile uint32_t mpe_tq_w, mpe_tq_r;
+static uint32_t mpe_tune_put(int32_t ch, int32_t key, int32_t q8)
+{
+    if (mpe_tq_w - mpe_tq_r >= MPE_TQ) return 0;
+    mpe_tq[mpe_tq_w % MPE_TQ].ch = (int8_t)(ch < 0 ? -1 : ch & 15);
+    mpe_tq[mpe_tq_w % MPE_TQ].key = (int8_t)(key < 0 ? -1 : key & 127);
+    mpe_tq[mpe_tq_w % MPE_TQ].q8 = (int16_t)clamp(q8, -120 * 256, 120 * 256);
+    mpe_tq_w++;
+    return 1;
+}
+static void mpe_tune_take(void)
+{
+    uint32_t i, k;
+    for (; mpe_tq_r != mpe_tq_w; mpe_tq_r++) {
+        int32_t ch = mpe_tq[mpe_tq_r % MPE_TQ].ch, key = mpe_tq[mpe_tq_r % MPE_TQ].key;
+        for (i = 0; i < NPART; i++)
+            for (k = 0; k < NVOICE; k++) {
+                voice_t *x = &trk[i].v[k];
+                if (x->active && x->mch && (ch < 0 || x->mch == (uint32_t)ch + 1u) && (key < 0 || x->mkey == (uint32_t)key))
+                    x->mtune = mpe_tq[mpe_tq_r % MPE_TQ].q8;
+            }
+    }
+}
 #endif
 
 #if TESS_PC_IN
@@ -369,6 +437,7 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         if (st == 0x90u && d2) {                    /* (the voices it starts: this channel's, voice.c voice_mpe_take) */
             mpe_on_ch = (uint8_t)(ch + 1u); mpe_on_key = (uint8_t)d1;
             mpe_on_at = midi_ch[ch].at; mpe_on_sl = midi_ch[ch].sl;
+            mpe_on_bend = (int16_t)mpe_bend_q8(ch);
         }
 #endif
         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);

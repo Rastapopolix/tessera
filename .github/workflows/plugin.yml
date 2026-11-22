@@ -58,7 +58,7 @@ jobs:
         run: build/plugin/tessera-fm1-test
       - name: Resample test (the core's 44.1 kHz to the host's rate)
         run: build/plugin/tessera-resample-test
-      - name: MIDI clip test (MIDI under the keys: the .mid written)
+      - name: "MIDI clip test (MIDI under the keys: the .mid written)"
         run: build/plugin/tessera-midifile-test
       - name: LISTEN test (the notes that set the key and GENERATE)
         run: build/plugin/tessera-listen-test
