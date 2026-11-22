@@ -148,9 +148,17 @@ enum {
                                    * project's sources: a track's source all the same (CS_PROJECT) */
     CS_IN,                        /* whether the track is heard: 1 while it plays in the mix, 0 while MUTE, SOLO elsewhere
                                    * or Entries has it out, and the fade between (mix.c mix_to). A track's source */
+#if TESS_MPE
+    CS_SLIDE,                     /* (TESS_MPE: the plugin) each note's slide, 0..1: its own MPE CC74 or CLAP BRIGHTNESS; a
+                                   * note not from MIDI the track's CC74. A track's source, a value per voice as VEL's */
+#endif
     CS_N
 };
-#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN)   /* the project's sources (no track), not a track's */
+#if TESS_MPE
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN && (s) != CS_SLIDE)
+#else
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN)
+#endif   /* the project's sources (no track), not a track's */
 
 typedef struct {                  /* one cord, as saved (6 bytes: uni rides in src_trk's top two bits) */
     uint8_t src, src_trk;         /* CS_*, 0..3 */

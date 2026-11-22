@@ -13,6 +13,7 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
 - [Several Tesseras in one song](#several-tesseras-in-one-song)
+- [Playing with an MPE controller](#playing-with-an-mpe-controller)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
 - [How much CPU it takes](#how-much-cpu-it-takes)
 - [Not there yet](#not-there-yet)
@@ -216,6 +217,26 @@ DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's chann
 
 You can use up to **8 Tesseras** in one DAW song. Each is wholly its own: its project, its transport, its window and
 its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.
+
+## Playing with an MPE controller
+
+Each note you play keeps its own **pressure** and **slide**. With a Seaboard, a LinnStrument, an Osmose or any MPE
+controller, or with a DAW's per-note expression (Bitwig's PRESSURE and TIMBRE, or a CLAP host's note expressions),
+pressing or sliding one key moves only that note. Poly Aftertouch works too.
+
+Choose where they go on the **MODS** page (under LFO), on the track you play:
+
+- **AT**: each note's pressure. On a voice destination of its own track (PITCH, CUTOFF, SHAPE, GAIN) every note follows
+  its own key.
+- **SLIDE**: each note's slide (MPE's CC74), in the source list after IN. The plugin only.
+
+For example, AT → CUTOFF and SLIDE → SHAPE. Use **ROUT SEL** (the plugin's default): every channel then plays the
+selected track, which MPE needs because it sends each note on a channel of its own. Notes the sequencer or a
+generator plays read the track's last pressure and CC74.
+
+Not yet: pitch bend per note. An MPE note's bend still bends the whole track.
+
+On the FM-1 a project with a SLIDE mod plays without that mod, and AT is one value for the whole track.
 
 ## Sounds only the plugin has
 

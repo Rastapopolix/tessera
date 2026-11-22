@@ -1600,6 +1600,12 @@ static void events_block(uint32_t n)
         } else {
             if (clock_mode && song.playing)
                 seq_advance(midi_clock_advance(time));
+#if TESS_MPE
+            if (st == 0xA0u && !(pkt & 15u))           /* (code index 0, reserved in USB-MIDI: a CLAP note's
+                                                        * BRIGHTNESS, tess_core_note_expr: one key's slide) */
+                mpe_set(ch, (int32_t)d1, 1, d2);
+            else
+#endif
             midi_event(st, ch, d1, d2);
         }
     }

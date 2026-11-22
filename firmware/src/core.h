@@ -282,6 +282,11 @@ typedef struct {
     uint32_t age;
     uint8_t mvel;                /* mod.c: the note-on velocity (before UNISON scaling) and RAND of the note */
     int16_t mrnd;
+#if TESS_MPE
+    uint8_t mch, mkey;           /* per-note expression (the plugin): the MIDI channel + 1 the note came in on, 0 the
+                                  * sequencer's or a generator's (they read the track's AT and SLIDE), and its key */
+    uint8_t mat, msl;            /* .. its own pressure (AT) and slide (SLIDE: MPE's CC74, a CLAP note's BRIGHTNESS) */
+#endif
 } voice_t;
 
 typedef struct {                 /* per-voice control-rate modulation, computed in voice.c */
@@ -544,6 +549,9 @@ typedef struct track {
     uint8_t xp_n, xp_note[4], xp_vel[4];   /* note-ons during the fade, played on the new engine */
     /* modulation matrix (mod.c): MIDI performance controllers of the track's channel, 0..127 */
     uint8_t mw, at;              /* CC1 mod wheel, channel aftertouch */
+#if TESS_MPE
+    uint8_t sl;                  /* CC74 (SLIDE) of the track's channel, for the notes not from MIDI */
+#endif
     uint8_t foot, breath, porta; /* CC4 foot, CC2 breath, CC65 portamento on: FM6's DX7 controllers */
     int16_t bend_raw;            /* the pitch bend as sent (signed 14-bit): FM6 bends by its own range */
     uint8_t ex_off;              /* 127 - CC11 expression (0: full, the MIDI default) */
