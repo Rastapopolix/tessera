@@ -215,7 +215,7 @@ qmap() {
         firmware/src/song_chain.c) QSEL="$QSEL $G_SEQ ui_test" ;;
         firmware/src/gen*.[ch] | firmware/src/tessera.[ch] | firmware/src/pat_gen.c | firmware/src/answer.c | \
             firmware/src/organic.c | firmware/src/vary.c | firmware/src/page_random.c) QSEL="$QSEL $G_GEN" ;;
-        firmware/src/form_chain.c) QSEL="$QSEL chain_test entries_test planner_test" ;;
+        firmware/src/form_chain.c) QSEL="$QSEL chain_test chain_test_pc entries_test planner_test" ;;
         firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test generate_test" ;;
         firmware/src/generate.c | tests/generate_test.c) QSEL="$QSEL generate_test" ;;
         firmware/src/storage*.c | firmware/src/project*.c | firmware/src/settings_persist.c | firmware/src/fm6_store.c | \
@@ -686,6 +686,8 @@ if core && [ $TABLES = 1 ]; then
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
     t "FORM CHAIN: the project's FORM on the bar clock: order, counts, FOLLOW / OWN, SKIP, WANDER, OFF unchanged" \
         chain_test -O2 $FW
+    t "FORM CHAIN with a DAW's Program Change in (the plugin's TESS_PC_IN): sections from the next line, banks, at 8 tracks" \
+        chain_test_pc:chain_test -O2 $FW -DTESS_PC_IN=1 -DCORE_TRACKS=8
     t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
         entries_test -O2 $FW
     t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \

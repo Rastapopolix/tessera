@@ -334,6 +334,9 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     }
 }
 
+#if TESS_PC_IN
+void tessera_pc_in(uint32_t n);                    /* (form_chain.c: a DAW's Program Change, sections and banks) */
+#endif
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. */
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
@@ -351,4 +354,8 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_control(ch, d1, d2);
     } else if (st == 0xD0u && t)
         mod_midi(t, st, d1, d2);
+#if TESS_PC_IN
+    else if (st == 0xC0u)
+        tessera_pc_in(d1);
+#endif
 }

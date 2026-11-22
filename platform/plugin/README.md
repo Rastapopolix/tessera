@@ -15,7 +15,9 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   it; the standalone app has no transport, so it plays at once.
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample. ROUT starts
   at SEL (a DAW sends on channel 1: the notes play the selected track); a note-off for every key (key -1) is All
-  Notes Off, a choke All Sound Off. CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
+  Notes Off, a choke All Sound Off. **Program Change** (`TESS_PC_IN`, `form_chain.c tessera_pc_in`), on any channel:
+  0..2 cue the CHAIN's section A..C for the next phrase line (the next PLAY while stopped), 8..15 every track's bank
+  1..8 through PATTERNS' queue (`pattern_request`). CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
   (ROUT, DRUM's channel, NOTES OUT, TUNE: `tess_core_setup_save`) goes in the DAW state as its bytes, their count and
   `TGLO`, before `TMST`, never in the `.tsp`; a reused core copy gets its power-on setup back.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
