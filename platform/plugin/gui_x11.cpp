@@ -64,7 +64,10 @@ class GuiX11 : public Gui
     XImage *img = nullptr;
     Panel panel;
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> out;   // the window's pixels at SIZE (Panel::scale)
+    int halves = 2;              // SIZE 100 / 150 / 200 % as 2 / 3 / 4
     tess_view_t view{};
+    int at(int v) const { return v * 2 / halves; }   // a window pixel at 1:1
 
     GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l)
     {
@@ -81,7 +84,7 @@ class GuiX11 : public Gui
             timers->unregister_timer(host, timer);
         if (img)
         {
-            img->data = nullptr;   // (px owns the pixels)
+            img->data = nullptr;   // (out owns the pixels)
             XDestroyImage(img);
         }
         if (dpy)
@@ -97,18 +100,41 @@ class GuiX11 : public Gui
         if (!(dpy = XOpenDisplay(nullptr)))
             return false;
         int scr = DefaultScreen(dpy);
-        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W, Panel::H, 0, 0, BlackPixel(dpy, scr));
+        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2, 0, 0,
+                                  BlackPixel(dpy, scr));
         XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask |
                                    KeyReleaseMask | FocusChangeMask);
         gc = XCreateGC(dpy, wnd, 0, nullptr);
-        Visual *vis = DefaultVisual(dpy, scr);
-        img = XCreateImage(dpy, vis, DefaultDepth(dpy, scr), ZPixmap, 0, reinterpret_cast<char *>(px.data()),
-                           Panel::W, Panel::H, 32, Panel::W * 4);
+        make_image();
         timers = static_cast<const clap_host_timer_support_t *>(host->get_extension(host, CLAP_EXT_TIMER_SUPPORT));
         if (timers)
             timers->register_timer(host, 33, &timer);
         XFlush(dpy);
         return img != nullptr;
+    }
+    // the XImage over out, at the window's size
+    void make_image()
+    {
+        int w = Panel::W * halves / 2, h = Panel::H * halves / 2, scr = DefaultScreen(dpy);
+        if (img)
+        {
+            img->data = nullptr;
+            XDestroyImage(img);
+        }
+        out.assign((size_t)w * h, 0xFF000000u);
+        img = XCreateImage(dpy, DefaultVisual(dpy, scr), DefaultDepth(dpy, scr), ZPixmap, 0,
+                           reinterpret_cast<char *>(out.data()), w, h, 32, w * 4);
+    }
+    void set_scale(int n) override
+    {
+        if (n == halves || n < 2 || n > 4)
+            return;
+        halves = n;
+        if (!dpy)
+            return;   // (set_parent makes the window at this size)
+        XResizeWindow(dpy, wnd, Panel::W * halves / 2, Panel::H * halves / 2);
+        make_image();
+        XFlush(dpy);
     }
     bool show() override
     {
@@ -202,18 +228,18 @@ class GuiX11 : public Gui
             case ButtonPress:
                 XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
                 if (e.xbutton.button == Button1)
-                    changed |= panel.down(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.down(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button3)   // a button or key latched
-                    changed |= panel.latch(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.latch(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
-                    changed |= panel.wheel(e.xbutton.x, e.xbutton.y, e.xbutton.button == Button4 ? 1 : -1);
+                    changed |= panel.wheel(at(e.xbutton.x), at(e.xbutton.y), e.xbutton.button == Button4 ? 1 : -1);
                 break;
             case ButtonRelease:
                 if (e.xbutton.button == Button1)
-                    changed |= panel.up(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.up(at(e.xbutton.x), at(e.xbutton.y));
                 break;
             case MotionNotify:
-                changed |= panel.move(e.xmotion.x, e.xmotion.y);
+                changed |= panel.move(at(e.xmotion.x), at(e.xmotion.y));
                 break;
             case KeyPress:
             case KeyRelease:
@@ -247,8 +273,10 @@ class GuiX11 : public Gui
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
         ink_check();
+        gui_size_tick(panel, link);
         panel.draw(px.data(), view);
-        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
+        Panel::scale(px.data(), out.data(), halves);
+        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2);
         XFlush(dpy);
     }
 };

@@ -39,7 +39,9 @@ class GuiWin32 : public Gui
     Panel panel;
     int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    int halves = 2;   // SIZE 100 / 150 / 200 % as 2 / 3 / 4: the panel drawn at 1:1, stretched to the window
     tess_view_t view{};
+    int at(int v) const { return v * 2 / halves; }   // a window pixel at 1:1
 
     ~GuiWin32() override
     {
@@ -55,7 +57,7 @@ class GuiWin32 : public Gui
         auto *g = reinterpret_cast<GuiWin32 *>(GetWindowLongPtrW(h, GWLP_USERDATA));
         if (!g)
             return DefWindowProcW(h, msg, wp, lp);
-        int x = GET_X_LPARAM(lp), y = GET_Y_LPARAM(lp);
+        int x = g->at(GET_X_LPARAM(lp)), y = g->at(GET_Y_LPARAM(lp));
         switch (msg)
         {
         case WM_TIMER:
@@ -131,6 +133,7 @@ class GuiWin32 : public Gui
         {
             POINT p{x, y};   // (screen coordinates)
             ScreenToClient(h, &p);
+            p.x = g->at(p.x), p.y = g->at(p.y);
             g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
             int n = g->wheel_acc / WHEEL_DELTA;
             g->wheel_acc -= n * WHEEL_DELTA;
@@ -219,7 +222,11 @@ class GuiWin32 : public Gui
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        SetDIBitsToDevice(dc, 0, 0, Panel::W, Panel::H, 0, 0, 0, Panel::H, px.data(), &bi, DIB_RGB_COLORS);
+        // 100 %: as it is; 200 %: each pixel doubled; 150 %: GDI's HALFTONE, each pixel the mean of what it covers
+        SetStretchBltMode(dc, halves == 3 ? HALFTONE : COLORONCOLOR);
+        if (halves == 3) SetBrushOrgEx(dc, 0, 0, nullptr);
+        StretchDIBits(dc, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2, 0, 0, Panel::W, Panel::H, px.data(), &bi,
+                      DIB_RGB_COLORS, SRCCOPY);
     }
 
     bool set_parent(const clap_window_t *w) override
@@ -236,7 +243,8 @@ class GuiWin32 : public Gui
             wc.lpszClassName = CLASS_NAME;
             RegisterClassExW(&wc);
         }
-        wnd = CreateWindowExW(0, CLASS_NAME, L"Tessera", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, Panel::W, Panel::H,
+        wnd = CreateWindowExW(0, CLASS_NAME, L"Tessera", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, Panel::W * halves / 2,
+                              Panel::H * halves / 2,
                               static_cast<HWND>(w->win32), nullptr, inst, nullptr);
         if (!wnd)
             return false;
@@ -244,6 +252,18 @@ class GuiWin32 : public Gui
         DragAcceptFiles(wnd, TRUE);
         SetTimer(wnd, 1, 33, nullptr);
         return true;
+    }
+    void set_scale(int n) override
+    {
+        if (n == halves || n < 2 || n > 4)
+            return;
+        halves = n;
+        if (wnd)
+        {
+            SetWindowPos(wnd, nullptr, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            InvalidateRect(wnd, nullptr, FALSE);
+        }
     }
     bool show() override { return wnd && (ShowWindow(wnd, SW_SHOW), true); }
     bool hide() override { return wnd && (ShowWindow(wnd, SW_HIDE), true); }
@@ -260,6 +280,7 @@ class GuiWin32 : public Gui
         link->view(view);
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
+        gui_size_tick(panel, link);
         ink_check();
         InvalidateRect(wnd, nullptr, FALSE);
     }

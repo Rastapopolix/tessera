@@ -29,6 +29,17 @@ class Panel
 {
   public:
     static constexpr int W = 1000, H = 624;
+    /* the window's size: SIZE 100, 150 or 200 % (TESSERA's menu), as halves: 2, 3 or 4. The panel draws at 1:1; a
+     * window shows it scale(n) times larger and hands the mouse in at 1:1 (x * 2 / n) */
+    static int size_halves(int pct) { return pct >= 200 ? 4 : pct >= 150 ? 3 : 2; }
+    static int size_pct(int halves) { return halves * 50; }
+    /* px (W x H) into out (W * n / 2 x H * n / 2): 100 % a copy, 200 % each pixel doubled, 150 % each window pixel the
+     * mean of the 1:1 pixels it covers (the 1-bit lines stay even, a little soft) */
+    static void scale(const uint32_t *px, uint32_t *out, int halves);
+    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: 100, 150 or 200,
+     * -1 none) */
+    void set_size_pct(int pct) { size_now = pct; }
+    int take_size_request() { int r = size_req; size_req = -1; return r; }
     Panel();
     /* the whole window into px (W x H, 0xAARRGGBB, top row first) */
     void draw(uint32_t *px, const tess_view_t &v);
@@ -101,6 +112,8 @@ class Panel
     void layout();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath);
     bool menu_open = false;
+    int size_now = 100, size_req = -1;
+    int size_seg_at(int x) const;   // SIZE's row: 100, 150, 200, -1 none
     int menu_sub = 0, menu_hover = -1, sub_hover = -1;   // menu_sub: 0 none, 1 SHELL's list, 2 INK's swatches
     int menu_row_at(int x, int y) const;
     int sub_at(int x, int y) const;

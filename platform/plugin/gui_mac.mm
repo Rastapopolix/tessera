@@ -64,6 +64,19 @@ class GuiMac : public Gui
     CGColorSpaceRef rgb = nullptr;
     CGContextRef bitmap = nullptr;   // over px
     double wheel_acc = 0;            // a trackpad's scrolling, not yet a whole notch
+    int halves = 2;                  // SIZE 100 / 150 / 200 % as 2 / 3 / 4: the layer stretches the 1:1 picture
+    void set_scale(int n) override
+    {
+        if (n == halves || n < 2 || n > 4)
+            return;
+        halves = n;
+        if (!nsview)
+            return;   // (set_parent makes the view at this size)
+        [nsview setFrameSize:NSMakeSize(Panel::W * halves / 2, Panel::H * halves / 2)];
+        filter();
+    }
+    // whole pixels doubled at 100 % and 200 % (Retina: 2x, 4x); smoothed at 150 %, where they cannot be whole
+    void filter() { nsview.layer.magnificationFilter = halves == 3 ? kCAFilterLinear : kCAFilterNearest; }
 
     ~GuiMac() override
     {
@@ -171,12 +184,17 @@ class GuiMac : public Gui
         link->view(view);
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
+        gui_size_tick(panel, link);
         ink_check();
         draw();
     }
 
-    // a point in the view (flipped: top left 0,0) as window pixels
-    NSPoint where(NSEvent *e) { return [nsview convertPoint:e.locationInWindow fromView:nil]; }
+    // a point in the view (flipped: top left 0,0) as the panel's pixels (1:1, whatever SIZE)
+    NSPoint where(NSEvent *e)
+    {
+        NSPoint p = [nsview convertPoint:e.locationInWindow fromView:nil];
+        return NSMakePoint(p.x * 2 / halves, p.y * 2 / halves);
+    }
 };
 
 // ---- the view's methods (the class is made in view_class)
@@ -339,12 +357,12 @@ bool GuiMac::set_parent(const clap_window_t *w)
                                    kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
     if (!bitmap)
         return false;
-    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, Panel::W, Panel::H)];
+    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, Panel::W * halves / 2, Panel::H * halves / 2)];
     *reinterpret_cast<GuiMac **>((char *)(__bridge void *)nsview + ivar_getOffset(gui_ivar)) = this;
     nsview.wantsLayer = YES;
     nsview.layer.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
     nsview.layer.contentsGravity = kCAGravityResize;
-    nsview.layer.magnificationFilter = kCAFilterNearest;   // (Retina: whole pixels doubled, no blur)
+    filter();   // (Retina: whole pixels doubled, no blur)
     nsview.layer.opaque = YES;
     [nsview registerForDraggedTypes:@[ NSPasteboardTypeFileURL ]];
     [parent addSubview:nsview];

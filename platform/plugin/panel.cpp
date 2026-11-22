@@ -1038,11 +1038,11 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath)
             seg("EXPANDED", false, false);   // (not there yet)
             seg("FM-1", true, true);
         }
-        else if (r == ROW_SIZE)
+        else if (r == ROW_SIZE)   // the window's size
         {
-            seg("200", false, false);
-            seg("150", false, false);
-            seg("100", true, true);
+            seg("200", size_now == 200, true);
+            seg("150", size_now == 150, true);
+            seg("100", size_now == 100, true);
         }
         else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
         {
@@ -1171,11 +1171,62 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
+    if (r == ROW_SIZE)   // 100, 150 or 200 (elsewhere on the row: nothing)
+    {
+        int pct = size_seg_at(x);
+        if (pct > 0 && pct != size_now)
+            size_req = pct;
+        if (pct > 0)
+            menu_open = false;   // (picked: the window changes size)
+        menu_sub = 0;
+        return false;
+    }
     if (r == ROW_SHELL) menu_sub = menu_sub == 1 ? 0 : 1;
     else if (r == ROW_INK) menu_sub = menu_sub == 2 ? 0 : 2;
-    else if (r < 0) menu_open = false;   // (MODE, SIZE, ABOUT: nothing to pick yet)
+    else if (r < 0) menu_open = false;   // (MODE, ABOUT: nothing to pick yet)
     sub_hover = -1;
     return false;
+}
+
+int Panel::size_seg_at(int x) const
+{
+    static const int PCT[3] = {200, 150, 100};   // (right to left, as drawn)
+    int right = SEG_RIGHT;
+    for (int i = 0; i < 3; i++)
+    {
+        char t[8];
+        std::snprintf(t, sizeof t, "%d", PCT[i]);
+        int l = right - seg_w(t);
+        if (x >= l && x < right) return PCT[i];
+        right = l - 4;
+    }
+    return -1;
+}
+
+void Panel::scale(const uint32_t *px, uint32_t *out, int n)
+{
+    const int ow = W * n / 2, oh = H * n / 2;
+    if (n == 2)
+    {
+        std::memcpy(out, px, sizeof(uint32_t) * W * H);
+        return;
+    }
+    std::vector<int> xa(ow), xb(ow);
+    for (int x = 0; x < ow; x++) xa[x] = 2 * x / n, xb[x] = (2 * x + 1) / n;
+    for (int y = 0; y < oh; y++)
+    {
+        const uint32_t *ra = px + (2 * y / n) * W, *rb = px + ((2 * y + 1) / n) * W;
+        uint32_t *o = out + y * ow;
+        for (int x = 0; x < ow; x++)
+        {
+            uint32_t p0 = ra[xa[x]], p1 = ra[xb[x]], p2 = rb[xa[x]], p3 = rb[xb[x]];
+            if (p0 == p1 && p0 == p2 && p0 == p3) { o[x] = p0; continue; }
+            uint32_t r = ((p0 >> 16 & 255) + (p1 >> 16 & 255) + (p2 >> 16 & 255) + (p3 >> 16 & 255) + 2) / 4;
+            uint32_t g = ((p0 >> 8 & 255) + (p1 >> 8 & 255) + (p2 >> 8 & 255) + (p3 >> 8 & 255) + 2) / 4;
+            uint32_t b = ((p0 & 255) + (p1 & 255) + (p2 & 255) + (p3 & 255) + 2) / 4;
+            o[x] = 0xFF000000u | r << 16 | g << 8 | b;
+        }
+    }
 }
 
 int Panel::fm1_seg_at(int x) const
