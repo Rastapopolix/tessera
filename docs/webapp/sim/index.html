@@ -87,6 +87,9 @@ a:hover { background: var(--fg); color: var(--bg); text-decoration: none; }
 .topbar { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 8px; }
 .theme { font: 16px/1 var(--pixel); color: var(--dim); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; }
 .theme:hover { color: var(--bg); background: var(--fg); }
+.theme { display: inline-flex; align-items: center; gap: 6px; }
+.theme svg { width: 15px; height: 15px; flex: none; }
+@media (max-width: 600px) { .theme-word { display: none; } }
 .lang { position: relative; font: 16px/1 var(--pixel); color: var(--dim); padding: 3px 4px 2px; cursor: pointer; text-transform: uppercase; }
 .lang::after { content: " \25BE"; font-family: ui-monospace, monospace; }
 .lang:hover, .lang:focus-within { color: var(--bg); background: var(--fg); }
@@ -894,7 +897,15 @@ const LEVEL = { "--btn-dim": ["btn", .2], "--btn-breath": ["btn", .75], "--btn-l
 /* LIGHT / DARK: the button names the other look; the choice is stored (tessera-theme), shared with the project
    page, the manual, the installer and the editor */
 const lightPage = () => document.documentElement.dataset.theme === "light";
-function showTheme() { document.getElementById("theme").textContent = tr(lightPage() ? "themeDark" : "themeLight"); }
+/* the LIGHT / DARK button: the sun or moon of the LANDSCAPE screen (firmware ui_land.c), then the word (hidden on
+ * phones, kept as the name) */
+function themeFace(b, word, toLight) {
+  b.innerHTML = '<svg viewBox="0 0 15 15" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="'
+    + (toLight ? "M7 0h1v2h-1zM3 3h1v1h-1zM5 3h5v1h-5zM11 3h1v1h-1zM4 4h2v1h-2zM9 4h2v1h-2zM3 5h2v1h-2zM10 5h2v1h-2zM3 6h1v3h-1zM11 6h1v3h-1zM0 7h2v1h-2zM13 7h2v1h-2zM3 9h2v1h-2zM10 9h2v1h-2zM4 10h2v1h-2zM9 10h2v1h-2zM3 11h1v1h-1zM5 11h5v1h-5zM11 11h1v1h-1zM7 13h1v2h-1z" : "M5 2h2v1h-2zM4 3h2v1h-2zM3 4h3v1h-3zM2 5h4v3h-4zM2 8h5v1h-5zM2 9h6v1h-6zM3 10h9v1h-9zM4 11h7v1h-7zM5 12h5v1h-5z") + '"/></svg>';
+  var s = document.createElement("span"); s.className = "theme-word"; s.textContent = word; b.appendChild(s);
+  b.setAttribute("aria-label", word); b.title = word;
+}
+function showTheme() { themeFace(document.getElementById("theme"), tr(lightPage() ? "themeDark" : "themeLight"), !lightPage()); }
 document.getElementById("theme").addEventListener("click", () => {
   document.documentElement.dataset.theme = lightPage() ? "dark" : "light";
   document.documentElement.style.colorScheme = lightPage() ? "light" : "dark";
