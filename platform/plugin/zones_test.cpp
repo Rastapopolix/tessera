@@ -407,6 +407,25 @@ static void settings()
     c = find("COLOR", TESS_ZONE_ROW);
     CHECK(c >= 0 && ink == v.zones[c].value, "the wheel back to the top; COLOR unchanged (%s, %s)", ink.c_str(),
           c >= 0 ? v.zones[c].value : "?");
+    // inside a DAW (TESS_HOSTED) the list leaves out the device's own rows: walked a row a notch to its end
+    {
+        std::string seen = "|";
+        for (int k = 0; k < 40; k++) {
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_ROW && seen.find("|" + std::string(v.zones[i].name) + "|") == std::string::npos)
+                    seen += std::string(v.zones[i].name) + "|";
+            int r = find("COLOR", TESS_ZONE_ROW) >= 0 ? find("COLOR", TESS_ZONE_ROW) : 0;
+            for (uint32_t i = 0; i < v.zone_count; i++) if (v.zones[i].kind == TESS_ZONE_ROW) r = (int)i;   // (the last row)
+            act(r, TESS_ZA_WHEEL, -1, 20);
+        }
+        CHECK(seen.find("|ABOUT|") != std::string::npos && seen.find("|MIDI LEARN|") != std::string::npos,
+              "SETTINGS walked to its end (%s)", seen.c_str());
+        for (const char *gone : {"KNOBS", "LARGE VALUE", "SCREEN OFF", "PANEL GAMMA", "CLOCK OUT", "USB AUDIO", "USB OUTPUT",
+                                 "USB VOLUME", "SIM CONTROL", "CALIBRATION"})
+            CHECK(seen.find("|" + std::string(gone) + "|") == std::string::npos, "SETTINGS in a DAW: no %s row", gone);
+        std::printf("SETTINGS in a DAW: %s\n", seen.c_str());
+        act(find("ABOUT", TESS_ZONE_ROW) >= 0 ? find("ABOUT", TESS_ZONE_ROW) : 0, TESS_ZA_WHEEL, 40, 120);   // back to the top
+    }
 
     // COLOR's sheet (KNOB 2 on COLOR): a zone an ink; a click picks it, the wheel steps through them
     tess_core_enc(4, 1);   // (KNOB 2: the sheet open, the next ink)

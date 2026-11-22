@@ -12,3 +12,5 @@
 #define TESS_TIER TESS_TIER_DESKTOP
 #define TESS_HAS_BATTERY 0   /* (a computer: no battery icon, BATTERY setting or POWER lines) */
 #define TESS_HAS_POINTER 1   /* a mouse on the screen: its values, lists and keys as zones (ui_zones.c) */
+#define TESS_HOSTED 1        /* inside a DAW: MENU without the device's rows (SCREEN OFF, PANEL GAMMA, CLOCK OUT, USB,
+                              * SIM CONTROL, CALIBRATION) or KNOBS and LARGE VALUE (the mouse turns the dials) */

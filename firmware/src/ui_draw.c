@@ -1002,7 +1002,8 @@ static void draw_columns_(void)
             char w4[4] = {'T', (char)('0' + h), 0, 0};
             col_names(1, TX_TW_FHOW, 0, fh, ev->follow != 0);
             col_names(2, TX_TW_FRHY, 0, fr, ev->follow != 0);
-            draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / 4, ICON_AUTO);
+            draw_column(3, "HOLD", h ? w4 : "OFF", "", ev->follow ? VAL(3u) : T_DIM, (int32_t)h * 1000 / TESSERA_TRACKS,
+                        ICON_AUTO);
             return;
         }
         if (tr < TESSERA_TRACKS && tessera.mode[tr] == TESS_ENG_OFF) {   /* (a STEP track: HUMAN alone; ARP: SHIFT too) */
@@ -1020,7 +1021,7 @@ static void draw_columns_(void)
         draw_column(0, "SHIFT", w0, ev->follow ? "deg" : "st", VAL(0u), (sh + 24) * 1000 / 48, ICON_AUTO);   /* (following: scale degrees) */
         col_pct(1, PID_TESS(TX_TW_DROP), "DROP", ev->drop, 1);
         col_pct(2, PID_TESS(TX_TW_HUMAN), "HUMAN", ev->human, 1);
-        draw_column(3, "FOLLOW", w3, "", VAL(3u), (int32_t)ev->follow * 1000 / 4, ICON_AUTO);
+        draw_column(3, "FOLLOW", w3, "", VAL(3u), (int32_t)ev->follow * 1000 / TESSERA_TRACKS, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_ORGANIC) {
@@ -1232,7 +1233,8 @@ static void draw_columns_(void)
         col_mods(PID_TESS(TX_TW_BRANCH));
         draw_column(0, "BRANCH", w0, "%", on ? VAL(0u) : T_DIM, (int32_t)ev->branch * 10, ICON_AUTO);   /* (no TO: idle) */
         draw_column(1, "TO", w1, on ? BRM[ev->br_mode % TESS_BR_COUNT] : "", VAL(1u),
-                    on ? (int32_t)(1u + (ev->br_to - 1u - (ev->br_to - 1u > tr)) * 3u + ev->br_mode) * 1000 / 9 : 0, ICON_AUTO);
+                    on ? (int32_t)(1u + (ev->br_to - 1u - (ev->br_to - 1u > tr)) * TESS_BR_COUNT + ev->br_mode) * 1000 /
+                         (int32_t)((TESSERA_TRACKS - 1) * TESS_BR_COUNT) : 0, ICON_AUTO);   /* (8 tracks: 21 places) */
         draw_column(2, "LOGIC", LGN[lg ? ev->logic % TESS_LG_COUNT : 0u], w3, VAL(2u), lg ? (int32_t)ev->logic * 1000 / 4 : 0,
                     ICON_AUTO);
         draw_column(3, "COND", tessera_cond_name(ev->cond), "", VAL(3u), (int32_t)ev->cond * 1000 / (TESS_COND_COUNT - 1),
