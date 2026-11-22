@@ -72,6 +72,11 @@ tracks, in TESSERA's own window or the FM-1's.
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
   while the DAW plays. CLK stays INT in the plugin (not a parameter), so the DAW is always the clock.
+- **Undo in the DAW:** a knob turned in the window (or on an FM-1 playing the plugin) sends its parameters' changes
+  between a gesture's begin and end, so the DAW makes each turn one undo step (and writes automation in its touch or
+  latch modes); the gesture ends once the knobs have been still half a second. A whole project changed (OPEN, a
+  backup, GENERATE and its BEFORE / AFTER) is told to a host with CLAP's undo extension (a draft: few hosts yet) as a
+  named step; elsewhere hold GENERATE to go back to the project before a piece.
 - **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too), then
   **every project setting** by its central ID (about 1,700): each of the 8 tracks' ("T1 LEVEL", "T3 TURING LENGTH",
   in the modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song", TUNE, ROUT and MIDI
