@@ -33,7 +33,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_HOME = 6, B_OCTDN = 12 };
+enum { B_FX = 0, B_SEL = 1, B_HOME = 6, B_SAVE = 7, B_OCTDN = 12 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -172,6 +172,27 @@ static std::string ink_name()   // the ink now, by its name (tess_core_ink_at)
     uint32_t rgb[4];
     tess_core_ink_at(v.ink, &n, rgb);
     return n ? n : "?";
+}
+static void slots()   // SAVE > PROJECT: a zone a slot; a click picks it, the wheel moves the list
+{
+    tap(B_HOME);
+    tap(B_SAVE);
+    for (int i = 0; i < 6 && find("A", TESS_ZONE_ROW) < 0; i++) tap(B_SAVE);   // (SAVE's pages: to PROJECT)
+    int a = find("A", TESS_ZONE_ROW), b = find("B", TESS_ZONE_ROW);
+    CHECK(a >= 0 && b >= 0, "PROJECT: a zone a slot (A %d, B %d; %u zones)", a, b, v.zone_count);
+    if (a < 0 || b < 0) { dump("PROJECT"); return; }
+    CHECK(std::string(v.zones[b].value) == "KOTO GARDEN", "PROJECT: slot B is KOTO GARDEN (%s)", v.zones[b].value);
+    act(b, TESS_ZA_CLICK, 0, 40);
+    int c = find("C", TESS_ZONE_ROW);
+    act(c, TESS_ZA_CLICK, 0, 40);
+    b = find("B", TESS_ZONE_ROW);
+    c = find("C", TESS_ZONE_ROW);
+    CHECK(c >= 0 && b >= 0 && v.zones[c].h > v.zones[b].h, "a click on C picks it (its card the taller row)");
+    act(c, TESS_ZA_WHEEL, 2, 40);   // (up two: A)
+    a = find("A", TESS_ZONE_ROW);
+    b = find("B", TESS_ZONE_ROW);
+    CHECK(a >= 0 && b >= 0 && v.zones[a].h > v.zones[b].h, "the wheel up two from C: A picked");
+    tap(B_HOME);
 }
 static void settings()
 {
@@ -337,6 +358,7 @@ int main(int argc, char **argv)
     }
 
     settings();
+    slots();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
 
