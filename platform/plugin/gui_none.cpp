@@ -4,4 +4,5 @@
 #include "gui.h"
 
 const char *Gui::api() { return nullptr; }
+int Gui::screen_width() { return 0; }
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *) { return nullptr; }

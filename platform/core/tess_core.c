@@ -584,6 +584,66 @@ void tess_core_track_select(uint32_t t)
         core_track_req = t;
 }
 
+/* ---- screen 2, TRACKS (ui_tracks.c) */
+void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
+{
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    uint32_t i;
+    _Static_assert(TESS_TRACKS_W == T2_W_MAX && TESS_TRACKS_H == T2_H_MAX && TESS_TRACKS_ZONES == T2_ZONES,
+                   "tess_core.h's TRACKS sizes are ui_tracks.c's");
+    _Static_assert(TESS_ZONE_MUTE == T2_Z_MUTE && TESS_ZONE_SOLO == T2_Z_SOLO && TESS_ZONE_LEVEL == T2_Z_LEVEL &&
+                   TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
+    tracks_draw((int32_t)(w < 1u ? 1u : w), (int32_t)(h < 1u ? 1u : h), (fm1_ms / 250u) & 1u);
+    v->w = (uint32_t)t2_w, v->h = (uint32_t)t2_h;
+    for (i = 0; i < v->w * v->h; i++)                  /* (drawn as RGB565 already: no LCD byte order here) */
+        v->screen[i] = t2_px[i];
+    v->zone_count = 0;
+    for (i = 0; i < t2_zn; i++) {                       /* M, S and the levels first, then the rows */
+        tess_zone_t *z = &v->zones[v->zone_count++];
+        const uz_t *u = &t2_z[i];
+        z->x = (uint16_t)u->x, z->y = (uint16_t)u->y, z->w = (uint16_t)u->w, z->h = (uint16_t)u->h;
+        z->kind = u->kind, z->group = u->group, z->role = u->role, z->vrole = u->vrole, z->row = u->row;
+        str_cpy(z->name, u->name, sizeof z->name);
+        str_cpy(z->value, u->value, sizeof z->value);
+    }
+    {
+        uint32_t a, b;                                  /* (drawn row by row: the rows to the end) */
+        for (a = 0, b = 0; a < v->zone_count; a++)
+            if (v->zones[a].kind != TESS_ZONE_TRACK) {
+                tess_zone_t t = v->zones[a];
+                memmove(&v->zones[b + 1], &v->zones[b], (a - b) * sizeof t);
+                v->zones[b++] = t;
+            }
+    }
+#else
+    (void)w, (void)h;
+    v->w = v->h = 0;
+    v->zone_count = 0;
+#endif
+}
+void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
+{
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    uint32_t tr = z ? (uint32_t)z->row : NTRK, click = action != TESS_ZA_TURN;
+    if (tr >= NTRK)
+        return;
+    if (z->kind == TESS_ZONE_TRACK && click) {
+        tess_core_track_select(tr);
+    } else if (z->kind == TESS_ZONE_MUTE && click) {
+        mute_press(tr, 0);                            /* (GLO's black key: MENU MUTES' now, bar or phrase) */
+    } else if (z->kind == TESS_ZONE_SOLO && click) {
+        solo_latch ^= (uint8_t)(1u << tr);
+        track_solo = (uint8_t)(track_solo ^ (1u << tr));   /* (at once: layer_keys keeps it from the next pass) */
+    } else if (z->kind == TESS_ZONE_LEVEL && !click && n) {
+        int32_t v = (trk[tr].p[P_LEVEL] & 127) + n;
+        pid_set(P_LEVEL, tr, v < 0 ? 0 : v > 127 ? 127 : v);
+    }
+    ui.force = 1;
+#else
+    (void)z, (void)action, (void)n;
+#endif
+}
+
 /* ---- the project */
 uint32_t tess_core_tsp_max(void) { return TSP_MAX; }
 

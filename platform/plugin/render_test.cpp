@@ -12,6 +12,7 @@
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *     the host sizes it to 200 % (a dragged frame snapped to the nearest of 100, 150, 200 %) and back;
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
+ *     MODE EXPANDED in its menu makes it 1500 wide with TRACKS beside the screen, FM-1 1000 again;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
@@ -730,6 +731,17 @@ int main(int argc, char **argv)
             CHECK(gui->is_api_supported(p, CLAP_WINDOW_API_X11, false), "X11 supported");
             CHECK(gui->create(p, CLAP_WINDOW_API_X11, false), "gui create");
             gui->get_size(p, &w, &h);
+            {   // no MODE picked (a new user): EXPANDED when the screen has room (1600 wide at 100 %), FM-1 if not
+                bool picked = false;
+                if (const char *xdg = std::getenv("XDG_CONFIG_HOME"))
+                    picked = std::ifstream(std::string(xdg) + "/tessera/mode").good();
+                else if (const char *home = std::getenv("HOME"))
+                    picked = std::ifstream(std::string(home) + "/.config/tessera/mode").good();
+                int sw = DisplayWidth(d, DefaultScreen(d));
+                std::printf("window: opens %ux%u on a %d-wide screen%s\n", w, h, sw, picked ? " (MODE picked before)" : "");
+                CHECK(picked || w == (sw >= 1600 ? 1500u : 1000u), "no MODE picked: EXPANDED only if the screen has room (%u)", w);
+                CHECK(w == 1000, "this test wants FM-1 mode: run it on a screen under 1600 wide (xvfb-run's 1280)");
+            }
             Window parent = XCreateSimpleWindow(d, DefaultRootWindow(d), 0, 0, w, h, 0, 0, 0);
             XMapWindow(d, parent);
             XSync(d, False);
@@ -908,6 +920,44 @@ int main(int argc, char **argv)
                                     f.path().filename().c_str(), b.size(), tracks, notes, q);
                     }
                     CHECK(files == 1 && tracks >= 2 && notes > 0, "MIDI clicked: a clip with notes (%d files)", files);
+                    // MODE EXPANDED in TESSERA's menu (the setting in this new HOME): the window 1500 wide, TRACKS beside
+                    // the screen, drawn with the view; FM-1 again: 1000 wide
+                    {
+                        std::string old_xdg = std::getenv("XDG_CONFIG_HOME") ? std::getenv("XDG_CONFIG_HOME") : "";
+                        unsetenv("XDG_CONFIG_HOME");
+                        auto child_w = [&] {
+                            Window root_r, parent_r, *kids = nullptr;
+                            unsigned nk = 0, cw = 0, ch = 0, bw, dp;
+                            int cx, cy;
+                            XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                            if (nk) XGetGeometry(d, kids[0], &root_r, &cx, &cy, &cw, &ch, &bw, &dp);
+                            if (kids) XFree(kids);
+                            return cw;
+                        };
+                        click_at(100, 25);    // the menu
+                        click_at(300, 164);   // MODE: EXPANDED
+                        ticks(8);
+                        uint32_t gw = 0, gh = 0;
+                        gui->get_size(p, &gw, &gh);
+                        XResizeWindow(d, parent, gw, gh);   // (as a host makes room)
+                        ticks(8);
+                        XSync(d, False);
+                        XImage *t2 = XGetImage(d, parent, 568, 52, 480, 240, AllPlanes, ZPixmap);
+                        int lit = 0;
+                        for (int y = 0; t2 && y < 240; y++)
+                            for (int x = 0; x < 480; x++) lit += (XGetPixel(t2, x, y) & 0xFFFFFF) != 0;
+                        if (t2) XDestroyImage(t2);
+                        std::printf("expanded: the window %ux%u (X %u wide), %d TRACKS pixels lit\n", gw, gh, child_w(), lit);
+                        CHECK(gw == 1500 && gh == 624 && child_w() == 1500, "EXPANDED: the window 1500 x 624 (%ux%u)", gw, gh);
+                        CHECK(lit > 2000, "EXPANDED: TRACKS drawn beside the screen (%d pixels)", lit);
+                        click_at(100, 25);
+                        click_at(190, 164);   // MODE: FM-1
+                        ticks(8);
+                        gui->get_size(p, &gw, &gh);
+                        CHECK(gw == 1000 && gh == 624 && child_w() == 1000, "FM-1 mode again: 1000 x 624 (%ux%u)", gw, gh);
+                        XResizeWindow(d, parent, gw, gh);
+                        if (!old_xdg.empty()) setenv("XDG_CONFIG_HOME", old_xdg.c_str(), 1);
+                    }
                     setenv("HOME", old_home.c_str(), 1);
                     fs::remove_all(home);
                 }

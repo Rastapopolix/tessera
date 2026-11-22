@@ -10,6 +10,9 @@
  *     the seed's wheel; a piece made through the core shows its seed (none of it in an FM-1 shell or without styles);
  *   - the screen's zones: the mouse over FX's MIX outlines it, with a card under the screen; the wheel there, a drag and a
  *     double-click reach the core as that knob's turns and its default;
+ *   - EXPANDED (MODE in TESSERA's menu): 1500 wide, SIZE 100 / 125, TRACKS beside the screen as the core draws it, a
+ *     click on a row selects that track, the wheel on a level turns it, the keys across the window, no bank switch; an
+ *     FM-1 shell is FM-1 mode; 125 % scales;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
  * usage: tessera-panel-test [out-folder] */
 #include <cmath>
@@ -49,6 +52,8 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
             if (in.enc[r]) { tess_core_enc((uint32_t)r, in.enc[r]); in.enc[r] = 0; }
         for (auto &a : in.zones) tess_core_zone_do(&a.z, a.action, a.n);
         in.zones.clear();
+        for (auto &a : in.tzones) tess_core_tracks_do(&a.z, a.action, a.n);
+        in.tzones.clear();
         in.changed = false;
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
@@ -65,13 +70,14 @@ static void click(Panel &p, int x, int y)
     p.up(x, y);
     run(p, 0.12);
 }
-static void ppm(const std::string &path, const std::vector<uint32_t> &px)
+static void ppm(const std::string &path, const std::vector<uint32_t> &px, int w = Panel::W)
 {
     FILE *f = std::fopen(path.c_str(), "wb");
     if (!f) return;
-    std::fprintf(f, "P6\n%d %d\n255\n", Panel::W, Panel::H);
-    for (uint32_t c : px)
+    std::fprintf(f, "P6\n%d %d\n255\n", w, Panel::H);
+    for (size_t i = 0; i < (size_t)w * Panel::H && i < px.size(); i++)
     {
+        uint32_t c = px[i];
         unsigned char rgb[3] = {(unsigned char)(c >> 16), (unsigned char)(c >> 8), (unsigned char)c};
         std::fwrite(rgb, 1, 3, f);
     }
@@ -410,8 +416,8 @@ int main(int argc, char **argv)
         q.key(0x01, true);
         q.draw(px.data(), v);
         std::vector<uint32_t> big((size_t)Panel::W * Panel::H * 4), mid((size_t)Panel::W * Panel::H * 9 / 4);
-        Panel::scale(px.data(), big.data(), 4);
-        Panel::scale(px.data(), mid.data(), 3);
+        Panel::scale(px.data(), big.data(), Panel::W, 200);
+        Panel::scale(px.data(), mid.data(), Panel::W, 150);
         int same = 0, even = 0;
         for (int y = 0; y < Panel::H; y += 7)
             for (int x = 0; x < Panel::W; x += 7)
@@ -664,6 +670,73 @@ int main(int argc, char **argv)
         g.draw(px.data(), v);
         g.down(370, 24), g.up(370, 24);
         CHECK(g.take_gen_request().what == Panel::GEN_NONE, "no GENERATE in an FM-1 shell");
+    }
+
+    // EXPANDED: MODE in TESSERA's menu
+    {
+        static tess_tracks_t t2;
+        tess_core_track_select(0);
+        run(p, 0.2);
+        Panel e;
+        e.set_inks(inks);
+        e.set_tracks((int)tess_core_tracks());
+        e.set_version("0.1-beta2");
+        e.set_size_pct(150);
+        CHECK(e.width() == Panel::W, "FM-1 mode first (%d)", e.width());
+        e.down(100, 25), e.up(100, 25);   // the menu; MODE's EXPANDED
+        e.down(300, 164), e.up(300, 164);
+        CHECK(e.take_mode_request() == 1 && e.expanded() && e.width() == Panel::W_EXPANDED,
+              "MODE EXPANDED picked: the panel 1500 wide (%d)", e.width());
+        CHECK(!e.menu_shown(), "the menu shuts on a pick");
+        e.down(100, 25), e.up(100, 25);   // SIZE: 125 and 100 only
+        e.down(300, 200), e.up(300, 200);
+        CHECK(e.take_size_request() == 125, "EXPANDED's SIZE: 125 at the right");
+        CHECK(Panel::size_fit(150, true) == 125 && Panel::size_fit(200, true) == 125 && Panel::size_fit(125, false) == 150,
+              "SIZE 150 / 200 show at 125 in EXPANDED, 125 at 150 in FM-1 mode");
+        e.set_size_pct(125);
+        tess_core_view(&v);
+        tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+        std::vector<uint32_t> wide((size_t)Panel::W_MAX * Panel::H);
+        e.draw(wide.data(), v, &t2);
+        if (!out.empty()) ppm(out + "/16_expanded.ppm", wide, Panel::W_EXPANDED);
+        int same = 0;
+        for (int y = 0; y < TESS_TRACKS_H; y += 3)
+            for (int x = 0; x < TESS_TRACKS_W; x += 3)
+            {
+                uint16_t q = t2.screen[y * TESS_TRACKS_W + x];
+                uint32_t c = 0xFF000000u | ((q >> 11 & 31) * 255 / 31) << 16 | ((q >> 5 & 63) * 255 / 63) << 8 | (q & 31) * 255 / 31;
+                same += wide[(52 + y) * Panel::W_EXPANDED + 568 + x] == c;
+            }
+        CHECK(same == 80 * 160, "TRACKS at 568,52, 1:1 (%d of %d pixels)", same, 80 * 160);
+        CHECK(e.down(668, 152), "a click on TRACKS' row 4");
+        e.up(668, 152);
+        run(e, 0.2);
+        CHECK(tess_core_track() == 3, "row 4 selects T4 (T%u)", tess_core_track() + 1);
+        CHECK(e.wheel(978, 152, -1) && !e.input.tzones.empty() && e.input.tzones.back().z.kind == TESS_ZONE_LEVEL &&
+                  e.input.tzones.back().action == TESS_ZA_TURN,
+              "the wheel on T4's level turns it");
+        run(e, 0.1);
+        CHECK(!e.key(0x0F, true), "no bank switch in EXPANDED (Tab: nothing)");
+        e.down(1396, 524);   // the top key, G5, at the right of the wide keybed
+        CHECK(e.input.keys >> 26 & 1u, "the keys across the window: G5 at the right (%08X)", e.input.keys);
+        e.up(1396, 524);
+        int knobs = 0;   // KNOB 4's ring right of TRACKS
+        for (int x = 1412 - 24; x <= 1412 + 24; x++) knobs += wide[100 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
+        CHECK(knobs >= 2, "KNOB 4 at x 1412 (%d)", knobs);
+        {
+            std::vector<uint32_t> big((size_t)Panel::W_EXPANDED * 5 / 4 * Panel::H * 5 / 4);
+            Panel::scale(wide.data(), big.data(), Panel::W_EXPANDED, 125);
+            int kept = 0, n = 0;
+            for (int y = 0; y < Panel::H; y += 8)
+                for (int x = 0; x < Panel::W_EXPANDED; x += 8, n++)   // (a multiple of 4: lands whole)
+                    kept += big[(y * 5 / 4) * (Panel::W_EXPANDED * 5 / 4) + x * 5 / 4] == wide[y * Panel::W_EXPANDED + x] ||
+                            wide[y * Panel::W_EXPANDED + x] != wide[y * Panel::W_EXPANDED + x + 1];
+            CHECK(kept >= n * 98 / 100, "125 %%: the pixels land (%d of %d)", kept, n);
+        }
+        e.set_shell(1);
+        CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());
+        e.set_shell(0);
+        CHECK(e.width() == Panel::W_EXPANDED, "TESSERA's shell again: EXPANDED (%d)", e.width());
     }
 
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);

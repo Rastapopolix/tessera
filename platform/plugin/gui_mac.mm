@@ -54,29 +54,52 @@ class GuiMac : public Gui
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     Panel panel;
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
+    int pw = Panel::W;               // the panel's width the view has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
     NSView *nsview = nil;
     NSTimer *timer = nil;
     CGColorSpaceRef rgb = nullptr;
     CGContextRef bitmap = nullptr;   // over px
     double wheel_acc = 0;            // a trackpad's scrolling, not yet a whole notch
-    int halves = 2;                  // SIZE 100 / 150 / 200 % as 2 / 3 / 4: the layer stretches the 1:1 picture
+    int pct = 100;                   // SIZE 100 / 125 / 150 / 200 %: the layer stretches the 1:1 picture
     void set_scale(int n) override
     {
-        if (n == halves || n < 2 || n > 4)
+        if (n < 100 || n > 200)
             return;
-        halves = n;
+        pct = n;
+        resize();
+    }
+    // the view at the panel's width (FM-1 or EXPANDED) and SIZE; the bitmap over px as wide as the panel
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        bool wider = panel.width() != pw;
+        pw = panel.width();
         if (!nsview)
             return;   // (set_parent makes the view at this size)
-        [nsview setFrameSize:NSMakeSize(Panel::W * halves / 2, Panel::H * halves / 2)];
+        if (wider)
+            make_bitmap();
+        [nsview setFrameSize:NSMakeSize(pw * pct / 100, Panel::H * pct / 100)];
         filter();
     }
-    // whole pixels doubled at 100 % and 200 % (Retina: 2x, 4x); smoothed at 150 %, where they cannot be whole
-    void filter() { nsview.layer.magnificationFilter = halves == 3 ? kCAFilterLinear : kCAFilterNearest; }
+    bool make_bitmap()
+    {
+        if (bitmap)
+            CGContextRelease(bitmap);
+        // px is 0xAARRGGBB words: in memory B G R A, the alpha unused
+        bitmap = CGBitmapContextCreate(px.data(), pw, Panel::H, 8, pw * 4, rgb,
+                                       kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
+        return bitmap != nullptr;
+    }
+    // whole pixels doubled at 100 % and 200 % (Retina: 2x, 4x); smoothed at 125 and 150 %, where they cannot be whole
+    void filter() { nsview.layer.magnificationFilter = pct % 100 ? kCAFilterLinear : kCAFilterNearest; }
 
     ~GuiMac() override
     {
@@ -169,7 +192,8 @@ class GuiMac : public Gui
     {
         if (!nsview || !bitmap)
             return;
-        panel.draw(px.data(), view);
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
         CGImageRef img = CGBitmapContextCreateImage(bitmap);   // (a copy: the layer keeps it)
         [CATransaction begin];
         [CATransaction setDisableActions:YES];   // (no fade between frames)
@@ -193,6 +217,8 @@ class GuiMac : public Gui
         panel.set_midi(link->midi_count());
         gui_fm1_tick(panel, link);
         gui_size_tick(panel, link);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the view follows)
+            resize();
         gui_listen_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();
@@ -203,7 +229,7 @@ class GuiMac : public Gui
     NSPoint where(NSEvent *e)
     {
         NSPoint p = [nsview convertPoint:e.locationInWindow fromView:nil];
-        return NSMakePoint(p.x * 2 / halves, p.y * 2 / halves);
+        return NSMakePoint(p.x * 100 / pct, p.y * 100 / pct);
     }
 };
 
@@ -362,12 +388,9 @@ bool GuiMac::set_parent(const clap_window_t *w)
     if (!parent || nsview)
         return false;
     rgb = CGColorSpaceCreateDeviceRGB();
-    // px is 0xAARRGGBB words: in memory B G R A, the alpha unused
-    bitmap = CGBitmapContextCreate(px.data(), Panel::W, Panel::H, 8, Panel::W * 4, rgb,
-                                   kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
-    if (!bitmap)
+    if (!make_bitmap())
         return false;
-    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, Panel::W * halves / 2, Panel::H * halves / 2)];
+    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, pw * pct / 100, Panel::H * pct / 100)];
     *reinterpret_cast<GuiMac **>((char *)(__bridge void *)nsview + ivar_getOffset(gui_ivar)) = this;
     nsview.wantsLayer = YES;
     nsview.layer.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
@@ -385,4 +408,9 @@ bool GuiMac::set_parent(const clap_window_t *w)
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_COCOA; }
+int Gui::screen_width()
+{
+    NSScreen *s = [NSScreen mainScreen];   // (points; the visible frame: without the Dock)
+    return s ? (int)s.visibleFrame.size.width : 0;
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiMac>(link); }

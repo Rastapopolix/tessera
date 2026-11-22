@@ -8,8 +8,11 @@
  *   - a list page (SCL): a zone a row, KNOB 1 the row and KNOB 2 its value; the wheel on a row turns that row's value
  *     and no other; a double-click on a row with a list behind it opens it (Scale: SCALES), whose OK goes back;
  *   - a whole list (Quantize's): its rows; a double-click takes a row; two clicks at once (row 6, then row 1 and OK)
- *     end on row 1: a row is reached detent by detent, never accelerated.
- * usage: tessera-zones-test */
+ *     end on row 1: a row is reached detent by detent, never accelerated;
+ *   - TRACKS, the second screen (tess_core_tracks_view, EXPANDED mode): 480 x 240, a row, M, S and a level zone a
+ *     track, M, S and the levels before the rows; a row's click selects its track, M mutes and unmutes (stopped: at
+ *     once), S latches a solo that stays, the wheel on the level turns it; 128 x 64 (Andamento's screen) draws too.
+ * usage: tessera-zones-test [tracks.ppm] (the TRACKS page as a picture) */
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -75,7 +78,88 @@ static void act(int i, uint32_t a, int n = 0, int blocks = 30)
     run(blocks);
 }
 
-int main()
+static tess_tracks_t tv;
+static int tfind(uint32_t kind, int track)
+{
+    for (uint32_t i = 0; i < tv.zone_count; i++)
+        if (tv.zones[i].kind == kind && tv.zones[i].row == track) return (int)i;
+    return -1;
+}
+static void tact(uint32_t kind, int track, uint32_t a, int n = 0)
+{
+    int i = tfind(kind, track);
+    if (i < 0) return;
+    tess_zone_t z = tv.zones[i];
+    tess_core_tracks_do(&z, a, n);
+    run(10);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+}
+static std::string tval(uint32_t kind, int track)
+{
+    int i = tfind(kind, track);
+    return i < 0 ? "?" : tv.zones[i].value;
+}
+static void tracks(const char *ppm)
+{
+    int nt = (int)tess_core_tracks();
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    CHECK(tv.w == TESS_TRACKS_W && tv.h == TESS_TRACKS_H, "TRACKS drawn at 480 x 240 (%u x %u)", tv.w, tv.h);
+    int rows = 0, ms = 0, lit = 0;
+    bool order = true, seen_row = false;
+    for (uint32_t i = 0; i < tv.zone_count; i++)
+    {
+        uint32_t k = tv.zones[i].kind;
+        rows += k == TESS_ZONE_TRACK;
+        ms += k == TESS_ZONE_MUTE || k == TESS_ZONE_SOLO || k == TESS_ZONE_LEVEL;
+        if (k == TESS_ZONE_TRACK) seen_row = true;
+        else if (seen_row) order = false;
+    }
+    CHECK(rows == nt && ms == 3 * nt, "TRACKS: a row, M, S and level a track (%d rows, %d others, %d tracks)", rows, ms,
+          nt);
+    CHECK(order, "TRACKS: M, S and the levels before the rows");
+    for (uint32_t i = 0; i < tv.w * tv.h; i++) lit += tv.screen[i] != tv.screen[0];
+    CHECK(lit > 3000, "TRACKS has something drawn (%d pixels)", lit);
+    if (ppm)
+        if (FILE *f = std::fopen(ppm, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", tv.w, tv.h);
+            for (uint32_t i = 0; i < tv.w * tv.h; i++)
+            {
+                uint16_t p = tv.screen[i];
+                unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                        (unsigned char)((p & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+
+    tact(TESS_ZONE_TRACK, 2, TESS_ZA_CLICK);
+    CHECK(tess_core_track() == 2, "a click on row 3 selects T3 (T%u)", tess_core_track() + 1);
+    tact(TESS_ZONE_MUTE, 1, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_MUTE, 1) == "ON", "M mutes T2 (stopped: at once; %s)", tval(TESS_ZONE_MUTE, 1).c_str());
+    tact(TESS_ZONE_MUTE, 1, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_MUTE, 1) == "OFF", "M again unmutes it (%s)", tval(TESS_ZONE_MUTE, 1).c_str());
+    tact(TESS_ZONE_SOLO, 0, TESS_ZA_CLICK);
+    run(30);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    CHECK(tval(TESS_ZONE_SOLO, 0) == "ON" && tval(TESS_ZONE_SOLO, 1) == "OFF", "S latches T1's solo, and it stays (%s)",
+          tval(TESS_ZONE_SOLO, 0).c_str());
+    tact(TESS_ZONE_SOLO, 0, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_SOLO, 0) == "OFF", "S again lets it go (%s)", tval(TESS_ZONE_SOLO, 0).c_str());
+    std::string before = tval(TESS_ZONE_LEVEL, 3);
+    tact(TESS_ZONE_LEVEL, 3, TESS_ZA_TURN, -12);
+    CHECK(tval(TESS_ZONE_LEVEL, 3) != before, "the wheel on T4's level turns it (%s -> %s)", before.c_str(),
+          tval(TESS_ZONE_LEVEL, 3).c_str());
+    tact(TESS_ZONE_LEVEL, 3, TESS_ZA_TURN, 12);
+    CHECK(tval(TESS_ZONE_LEVEL, 3) == before, "and back (%s)", tval(TESS_ZONE_LEVEL, 3).c_str());
+
+    tess_core_tracks_view(&tv, 128, 64);   // Andamento's screen: 21 characters a row, no zones
+    lit = 0;
+    for (uint32_t i = 0; i < tv.w * tv.h; i++) lit += tv.screen[i] != tv.screen[0];
+    CHECK(tv.w == 128 && tv.h == 64 && lit > 300, "TRACKS at 128 x 64 (%u x %u, %d pixels)", tv.w, tv.h, lit);
+}
+
+int main(int argc, char **argv)
 {
     tess_core_boot();
     tess_core_slot_load(0);   // (STILL TIDE, slot A: the values below are its; a new project's FX MIX sits at 0 %)
@@ -157,6 +241,8 @@ int main()
         CHECK(q >= 0 && want == v.zones[q].value, "two clicks at once end on the second row (%s, Quantize %s)",
               want.c_str(), q >= 0 ? v.zones[q].value : "?");
     }
+
+    tracks(argc > 1 ? argv[1] : nullptr);
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;

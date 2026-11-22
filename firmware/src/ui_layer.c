@@ -347,6 +347,9 @@ static void layer_key(uint32_t l, uint32_t k)
         if (tessera.key_link) scale_share(TSEL);       /* (KEY LINK: every melodic track's) */
     }
 }
+#if TESS_SCR_COUNT > 1
+static uint8_t solo_latch;                              /* the tracks the TRACKS page's S latches solo (tess_core_tracks_do) */
+#endif
 /* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c); FILL while E4
  * is, HOLD while D4 is (or latched) */
 static void layer_keys(uint32_t keys)
@@ -362,6 +365,9 @@ static void layer_keys(uint32_t keys)
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)
             s |= 1u << (UI_BASE + key_place(k));
+#if TESS_SCR_COUNT > 1
+    s |= solo_latch;                                    /* (the TRACKS page's S: latched, ui_tracks.c) */
+#endif
     track_solo = (uint8_t)s;
 }
 

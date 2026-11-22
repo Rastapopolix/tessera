@@ -103,6 +103,8 @@ struct Tessera : GuiLink
     std::mutex input_lock, view_lock;
     PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
     tess_view_t shared_view{};            // view_lock: the latest view
+    std::unique_ptr<tess_tracks_t> shared_tracks{new tess_tracks_t()};   // view_lock: TRACKS, drawn while EXPANDED
+    std::atomic<bool> tracks_on{false};   // the window is EXPANDED: the audio thread draws TRACKS with the view
     double rate = 48000.0;
     Resampler<NCH> rs;                    // the core's 44.1 kHz to the host's rate (resample.h)
     float buf[NCH][64];
@@ -250,6 +252,8 @@ struct Tessera : GuiLink
         }
         pending.zones.insert(pending.zones.end(), in.zones.begin(), in.zones.end());
         in.zones.clear();
+        pending.tzones.insert(pending.tzones.end(), in.tzones.begin(), in.tzones.end());
+        in.tzones.clear();
         pending.changed = true;
         in.changed = false;
     }
@@ -269,12 +273,35 @@ struct Tessera : GuiLink
     void ink_picked(int i) override;
     void ink_seen(int i) override;
     int tracks() override { return (int)core->tracks(); }
-    // SIZE (gui.h): the one picked in any window (the setting `size`: 100, 150, 200), else the host's scale (a HiDPI
-    // screen: set_scale) to the nearest of the three
-    int size_user = 0, size_host = 2;   // halves; size_user 0: none picked
-    int size_halves() override { return size_user ? size_user : size_host; }
+    // SIZE (gui.h): the one picked in any window (the setting `size`: 100, 125, 150, 200), else the host's scale (a
+    // HiDPI screen: set_scale), each to the nearest the mode has (EXPANDED: 100, 125)
+    int size_user = 0, size_host = 100;   // %; size_user 0: none picked
+    int size_pct() override { return Panel::size_fit(size_user ? size_user : size_host, win_expanded()); }
     void size_pick(int pct) override;
-    bool size_set(int halves);          // the window at that size (the host's set_size, a pick)
+    bool size_set(int pct);             // the window at that size (the host's set_size, a pick)
+    // MODE (gui.h): EXPANDED picked in any window (the setting `mode`); the window is EXPANDED in TESSERA's shell
+    std::atomic<bool> mode_expanded{false};
+    bool expanded() override { return mode_expanded.load(); }
+    bool win_expanded() const { return mode_expanded.load() && shell_i == 0; }
+    int win_w() const { return Panel::width_of(win_expanded()); }
+    void mode_pick(bool on) override;
+    // no MODE picked yet: EXPANDED if a screen of width w (Gui::screen_width; 0 unknown: FM-1) has room for its window
+    // at the SIZE it would have, with EXPANDED_ROOM to spare for the DAW's frame; not remembered (a pick is)
+    static constexpr int EXPANDED_ROOM = 100;
+    void mode_default(int w)
+    {
+        int pct = Panel::size_fit(size_user ? size_user : size_host, true);
+        mode_expanded.store(w > 0 && w >= Panel::W_EXPANDED * pct / 100 + EXPANDED_ROOM);
+        tracks_on.store(win_expanded());
+    }
+    void resize_window();               // the window and the host to the mode's width at SIZE
+    bool tracks_view(tess_tracks_t &t) override
+    {
+        std::lock_guard<std::mutex> g(view_lock);
+        if (!shared_tracks->w) return false;
+        t = *shared_tracks;
+        return true;
+    }
     std::atomic<uint32_t> midi_seen{0};   // MIDI in so far (the window's MIDI lamp)
     uint32_t midi_count() override { return midi_seen.load(std::memory_order_relaxed); }
     // an FM-1 on USB plays this Tessera (fm1_link.h): asked for from the first activate when the setting is on
@@ -558,30 +585,47 @@ void Tessera::listen_split_pick(int note)
         hs->mark_dirty(host);
 }
 
-// SIZE picked in the menu: remembered for every window, the window that size, and the host asked to make room
-void Tessera::size_pick(int pct)
+// the window at the mode's width and SIZE, and the host asked to make room
+void Tessera::resize_window()
 {
-    int n = Panel::size_halves(pct);
-    projfile::setting_put("size", std::to_string(Panel::size_pct(n)));
-    size_user = n;
+    int pct = size_pct();
+    tracks_on.store(win_expanded());
     if (gui)
-        gui->set_scale(n);
+        gui->set_scale(pct);
     auto *hg = static_cast<const clap_host_gui_t *>(host->get_extension(host, CLAP_EXT_GUI));
     if (hg && hg->request_resize)
-        hg->request_resize(host, (uint32_t)(Panel::W * n / 2), (uint32_t)(Panel::H * n / 2));
+        hg->request_resize(host, (uint32_t)(win_w() * pct / 100), (uint32_t)(Panel::H * pct / 100));
 }
 
-bool Tessera::size_set(int n)
+// SIZE picked in the menu: remembered for every window, the window that size
+void Tessera::size_pick(int pct)
 {
-    if (n < 2 || n > 4)
+    size_user = Panel::size_fit(pct, win_expanded());
+    projfile::setting_put("size", std::to_string(size_user));
+    resize_window();
+}
+
+// MODE picked in the menu: remembered for every window (EXPANDED: SIZE 150 or 200 shows at 125), the window that wide
+void Tessera::mode_pick(bool on)
+{
+    if (on == mode_expanded.load())
+        return;
+    mode_expanded.store(on);
+    projfile::setting_put("mode", on ? "expanded" : "fm1");
+    resize_window();
+}
+
+bool Tessera::size_set(int pct)
+{
+    if (pct != Panel::size_fit(pct, win_expanded()))
         return false;
-    if (n != size_halves())   // (the host's own resize, a drag on its frame: kept as the pick)
+    if (pct != size_pct())   // (the host's own resize, a drag on its frame: kept as the pick)
     {
-        size_user = n;
-        projfile::setting_put("size", std::to_string(Panel::size_pct(n)));
+        size_user = pct;
+        projfile::setting_put("size", std::to_string(pct));
     }
     if (gui)
-        gui->set_scale(n);
+        gui->set_scale(pct);
     return true;
 }
 
@@ -591,12 +635,15 @@ void Tessera::shell_picked(int i)
 {
     if (i < 0 || i >= Panel::shell_count())
         return;
+    bool wide = win_expanded();
     shell_i = i;
     {
         std::lock_guard<std::mutex> g(core_lock);
         core->ink(Panel::shell_ink(i));
     }
     projfile::setting_put("shell", Panel::shell_id(i));
+    if (wide != win_expanded())   // (EXPANDED is TESSERA's shell's: an FM-1 shell is FM-1 mode, and back)
+        resize_window();
 }
 
 std::vector<Panel::Ink> Tessera::inks()
@@ -975,8 +1022,10 @@ bool p_init(const clap_plugin_t *p)
     t->master_set(700);   // (MASTER's default)
     {   // SIZE: the one last picked in any window (none: the host's scale)
         std::string sz = projfile::setting_get("size");
-        if (!sz.empty()) t->size_user = Panel::size_halves(std::atoi(sz.c_str()));
+        if (!sz.empty()) t->size_user = std::atoi(sz.c_str()) >= 100 ? std::atoi(sz.c_str()) : 100;
     }
+    t->mode_expanded.store(projfile::setting_get("mode") == "expanded");   // MODE: the one last picked (none: gui_create)
+    t->tracks_on.store(t->win_expanded());
     {   // GENERATE: the style (by name) and VARIATION last picked in any window
         std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
         if (st == "RND") st = "WILD";   // (RND's name before it was WILD)
@@ -1115,6 +1164,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             for (auto &a : pi.zones)   // the screen's zones: what the mouse did there, in order
                 t->core->zone_do(&a.z, a.action, a.n);
             pi.zones.clear();          // (keeps its room: no allocation on this thread)
+            for (auto &a : pi.tzones)  // TRACKS' (EXPANDED)
+                t->core->tracks_do(&a.z, a.action, a.n);
+            pi.tzones.clear();
             pi.changed = false;
         }
     }
@@ -1182,6 +1234,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         if (v.owns_lock())
         {
             t->core->view(&t->shared_view);
+            if (t->tracks_on.load(std::memory_order_relaxed))   // (EXPANDED: TRACKS too)
+                t->core->tracks_view(t->shared_tracks.get(), TESS_TRACKS_W, TESS_TRACKS_H);
             t->view_due = (uint32_t)(t->rate / 30);
         }
     }
@@ -1504,9 +1558,11 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     auto *t = self(p);
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
+    if (projfile::setting_get("mode").empty())   // no MODE picked yet: EXPANDED if the screen has room for it
+        t->mode_default(Gui::screen_width());
     t->gui = Gui::make(t->host, t);
     if (t->gui)
-        t->gui->set_scale(t->size_halves());
+        t->gui->set_scale(t->size_pct());
     return t->gui != nullptr;
 }
 void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
@@ -1515,48 +1571,62 @@ void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
 bool gui_set_scale(const clap_plugin_t *p, double scale)
 {
     auto *t = self(p);
-    int n = scale >= 1.75 ? 4 : scale >= 1.25 ? 3 : 2;
-    bool was = t->size_halves() == n;
-    t->size_host = n;
+    int pct = scale >= 1.75 ? 200 : scale >= 1.25 ? 150 : 100;
+    bool was = t->size_pct() == Panel::size_fit(pct, t->win_expanded());
+    t->size_host = pct;
+    if (projfile::setting_get("mode").empty())   // (no MODE picked: EXPANDED only if it still fits at this scale)
+    {
+        bool wide = t->win_expanded();
+        t->mode_default(Gui::screen_width());
+        if (wide != t->win_expanded() && t->gui)
+            t->resize_window();
+    }
     if (!was && t->gui && !t->size_user)
-        t->gui->set_scale(n);
+        t->gui->set_scale(t->size_pct());
     return true;
 }
 bool gui_get_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
 {
-    int n = self(p)->size_halves();
-    *w = (uint32_t)(Panel::W * n / 2);
-    *h = (uint32_t)(Panel::H * n / 2);
+    auto *t = self(p);
+    int pct = t->size_pct();
+    *w = (uint32_t)(t->win_w() * pct / 100);
+    *h = (uint32_t)(Panel::H * pct / 100);
     return true;
 }
 bool gui_can_resize(const clap_plugin_t *) { return true; }
-bool gui_get_resize_hints(const clap_plugin_t *, clap_gui_resize_hints_t *h)
+bool gui_get_resize_hints(const clap_plugin_t *p, clap_gui_resize_hints_t *h)
 {
     h->can_resize_horizontally = h->can_resize_vertically = true;
     h->preserve_aspect_ratio = true;
-    h->aspect_ratio_width = Panel::W;
+    h->aspect_ratio_width = (uint32_t)self(p)->win_w();
     h->aspect_ratio_height = Panel::H;
     return true;
 }
-int size_nearest(uint32_t w)   // (the halves whose width is nearest w)
+// the SIZE (of the mode's: 100, 150, 200; EXPANDED 100, 125) whose width is nearest w
+int size_nearest(const Tessera *t, uint32_t w)
 {
-    int best = 2;
-    for (int n = 3; n <= 4; n++)
-        if (std::abs((int)w - Panel::W * n / 2) < std::abs((int)w - Panel::W * best / 2)) best = n;
+    static const int ALL[4] = {100, 125, 150, 200};
+    int best = 100;
+    for (int pct : ALL)
+        if (pct == Panel::size_fit(pct, t->win_expanded()) &&
+            std::abs((int)w - t->win_w() * pct / 100) < std::abs((int)w - t->win_w() * best / 100))
+            best = pct;
     return best;
 }
-bool gui_adjust_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+bool gui_adjust_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
 {
-    int n = size_nearest(*w);
-    *w = (uint32_t)(Panel::W * n / 2);
-    *h = (uint32_t)(Panel::H * n / 2);
+    auto *t = self(p);
+    int pct = size_nearest(t, *w);
+    *w = (uint32_t)(t->win_w() * pct / 100);
+    *h = (uint32_t)(Panel::H * pct / 100);
     return true;
 }
 bool gui_set_size(const clap_plugin_t *p, uint32_t w, uint32_t h)
 {
-    for (int n = 2; n <= 4; n++)
-        if (w == (uint32_t)(Panel::W * n / 2) && h == (uint32_t)(Panel::H * n / 2))
-            return self(p)->size_set(n);
+    auto *t = self(p);
+    int pct = size_nearest(t, w);
+    if (w == (uint32_t)(t->win_w() * pct / 100) && h == (uint32_t)(Panel::H * pct / 100))
+        return t->size_set(pct);
     return false;
 }
 bool gui_set_parent(const clap_plugin_t *p, const clap_window_t *w)
