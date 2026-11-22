@@ -697,6 +697,32 @@ uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v)
         scale_share(&trk[track]);
     return 1;
 }
+/* a key from outside (the plugin's LISTEN: a chord played to it): ROOT on every melodic track (a drum track keeps
+ * its own, as KEY LINK leaves it), and minor 1 / 0 turns the song's scale to its minor / major twin (MAJ <-> MIN,
+ * PEN <-> MPEN; any other scale stays, -1 keeps it). 1 if anything changed */
+uint32_t tess_core_key(uint32_t root, int32_t minor)
+{
+    static const uint8_t TWIN[][2] = {{1u, 2u}, {5u, 6u}};   /* (scales.h: MAJ MIN, PEN MPEN: major, minor) */
+    uint32_t k, i, mel = NTRK, changed = 0;
+    root %= 12u;
+    for (k = 0; k < NTRK; k++) {
+        if (drum_track(&trk[k]))
+            continue;
+        if (mel == NTRK)
+            mel = k;
+        if ((uint32_t)trk[k].p[P_ROOT] != root && pid_set(P_ROOT, k, (int32_t)root))
+            changed = 1;
+    }
+    if (minor < 0 || mel == NTRK)
+        return changed;
+    for (i = 0; i < sizeof TWIN / sizeof TWIN[0]; i++)
+        if ((uint32_t)trk[mel].p[P_SCALE] == TWIN[i][!minor] && pid_set(P_SCALE, mel, TWIN[i][minor != 0])) {
+            scale_share(&trk[mel]);
+            changed = 1;
+            break;
+        }
+    return changed;
+}
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap)
 {
     const param_desc_t *d = pid_find(pid) ? pid_desc(pid, track) : 0;

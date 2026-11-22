@@ -67,6 +67,12 @@ class Panel
     void set_keys(bool on) { keys_on_ = on; if (!on) release_keys(); }
     bool keys_on() const { return keys_on_; }
     int take_keys_request() { int r = keys_req; keys_req = -1; return r; }
+    /* LISTEN (TESSERA's menu): the MIDI channel whose notes set the key and GENERATE (listen.h), 0 OFF, 1..16. < and >
+     * step it, its value turns it OFF or back on (16 if never on); a click asks (take_listen_request: the channel, -1
+     * none); the window shows the instance's */
+    void set_listen(int ch) { listen_ch = ch; if (ch) listen_last = ch; }
+    int listen() const { return listen_ch; }
+    int take_listen_request() { int r = listen_req; listen_req = -1; return r; }
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
@@ -187,6 +193,8 @@ class Panel
     uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0, latch_keys = 0, latch_buttons = 0;
     bool keys_on_ = true;
     int keys_req = -1;
+    int listen_ch = 0, listen_last = 16, listen_req = -1;
+    int listen_seg_at(int x) const;
     void merge_held();
     // a drag
     enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;

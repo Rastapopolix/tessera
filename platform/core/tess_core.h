@@ -138,6 +138,10 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info);
 int32_t tess_core_param_get(uint32_t pid, uint32_t track);
 /* the stored value, clamped, as a project load sets it: 0 not settable (an action, a device setting) */
 uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v);
+/* a key from outside (the plugin's LISTEN: a chord played to it): ROOT 0..11 on every melodic track (a drum track
+ * keeps its own); minor 1 / 0 turns the song's scale to its minor / major twin (MAJ <-> MIN, PEN <-> MPEN; another
+ * scale stays), -1 keeps the scale. 1 if anything changed */
+uint32_t tess_core_key(uint32_t root, int32_t minor);
 /* the value v as the FM-1's screen shows it ("SAW", "1/16", "250ms", "42%"), into out (cap bytes, terminated): its
  * length, 0 if pid is not a parameter */
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap);

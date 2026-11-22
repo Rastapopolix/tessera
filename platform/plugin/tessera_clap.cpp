@@ -41,6 +41,7 @@
 
 #include "core_copies.h"
 #include "gui.h"
+#include "listen.h"
 #include "projfile.h"
 #include "resample.h"
 
@@ -166,6 +167,16 @@ struct Tessera : GuiLink
     }
 
     void midi_in(const clap_event_header_t *h);
+    // LISTEN (listen.h): the MIDI channel whose notes set the key and GENERATE (0 off), the window's to pick, saved
+    // in the DAW's state ("TLSN"); the audio thread's copy and what it held, and a seed for the main thread
+    std::atomic<int> listen_ch{0};
+    Listen listen;
+    bool listen_params = false;           // a key set: every parameter to the host in this block
+    std::atomic<uint32_t> listen_seed{0};
+    bool listen_note(uint32_t ch, int key, int vel);
+    int listen_channel() override { return listen_ch.load(); }
+    void listen_pick(int ch) override;
+    void listen_generate(uint32_t seed);
     void params_make();
     int param_index(clap_id id) const;
     int32_t param_core(int i);
@@ -246,6 +257,7 @@ struct Tessera : GuiLink
     void gen_pick(int style, int variation) override;
     Panel::GenState gen_state() override;
     std::string gen_make(const Piece &pc);
+    std::string gen_seed(uint32_t seed);
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -372,8 +384,15 @@ std::string Tessera::generate(int style, int variation)
 {
     gen_pick(style, variation);
     static std::mt19937 rng{std::random_device{}() ^ (uint32_t)std::chrono::steady_clock::now().time_since_epoch().count()};
-    Piece pc{gen_style, gen_variation, 0};
-    while (!pc.seed) pc.seed = rng();
+    uint32_t seed = 0;
+    while (!seed) seed = rng();
+    return gen_seed(seed);
+}
+
+// a piece of the strip's style and VARIATION from seed, kept in the seed's wheel (GENERATE, LISTEN)
+std::string Tessera::gen_seed(uint32_t seed)
+{
+    Piece pc{gen_style, gen_variation, seed};
     std::string said = gen_make(pc);
     if (!said.empty())
         return said;
@@ -436,6 +455,17 @@ void Tessera::changed_by_file()
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
+}
+
+// LISTEN picked in the menu (0 off, 1..16): this instance's, saved in the DAW's state
+void Tessera::listen_pick(int ch)
+{
+    if (ch < 0 || ch > 16 || ch == listen_ch.load())
+        return;
+    listen_ch.store(ch);
+    auto *hs = static_cast<const clap_host_state_t *>(host->get_extension(host, CLAP_EXT_STATE));
+    if (hs && hs->mark_dirty)
+        hs->mark_dirty(host);
 }
 
 // SIZE picked in the menu: remembered for every window, the window that size, and the host asked to make room
@@ -549,6 +579,8 @@ void Tessera::midi_in(const clap_event_header_t *h)
             return;
         uint32_t ch = e->channel < 0 ? 0u : (uint32_t)e->channel & 15u;
         uint32_t vel = (uint32_t)(e->velocity * 127.0 + 0.5);
+        if (listen_note(ch, e->key, h->type == CLAP_EVENT_NOTE_ON ? (vel ? (int)vel : 1) : 0))
+            break;
         if (h->type == CLAP_EVENT_NOTE_ON)
             core->midi(0x90u | ch, (uint32_t)e->key, vel ? vel : 1u);
         else
@@ -558,12 +590,37 @@ void Tessera::midi_in(const clap_event_header_t *h)
     case CLAP_EVENT_MIDI:
     {
         auto *e = reinterpret_cast<const clap_event_midi_t *>(h);
+        uint8_t kind = e->data[0] & 0xF0;
+        if ((kind == 0x90 || kind == 0x80) &&
+            listen_note(e->data[0] & 15u, e->data[1] & 127, kind == 0x90 ? e->data[2] & 127 : 0))
+            break;
         core->midi(e->data[0], e->data[1], e->data[2]);
         break;
     }
     default:
         break;
     }
+}
+
+// LISTEN (the audio thread, the core locked): a note on the LISTEN channel (vel 0: off) steers instead of playing;
+// true if it was one
+bool Tessera::listen_note(uint32_t ch, int key, int vel)
+{
+    int lc = listen_ch.load(std::memory_order_relaxed);
+    if (lc != listen.channel)
+        listen.channel = lc, listen.clear();
+    if (!listen.mine((int)ch))
+        return false;
+    Listen::Ask a = listen.note(key, vel);
+    if (a.what == Listen::KEY && core->key((uint32_t)a.root, a.minor))
+        listen_params = true;
+    else if (a.what == Listen::GENERATE)
+    {
+        listen_seed.store(a.seed);   // (GENERATE takes a while: the main thread makes it)
+        if (host->request_callback)
+            host->request_callback(host);   // (p_on_main_thread)
+    }
+    return true;
 }
 
 // ---- parameters (audio thread: the core is locked)
@@ -956,7 +1013,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
-    t->params_out(proc->out_events, n ? n - 1 : 0, set);   // (a setting changed on the panel, by a project or a cord's source)
+    t->params_out(proc->out_events, n ? n - 1 : 0, set || t->listen_params);
+    t->listen_params = false;   // (a setting changed on the panel, by a project or a cord's source)
 
     if (t->view_due <= n)   // the view for the window, ~30 times a second
     {
@@ -1010,8 +1068,8 @@ const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 // ---- state: the project as a .tsp record (tracks 1..4 in the parts an FM-1 reads, tracks 5..8 in its XTRK part,
 // project_tsp.c), then the device's MIDI setup (ROUT, DRUM's channel, NOTES OUT, TUNE: tess_core_setup_save, never
 // in the .tsp) as its bytes, their count and "TGLO", then MASTER (the device's, not the project's) as "TMST" and 2
-// bytes. A state of a plugin build
-// before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
+// bytes, then while LISTEN is on "TLSN" and its channel (1 byte; a plugin build before LISTEN cannot open such a
+// state, one with LISTEN off is as before). A state of a plugin build before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
 // is written now (XTRK holds them, with the steps, voices and generators).
 
 constexpr uint32_t TX58_ENTRY = 7;   // track, pid (2 bytes), value (4 bytes), little-endian
@@ -1060,6 +1118,12 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
             const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
             b.insert(b.begin() + len, tail, tail + 6);
             len += 6;
+            if (int lc = t->listen_ch.load())   // (LISTEN on: last; off, the state is as before LISTEN)
+            {
+                const uint8_t ls[5] = {'T', 'L', 'S', 'N', (uint8_t)lc};
+                b.insert(b.begin() + len, ls, ls + 5);
+                len += 5;
+            }
         }
     }
     if (!len)
@@ -1077,7 +1141,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
+    std::vector<uint8_t> b(t->core->tsp_max() + 5 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
     uint32_t len = 0;
     for (;;)
     {
@@ -1093,6 +1157,10 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     bool ok;
     {
         std::lock_guard<std::mutex> g(t->core_lock);
+        int lc = 0;
+        if (len >= 5 && !std::memcmp(&b[len - 5], "TLSN", 4) && b[len - 1] <= 16)
+            lc = b[len - 1], len -= 5;
+        t->listen_ch.store(lc);
         if (len >= 6 && !std::memcmp(&b[len - 6], "TMST", 4))
         {
             len -= 6;
@@ -1343,6 +1411,8 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
 void p_on_main_thread(const clap_plugin_t *p)
 {
     auto *t = self(p);
+    if (uint32_t seed = t->listen_seed.exchange(0))   // (a note under C1 on the LISTEN channel: GENERATE)
+        t->gen_seed(seed);
     if (!t->text_stale.exchange(false))
         return;
     auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));

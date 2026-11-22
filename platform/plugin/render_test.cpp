@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 #include <vector>
 
 static int fails = 0;
@@ -531,6 +532,111 @@ int main(int argc, char **argv)
         junk.b.assign(100, 0x55);
         clap_istream_t js = {&junk, is_read};
         CHECK(!st->load(p, &js), "junk state refused");
+    }
+
+    // LISTEN on channel 16 (a state with "TLSN"): a chord there sets the key and does not play; a note under C1
+    // GENERATEs on the main thread, the same note the same piece; the channel saved with the state, none when OFF
+    if (st && pa)
+    {
+        auto save = [&] {
+            Buf b;
+            clap_ostream_t os = {&b, os_write};
+            st->save(p, &os);
+            return b.b;
+        };
+        auto load = [&](const std::vector<uint8_t> &v) {
+            Buf b;
+            b.b = v;
+            clap_istream_t is = {&b, is_read};
+            return st->load(p, &is);
+        };
+        auto param = [&](const char *name) {
+            clap_param_info_t pi;
+            for (uint32_t i = 0; i < pa->count(p); i++)
+                if (pa->get_info(p, i, &pi) && !std::strcmp(pi.name, name))
+                {
+                    double v = -1;
+                    pa->get_value(p, pi.id, &v);
+                    return v;
+                }
+            return -1.0;
+        };
+        auto settings = [&] {
+            std::vector<double> v;
+            clap_param_info_t pi;
+            for (uint32_t i = 5; i < pa->count(p); i++)
+            {
+                double x = 0;
+                pa->get_info(p, i, &pi);
+                pa->get_value(p, pi.id, &x);
+                v.push_back(x);
+            }
+            return v;
+        };
+        auto send = [&](int ch, int key, bool on_) {
+            clap_event_note_t e = {};
+            e.header = {sizeof e, 0, CLAP_CORE_EVENT_SPACE_ID, (uint16_t)(on_ ? CLAP_EVENT_NOTE_ON : CLAP_EVENT_NOTE_OFF), 0};
+            e.note_id = -1, e.channel = (int16_t)ch, e.key = (int16_t)key, e.velocity = 0.8;
+            ev.notes.push_back(e);
+        };
+        std::vector<uint8_t> plain = save();
+        CHECK(plain.size() >= 5 && std::memcmp(&plain[plain.size() - 5], "TLSN", 4), "LISTEN OFF: no TLSN in the state");
+        std::vector<uint8_t> listening = plain;
+        listening.insert(listening.end(), {'T', 'L', 'S', 'N', 16});
+        CHECK(load(listening), "a state with LISTEN on channel 16 loads");
+        std::vector<uint8_t> again = save();
+        CHECK(again == listening, "LISTEN saved with the state (%zu vs %zu bytes)", again.size(), listening.size());
+        {   // (the song in MAJ first)
+            clap_param_info_t pi;
+            for (uint32_t i = 0; i < pa->count(p); i++)
+                if (pa->get_info(p, i, &pi) && !std::strcmp(pi.name, "T1 SCALE"))
+                {
+                    clap_event_param_value_t pv = {};
+                    pv.header = {sizeof pv, 0, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
+                    pv.param_id = pi.id, pv.note_id = -1, pv.port_index = -1, pv.channel = -1, pv.key = -1, pv.value = 1;
+                    struct One { const clap_event_header_t *h; } one = {&pv.header};
+                    clap_input_events_t pin = {&one, [](const clap_input_events_t *) -> uint32_t { return 1; },
+                                               [](const clap_input_events_t *l, uint32_t) {
+                                                   return static_cast<const One *>(l->ctx)->h;
+                                               }};
+                    proc.in_events = &pin;
+                    p->process(p, &proc);
+                    proc.in_events = &in;
+                }
+        }
+        double scl0 = param("T1 SCALE");
+        for (int k : {57, 60, 64}) send(15, k, true);   // A C E on channel 16
+        uint32_t heard0 = midi_on[15];
+        for (int b = 0; b < 4; b++) p->process(p, &proc), ev.notes.clear();
+        double root = param("T1 ROOT"), scl1 = param("T1 SCALE");
+        std::printf("listen: A C E on channel 16: T1 ROOT %.0f, SCL %.0f -> %.0f\n", root, scl0, scl1);
+        CHECK(root == 9, "A minor: ROOT A (%.0f)", root);
+        CHECK(scl0 == 1 && scl1 == 2, "a MAJ song turns MIN (%.0f -> %.0f)", scl0, scl1);
+        CHECK(midi_on[15] == heard0, "the chord does not play (MIDI OUT channel 16)");
+        for (int k : {57, 60, 64}) send(15, k, false);
+        p->process(p, &proc), ev.notes.clear();
+        std::vector<uint8_t> before = save();
+        std::vector<double> s0 = settings();
+        int c0 = callbacks;
+        send(15, 12, true);
+        p->process(p, &proc), ev.notes.clear();
+        CHECK(callbacks > c0, "a note under C1 asks for the main thread");
+        p->on_main_thread(p);
+        std::vector<double> s1 = settings();
+        size_t changed = 0;
+        for (size_t i = 0; i < s0.size() && i < s1.size(); i++) changed += s0[i] != s1[i];
+        load(before);
+        send(15, 12, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s2 = settings();
+        std::printf("listen: a note under C1 generated (%zu settings changed); again from the same project: %s\n", changed,
+                    s1 == s2 ? "the same piece" : "another piece");
+        CHECK(changed > 50, "a note under C1: a new piece (%zu changed)", changed);
+        CHECK(s1 == s2, "the same note: the same piece");
+        CHECK(load(plain), "LISTEN off again");
+        std::vector<uint8_t> off = save();
+        CHECK(off.size() < 5 || std::memcmp(&off[off.size() - 5], "TLSN", 4), "LISTEN OFF after a state without it");
     }
 
 #if defined(__linux__)

@@ -27,6 +27,14 @@ tracks, in TESSERA's own window or the FM-1's.
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
   another Tessera. On Windows and macOS the system's dialogs (a file dropped on the window opens too); on Linux
   zenity or kdialog, whichever is installed. The DAW is told its saved state changed.
+- **LISTEN** (the menu: `< OFF >`, then CH 1..16): the notes on that MIDI channel steer Tessera instead of playing it
+  (`listen.h`). From C1 (note 24) up, what is held sets the key: one note its ROOT, a chord its root (inversions
+  too) on every melodic track (drum tracks keep theirs, as KEY LINK leaves them), and a major or minor third above
+  that root turns a MAJ / MIN (or PEN / MPEN) song to its twin; other scales keep theirs, and letting go keeps the
+  key. Under C1 (notes 0..23) a note GENERATEs a piece of the strip's style and VARIATION, its seed from the note
+  and velocity, so a clip that plays the same note makes the same piece. The channel is the instance's, saved in the
+  DAW's state as `TLSN` and its channel when on (a plugin build before LISTEN cannot open such a state; with LISTEN
+  OFF the state is as before).
 - **The window** (Windows, Linux and macOS): TESSERA's own shell by default (shell 0: flat, the project page's
   colours, a menu under the mark for SHELL / INK / MODE / SIZE / ABOUT, a MIDI lamp), or the FM-1 as the web
   simulator draws it, in any of its eight shells (the swatches

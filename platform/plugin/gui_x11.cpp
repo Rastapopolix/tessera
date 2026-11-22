@@ -275,6 +275,7 @@ class GuiX11 : public Gui
         gui_gen_tick(panel, link);
         ink_check();
         gui_size_tick(panel, link);
+        gui_listen_tick(panel, link);
         panel.draw(px.data(), view);
         Panel::scale(px.data(), out.data(), halves);
         XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W * halves / 2, Panel::H * halves / 2);
