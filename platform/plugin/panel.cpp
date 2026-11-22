@@ -1102,6 +1102,14 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.dim_buttons & bit) border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
+        if (b.bit == B_OCTDN || b.bit == B_OCTUP)   // what they mostly do, large; the octave small under it
+        {                                           // (OCT- held: the knobs' second layer, SHIFT)
+            const char *does = b.bit == B_OCTUP ? "OK" : held ? "SHIFT" : "BACK";
+            int mid = (y + 2 + y + h - bottom) / 2;
+            c.ptext_c(b.x + b.w / 2, mid - 11, does, 2, ink);
+            c.ptext_c(b.x + b.w / 2, mid + 5, b.face, 1, ink);
+            continue;
+        }
         c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
     }
 

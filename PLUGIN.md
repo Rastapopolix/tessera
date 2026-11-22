@@ -142,6 +142,9 @@ click it, or press **Esc** to let go.
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
 
+In Tessera's look, OCT- and OCT+ are labelled by what they mostly do: **BACK** (and **SHIFT** while held: the
+knobs' second layer) and **OK**, with OCT- and OCT+ under them. They work exactly as on the FM-1.
+
 Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
 the first) and the row labelled INK, between the buttons and the keys, picks the ink.
 
