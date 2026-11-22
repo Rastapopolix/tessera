@@ -1,11 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* LISTEN (the window's menu): the notes on one MIDI channel steer Tessera instead of playing it.
- *   - from C1 (note 24) up: what is held sets the key. One note: its ROOT, the scale kept. A chord: its root (the held
- *     note with a fifth or a third above it, the lowest such), and a major or minor third above that root turns the
- *     song's scale to its major or minor twin (MAJ <-> MIN, PEN <-> MPEN: tess_core_key);
- *   - under C1 (notes 0..23): GENERATE, the strip's style and VARIATION, the seed from the note and its velocity, so
- *     a clip that plays the same note makes the same piece each time.
+ *   - from SPLIT up (note 48 unless set: a C, 12..108; given as a note number, since DAWs name octaves differently,
+ *     note 48 C2 in some and C3 in others): what is held sets the key. One note: its ROOT, the scale kept. A chord:
+ *     its root (the held note with a fifth or a third above it, the lowest such), and a major or minor third above
+ *     that root turns the song's scale to its major or minor twin (MAJ <-> MIN, PEN <-> MPEN: tess_core_key);
+ *   - under SPLIT: GENERATE, the strip's VARIATION, the seed from the note and its velocity, so a clip that plays the
+ *     same note makes the same piece each time. A white key picks the style: the octave just under SPLIT C..B the
+ *     styles 1..7, the octave under that 8..14, and so on down; a black key (or a white one past the last style)
+ *     the style the strip shows. With SPLIT 48 a 49 or 61-key keyboard's bottom octave (36..47) is styles 1..7.
  * Nothing here touches the core: Listen says what a message asks for. On the audio thread, no allocation. */
 #pragma once
 #include <cstdint>
@@ -18,10 +21,20 @@ struct Listen
         int what = NONE;
         int root = 0, minor = -1;   // KEY: 0..11; 1 minor, 0 major, -1 the scale as it is
         uint32_t seed = 0;          // GENERATE: 1..
+        int style = -1;             // GENERATE: the style's index (0..), -1 the strip's
     };
-    static const int GEN_BELOW = 24;   // (C1: the notes under it generate)
+    static const int SPLIT = 48, SPLIT_MIN = 12, SPLIT_MAX = 108;   // (SPLIT: the first key note, a C)
 
     int channel = 0;   // 0 off, 1..16
+    int split = SPLIT;
+    static bool split_ok(int s) { return s >= SPLIT_MIN && s <= SPLIT_MAX && s % 12 == 0; }
+    // a GENERATE note's style: white keys from the octave under the split down, 7 an octave; -1 a black key
+    int style_of(int key) const
+    {
+        static const int WHITE[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};
+        int d = split - 1 - key, oct = d / 12, w = WHITE[11 - d % 12];
+        return w < 0 ? -1 : oct * 7 + w;
+    }
     uint32_t held[4] = {};
 
     bool mine(int ch) const { return channel > 0 && ch == channel - 1; }
@@ -33,12 +46,13 @@ struct Listen
         Ask a;
         if (key < 0 || key > 127)
             return a;
-        if (key < GEN_BELOW)
+        if (key < split)
         {
             if (vel > 0)
             {
                 a.what = GENERATE;
                 a.seed = 1u + (uint32_t)key * 128u + (uint32_t)vel;
+                a.style = style_of(key);
             }
             return a;
         }
@@ -57,7 +71,7 @@ struct Listen
     {
         Ask a;
         int pcs = 0, lowest = -1;
-        for (int k = GEN_BELOW; k < 128; k++)
+        for (int k = split; k < 128; k++)
             if (held[k >> 5] >> (k & 31) & 1u)
             {
                 pcs |= 1 << (k % 12);

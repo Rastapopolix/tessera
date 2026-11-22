@@ -482,6 +482,17 @@ int main(int argc, char **argv)
         CHECK(lclick(252) == 1, "its value again: back to the last channel (1)");
         q.set_listen(16);
         CHECK(lclick(306) == -1 && q.listen() == 16, "> at 16: nothing");
+        // SPLIT, the row under: 48 to start, < and > an octave, 12..108
+        int sy = ly + 36;   // (row_y(ROW_SPLIT)'s middle)
+        auto sclick = [&](int x) { q.down(x, sy), q.up(x, sy); return q.take_split_request(); };
+        CHECK(q.split() == 48 && q.take_split_request() == -1, "SPLIT 48 to start, nothing asked");
+        CHECK(sclick(198) == 36 && sclick(306) == 48 && sclick(306) == 60, "< 36, > 48, > 60");
+        CHECK(sclick(252) == -1 && q.split() == 60, "its value: nothing");
+        q.set_split(12);
+        CHECK(sclick(198) == -1 && q.split() == 12, "< at 12: nothing");
+        q.set_split(108);
+        CHECK(sclick(306) == -1 && q.split() == 108, "> at 108: nothing");
+        q.set_split(48);
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/15_tessera_listen.ppm", px);   // (the menu: LISTEN on CH 16)
         CHECK(q.menu_shown(), "the menu stays open");

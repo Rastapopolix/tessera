@@ -595,8 +595,9 @@ int main(int argc, char **argv)
         CHECK(!st->load(p, &js), "junk state refused");
     }
 
-    // LISTEN on channel 16 (a state with "TLSN"): a chord there sets the key and does not play; a note under C1
-    // GENERATEs on the main thread, the same note the same piece; the channel saved with the state, none when OFF
+    // LISTEN on channel 16 (a state with "TLSN"): a chord there sets the key and does not play; a note under SPLIT
+    // GENERATEs on the main thread, the same note the same piece; the channel and SPLIT saved with the state, none
+    // when OFF at SPLIT 48
     if (st && pa)
     {
         auto save = [&] {
@@ -641,9 +642,12 @@ int main(int argc, char **argv)
             ev.notes.push_back(e);
         };
         std::vector<uint8_t> plain = save();
-        CHECK(plain.size() >= 5 && std::memcmp(&plain[plain.size() - 5], "TLSN", 4), "LISTEN OFF: no TLSN in the state");
+        CHECK(plain.size() >= 6 && std::memcmp(&plain[plain.size() - 6], "TLSN", 4), "LISTEN OFF: no TLSN in the state");
+        std::vector<uint8_t> split24 = plain;   // (OFF, SPLIT moved: kept too)
+        split24.insert(split24.end(), {'T', 'L', 'S', 'N', 0, 24});
+        CHECK(load(split24) && save() == split24, "LISTEN OFF at SPLIT 24: saved with the state");
         std::vector<uint8_t> listening = plain;
-        listening.insert(listening.end(), {'T', 'L', 'S', 'N', 16});
+        listening.insert(listening.end(), {'T', 'L', 'S', 'N', 16, 48});
         CHECK(load(listening), "a state with LISTEN on channel 16 loads");
         std::vector<uint8_t> again = save();
         CHECK(again == listening, "LISTEN saved with the state (%zu vs %zu bytes)", again.size(), listening.size());
@@ -681,7 +685,7 @@ int main(int argc, char **argv)
         int c0 = callbacks;
         send(15, 12, true);
         p->process(p, &proc), ev.notes.clear();
-        CHECK(callbacks > c0, "a note under C1 asks for the main thread");
+        CHECK(callbacks > c0, "a note under SPLIT asks for the main thread");
         p->on_main_thread(p);
         std::vector<double> s1 = settings();
         size_t changed = 0;
@@ -691,14 +695,25 @@ int main(int argc, char **argv)
         p->process(p, &proc), ev.notes.clear();
         p->on_main_thread(p);
         std::vector<double> s2 = settings();
-        std::printf("listen: a note under C1 generated (%zu settings changed); again from the same project: %s\n", changed,
+        std::printf("listen: a note under SPLIT generated (%zu settings changed); again from the same project: %s\n", changed,
                     s1 == s2 ? "the same piece" : "another piece");
-        CHECK(changed > 50, "a note under C1: a new piece (%zu changed)", changed);
+        CHECK(changed > 50, "a note under SPLIT: a new piece (%zu changed)", changed);
         CHECK(s1 == s2, "the same note: the same piece");
+        load(before);   // (36 and 38: the same velocity, two styles: two other pieces)
+        send(15, 36, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s3 = settings();
+        load(before);
+        send(15, 38, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s4 = settings();
+        CHECK(s3 != s1 && s4 != s3, "36 and 38 (styles 1 and 2): pieces of their own");
         CHECK(undo_steps.size() >= 2 && undo_steps.back() == "GENERATE", "each piece LISTEN made a step of the DAW's undo");
         CHECK(load(plain), "LISTEN off again");
         std::vector<uint8_t> off = save();
-        CHECK(off.size() < 5 || std::memcmp(&off[off.size() - 5], "TLSN", 4), "LISTEN OFF after a state without it");
+        CHECK(off.size() < 6 || std::memcmp(&off[off.size() - 6], "TLSN", 4), "LISTEN OFF after a state without it");
     }
 
 #if defined(__linux__)

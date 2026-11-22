@@ -40,14 +40,18 @@ tracks, in TESSERA's own window or the FM-1's.
   into the DAW: format 1, the project's tempo, a track per channel (T1..T8, each track on its MIDI OUT channel), from
   the bar of the first note. Only notes (no CCs, no clock); up to 65,536 messages, the oldest dropped past that
   (`midifile.h`; kept on the audio thread in a fixed ring, nothing allocated there).
-- **LISTEN** (the menu: `< OFF >`, then CH 1..16): the notes on that MIDI channel steer Tessera instead of playing it
-  (`listen.h`). From C1 (note 24) up, what is held sets the key: one note its ROOT, a chord its root (inversions
-  too) on every melodic track (drum tracks keep theirs, as KEY LINK leaves them), and a major or minor third above
-  that root turns a MAJ / MIN (or PEN / MPEN) song to its twin; other scales keep theirs, and letting go keeps the
-  key. Under C1 (notes 0..23) a note GENERATEs a piece of the strip's style and VARIATION, its seed from the note
-  and velocity, so a clip that plays the same note makes the same piece. The channel is the instance's, saved in the
-  DAW's state as `TLSN` and its channel when on (a plugin build before LISTEN cannot open such a state; with LISTEN
-  OFF the state is as before).
+- **LISTEN** (the menu: `< OFF >`, then CH 1..16, and SPLIT under it): the notes on that MIDI channel steer Tessera
+  instead of playing it (`listen.h`). From SPLIT up (note 48 unless moved, an octave at a time from 12 to 108; shown
+  as a note number, since DAWs name that note C2 or C3), what is held sets the key: one note its ROOT, a chord its
+  root (inversions too) on every melodic track (drum tracks keep theirs, as KEY LINK leaves them), and a major or
+  minor third above that root turns a MAJ / MIN (or PEN / MPEN) song to its twin; other scales keep theirs, and
+  letting go keeps the key. Under SPLIT a note GENERATEs a piece at the strip's VARIATION, its seed from the note and
+  velocity, so a clip that plays the same note makes the same piece. A white key also picks the style: the octave
+  just under SPLIT, C to B, the strip's first seven styles, the octave under that the next seven, and so on; a black
+  key (or a white one past the last style) keeps the style the strip shows. With SPLIT 48 the bottom octave of a 49
+  or 61-key keyboard (36..47) is the first seven styles. The strip shows the piece's style after. Channel and SPLIT
+  are the instance's, saved in the DAW's state as `TLSN`, the channel and SPLIT when LISTEN is on or SPLIT moved (a
+  plugin build before LISTEN cannot open such a state; with LISTEN OFF at SPLIT 48 the state is as before).
 - **The window** (Windows, Linux and macOS): TESSERA's own shell by default (shell 0: flat, the project page's
   colours, a menu under the mark for SHELL / INK / MODE / SIZE / ABOUT, a MIDI lamp), or the FM-1 as the web
   simulator draws it, in any of its eight shells (the swatches
