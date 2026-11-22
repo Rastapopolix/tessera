@@ -13,7 +13,8 @@
  *   TESS_CORE_UI 0                 the FM-1's UI never runs (its input and frames): a front end with its own UI
  *   TESS_IRQ_OFF / ON, TESS_ENTROPY   the audio interrupt's guard, a fresh seed (core_sources.h)
  *   TESS_HOST_CLOCK, TESS_PLUGIN_IO   the plugin's DAW clock, its track outputs and MIDI out (mix.c, usb.c)
- *   TESS_CORE_BOOT_HOOK()          run in tess_core_boot before the screen is set up (the simulator's demos) */
+ *   TESS_CORE_BOOT_HOOK()          run in tess_core_boot before the screen is set up (the simulator's demos)
+ *   TESS_GENERATE 1                GENERATE (generate.c): a whole piece from a style and a seed (the plugin) */
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

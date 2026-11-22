@@ -162,6 +162,21 @@ uint32_t tess_core_ink(const char *name);
  * colours as 0xRRGGBB (alike for one ink; MOSAIC, SUNSET, OCEAN, NEON differ). name or rgb may be 0 */
 uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4]);
 
+/* ---- GENERATE (a build with TESS_GENERATE: firmware/src/generate.c): a whole piece in one press, from a style and a
+ * seed. The piece is an ordinary project (every setting one a player could make), from a new project: the same style,
+ * seed and variation give the same .tsp. Playing, it plays on; stopped, it stays stopped */
+enum { TESS_GEN_KEEP_TEMPO = 1 };    /* tess_core_generate's flags: the tempo as it is (a DAW or MIDI clock drives) */
+/* the styles: how many (0: a build without GENERATE), and style s's name ("AUTUMN", "WOZZA" ..) */
+uint32_t tess_core_gen_styles(void);
+const char *tess_core_gen_style(uint32_t s);
+/* a new piece: style, seed (0 reads as 1), variation 0..100 (how wide each pick is in its range; 100 as the styles were
+ * tuned). The project before it is kept for tess_core_gen_swap. 0 made, 1 refused */
+uint32_t tess_core_generate(uint32_t style, uint32_t seed, uint32_t variation, uint32_t flags);
+/* before / after: the project before the last piece and what is there now change places. 0 done, 1 nothing kept */
+uint32_t tess_core_gen_swap(void);
+/* the last piece's style, seed and variation (each may be 0): 1, or 0 none yet */
+uint32_t tess_core_gen_last(uint32_t *style, uint32_t *seed, uint32_t *variation);
+
 #ifdef __cplusplus
 }
 #endif
