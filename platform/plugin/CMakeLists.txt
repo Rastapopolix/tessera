@@ -53,12 +53,10 @@ include(FetchContent)
 FetchContent_Declare(clap GIT_REPOSITORY https://github.com/free-audio/clap GIT_TAG 1.2.10 GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(clap)
 set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "" FORCE)
-# patches/: clap-wrapper-win-sizing.patch, the Windows standalone app's frame snaps to the plugin's sizes while it is
-# dragged (WM_SIZING through the plugin's adjust_size); v0.17.0 left the window any size, black beside the panel
-FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/clap-wrapper GIT_TAG v0.17.0
-                     GIT_SHALLOW TRUE
-                     PATCH_COMMAND ${CMAKE_COMMAND} -DPATCH=${CMAKE_CURRENT_SOURCE_DIR}/patches/clap-wrapper-win-sizing.patch
-                                   -P ${CMAKE_CURRENT_SOURCE_DIR}/patches/apply.cmake)
+# v0.18.0: its Windows standalone snaps the window to the plugin's sizes while it is dragged (WM_SIZING through
+# adjust_size), as our patch did for v0.17.0 (now gone)
+FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/clap-wrapper GIT_TAG v0.18.0
+                     GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(clap-wrapper)
 
 # ---- the core: the firmware, as web/sim/build.sh builds it for the browser, with the plugin's options (core_defs.txt,
