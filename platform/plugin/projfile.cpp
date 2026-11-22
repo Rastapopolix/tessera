@@ -310,4 +310,18 @@ bool setting_put(const char *name, const std::string &value)
     f << value << "\n";
     return (bool)f;
 }
+std::string presets_dir()
+{
+    namespace fs = std::filesystem;
+#ifdef _WIN32
+    const wchar_t *home = _wgetenv(L"USERPROFILE");
+    fs::path d = home && *home ? fs::path(home) / "Documents" / "Tessera" / "Presets" : fs::path();
+#else
+    const char *home = std::getenv("HOME");
+    fs::path d = home && *home ? fs::path(home) / "Documents" / "Tessera" / "Presets" : fs::path();
+#endif
+    std::error_code ec;
+    if (d.empty() || (fs::create_directories(d, ec), ec)) return "";
+    return d.u8string();   // (C++17: UTF-8 in a std::string)
+}
 }   // namespace projfile

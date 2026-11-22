@@ -33,4 +33,8 @@ bool write_file(const std::string &path, const std::vector<uint8_t> &data);
  * Shared by every instance and DAW, as the web simulator's localStorage is by its pages */
 std::string setting_get(const char *name);
 bool setting_put(const char *name, const std::string &value);
+
+/* the user's preset folder, for the DAW's preset browser (presets.cpp): Documents/Tessera/Presets in the user's home
+ * (Windows: %USERPROFILE%\Documents\Tessera\Presets), made if it is not there. "" if there is no home */
+std::string presets_dir();
 }   // namespace projfile

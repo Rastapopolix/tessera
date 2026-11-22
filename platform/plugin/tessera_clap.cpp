@@ -41,6 +41,7 @@
 
 #include "core_copies.h"
 #include "gui.h"
+#include "presets.h"
 #include "projfile.h"
 #include "resample.h"
 
@@ -1136,6 +1137,36 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 }
 const clap_plugin_state_t state = {st_save, st_load};
 
+// ---- preset-load: a preset picked in the DAW's browser (presets.cpp: a demo, or a .tsp of the user's), loaded as OPEN
+// loads a project; the host told it loaded (its browser shows it), or why not
+bool pl_from_location(const clap_plugin_t *p, uint32_t kind, const char *location, const char *load_key)
+{
+    auto *t = self(p);
+    auto *hpl = static_cast<const clap_host_preset_load_t *>(t->host->get_extension(t->host, CLAP_EXT_PRESET_LOAD));
+    if (!hpl) hpl = static_cast<const clap_host_preset_load_t *>(t->host->get_extension(t->host, CLAP_EXT_PRESET_LOAD_COMPAT));
+    std::vector<uint8_t> rec;
+    std::string err;
+    uint32_t r = 1;
+    if (presets::record(kind, location, load_key, rec, err))
+    {
+        {
+            std::lock_guard<std::mutex> g(t->core_lock);
+            r = t->core->load(rec.data(), (uint32_t)rec.size());
+        }
+        if (r) err = "A PROJECT THIS VERSION CANNOT READ";
+    }
+    if (r)
+    {
+        if (hpl && hpl->on_error) hpl->on_error(t->host, kind, location, load_key, 0, err.c_str());
+        return false;
+    }
+    t->gen_before = false;
+    t->changed_by_file();
+    if (hpl && hpl->loaded) hpl->loaded(t->host, kind, location, load_key);
+    return true;
+}
+const clap_plugin_preset_load_t preset_load_ext = {pl_from_location};
+
 // ---- latency: the resampler plays half its kernel behind (resample.h: 32 core frames, ~0.7 ms; none at 44.1 kHz)
 uint32_t lat_get(const clap_plugin_t *p) { return self(p)->rs.delay_host(); }
 const clap_plugin_latency_t latency_ext = {lat_get};
@@ -1334,6 +1365,7 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
+    if (!std::strcmp(id, CLAP_EXT_PRESET_LOAD) || !std::strcmp(id, CLAP_EXT_PRESET_LOAD_COMPAT)) return &preset_load_ext;
     if (!std::strcmp(id, CLAP_EXT_LATENCY)) return &latency_ext;
     return nullptr;
 }
@@ -1359,7 +1391,7 @@ const char *features[] = {CLAP_PLUGIN_FEATURE_INSTRUMENT, CLAP_PLUGIN_FEATURE_SY
 #endif
 const clap_plugin_descriptor_t desc = {
     CLAP_VERSION_INIT,
-    "io.github.rastapopolix.tessera",
+    TESS_PLUGIN_ID,
     "Tessera",
     "Tessera",
     "https://github.com/Rastapopolix/tessera",
@@ -1410,6 +1442,10 @@ bool tessera_entry_init(const char *) { return true; }
 void tessera_entry_deinit(void) {}
 const void *tessera_entry_get_factory(const char *id)
 {
-    return !std::strcmp(id, CLAP_PLUGIN_FACTORY_ID) ? &factory : nullptr;
+    if (!std::strcmp(id, CLAP_PLUGIN_FACTORY_ID))
+        return &factory;
+    if (!std::strcmp(id, CLAP_PRESET_DISCOVERY_FACTORY_ID) || !std::strcmp(id, CLAP_PRESET_DISCOVERY_FACTORY_ID_COMPAT))
+        return presets::factory();   // (the DAW's preset browser: presets.cpp)
+    return nullptr;
 }
 

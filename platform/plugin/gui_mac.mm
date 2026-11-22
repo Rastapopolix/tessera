@@ -140,6 +140,9 @@ class GuiMac : public Gui
             sp.title = @"Save the Tessera project";
             sp.allowedFileTypes = @[ @"tsp" ];
             sp.nameFieldStringValue = [NSString stringWithUTF8String:link->file_name().c_str()] ?: @"Tessera.tsp";
+            std::string presets = projfile::presets_dir();   // (the DAW's preset browser lists what is saved there)
+            if (!presets.empty())
+                sp.directoryURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:presets.c_str()] isDirectory:YES];
             if ([sp runModal] == NSModalResponseOK && sp.URL.fileSystemRepresentation)
                 panel.note(link->save_file(sp.URL.fileSystemRepresentation));
         }
