@@ -147,6 +147,10 @@ class Panel
     void set_gen(const GenState &g);
     GenRequest take_gen_request() { GenRequest r = gen_req; gen_req = GenRequest{}; return r; }
 
+    // a knob's centre and its pointer's angle (0: MASTER, then SELECT, PRESETS, ALGORITHM, KNOB 1..4), for tests
+    void knob_at_xy(int i, int &x, int &y) const { x = knobs[i].x; y = knobs[i].y; }
+    double knob_angle(int i) const { return knobs[i].angle; }
+
   private:
     // GENERATE's strip (TESSERA's shell): the button, the style, VAR, the seed; the style's list
     std::vector<std::string> gen_names;
@@ -225,6 +229,10 @@ class Panel
     enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
+    int master_mine = -1;   // MASTER as this panel last set it, while it turns and a moment after (-1: none): the next
+                            // turn goes on from here, not from the view, which is a block or two behind (a fast drag
+                            // otherwise loses its steps and the knob stutters)
+    uint32_t master_mine_at = 0;   // the frame it was set
     uint32_t frame = 0;     // frames drawn (the breathing LEDs: each window its own)
     int knob_at(int x, int y) const;
     int button_at(int x, int y) const;

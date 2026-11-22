@@ -139,6 +139,30 @@ int main(int argc, char **argv)
     p.draw(px.data(), v);
     if (!out.empty()) ppm(out + "/04_knob1.ppm", px);
 
+    // MASTER dragged fast while the view lags (the audio thread takes each value a block or two later, as in the
+    // Windows app): every step counts, from where the drag left it, not from the last view
+    {
+        tess_core_view(&v);
+        p.draw(px.data(), v);
+        int m0 = (int)v.master, last = -1;
+        int mx, my;
+        p.knob_at_xy(0, mx, my);
+        p.down(mx, my);
+        for (int i = 1; i <= 10; i++)
+        {
+            p.move(mx, my - 3 * i);   // (3 px: a step of 16)
+            if (p.input.master >= 0) last = p.input.master;
+            p.input.master = -1;          // handed on; the view not yet updated
+            p.draw(px.data(), v);
+        }
+        p.up(mx, my - 30);
+        int want = m0 + 160 > 1023 ? 1023 : m0 + 160;
+        CHECK(last == want, "MASTER dragged 30 px up from %d: %d, not %d", m0, want, last);
+        CHECK(std::abs(p.knob_angle(0) - (-135 + 270.0 * want / 1023)) < 0.01, "MASTER's pointer where the drag left it");
+        tess_core_master((uint32_t)m0);   // (as it was, for what follows)
+        p.input.changed = false;
+    }
+
     // PLAY again stops; then a key held sounds
     click(p, 582 + 4 * 63 + 27, 236 + 24);
     double quiet = run(p, 6.0);
