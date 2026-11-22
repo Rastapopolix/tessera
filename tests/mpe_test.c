@@ -4,7 +4,8 @@
  *   MPE: a member channel's pressure and CC74 move only its own note; a channel's values before its note-on are the
  *   note's start; Poly AT and a CLAP note's BRIGHTNESS (code index 0) one key; a note not from MIDI the track's AT;
  *   AT -> CUTOFF and SLIDE -> SHAPE move each voice by its own; CC121 clears. Then what it costs: 16 voices with a
- *   mod from AT against the same from VEL (both per voice). Built with -DTESS_MPE=1 -DCORE_TRACKS=8 */
+ *   mod from AT against the same from VEL (both per voice). Per-note bend: test_bend. Built with -DTESS_MPE=1
+ *   -DCORE_TRACKS=8 */
 #define main hostsim_main
 #include "hostsim.c"
 #undef main
@@ -61,6 +62,8 @@ static double cost_of(uint32_t src)                     /* ns a block: track 1, 
     uint64_t best = ~0ull;
     int32_t o[2 * CTL];
     host_tracks_init();
+    memset(trk[0].v, 0, sizeof trk[0].v);
+    steal_pad(&trk[0]);                                /* (the same sound every run) */
     for (uint32_t i = 0; i < CORD_MAX; i++) { cord_t z; memset(&z, 0, sizeof z); cord_set(i, &z); }
     trk[0].p[P_VOICE] = V_POLY; trk[0].p[P_SUS] = 127; trk[0].p[P_AMODE] = 0;
     if (src) mod_to(0, src, CD_CUTOFF);
@@ -74,6 +77,76 @@ static double cost_of(uint32_t src)                     /* ns a block: track 1, 
         best = ns < best ? ns : best;
     }
     return (double)best / 2000.0;
+}
+
+/* per-note bend: a member channel's pitch bend moves its own note only, smoothed as the track's; MPE's MCM sets the
+ * members' range to 48; a note-on takes its channel's bend at once; a CLAP note's TUNING adds to one key's */
+static void test_bend(void)
+{
+    track_t *t = &trk[0];
+    int32_t o[2 * CTL];
+    voice_t *a, *b;
+    host_tracks_init();
+    t->p[P_VOICE] = V_POLY; t->p[P_SUS] = 127; t->p[P_AMODE] = 0;
+    song.g[G_ROUTE] = 1; song.sel = 0;
+    memset(midi_ch, 0, sizeof midi_ch);
+    mq(0x91u, 60, 100, 9);
+    mq(0x92u, 64, 100, 9);
+    blk();
+    a = voice_of(t, 60), b = voice_of(t, 64);
+    if (!a || !b) { check("two notes for the bend", 0); return; }
+    mq(0xE1u, 127, 127, 0xE);                           /* channel 2 fully up: 2 semitones (RPN 0's default) */
+    for (uint32_t k = 0; k < 40u; k++) { blk(); mix_block(o, CTL); }
+    printf("mpe:   bend: note 60 %d / %d Q8, note 64 %d\n", a->mbq8, a->mbt, b->mbq8);
+    check("a member channel's bend moves its own note only, landing exactly (+2 semitones)", a->mbt == 512 &&
+          a->mbq8 == 512 && b->mbq8 == 0 && b->mbt == 0);
+    mq(0xB0u, 101, 0, 0xB); mq(0xB0u, 100, 6, 0xB); mq(0xB0u, 6, 15, 0xB);   /* MCM on channel 1: 15 members */
+    blk();
+    check("MPE's MCM: the members' bend range 48 semitones, the master's 2", midi_ch[1].semis == 48u &&
+          midi_ch[15].semis == 48u && midi_ch[0].semis == 2u && a->mbt == 48 * 256);
+    mq(0xE3u, 0, 96, 0xE);                              /* channel 4 at +0.5 before its note */
+    mq(0x93u, 67, 100, 9);
+    blk();
+    {
+        voice_t *c = voice_of(t, 67);
+        check("a note-on takes its channel's bend at once (no glide in): +24 semitones", c && c->mbt == c->mbq8 &&
+              c->mbt > 24 * 256 - 8 && c->mbt < 24 * 256 + 8);
+    }
+    mpe_tune_put(-1, 64, -300);                         /* a CLAP note's TUNING: key 64, -3 cents x 100 / 100 .. */
+    blk();
+    for (uint32_t k = 0; k < 40u; k++) { blk(); mix_block(o, CTL); }
+    check("a CLAP note's TUNING: one key, added to its channel's bend", b->mtune == -300 && b->mbq8 == -300 &&
+          a->mtune == 0);
+    mq(0xE1u, 0, 64, 0xE);                              /* channel 2 back to the middle */
+    for (uint32_t k = 0; k < 40u; k++) { blk(); mix_block(o, CTL); }
+    check("bend back to the middle: the note back to 0", a->mbq8 == 0);
+}
+
+/* the bend reaches the sound: one note on channel 2, its channel bent or not: its zero crossings (the pitch) */
+static uint32_t bent_crossings(uint32_t bend_msb)
+{
+    int32_t o[2 * CTL], was = 0;
+    uint32_t n = 0;
+    host_tracks_init();
+    memset(trk[0].v, 0, sizeof trk[0].v);             /* (no voice left from before) */
+    steal_pad(&trk[0]);                                /* (TRIO's plain triangle: its crossings are its pitch. Not FM6,
+                                                        * which bends by its own DX7 range: voice.c's bend is not its) */
+    trk[0].p[P_VOICE] = V_POLY; trk[0].p[P_SUS] = 127; trk[0].p[P_AMODE] = 0;
+    song.g[G_ROUTE] = 1; song.sel = 0;
+    memset(midi_ch, 0, sizeof midi_ch);
+    mq(0xE1u, 0, bend_msb, 0xE);
+    mq(0x91u, 48, 100, 9);
+    for (uint32_t k = 0; k < 800u; k++) {
+        blk(); mix_block(o, CTL);
+        if (k >= 100u)                                  /* (past the attack) */
+            for (uint32_t i = 0; i < CTL; i++) {
+                if ((o[2 * i] >= 0) != (was >= 0)) n++;
+                was = o[2 * i];
+            }
+    }
+    mq(0x81u, 48, 0, 8);
+    blk();
+    return n;
 }
 
 int main(void)
@@ -137,6 +210,13 @@ int main(void)
     a = voice_of(t, 61);
     check("after CC121 a channel's next note starts at 0", a && !a->mat && !a->msl && a->mch == 2u);
 
+    test_bend();
+    {
+        uint32_t z0 = bent_crossings(64), z1 = bent_crossings(100);   /* (100: +1.125 semitones, x 1.067) */
+        printf("mpe:   zero crossings, 0.6 s: unbent %u, its channel bent +1.125 st %u (x %.3f)\n", z0, z1, z0 ? (double)z1 / z0 : 0.0);
+        check("the bend reaches the sound: the bent note about 6.7 %% higher", z0 > 100u && z1 * 1000u > z0 * 1040u &&
+              z1 * 1000u < z0 * 1100u);
+    }
     {
         double c0 = cost_of(0), cv = cost_of(CS_VEL), ca2 = cost_of(CS_AT), cs = cost_of(CS_SLIDE);
         printf("mpe: cost, 16 voices held, a mod onto CUTOFF: none %.0f ns a block, VEL %.0f, AT %.0f, SLIDE %.0f "

@@ -1609,6 +1609,10 @@ static void events_block(uint32_t n)
             midi_event(st, ch, d1, d2);
         }
     }
+#if TESS_MPE
+    if (mi_r == mi_w)                                  /* (a CLAP note's TUNING: after the notes queued before it) */
+        mpe_tune_take();
+#endif
     if(song.playing)resource_release(RES_NOTE_HISTORY);
     if (clock_mode) {
         if (song.playing) {

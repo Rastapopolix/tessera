@@ -286,6 +286,8 @@ typedef struct {
     uint8_t mch, mkey;           /* per-note expression (the plugin): the MIDI channel + 1 the note came in on, 0 the
                                   * sequencer's or a generator's (they read the track's AT and SLIDE), and its key */
     uint8_t mat, msl;            /* .. its own pressure (AT) and slide (SLIDE: MPE's CC74, a CLAP note's BRIGHTNESS) */
+    int16_t mbt, mtune;          /* .. its own bend: its channel's pitch bend and a CLAP note's TUNING, Q8 semitones */
+    int32_t mbq8;                /* .. their sum as it sounds, smoothed as the track's bend is (voice.c track_render) */
 #endif
 } voice_t;
 
