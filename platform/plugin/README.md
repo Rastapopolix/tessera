@@ -7,7 +7,7 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 ## What works
 
 - **Sound:** the whole firmware (sequencer, generators, voices, FX) as the web simulator runs it (`web/sim/sim.c`),
-  at 44.1 kHz inside, resampled to the host's rate.
+  at 44.1 kHz inside, resampled to the host's rate by a 64-tap windowed sinc (`resample.h`: flat to 20 kHz, the error ~90 dB under the signal, nothing folded down at lower rates; ~0.4 % of a core). It plays 32 core frames (0.7 ms) behind, reported to the host as latency; at 44.1 kHz it is a plain copy, no latency.
 - **Engines the FM-1 has no room for:** SID (a whole MOS 6581 / 8580 per note), DRUM's SID KIT and SID DIGI, and
   MACRO (Plaits' synthesis), PHASE (the CZ-1's phase distortion, CrispyZebra's waveforms), besides the FM-1's own.
   A project with them opens on the FM-1 too: its SID, MACRO and PHASE tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
