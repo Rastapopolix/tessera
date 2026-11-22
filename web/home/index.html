@@ -174,6 +174,8 @@ details.more-ways a { color: var(--ink); }
 .about { max-width: 46em; }
 .about p { margin: 0; }
 .about .note { margin-top: 20px; }
+.about .support { margin-top: 20px; }
+.about .support-cta { margin-top: 14px; }
 
 footer { border-top: 2px solid var(--ink); padding: 36px 0 48px; color: var(--dim); font-size: 14px; }
 footer a { color: var(--mid); }
@@ -214,6 +216,7 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <a data-h="nav_inks" class="opt" href="#inks">Inks</a>
       <a data-h="nav_recipes" class="opt" href="#recipes">Recipes</a>
       <a data-h="nav_install" href="#install">Install</a>
+      <a data-h="nav_plugin" class="opt" href="plugin/">Plugin</a>
       <a data-h="nav_about" class="opt" href="#about">About</a>
       <a class="opt2" href="https://github.com/Rastapopolix/tessera">GitHub</a>
     </div>
@@ -434,8 +437,9 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <a class="card" style="--c:var(--p2)" href="webapp/sim/"><b data-h="install_cardb2">Try it in your browser</b><span data-h="install_cards2">The same firmware on an on-screen FM-1, with sound.</span></a>
       <a class="card" style="--c:var(--p3)" href="manual/"><b data-h="install_cardb4">Manual</b><span data-h="install_cards4">Every page, knob and mode.</span></a>
       <a class="card" style="--c:var(--p4)" href="webapp/editor/"><b data-h="install_cardb6">Web editor</b><span data-h="install_cards6">Edit sounds and sequences from the computer.</span></a>
-      <a class="card" style="--c:var(--p1)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b data-h="install_cardb5">Cheatsheet</b><span data-h="install_cards5">The buttons and combinations on one printable page.</span></a>
-      <a class="card" style="--c:var(--p2)" href="https://github.com/Rastapopolix/tessera"><b data-h="install_cardb7">Source</b><span data-h="install_cards7">GPL-3.0, on GitHub, with the changes in every release.</span></a>
+      <a class="card" style="--c:var(--p1)" href="plugin/"><b data-h="install_cardb8">Plugin</b><span data-h="install_cards8">Tessera in your DAW: CLAP, VST3 and AU. Public beta.</span></a>
+      <a class="card" style="--c:var(--p2)" href="https://github.com/Rastapopolix/tessera/blob/HEAD/docs/cheatsheet/tessera-cheatsheet.pdf"><b data-h="install_cardb5">Cheatsheet</b><span data-h="install_cards5">The buttons and combinations on one printable page.</span></a>
+      <a class="card" style="--c:var(--p3)" href="https://github.com/Rastapopolix/tessera"><b data-h="install_cardb7">Source</b><span data-h="install_cards7">GPL-3.0, on GitHub, with the changes in every release.</span></a>
     </div>
     <details class="more-ways">
       <summary data-h="install_more">Other ways to install, and the way back</summary>
@@ -462,6 +466,8 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
       <div>
         <p data-h="about_p1">I'm Theo Dainis, from Aotearoa New Zealand. I've been using and building synthesisers for the past 15 years, and I'm passionate about modular and open source. I’m heavily influenced by Elektron, Mutable Instruments and the Monome and Whimsical Raps world. I love the DIY side: building things, and learning how music hardware works on the inside. Tessera is the sequencer I wanted on the FM-1: modular in a box, a small instrument that writes with you.</p>
         <div data-h="about_note1" class="note"><b>Built with Claude Code.</b> As much as I’d like to take the credit, Tessera's code is written with <a href="https://claude.com/claude-code">Claude Code</a>, Anthropic's AI coding tool. I designed it, made the decisions, and test it on my own FM-1. It’s experimental, so please report anything odd. The source is open, so you can read every line and every change. Like any firmware, it comes with no warranty: save a <b>Complete backup</b> from the <a href="webapp/editor/">web editor</a> before you flash.</div>
+        <p data-h="about_support" class="support">Tessera is free and open source, and it stays that way. If it has given you some good hours of music, you can buy me a coffee on Ko-fi. Donations go first to the Mac version of the plugin (an Apple developer account, to sign it), then to Andamento, the open-source hardware, and to more time for Tessera.</p>
+        <div class="cta support-cta"><a data-h="about_kofi" class="btn" href="https://ko-fi.com/Rastapopolix">Support on Ko-fi</a></div>
       </div>
     </div>
   </div>
@@ -591,6 +597,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">Estándar</a> · <a href=\"firmware/@FWSC1@\">un solo núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas las releases</a>. Desde un terminal: <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, necesita mido y python-rtmidi).",
     install_cardb4: "Manual",
     install_cards4: "Cada página, knob y modo (en inglés).",
+    install_cardb8: "Plugin",
+    install_cards8: "Tessera en tu DAW: CLAP, VST3 y AU (en inglés). Beta pública.",
+    nav_plugin: "Plugin",
     install_cardb5: "Hoja de referencia",
     install_cards5: "Los botones y combinaciones en una página para imprimir (en inglés).",
     install_cardb6: "Editor web",
@@ -604,6 +613,8 @@ window.HOME_TEXT = {
     about_h2: "Quién hace Tessera",
     about_p1: "Soy Theo Dainis, de Aotearoa Nueva Zelanda. Llevo 15 años usando y construyendo sintetizadores, y me apasionan lo modular y el código abierto. Me influyen mucho Elektron, Mutable Instruments y el mundo de Monome y Whimsical Raps. Me encanta el lado DIY: construir cosas y aprender cómo funciona por dentro el hardware musical. Tessera es el secuenciador que quería en el FM-1: un modular en una caja, un pequeño instrumento que escribe contigo.",
     about_note1: "<b>Hecho con Claude Code.</b> Por mucho que me gustaría llevarme el mérito, el código de Tessera está escrito con <a href=\"https://claude.com/claude-code\">Claude Code</a>, la herramienta de programación con IA de Anthropic. Yo lo diseñé, tomé las decisiones y lo pruebo en mi propio FM-1. Es experimental, así que avisa de cualquier cosa rara. El código es abierto, así que puedes leer cada línea y cada cambio. Como todo firmware, no tiene garantía: guarda una <b>copia de seguridad completa</b> desde el <a href=\"webapp/editor/\">editor web</a> antes de flashear.",
+    about_support: "Tessera es libre y de código abierto, y seguirá siéndolo. Si te ha dado buenas horas de música, puedes invitarme a un café en Ko-fi. Las donaciones van primero a la versión para Mac del plugin (una cuenta de desarrollador de Apple, para firmarlo), después a Andamento, el hardware de código abierto, y a más tiempo para Tessera.",
+    about_kofi: "Apoyar en Ko-fi",
     themeLight: "Claro",
     loopsPause: "Pausar las pantallas",
     loopsPlay: "Reproducir las pantallas",
@@ -714,6 +725,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">Standard</a> · <a href=\"firmware/@FWSC1@\">single core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">tutte le release</a>. Da un terminale: <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, richiede mido e python-rtmidi).",
     install_cardb4: "Manuale",
     install_cards4: "Ogni pagina, manopola e modalità (in inglese).",
+    install_cardb8: "Plugin",
+    install_cards8: "Tessera nella tua DAW: CLAP, VST3 e AU (in inglese). Beta pubblica.",
+    nav_plugin: "Plugin",
     install_cardb5: "Promemoria",
     install_cards5: "I pulsanti e le combinazioni in una pagina da stampare (in inglese).",
     install_cardb6: "Editor web",
@@ -727,6 +741,8 @@ window.HOME_TEXT = {
     about_h2: "Chi fa Tessera",
     about_p1: "Sono Theo Dainis, di Aotearoa Nuova Zelanda. Uso e costruisco sintetizzatori da 15 anni, e sono appassionato di modulare e open source. Sono molto influenzato da Elektron, Mutable Instruments e dal mondo di Monome e Whimsical Raps. Amo il lato DIY: costruire cose e capire come funziona dentro l'hardware musicale. Tessera è il sequencer che volevo sull'FM-1: un modulare in una scatola, un piccolo strumento che scrive con te.",
     about_note1: "<b>Fatto con Claude Code.</b> Per quanto mi piacerebbe prendermene il merito, il codice di Tessera è scritto con <a href=\"https://claude.com/claude-code\">Claude Code</a>, lo strumento di programmazione con IA di Anthropic. L'ho progettato io, ho preso le decisioni e lo provo sul mio FM-1. È sperimentale, quindi segnala qualsiasi cosa strana. Il codice è aperto, quindi puoi leggere ogni riga e ogni modifica. Come ogni firmware, non ha garanzia: salva un <b>backup completo</b> dall'<a href=\"webapp/editor/\">editor web</a> prima di flashare.",
+    about_support: "Tessera è libero e open source, e resterà così. Se ti ha regalato qualche bella ora di musica, puoi offrirmi un caffè su Ko-fi. Le donazioni vanno prima alla versione Mac del plugin (un account sviluppatore Apple, per firmarlo), poi ad Andamento, l'hardware open source, e a più tempo per Tessera.",
+    about_kofi: "Sostieni su Ko-fi",
     themeLight: "Chiaro",
     loopsPause: "Metti in pausa gli schermi",
     loopsPlay: "Riproduci gli schermi",
@@ -837,6 +853,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">Standard</a> · <a href=\"firmware/@FWSC1@\">Single-Core</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">alle Releases</a>. Im Terminal: <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, braucht mido und python-rtmidi).",
     install_cardb4: "Handbuch",
     install_cards4: "Jede Seite, jeder Regler, jeder Modus (englisch).",
+    install_cardb8: "Plugin",
+    install_cards8: "Tessera in deiner DAW: CLAP, VST3 und AU (englisch). Öffentliche Beta.",
+    nav_plugin: "Plugin",
     install_cardb5: "Spickzettel",
     install_cards5: "Die Tasten und Kombinationen auf einer druckbaren Seite (englisch).",
     install_cardb6: "Web-Editor",
@@ -850,6 +869,8 @@ window.HOME_TEXT = {
     about_h2: "Wer Tessera macht",
     about_p1: "Ich bin Theo Dainis aus Aotearoa Neuseeland. Ich benutze und baue seit 15 Jahren Synthesizer, und ich brenne für Modular und Open Source. Mich prägen vor allem Elektron, Mutable Instruments und die Welt von Monome und Whimsical Raps. Ich liebe die DIY-Seite: Dinge bauen und lernen, wie Musik-Hardware von innen funktioniert. Tessera ist der Sequencer, den ich mir für das FM-1 gewünscht habe: Modular in einer Kiste, ein kleines Instrument, das mit dir schreibt.",
     about_note1: "<b>Gebaut mit Claude Code.</b> So gern ich mir die Lorbeeren anheften würde: Tesseras Code ist mit <a href=\"https://claude.com/claude-code\">Claude Code</a> geschrieben, dem KI-Programmierwerkzeug von Anthropic. Ich habe es entworfen, die Entscheidungen getroffen und teste es auf meinem eigenen FM-1. Es ist experimentell, also melde bitte alles Merkwürdige. Der Quellcode ist offen, du kannst jede Zeile und jede Änderung lesen. Wie jede Firmware kommt es ohne Gewähr: Sichere vor dem Flashen ein <b>vollständiges Backup</b> mit dem <a href=\"webapp/editor/\">Web-Editor</a>.",
+    about_support: "Tessera ist frei und quelloffen und bleibt es. Wenn es dir ein paar gute Stunden Musik geschenkt hat, kannst du mir auf Ko-fi einen Kaffee spendieren. Spenden gehen zuerst an die Mac-Version des Plugins (ein Apple-Entwicklerkonto, um es zu signieren), dann an Andamento, die Open-Source-Hardware, und an mehr Zeit für Tessera.",
+    about_kofi: "Auf Ko-fi unterstützen",
     themeLight: "Hell",
     loopsPause: "Bildschirme anhalten",
     loopsPlay: "Bildschirme abspielen",
@@ -960,6 +981,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">Standard</a> · <a href=\"firmware/@FWSC1@\">mono-cœur</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">toutes les releases</a>. Depuis un terminal : <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, nécessite mido et python-rtmidi).",
     install_cardb4: "Manuel",
     install_cards4: "Chaque page, bouton et mode (en anglais).",
+    install_cardb8: "Plugin",
+    install_cards8: "Tessera dans votre DAW : CLAP, VST3 et AU (en anglais). Bêta publique.",
+    nav_plugin: "Plugin",
     install_cardb5: "Aide-mémoire",
     install_cards5: "Les boutons et combinaisons sur une page à imprimer (en anglais).",
     install_cardb6: "Éditeur web",
@@ -973,6 +997,8 @@ window.HOME_TEXT = {
     about_h2: "Qui fait Tessera",
     about_p1: "Je suis Theo Dainis, d'Aotearoa Nouvelle-Zélande. J'utilise et je construis des synthétiseurs depuis 15 ans, et je suis passionné de modulaire et d'open source. Je suis très influencé par Elektron, Mutable Instruments et l'univers de Monome et Whimsical Raps. J'adore le côté DIY : construire des choses, et apprendre comment le matériel musical fonctionne de l'intérieur. Tessera est le séquenceur que je voulais sur le FM-1 : un modulaire dans une boîte, un petit instrument qui écrit avec vous.",
     about_note1: "<b>Fait avec Claude Code.</b> J'aimerais bien m'en attribuer le mérite, mais le code de Tessera est écrit avec <a href=\"https://claude.com/claude-code\">Claude Code</a>, l'outil de programmation par IA d'Anthropic. Je l'ai conçu, j'ai pris les décisions, et je le teste sur mon propre FM-1. Il est expérimental : signalez tout ce qui vous semble bizarre. Le code est ouvert, vous pouvez lire chaque ligne et chaque changement. Comme tout firmware, il est fourni sans garantie : enregistrez une <b>sauvegarde complète</b> depuis l'<a href=\"webapp/editor/\">éditeur web</a> avant de flasher.",
+    about_support: "Tessera est libre et open source, et le restera. S'il vous a offert quelques bonnes heures de musique, vous pouvez m'offrir un café sur Ko-fi. Les dons vont d'abord à la version Mac du plugin (un compte développeur Apple, pour le signer), puis à Andamento, le matériel open source, et à plus de temps pour Tessera.",
+    about_kofi: "Soutenir sur Ko-fi",
     themeLight: "Clair",
     loopsPause: "Mettre les écrans en pause",
     loopsPlay: "Lire les écrans",
@@ -1083,6 +1109,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">Padrão</a> · <a href=\"firmware/@FWSC1@\">um núcleo</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">todas as releases</a>. Pelo terminal: <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, precisa de mido e python-rtmidi).",
     install_cardb4: "Manual",
     install_cards4: "Cada página, knob e modo (em inglês).",
+    install_cardb8: "Plugin",
+    install_cards8: "Tessera na sua DAW: CLAP, VST3 e AU (em inglês). Beta pública.",
+    nav_plugin: "Plugin",
     install_cardb5: "Folha de consulta",
     install_cards5: "Os botões e combinações numa página para imprimir (em inglês).",
     install_cardb6: "Editor web",
@@ -1096,6 +1125,8 @@ window.HOME_TEXT = {
     about_h2: "Quem faz a Tessera",
     about_p1: "Sou Theo Dainis, de Aotearoa Nova Zelândia. Uso e construo sintetizadores há 15 anos, e sou apaixonado por modular e código aberto. Tenho muita influência da Elektron, da Mutable Instruments e do mundo da Monome e da Whimsical Raps. Adoro o lado DIY: construir coisas e aprender como o hardware musical funciona por dentro. A Tessera é o sequenciador que eu queria no FM-1: um modular numa caixa, um pequeno instrumento que escreve com você.",
     about_note1: "<b>Feito com Claude Code.</b> Por mais que eu quisesse levar o crédito, o código da Tessera é escrito com o <a href=\"https://claude.com/claude-code\">Claude Code</a>, a ferramenta de programação com IA da Anthropic. Eu projetei, tomei as decisões e testo no meu próprio FM-1. É experimental, então avise sobre qualquer coisa estranha. O código é aberto, então você pode ler cada linha e cada mudança. Como qualquer firmware, vem sem garantia: salve um <b>backup completo</b> pelo <a href=\"webapp/editor/\">editor web</a> antes de gravar.",
+    about_support: "A Tessera é livre e de código aberto, e vai continuar assim. Se ela te deu boas horas de música, você pode me pagar um café no Ko-fi. As doações vão primeiro para a versão do plugin para Mac (uma conta de desenvolvedor da Apple, para assiná-lo), depois para o Andamento, o hardware de código aberto, e para mais tempo para a Tessera.",
+    about_kofi: "Apoiar no Ko-fi",
     themeLight: "Claro",
     loopsPause: "Pausar as telas",
     loopsPlay: "Reproduzir as telas",
@@ -1206,6 +1237,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">표준</a> · <a href=\"firmware/@FWSC1@\">싱글 코어</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">모든 릴리스</a>. 터미널에서: <code>python3 tools/fm1_install.py @FWSC@</code> (<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>, mido와 python-rtmidi 필요).",
     install_cardb4: "매뉴얼",
     install_cards4: "모든 페이지, 노브, 모드 (영어).",
+    install_cardb8: "플러그인",
+    install_cards8: "DAW 안의 Tessera: CLAP, VST3, AU (영어). 공개 베타.",
+    nav_plugin: "플러그인",
     install_cardb5: "치트시트",
     install_cards5: "버튼과 조합을 한 장에 담은 인쇄용 페이지 (영어).",
     install_cardb6: "웹 에디터",
@@ -1219,6 +1253,8 @@ window.HOME_TEXT = {
     about_h2: "Tessera를 만드는 사람",
     about_p1: "저는 아오테아로아 뉴질랜드의 Theo Dainis입니다. 15년 동안 신시사이저를 쓰고 만들어 왔고, 모듈러와 오픈 소스를 사랑합니다. Elektron, Mutable Instruments, 그리고 Monome과 Whimsical Raps의 세계에서 많은 영향을 받았습니다. 무언가를 만들고, 음악 하드웨어가 안에서 어떻게 동작하는지 배우는 DIY를 좋아합니다. Tessera는 제가 FM-1에서 원했던 시퀀서입니다: 상자 속의 모듈러, 함께 써 내려가는 작은 악기.",
     about_note1: "<b>Claude Code로 만들었습니다.</b> 공을 제가 다 가져가고 싶지만, Tessera의 코드는 Anthropic의 AI 코딩 도구인 <a href=\"https://claude.com/claude-code\">Claude Code</a>로 작성됩니다. 설계와 결정은 제가 했고, 제 FM-1에서 직접 테스트합니다. 실험적인 프로젝트이니 이상한 점이 있으면 알려 주세요. 소스가 공개되어 있어 모든 줄과 모든 변경을 읽을 수 있습니다. 여느 펌웨어처럼 보증은 없습니다. 설치하기 전에 <a href=\"webapp/editor/\">웹 에디터</a>에서 <b>전체 백업</b>을 저장하세요.",
+    about_support: "Tessera는 무료 오픈 소스이며 앞으로도 그렇습니다. Tessera로 즐거운 음악 시간을 보냈다면 Ko-fi에서 커피 한 잔을 사 주세요. 후원금은 먼저 플러그인의 Mac 버전(서명에 필요한 Apple 개발자 계정)에 쓰이고, 그다음 오픈 소스 하드웨어인 Andamento와 Tessera 개발 시간에 쓰입니다.",
+    about_kofi: "Ko-fi에서 후원하기",
     themeLight: "밝게",
     loopsPause: "화면 일시정지",
     loopsPlay: "화면 재생",
@@ -1329,6 +1365,9 @@ window.HOME_TEXT = {
     install_cards3: "<a href=\"firmware/@FWSC@\">標準</a> · <a href=\"firmware/@FWSC1@\">シングルコア</a> · <a href=\"https://github.com/Rastapopolix/tessera/releases\">すべてのリリース</a>。ターミナルから: <code>python3 tools/fm1_install.py @FWSC@</code>（<a href=\"https://github.com/Rastapopolix/tessera/blob/HEAD/tools/fm1_install.py\">fm1_install.py</a>、mido と python-rtmidi が必要）。",
     install_cardb4: "マニュアル",
     install_cards4: "すべてのページ、ノブ、モード（英語）。",
+    install_cardb8: "プラグイン",
+    install_cards8: "DAW の中の Tessera：CLAP、VST3、AU（英語）。公開ベータ版。",
+    nav_plugin: "プラグイン",
     install_cardb5: "チートシート",
     install_cards5: "ボタンと組み合わせを1枚にまとめた印刷用ページ（英語）。",
     install_cardb6: "Webエディター",
@@ -1342,6 +1381,8 @@ window.HOME_TEXT = {
     about_h2: "Tessera を作っている人",
     about_p1: "アオテアロア・ニュージーランドの Theo Dainis です。15年にわたってシンセサイザーを使い、作ってきました。モジュラーとオープンソースが大好きです。Elektron、Mutable Instruments、そして Monome と Whimsical Raps の世界から大きな影響を受けています。ものを作ること、音楽ハードウェアの内側の仕組みを学ぶこと、つまり DIY が好きです。Tessera は私が FM-1 に欲しかったシーケンサーです。箱の中のモジュラー、一緒に書いてくれる小さな楽器。",
     about_note1: "<b>Claude Code で作っています。</b>手柄を独り占めしたいところですが、Tessera のコードは Anthropic の AI コーディングツール <a href=\"https://claude.com/claude-code\">Claude Code</a> で書かれています。設計と判断は私が行い、自分の FM-1 でテストしています。実験的なものなので、おかしな点があれば教えてください。ソースは公開されているので、すべての行とすべての変更を読めます。どのファームウェアとも同じく無保証です。書き込む前に <a href=\"webapp/editor/\">Webエディター</a>で<b>完全バックアップ</b>を保存してください。",
+    about_support: "Tessera は無料のオープンソースで、これからもそうです。Tessera で楽しい音楽の時間を過ごせたなら、Ko-fi でコーヒーをおごってください。寄付はまずプラグインの Mac 版（署名に必要な Apple 開発者アカウント）に、次にオープンソースのハードウェア Andamento と、Tessera の開発時間に使います。",
+    about_kofi: "Ko-fi で支援する",
     themeLight: "ライト",
     loopsPause: "画面を一時停止",
     loopsPlay: "画面を再生",

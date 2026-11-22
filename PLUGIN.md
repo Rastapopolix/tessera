@@ -1,8 +1,18 @@
 # Tessera as a plugin
 
 Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
-instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1: the same screen, buttons, knobs and keys, so everything
-in the [manual](MANUAL.md) works the same way here. This page covers only what is different in a DAW.
+instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1's panel: the same screen, buttons,
+knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
+in a DAW.
+
+<!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
+
+**The plugin is in public beta.** Download it from the
+[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) or the
+[releases](https://github.com/Rastapopolix/tessera/releases) (marked *Pre-release*). It's a beta: expect some rough
+edges, and please report what you find.
+
+<!-- /downloads -->
 
 - [Install](#install)
 - [First sound](#first-sound)
@@ -10,11 +20,14 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 - [Playing it from your FM-1](#playing-it-from-your-fm-1)
 - [Playing with the DAW](#playing-with-the-daw)
 - [Saving, and project files](#saving-and-project-files)
+- [Tracks 1 to 4, and 5 to 8](#tracks-1-to-4-and-5-to-8)
+- [EXPANDED: all eight tracks at once](#expanded-all-eight-tracks-at-once)
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
 - [Several Tesseras in one song](#several-tesseras-in-one-song)
 - [Playing with an MPE controller](#playing-with-an-mpe-controller)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
+- [Echoes on the beat](#echoes-on-the-beat)
 - [How much CPU it takes](#how-much-cpu-it-takes)
 - [Not there yet](#not-there-yet)
 
@@ -22,8 +35,10 @@ in the [manual](MANUAL.md) works the same way here. This page covers only what i
 
 Copy the plugin where your DAW looks for plugins, then rescan in the DAW.
 
-Download the zip for your system from the [plugin's releases](https://github.com/Rastapopolix/tessera/releases)
-(the betas are marked *Pre-release*). Each zip has an INSTALL text with these steps and the beta's notes.
+Download the zip for your system (a `.tar.gz` on Linux) from the
+[plugin's page](https://rastapopolix.github.io/tessera/plugin/#download) or the
+[releases](https://github.com/Rastapopolix/tessera/releases), where the betas are marked *Pre-release*. Each zip has an
+INSTALL text with these steps and the beta's notes.
 
 | | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) | Audio Unit (`Tessera.component`) |
 |---|---|---|---|
@@ -62,17 +77,19 @@ to send it notes, so it opens with STILL TIDE loaded and plays it at once.
 
 ## The window
 
-The window shows the FM-1, 1:1. Click the buttons and keys (drag across the keys to glide). Drag a knob up and down
-or left and right, or turn the mouse wheel over it.
+The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see **Shells** below).
+Click the buttons and keys (drag across the keys to glide). Drag a knob up and down or left and right, or turn the
+mouse wheel over it. In the standalone app, drag the window's corner and it snaps from one SIZE to the next.
 
 **The screen works with the mouse too.** Hover over something you can use and it gets a thin outline, with its name
 and value shown large in a box under the screen:
 
 - **A value** (one of the four columns of a page, KNOB 1 to 4): turn the mouse wheel over it, or drag it up and down,
   as you would turn its knob. Double-click it to put it back to its default.
-- **A list's row** (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): click to move there, turn
-  the wheel to change that row's value (on SCL's Scale row the wheel steps through the scales), double-click to move
-  there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
+- **A list** (SCL's Root, Scale, Quantize…, the MENU, a list that opens over a page): the wheel scrolls it, a row a
+  notch. Click a row to move there; drag up or down on it to change that row's value (on SCL's Scale row, through the
+  scales); double-click to move there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
+- **MENU > COLOR's inks:** click one to pick it; the wheel steps through them.
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
