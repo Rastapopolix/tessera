@@ -182,6 +182,13 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     int32_t d, k;
     if (!z || !zone_live(z))
         return;
+    if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_ROW) {   /* a list under the wheel: it moves, a row a notch
+                                                                  * (up: up the list, its knob anticlockwise) */
+        zq_turn(z->role, -n);
+        return;
+    }
+    if (action == TESS_ZA_WHEEL)                      /* (anything else: as a turn) */
+        action = TESS_ZA_TURN;
     switch (z->kind) {
     case TESS_ZONE_KNOB:
         if (action == TESS_ZA_TURN)
