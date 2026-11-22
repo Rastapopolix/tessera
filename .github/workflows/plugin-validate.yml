@@ -2,6 +2,7 @@ name: Plugin validators (pluginval, clap-validator)
 
 # The plugin (platform/plugin) through the two common validators, as a DAW would load it: pluginval (Tracktion,
 # strictness 10, with the editor) on the VST3, clap-validator (free-audio) on the CLAP, on Linux and Windows. The
+# clap-validator checks listed in platform/plugin/clap_validator_skip.txt are skipped (the validator hangs in them).
 # clap-validator checks listed in platform/plugin/clap_validator_known.txt are known to fail: they run in a step of
 # their own that reports without failing the run; any other failure fails it. Builds the plugin as plugin.yml does
 # (that workflow stays as it is). Nothing is published.
@@ -63,7 +64,7 @@ jobs:
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
         run: |
-          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
+          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt platform/plugin/clap_validator_skip.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $x build/plugin/out/Tessera.clap 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
         continue-on-error: true
@@ -129,7 +130,7 @@ jobs:
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
         run: |
-          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
+          x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt platform/plugin/clap_validator_skip.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           ~/.cargo-cv/bin/clap-validator.exe validate --only-failed $x "$CLAP" 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
         continue-on-error: true
