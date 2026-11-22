@@ -226,6 +226,10 @@ A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds
 
 On Linux the file dialogs need `zenity` or `kdialog`.
 
+**MENU (HOME held)** is the FM-1's, less the rows for the device itself: KNOBS (the values are always dials, which
+the mouse turns), LARGE VALUE (on its default, AUTO), SCREEN OFF (the screen stays on), PANEL GAMMA, CLOCK OUT (no
+clock goes to the DAW), the USB rows (the DAW has the audio), SIM CONTROL and CALIBRATION.
+
 ## Tracks 1 to 4, and 5 to 8
 
 (In EXPANDED mode all eight are on screen at once: see the next section.)
@@ -234,6 +238,9 @@ The plugin has eight tracks; the panel works on four at a time, as the FM-1's do
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
 shows **5-8**, inverted, before the track dots.
+
+TWEAK's FOLLOW and HOLD and TWEAK 2's TO and WITH, which name another track, reach all
+eight.
 
 All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
 FM-1 skips, so the FM-1 still opens the file as its four tracks).

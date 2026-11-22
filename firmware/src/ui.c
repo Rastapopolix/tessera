@@ -111,7 +111,11 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
  * other byte DIAL (favorites.c) */
 #define KNOBS_SAVED (favorites.factory[8][26])
 #define KNOBS_BAR_TAG 0xB1u
+#if TESS_HOSTED
+#define KNOBS_BAR 0                  /* (a DAW: the mouse turns the dials; no KNOBS row) */
+#else
 #define KNOBS_BAR (KNOBS_SAVED == KNOBS_BAR_TAG)
+#endif
 /* MENU > LARGE VALUE (Mono): the knob turning, its name and value large across the foot. AUTO (the default) only where
  * the page has no picture of its own (ui_mono.c mo_pic_own: HOME and the pages showing the output), so it never covers
  * what the knob is moving; ON on every page; OFF never, HOME too. favorites.factory[8][28] tagged ON or OFF, any other
@@ -120,7 +124,11 @@ static uint8_t browse_loads, browse_mark;    /* sound loads so far; at the brows
 #define LARGE_ON_TAG 0xB3u
 #define LARGE_OFF_TAG 0xB4u
 enum { LARGE_AUTO, LARGE_ON, LARGE_OFF };
+#if TESS_HOSTED
+#define LARGE_MODE LARGE_AUTO        /* (a DAW: the default, no LARGE VALUE row; the panel's hover card names a zone) */
+#else
 #define LARGE_MODE (LARGE_SAVED == LARGE_ON_TAG ? LARGE_ON : LARGE_SAVED == LARGE_OFF_TAG ? LARGE_OFF : LARGE_AUTO)
+#endif
 #define LARGE_HOLD_MS 1000u          /* ON: the value stays large this long after the knob stops (ui_draw.c, ui.hot_ms) */
 /* MENU > OVERLOAD (Mono): BLINK (the default) fills the header's four track dots for a moment when the FM-1 runs out
  * of time: once when the audio faded voices to catch up (audio.c shed_voice), twice when a half was late (the DMA moved

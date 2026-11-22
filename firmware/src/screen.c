@@ -25,7 +25,11 @@ static struct {
 } scrn;
 static uint32_t scr_get(void)                          /* the MENU's value: 0 NEVER .. 4 60 MIN */
 {
+#if TESS_HOSTED
+    return 0;                                           /* (a DAW's window: never off, no SCREEN OFF row) */
+#else
     return settings_screen < NELEM(SCR_DEC) ? SCR_DEC[settings_screen] : SCR_DEF;
+#endif
 }
 static void scr_put(uint32_t v)                        /* (the time counts from the change: the editor's too) */
 {
