@@ -582,9 +582,18 @@ void Tessera::midi_in(const clap_event_header_t *h)
         core->midi(e->data[0], e->data[1], e->data[2]);
         break;
     }
-    case CLAP_EVENT_NOTE_EXPRESSION:   // (per note: PRESSURE and BRIGHTNESS, MPE's slide; the rest not yet)
+    case CLAP_EVENT_NOTE_EXPRESSION:   // (per note: PRESSURE, BRIGHTNESS (MPE's slide), TUNING; the rest not yet)
     {
         auto *e = reinterpret_cast<const clap_event_note_expression_t *>(h);
+        if (e->expression_id == CLAP_NOTE_EXPRESSION_TUNING)   // (semitones, -120..120)
+        {
+            if (e->key > 127 || e->channel > 15)
+                break;
+            double c = e->value * 100.0;
+            c = c < -12000.0 ? -12000.0 : c > 12000.0 ? 12000.0 : c;
+            core->note_tune(e->channel < 0 ? -1 : e->channel, e->key < 0 ? -1 : e->key, (int32_t)(c < 0 ? c - 0.5 : c + 0.5));
+            break;
+        }
         uint32_t kind = e->expression_id == CLAP_NOTE_EXPRESSION_PRESSURE     ? TESS_EXPR_PRESSURE
                         : e->expression_id == CLAP_NOTE_EXPRESSION_BRIGHTNESS ? TESS_EXPR_SLIDE
                                                                                : 99u;

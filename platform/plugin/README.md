@@ -24,8 +24,10 @@ tracks, in TESSERA's own window or the FM-1's.
   pressure and slide: an MPE member channel's pressure and CC74, Poly AT, and a CLAP note's PRESSURE and BRIGHTNESS
   (`CLAP_EVENT_NOTE_EXPRESSION` -> `tess_core_note_expr`, queued with the notes). The note port offers the CLAP, MIDI
   and MIDI MPE dialects. In the mods, AT on a voice destination (PITCH, CUTOFF, SHAPE, GAIN) of its own track is each
-  note's own, and the new source SLIDE (cord code 35) too; a note not from MIDI reads the track's. Pitch bend is still
-  one per track (an MPE note's bend bends its track).
+  note's own, and the new source SLIDE (cord code 35) too; a note not from MIDI reads the track's. **Pitch bend per
+  note:** a note from MIDI bends by its own channel's bend (`voice_t.mbt`, smoothed in `mbq8` as the track's) plus a
+  CLAP note's TUNING (`tess_core_note_tune`, a queue of its own taken after the block's MIDI); MCM (RPN 6 on channel
+  1 or 16) sets the members' range to 48, RPN 0 reaches 96. FM6 bends by its own DX7 range, a track at a time.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
