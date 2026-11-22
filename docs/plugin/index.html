@@ -388,7 +388,10 @@ its own key.</li>
 <p>For example, AT → CUTOFF and SLIDE → SHAPE. Use <strong>ROUT SEL</strong> (the plugin's default): every channel then plays the
 selected track, which MPE needs because it sends each note on a channel of its own. Notes the sequencer or a
 generator plays read the track's last pressure and CC74.</p>
-<p>Not yet: pitch bend per note. An MPE note's bend still bends the whole track.</p>
+<p><strong>Pitch bend per note:</strong> each note bends by its own channel's bend, so sliding one finger bends only its note. MPE's
+configuration message sets the bend range of the member channels to 48 semitones, as MPE controllers expect. A CLAP
+host's per-note TUNING (Bitwig's note pitch expression) adds to it. FM6 is the exception: it bends a whole track by its
+own DX7 range (its FUNCTION settings).</p>
 <p>On the FM-1 a project with a SLIDE mod plays without that mod, and AT is one value for the whole track.</p>
 <h2 id="sounds-only-the-plugin-has">Sounds only the plugin has</h2>
 <p>The plugin has room for engines the FM-1 can't fit:</p>
