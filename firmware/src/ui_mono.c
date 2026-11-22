@@ -440,9 +440,9 @@ static void mo_head(void)
     if (UI_BASE && !(ui.msg_t && ui.msg[0]))
         mo_inv("5-8", right + 3, 1);
 #endif
-    for (i = 0; i < 4u; i++) {                          /* the tracks (8: the bank's four): the selected one filled */
-        if (UI_BASE + i == song.sel) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
-        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+    for (i = 0; i < 4u; i++) {                          /* the tracks (8: the bank's four): the selected one filled; */
+        if (UI_BASE + i == song.sel || ovl_lit()) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));   /* all four a moment: */
+        else mo_circ(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));                                         /* overload (ui.c) */
     }
     if (song.rec & (1u << song.sel))                    /* REC: a bar under the track's dot */
         mo_hl(97 + (int32_t)(song.sel - UI_BASE) * 6, 8, 5, MO_INK);
@@ -1922,6 +1922,17 @@ static void mo_pic_system(void)
     fmt_int(b + str_len(b), (int32_t)(pk > 99u ? 99u : pk));
     str_cpy(b + str_len(b), "%", 2);
     mo_pic_load("CPU", a, pk, 100u, b, 80);
+#if MELODEE_VOICE_BUDGET
+    {                                                   /* since power-on (ui.c ovl_tick): the audio caught up by */
+        uint32_t f = ovl.tot_sheds > 999u ? 999u : ovl.tot_sheds, l = ovl.tot_late > 999u ? 999u : ovl.tot_late;
+        str_cpy(b, "FADED ", sizeof b);                 /* fading voices; LATE: a half late, a crackle */
+        fmt_int(b + str_len(b), (int32_t)f);
+        mo_text(b, 2, 99, f ? MO_INK : MO_DIM);
+        str_cpy(b, "LATE ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)l);
+        mo_textr(b, 118, 99, l ? MO_INK : MO_DIM);
+    }
+#endif
 }
 /* GLO > MIDI IN: the channel each track hears (ROUT's range, SEL: all to the selected track, DRUM's channel to the
  * first DRUM track and to no other; seq.c midi_track) */
@@ -2663,7 +2674,8 @@ static uint32_t mo_signature(void)
     if (cur_page()->graph == GR_LAND)                   /* LANDSCAPE: the scene, a step on */
         h = (h ^ land_sig()) * 16777619u;
     if (cur_page()->scope == SC_GLOBAL && cur_page()->id[1] == G_INFO)   /* SYSTEM: the voices, the CPU */
-        h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22) * 16777619u;
+        h = (h ^ voices_busy() ^ voice_budget() << 6 ^ song.cpu_q8 << 12 ^ song.cpu_peak_q8 << 22 ^
+             (ovl.tot_sheds * 31u + ovl.tot_late) << 3) * 16777619u;   /* (.. the overloads since power-on) */
     if (cur_page()->graph == GR_PERF || cur_page()->graph == GR_LAND)   /* PERF, LANDSCAPE: the MACROs (a learned CC
                                                                            * moves them too) */
         h = (h ^ ((uint32_t)tessera.macro[0] | (uint32_t)tessera.macro[1] << 7 | (uint32_t)tessera.macro[2] << 14 |
@@ -2716,7 +2728,7 @@ static void mono_page(void)
     if (mo_flash_t)
         mo_flash_t--;
     land_open = cur_page()->graph == GR_LAND ? land_open : 0u;   /* (LANDSCAPE: its notes only while it shows) */
-    sig = mo_signature() ^ (mo_flash_t ? 0x5A5A5A5Au : 0u);
+    sig = mo_signature() ^ (mo_flash_t ? 0x5A5A5A5Au : 0u) ^ (ovl_lit() ? 0x0F1E2D3Cu : 0u);
     if (!ui.force && sig == mo_sig)
         return;
     mo_sig = sig;
@@ -3028,9 +3040,13 @@ static void mo_stage_col(uint32_t k, int top)
 static void mo_stage_head(void)
 {
     char b[16];
-    int32_t right = mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
+    int32_t lit = ovl_lit(), right = lit ? 96 : mo_batt_right(batt_head()), msg = ui.msg_t && ui.msg[0], hold;
     const char *hn = "";
     hold = msg ? -1 : mo_sheet_hold(&hn);
+    if (lit) {                                          /* overload (ui.c): the pages' four dots, filled, a moment in */
+        uint32_t i;                                     /* the engine's and the battery's place */
+        for (i = 0; i < 4u; i++) mo_disc(99 + (int32_t)i * 6, 4, 2, MO_TRK(i));
+    }
     if (msg) {
         mo_cut(b, ui.msg, 15);
         mo_inv(b, 2, 1);
@@ -3049,7 +3065,7 @@ static void mo_stage_head(void)
         mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
         if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
     }
-    if (!msg) {                                         /* (a message: in the engine's place too) */
+    if (!msg && !lit) {                                 /* (a message: in the engine's place too; overload: the dots) */
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
 #if CORE_TRACKS > 4
         if (right > 118) right = 118;
@@ -3183,7 +3199,7 @@ static void mono_stage(void)
         stage_columns();
         mo_on = 0;
     }
-    sig = mo_stage_signature() ^ (uint32_t)(batt_head() + 1) * 2654435761u;
+    sig = mo_stage_signature() ^ (uint32_t)(batt_head() + 1) * 2654435761u ^ (ovl_lit() ? 0x0F1E2D3Cu : 0u);
     if (ui.force || sig != mo_stage_sig) {              /* the top half: header, roles, names, engines, patterns */
         mo_stage_sig = sig;
         cv_begin(240, 120, MO_BG);

@@ -79,6 +79,8 @@ static uint32_t shed_count;
 static uint32_t audio_bench_shed_requests;
 #endif
 static uint32_t shed_part[NPART];
+#define OVL_SHEDS() shed_count                          /* (ui.c MENU > OVERLOAD: the header's dots blink) */
+#define OVL_LATE() melodee_dbg.late                     /* (.. and blink twice: the DMA moved on, a crackle) */
 
 /* end of a half: all = its ticks, TIMER5 nested in it included -> the render alone in us. The deadline sees
  * both; shed after one half near it or 2 loaded halves in a row (out of line: keeps the ISR's render loops as they were) */

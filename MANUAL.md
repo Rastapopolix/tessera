@@ -567,6 +567,13 @@ clean:
   (`55/92 %`), USB audio and MIDI included. When the second number reaches 99, notes may drop or the sound crackle.
 - Below: a **VOICES** bar (the voices sounding now, out of the BUDGET) and a **CPU** bar (the average, with a tick at
   the peak).
+- At the foot, since power-on: **FADED**, the times the FM-1 ran short of time and faded a voice to catch up (a note
+  cut short), and **LATE**, the times the sound was late (a crackle).
+- **When it happens, the header tells you:** the four track dots at the top right fill for a moment, once when a voice
+  was faded, twice when the sound was late (on HOME they show in the engine's and the battery's place). They point at
+  no track: the voice faded is the quietest one, not the busiest. At most once every five seconds. A voice that BUDGET
+  takes doesn't blink. **MENU > OVERLOAD OFF** stops the blink; FADED and LATE still count. If you hear a click and
+  the dots stay as they are, the FM-1 wasn't overloaded: please report it.
 - For the full picture, the web editor's [Health](#health-how-hard-the-fm-1-is-working) reads the same numbers and more.
 
 **A track nobody can hear costs next to nothing.** At LEVEL 0, muted, left out by SOLO or taken out by
@@ -2789,6 +2796,7 @@ tools. Tessera's additions are below, in that order.
 | **IDLE** | **OFF** (the default), **LANDSCAPE** | With LANDSCAPE, after two minutes without a touch while playing, the screen moves to LANDSCAPE: for long pieces, installations or filming. Saved. |
 | **NOTE LIGHTS** | **OFF** (the default), **STEP**, **ALL** | Lights each key while the selected track's sequence plays its note, so you can watch the line move over the keys. Saved. |
 | **BATTERY** | **ON** (the default), **WHEN LOW** | When the header shows the battery. Saved. |
+| **OVERLOAD** | **BLINK** (the default), **OFF** | The header's four track dots fill for a moment when the FM-1 runs out of time (see [How many voices at once](#how-many-voices-at-once)). Saved. |
 | **PANEL GAMMA** | **G2.2** (the default, the panel chip's own), G1.8, G2.5, G1.0, TUNED, TUNED+VCOM | The screen's contrast curve. The screen goes black for a moment and redraws. Saved. |
 
 - **Picking a COLOR.** Holding HOME opens the list. Turn **KNOB 2** on COLOR (or press **OCT+**) and every colour shows
