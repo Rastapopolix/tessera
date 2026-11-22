@@ -34,7 +34,9 @@ a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 header { position: sticky; top: 0; z-index: 3; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
   padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font: 16px/1 var(--pixel); }
-header .home { color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; }
+header .home { color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; display: inline-flex;
+  align-items: center; gap: 10px; }
+header .home svg { width: 22px; height: 22px; flex: none; }
 header a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
 header a[aria-current] { color: var(--bg); background: var(--ink); }
 .theme, .contents { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; }
@@ -125,7 +127,7 @@ main .downloads p { color: var(--mid); }
 <body>
 <a class="skip" href="#main">Skip to the text</a>
 <header>
-  <a class="home" href="../">TESSERA</a>
+  <a class="home" href="../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>TESSERA</a>
   <a href="../start/" class="wide">START</a>
   <a href="../manual/">MANUAL</a>
   <a href="../plugin/" aria-current="page">PLUGIN</a>
