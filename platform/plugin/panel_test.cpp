@@ -170,6 +170,9 @@ int main(int argc, char **argv)
     p.down(142 + 36, 588 + 5 + 12);
     p.up(142 + 36, 588 + 5 + 12);
     CHECK(p.take_file_request() == Panel::FILE_SAVE, "SAVE asks");
+    p.down(224 + 36, 588 + 5 + 12);
+    p.up(224 + 36, 588 + 5 + 12);
+    CHECK(p.take_file_request() == Panel::FILE_MIDI, "MIDI asks");
     std::vector<uint32_t> before_note = px;
     p.draw(before_note.data(), v);
     p.note("Saved Undertow");
@@ -270,9 +273,9 @@ int main(int argc, char **argv)
         tess_core_view(&v);
         int at1 = head_lit();
         p.draw(px.data(), v);
-        uint32_t off = px[(BY + 8) * Panel::W + 286 + 6];
+        uint32_t off = px[(BY + 8) * Panel::W + 368 + 6];
         CHECK(v.track < 4, "the song starts on a track of 1-4 (%u)", v.track);
-        click(p, 286 + 26, BY);              // 5-8
+        click(p, 368 + 26, BY);              // 5-8
         run(p, 0.3);
         tess_core_view(&v);
         p.draw(px.data(), v);
@@ -281,8 +284,8 @@ int main(int argc, char **argv)
         std::printf("bank: 5-8 selects T%u (core T%u); header pixels %d -> %d\n", v.track + 1, tess_core_track() + 1, at1, at5);
         CHECK(v.track == 4 && tess_core_track() == 4, "5-8 should select T5 (%u)", v.track);
         CHECK(at5 > at1 + 150, "the header should show 5-8 (%d -> %d lit pixels)", at1, at5);
-        CHECK(px[(BY + 8) * Panel::W + 286 + 6] != off, "the 5-8 half should light");
-        click(p, 234 + 26, BY);              // 1-4
+        CHECK(px[(BY + 8) * Panel::W + 368 + 6] != off, "the 5-8 half should light");
+        click(p, 316 + 26, BY);              // 1-4
         run(p, 0.3);
         tess_core_view(&v);
         CHECK(v.track == 0 && head_lit() == at1, "1-4 should select T1 and take the marker away (T%u, %d)", v.track + 1, head_lit());
