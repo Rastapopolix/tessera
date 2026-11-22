@@ -1531,14 +1531,24 @@ static void mo_pic_evolve(const track_t *t)
         if (ch) mo_fill(87, 102, (int32_t)(ch * 30u / len) ? (int32_t)(ch * 30u / len) : 1, 5, MO_INK);
     }
 }
-/* the four tracks as numbered cells in two rows from (x, y), the one picked solid, this track outlined, the rest dim */
+/* the four tracks as numbered cells in two rows from (x, y), the one picked solid, this track outlined, the rest dim.
+ * Eight tracks: four rows of cells 9 high, 10 apart, from 3 higher, so they end above the tabs as the four did */
+#if CORE_TRACKS > 4
+#define MO_TRK_CH 9
+#define MO_TRK_DY 10
+#define MO_TRK_Y0 (-3)
+#else
+#define MO_TRK_CH 11
+#define MO_TRK_DY 13
+#define MO_TRK_Y0 0
+#endif
 static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on)
 {
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
-        int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + (int32_t)(i / 2u) * 13;
+        int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + MO_TRK_Y0 + (int32_t)(i / 2u) * MO_TRK_DY, ty = cy + (MO_TRK_CH - 7) / 2;
         char n[2] = {(char)('1' + i), 0};
-        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_TRK(i)), mo_text(n, cx + 3, cy + 2, MO_BG);
-        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, cy + 2, i == tr ? MO_TRK(i) : mo_tdim(i));
+        if (picked == i + 1u) mo_fill(cx, cy, 11, MO_TRK_CH, MO_TRK(i)), mo_text(n, cx + 3, ty, MO_BG);
+        else mo_box(cx, cy, 11, MO_TRK_CH, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, ty, i == tr ? MO_TRK(i) : mo_tdim(i));
     }
 }
 /* TWEAK: under each dial its picture. SHIFT: the note off its written pitch (the dashed line); DROP: 8 hits, the ones it
