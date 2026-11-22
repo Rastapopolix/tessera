@@ -321,7 +321,9 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
                    LABEL = sh.label, LIT_INK = sh.lit_ink ? sh.lit_ink : sh.btn_ink, LIT = sh.lit ? sh.lit : 0xFFF6F6F6,
                    REC = sh.rec ? sh.rec : 0xFFC62A22;
     master_now = (int)v.master;
-    knobs[0].angle = -135 + 270.0 * (input.master >= 0 ? input.master : master_now) / 1023;
+    if (master_mine >= 0 && !(drag == KNOB && knobs[drag_i].role < 0) && frame - master_mine_at > 15)
+        master_mine = -1;   // (let go half a second ago: the view has it, or the DAW moved it since)
+    knobs[0].angle = -135 + 270.0 * (master_mine >= 0 ? master_mine : master_now) / 1023;
     static const double kPi = 3.14159265358979;
     // the breathing LEDs: dark .. lit and back in ~1.13 s (fm1_led_breath)
     double breath = 0.5 - 0.5 * std::cos(2 * kPi * (frame++ / 30.0) / 1.13);
@@ -657,8 +659,9 @@ void Panel::turn(int i, int n)
     Knob &k = knobs[i];
     if (k.role < 0)
     {
-        int m = (input.master >= 0 ? input.master : master_now) + n * 16;
-        input.master = m < 0 ? 0 : m > 1023 ? 1023 : m;
+        int m = (master_mine >= 0 ? master_mine : master_now) + n * 16;
+        input.master = master_mine = m < 0 ? 0 : m > 1023 ? 1023 : m;
+        master_mine_at = frame;
         k.angle = -135 + 270.0 * input.master / 1023;
     }
     else
