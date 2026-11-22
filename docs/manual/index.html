@@ -507,7 +507,7 @@ sound pluck, swell or sustain.</em></p>
 </table>
 <p><strong>EDIT</strong>: the sound's own pages (<a href="#sounds">Sounds</a>). Tap EDIT again for a map of them. <em>Use it to design or adjust a
 sound; save it to USER from SAVE.</em></p>
-<p><strong>FX</strong>: the insert and send effects (ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
+<p><strong>FX</strong>: the insert and send effects (ECHO, SYNC ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
 how far a cord moves the knob you turn (<a href="#mod-shortcut">Mod shortcut</a>). <em>Use it for space, colour, and the quickest way to make a mod.</em></p>
 <p><strong>GLO</strong>: the project and the long form</p>
 <table>
@@ -1331,6 +1331,13 @@ crackles sooner.</li>
 (<code>55/92 %</code>), USB audio and MIDI included. When the second number reaches 99, notes may drop or the sound crackle.</li>
 <li>Below: a <strong>VOICES</strong> bar (the voices sounding now, out of the BUDGET) and a <strong>CPU</strong> bar (the average, with a tick at
 the peak).</li>
+<li>At the foot, since power-on: <strong>FADED</strong>, the times the FM-1 ran short of time and faded a voice to catch up (a note
+cut short), and <strong>LATE</strong>, the times the sound was late (a crackle).</li>
+<li><strong>When it happens, the header tells you:</strong> the four track dots at the top right fill for a moment, once when a voice
+was faded, twice when the sound was late (on HOME they show in the engine's and the battery's place). They point at
+no track: the voice faded is the quietest one, not the busiest. At most once every five seconds. A voice that BUDGET
+takes doesn't blink. <strong>MENU &gt; OVERLOAD OFF</strong> stops the blink; FADED and LATE still count. If you hear a click and
+the dots stay as they are, the FM-1 wasn't overloaded: please report it.</li>
 <li>For the full picture, the web editor's <a href="#health-how-hard-the-fm-1-is-working">Health</a> reads the same numbers and more.</li>
 </ul>
 <p><strong>A track nobody can hear costs next to nothing.</strong> At LEVEL 0, muted, left out by SOLO or taken out by
@@ -4663,6 +4670,11 @@ notes, and it comes back in time.</li>
 short names are CUT1, RES1, and a send effect's S1CT ..</li>
 <li><strong>ECHO TIME glides</strong> when a mod moves it, as a tape's speed does, so the repeats bend in pitch instead of clicking.
 Turning the knob glides too.</li>
+<li><strong>SYNC ECHO</strong> is ECHO on the beat: its TIME is a note value (1/32, 16T, 1/16, 8T, 16D, 1/8, 4T, 8D, 1/4, 2T, 4D,
+1/2, 2D, 1/1; T a triplet, D dotted), a knob step each, at the tempo playing (BPM, a MIDI clock, a TEMPO mod). It
+follows a tempo change by gliding, as ECHO's TIME does. On the FM-1 the echo holds up to 371 ms: a longer note value
+halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin holds about 3 s. Older firmware, without
+SYNC ECHO, plays it as DRIVE.</li>
 <li><strong>REVERB</strong> changes SIZE a sample at a time.</li>
 <li>The <strong>send effects'</strong> mods are the project's, not a track's, so <a href="#matrix">MATRIX</a> leaves them out.</li>
 <li><strong>FX held</strong> + a knob on an FX page makes an effect mod too.</li>
@@ -5021,6 +5033,11 @@ tools. Tessera's additions are below, in that order.</p>
 <td><strong>BATTERY</strong></td>
 <td><strong>ON</strong> (the default), <strong>WHEN LOW</strong></td>
 <td>When the header shows the battery. Saved.</td>
+</tr>
+<tr>
+<td><strong>OVERLOAD</strong></td>
+<td><strong>BLINK</strong> (the default), <strong>OFF</strong></td>
+<td>The header's four track dots fill for a moment when the FM-1 runs out of time (see <a href="#how-many-voices-at-once">How many voices at once</a>). Saved.</td>
 </tr>
 <tr>
 <td><strong>PANEL GAMMA</strong></td>
