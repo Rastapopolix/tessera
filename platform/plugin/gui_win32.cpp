@@ -186,6 +186,9 @@ class GuiWin32 : public Gui
         of.hwndOwner = GetAncestor(wnd, GA_ROOT);
         of.lpstrFile = path;
         of.nMaxFile = (DWORD)(sizeof path / sizeof path[0]);
+        std::wstring presets = wide(projfile::presets_dir());   // (the DAW's preset browser lists what is saved there)
+        if (!presets.empty())
+            of.lpstrInitialDir = presets.c_str();
         if (req == Panel::FILE_OPEN)
         {
             of.lpstrFilter = L"Tessera project or FM-1 backup (*.tsp, *.json)\0*.tsp;*.json\0All files\0*.*\0";

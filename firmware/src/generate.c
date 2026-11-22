@@ -45,9 +45,10 @@
 /* the styles, in LEMONADE SANDWICH's menu order (rnd.c's codes; 0 its OFF) */
 enum { RND_OFF, RND_FALL, RND_TIDE, RND_WOZZA, RND_ORBIT, RND_LOOPS, RND_HALO, RND_MIRROR, RND_PHASE, RND_CRATE,
        RND_COSMIC, RND_STATIC, RND_FORGE, RND_CHAOS, RND_FRACTURED, RND_FREE, RND_MODES };
+/* (on screen: FALL, TIDE and PHASE are AUTUMN, SHORE and INTERLOCK; RND (RND_FREE, each track's role free) is WILD) */
 static const char *const GEN_STYLE_NAME[RND_MODES - 1u] = {
     "AUTUMN", "SHORE", "WOZZA", "ORBIT", "LOOPS", "HALO", "MIRROR", "INTERLOCK", "CRATE", "COSMIC", "STATIC", "FORGE",
-    "CHAOS", "FRACTURED", "RND"};
+    "CHAOS", "FRACTURED", "WILD"};
 static uint8_t rnd_style = RND_FALL;                /* the style being made (rnd.c: MENU > REC BUTTON) */
 static uint32_t rnd_setting(void) { return rnd_style; }
 

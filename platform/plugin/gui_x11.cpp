@@ -36,10 +36,14 @@ bool have(const char *prog)
     return std::system(c.c_str()) == 0;
 }
 
-// the dialog's command line; name: a file name made by projfile (letters, digits, spaces, - _ .), quoted
+// the dialog's command line; name: a file name made by projfile (letters, digits, spaces, - _ .), offered in the
+// user's preset folder (the DAW's preset browser lists what is saved there), quoted for the shell
 std::string dialog_command(int req, const std::string &name)
 {
-    std::string q = "'" + name + "'";
+    std::string dir = projfile::presets_dir(), q = "'";
+    for (char ch : (dir.empty() ? name : dir + "/" + name))
+        q += ch == '\'' ? std::string("'\\''") : std::string(1, ch);
+    q += "'";
     if (have("zenity"))
         return req == Panel::FILE_OPEN
                    ? "zenity --file-selection --title='Open a Tessera project' "
