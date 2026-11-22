@@ -239,7 +239,8 @@ The plugin has room for engines the FM-1 can't fit:
 - **DRUM: SID KIT** and **SID DIGI**: drums from one SID chip.
 - **MACRO**: a macro-oscillator with many synthesis models.
 - **PHASE**: phase distortion in the manner of Casio's CZ-1: two lines of bent-phase waves (saw, square, pulse,
-  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets. EDIT 2's EG at SPLIT gives
+  double sine, saw-pulse and three resonant ones), mixed or ring-modulated, with 33 presets of its own (brass, pads,
+  basses, keys, bells, sweeps, ring sounds; not the CZ-1's original tones). EDIT 2's EG at SPLIT gives
   DCW 1, DCW 2, DCA 2 and pitch their own envelopes (5 more pages).
 
 The Daisy build (Andamento) has them too. On the FM-1, a SID, MACRO or PHASE track plays FM6's INIT sound instead, and
@@ -263,7 +264,6 @@ sounding at once take about 18 % of a core.
 
 ## Not there yet
 
-- **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **One window size**, the FM-1's. A larger, wider window is planned.
 - **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.
 - **No standalone app on Linux** yet.
