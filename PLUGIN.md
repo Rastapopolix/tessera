@@ -24,6 +24,7 @@ in a DAW.
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
 - [Several Tesseras in one song](#several-tesseras-in-one-song)
+- [Playing with an MPE controller](#playing-with-an-mpe-controller)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
 - [Echoes on the beat](#echoes-on-the-beat)
 - [How much CPU it takes](#how-much-cpu-it-takes)
@@ -60,10 +61,17 @@ the first time: click *More info*, then *Run anyway*.
 
 ## First sound
 
-A new Tessera opens with **STILL TIDE** loaded (and KOTO GARDEN in slot B). Press PLAY in the DAW and it plays. Play
-notes from a MIDI track or a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on
-any MIDI channel (GLO > SYSTEM ROUT starts at SEL in the plugin). To play each track from its own DAW track instead,
-set ROUT to a channel range (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on).
+A new Tessera opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
+pattern is empty and no generator runs, so pressing PLAY in the DAW plays nothing yet. Play notes from a MIDI track or
+a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO > SYSTEM
+ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
+(CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
+the FM-1 (the [manual](MANUAL.md) shows how).
+
+**To hear what it can do,** load a demo: in a DAW that lists CLAP presets (Bitwig, for one), all eight demos are in its
+preset browser under Tessera; **STILL TIDE** also waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT, then
+LOAD); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
+to send it notes, so it opens with STILL TIDE loaded and plays it at once.
 
 ## The window
 
@@ -179,7 +187,8 @@ with its own project.
 - **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Tessera) or an
   **FM-1 backup** (the `.json` from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
   then the music it was playing loads. On Windows and macOS you can also drop a file on the window.
-- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera.
+- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera. It offers
+  **Documents/Tessera/Presets**: what you save there shows in a CLAP host's preset browser beside the demos.
 
 A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
 [Sounds only the plugin has](#sounds-only-the-plugin-has)).
@@ -229,7 +238,30 @@ DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's chann
 ## Several Tesseras in one song
 
 You can use up to **8 Tesseras** in one DAW song. Each is wholly its own: its project, its transport, its window and
-its parameters. A ninth won't open. Each new Tessera starts from STILL TIDE.
+its parameters. A ninth won't open. Each new Tessera starts from a new project.
+
+## Playing with an MPE controller
+
+Each note you play keeps its own **pressure** and **slide**. With a Seaboard, a LinnStrument, an Osmose or any MPE
+controller, or with a DAW's per-note expression (Bitwig's PRESSURE and TIMBRE, or a CLAP host's note expressions),
+pressing or sliding one key moves only that note. Poly Aftertouch works too.
+
+Choose where they go on the **MODS** page (under LFO), on the track you play:
+
+- **AT**: each note's pressure. On a voice destination of its own track (PITCH, CUTOFF, SHAPE, GAIN) every note follows
+  its own key.
+- **SLIDE**: each note's slide (MPE's CC74), in the source list after IN. The plugin only.
+
+For example, AT → CUTOFF and SLIDE → SHAPE. Use **ROUT SEL** (the plugin's default): every channel then plays the
+selected track, which MPE needs because it sends each note on a channel of its own. Notes the sequencer or a
+generator plays read the track's last pressure and CC74.
+
+**Pitch bend per note:** each note bends by its own channel's bend, so sliding one finger bends only its note. MPE's
+configuration message sets the bend range of the member channels to 48 semitones, as MPE controllers expect. A CLAP
+host's per-note TUNING (Bitwig's note pitch expression) adds to it. FM6 is the exception: it bends a whole track by its
+own DX7 range (its FUNCTION settings).
+
+On the FM-1 a project with a SLIDE mod plays without that mod, and AT is one value for the whole track.
 
 ## Sounds only the plugin has
 
@@ -265,6 +297,7 @@ sounding at once take about 18 % of a core.
 ## Not there yet
 
 - **One window size**, the FM-1's. A larger, wider window is planned.
-- **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.
+- **Presets in the DAW's browser** only for the CLAP plugin: the VST3 and the Audio Unit don't list them yet. Use OPEN
+  there, or the DAW's own way of saving a plugin's state.
 - **No standalone app on Linux** yet.
 - **Not signed** on macOS or Windows yet (see [Install](#install)).
