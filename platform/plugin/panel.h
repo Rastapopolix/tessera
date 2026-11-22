@@ -79,7 +79,7 @@ class Panel
     void set_tracks(int n) { tracks_ = n; layout(); }
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
      * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
-    enum { FILE_NONE, FILE_OPEN, FILE_SAVE };
+    enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI };
     int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
     void note(const std::string &text);
     /* the shells: TESSERA's own (0), then the FM-1's (web/sim/index.html SHELLS). The FM-1's show a row of swatches

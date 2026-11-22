@@ -236,17 +236,19 @@ void Panel::layout()
     {
         files.push_back({60, fy, 72, 24, FILE_OPEN, "OPEN"});   // (in the shell, under the keys)
         files.push_back({142, fy, 72, 24, FILE_SAVE, "SAVE"});
-        banks[0] = {234, fy, 52, 24, 0, "1-4"};   // (one switch, two halves)
-        banks[1] = {286, fy, 52, 24, 4, "5-8"};
-        usb = {tracks_ > 4 ? 348 : 224, fy, 112, 24, 0, "FM-1 USB"};
+        files.push_back({224, fy, 72, 24, FILE_MIDI, "MIDI"});
+        banks[0] = {316, fy, 52, 24, 0, "1-4"};   // (one switch, two halves)
+        banks[1] = {368, fy, 52, 24, 4, "5-8"};
+        usb = {tracks_ > 4 ? 430 : 306, fy, 112, 24, 0, "FM-1 USB"};
         return;
     }
-    const int total = 72 + 10 + 72 + (tracks_ > 4 ? 20 + 104 : 0);
+    const int total = 3 * 72 + 2 * 10 + (tracks_ > 4 ? 20 + 104 : 0);
     int x = W / 2 - total / 2;
     files.push_back({x, fy - 1, 72, 26, FILE_OPEN, "OPEN"});
     files.push_back({x + 82, fy - 1, 72, 26, FILE_SAVE, "SAVE"});
-    banks[0] = {x + 174, fy - 1, 52, 26, 0, "1-4"};
-    banks[1] = {x + 226, fy - 1, 52, 26, 4, "5-8"};
+    files.push_back({x + 164, fy - 1, 72, 26, FILE_MIDI, "MIDI"});
+    banks[0] = {x + 256, fy - 1, 52, 26, 0, "1-4"};
+    banks[1] = {x + 308, fy - 1, 52, 26, 4, "5-8"};
 }
 
 void Panel::set_midi(uint32_t count)

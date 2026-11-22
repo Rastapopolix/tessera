@@ -24,6 +24,8 @@ struct GuiLink
     virtual std::string open_file(const std::string &path_utf8) = 0;
     virtual std::string save_file(const std::string &path_utf8) = 0;
     virtual std::string file_name() = 0;
+    /* MIDI: the notes played since PLAY as a .mid clip (Documents/Tessera/MIDI); what to show */
+    virtual std::string export_midi() { return ""; }
     /* the shell the window shows (Panel::shell_count), and one picked under the keys: the instance sets its ink and
      * remembers it for the next window */
     virtual int shell() = 0;

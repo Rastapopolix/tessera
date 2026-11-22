@@ -121,6 +121,11 @@ class GuiMac : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"   // (allowedFileTypes: allowedContentTypes needs macOS 11)
         if (req == Panel::FILE_OPEN)
