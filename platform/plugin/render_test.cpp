@@ -14,6 +14,7 @@
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
  * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
 #include <clap/clap.h>
+#include <clap/ext/draft/undo.h>
 #include <dlfcn.h>
 #include <string>
 #if defined(__linux__)
@@ -52,8 +53,17 @@ static void h_rescan(const clap_host_t *, clap_param_rescan_flags f)
 static void h_clear(const clap_host_t *, clap_id, clap_param_clear_flags) {}
 static void h_flush(const clap_host_t *) {}
 static const clap_host_params_t host_params = {h_rescan, h_clear, h_flush};
+// the CLAP undo extension (draft): the steps the plugin tells it of
+static std::vector<std::string> undo_steps;
+static void hu_begin(const clap_host_t *) {}
+static void hu_cancel(const clap_host_t *) {}
+static void hu_made(const clap_host_t *, const char *name, const void *, size_t, bool) { undo_steps.push_back(name ? name : ""); }
+static void hu_req(const clap_host_t *) {}
+static void hu_ctx(const clap_host_t *, bool) {}
+static const clap_host_undo_t host_undo = {hu_begin, hu_cancel, hu_made, hu_req, hu_req, hu_ctx};
 static const void *h_get_extension(const clap_host_t *, const char *id)
 {
+    if (!std::strcmp(id, CLAP_EXT_UNDO)) return &host_undo;
     return !std::strcmp(id, CLAP_EXT_PARAMS) ? &host_params : nullptr;
 }
 static void h_nop(const clap_host_t *) {}
@@ -73,8 +83,22 @@ struct Events
 };
 // what the plugin sends: MIDI OUT's note-ons by channel, and the events out of order (there must be none)
 static uint32_t midi_on[16], out_of_order, out_last, out_frames;
+static uint32_t gestures_begun, gestures_ended, gesture_values;   // (MASTER's: a knob turned in the window)
+static int gesture_depth;                                         // (begun, not yet ended)
 static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *h)
 {
+    if (h->type == CLAP_EVENT_PARAM_GESTURE_BEGIN || h->type == CLAP_EVENT_PARAM_GESTURE_END)
+    {
+        auto *g = reinterpret_cast<const clap_event_param_gesture_t *>(h);
+        if (g->param_id == 0)   // (MASTER)
+        {
+            if (h->type == CLAP_EVENT_PARAM_GESTURE_BEGIN) gestures_begun++, gesture_depth++;
+            else gestures_ended++, gesture_depth--;
+        }
+    }
+    if (h->type == CLAP_EVENT_PARAM_VALUE && reinterpret_cast<const clap_event_param_value_t *>(h)->param_id == 0 &&
+        gesture_depth > 0)
+        gesture_values++;
     if (h->time < out_last) out_of_order++;
     if (h->time >= out_frames) out_of_order++;
     out_last = h->time;
@@ -634,6 +658,7 @@ int main(int argc, char **argv)
                     s1 == s2 ? "the same piece" : "another piece");
         CHECK(changed > 50, "a note under C1: a new piece (%zu changed)", changed);
         CHECK(s1 == s2, "the same note: the same piece");
+        CHECK(undo_steps.size() >= 2 && undo_steps.back() == "GENERATE", "each piece LISTEN made a step of the DAW's undo");
         CHECK(load(plain), "LISTEN off again");
         std::vector<uint8_t> off = save();
         CHECK(off.size() < 5 || std::memcmp(&off[off.size() - 5], "TLSN", 4), "LISTEN OFF after a state without it");
@@ -710,6 +735,39 @@ int main(int argc, char **argv)
                 CHECK(!gui->set_size(p, 1234, 567), "a size not one of the three refused");
                 CHECK(gui->set_size(p, 1000, 624), "back to 100 %%");
             }
+            // a knob turned in the window (MASTER, dragged up): its changes between a gesture's begin and end, so the
+            // DAW makes them one undo step; the end once the knob has been still half a second
+            {
+                Window root_r, parent_r, *kids = nullptr;
+                unsigned nk = 0;
+                XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                Window child = nk ? kids[0] : 0;
+                if (kids) XFree(kids);
+                auto ev = [&](int type, int y) {
+                    XEvent e{};
+                    e.type = type;
+                    if (type == MotionNotify) { e.xmotion.window = child; e.xmotion.x = 105; e.xmotion.y = y; }
+                    else { e.xbutton.window = child; e.xbutton.x = 105; e.xbutton.y = y; e.xbutton.button = Button1; }
+                    XSendEvent(d, child, False, type == MotionNotify ? PointerMotionMask : type == ButtonPress ? ButtonPressMask : ButtonReleaseMask, &e);
+                    XSync(d, False);
+                };
+                auto ticks = [&](int k) {
+                    for (int i = 0; i < k; i++) { for (int b = 0; b < 3; b++) p->process(p, &proc); tim->on_timer(p, 0); }
+                };
+                ticks(2);
+                gestures_begun = gestures_ended = gesture_values = 0;
+                gesture_depth = 0;
+                ev(ButtonPress, 100);
+                for (int y = 96; y >= 60; y -= 4) { ev(MotionNotify, y); ticks(1); }
+                ev(ButtonRelease, 60);
+                ticks(3);
+                CHECK(gestures_begun == 1 && gesture_depth == 1 && gesture_values >= 1,
+                      "MASTER dragged: a gesture begun, its values inside it (%u begun, %u values)", gestures_begun, gesture_values);
+                ticks(30);   // (more than half a second of blocks)
+                std::printf("undo: MASTER dragged in the window: %u gesture, %u values in it, %u ended\n", gestures_begun,
+                            gesture_values, gestures_ended);
+                CHECK(gestures_ended == 1 && gesture_depth == 0, "the gesture ended once the knob was still");
+            }
             // GENERATE (TESSERA's strip): a click on it makes a new piece, held half a second the project before it
             // comes back (the DAW's state: another project, then the one before again)
             {
@@ -751,6 +809,7 @@ int main(int argc, char **argv)
                     }
                 };
                 CHECK(child != 0, "the plugin's window in the parent");
+                undo_steps.clear();   // (LISTEN's pieces before: the strip's own from here)
                 std::vector<double> s0 = state_now();
                 press(true), ticks(2), press(false), ticks(40);
                 std::vector<double> s1 = state_now();
@@ -760,6 +819,8 @@ int main(int argc, char **argv)
                             differ(s0, s1), s0.size(), differ(s0, s2));
                 CHECK(differ(s0, s1) > 50, "GENERATE clicked: a new piece (%zu settings changed)", differ(s0, s1));
                 CHECK(differ(s0, s2) == 0, "GENERATE held: the project before the piece again (%zu differ)", differ(s0, s2));
+                CHECK(undo_steps.size() == 2 && undo_steps[0] == "GENERATE" && undo_steps[1] == "GENERATE: BEFORE",
+                      "the DAW's undo told of each: GENERATE, GENERATE: BEFORE (%zu)", undo_steps.size());
             }
             gui->destroy(p);
             XDestroyWindow(d, parent);

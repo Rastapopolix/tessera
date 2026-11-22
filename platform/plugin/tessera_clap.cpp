@@ -38,6 +38,7 @@
 
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
+#include <clap/ext/draft/undo.h>
 
 #include "core_copies.h"
 #include "gui.h"
@@ -184,6 +185,18 @@ struct Tessera : GuiLink
     void params_refresh();
     void param_in(const clap_event_param_value_t *e);
     void params_out(const clap_output_events_t *out, uint32_t at, bool all = false);
+    // the host's undo (DAWs record a parameter's change as one undo step between a gesture's begin and end): a knob
+    // turned in the window or on an FM-1 opens a gesture for each parameter it moves (param_event), ended once the
+    // knobs have been still GESTURE_MS (the list compared round in ~20 blocks: the changes are all seen by then)
+    static constexpr double GESTURE_MS = 500;
+    uint32_t gesture_left = 0;           // host frames until the open gestures end (0: none open, none to open)
+    std::vector<uint8_t> gesture_open;   // per parameter: a gesture open
+    std::vector<int> gesture_list;       // the ones open, in order
+    void gesture(const clap_output_events_t *out, uint32_t at, int i, bool begin);
+    void gestures_tick(const clap_output_events_t *out, uint32_t n);
+    // a whole project changed by the window (OPEN, GENERATE, a preset): the host's undo told, if it has the CLAP undo
+    // extension (it then keeps the state from before as the step)
+    void host_undo(const char *what);
     void param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v);
     uint32_t param_look_of(int i);
 
@@ -219,7 +232,7 @@ struct Tessera : GuiLink
     std::string open_file(const std::string &path) override;
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
-    void changed_by_file();
+    void changed_by_file(const char *what = "OPEN PROJECT");   // (what: the host's undo step's name)
     // the shell (gui.h): the last one picked in any window, from the plugin's settings
     int shell_i = 0;
     int shell() override { return shell_i; }
@@ -376,7 +389,7 @@ std::string Tessera::gen_make(const Piece &pc)
     if (r)
         return "COULD NOT GENERATE";
     gen_before = false;
-    changed_by_file();
+    changed_by_file("GENERATE");
     return "";
 }
 
@@ -412,7 +425,7 @@ std::string Tessera::gen_swap()
     if (r)
         return "NOTHING GENERATED YET";
     gen_before = !gen_before;
-    changed_by_file();
+    changed_by_file(gen_before ? "GENERATE: BEFORE" : "GENERATE: AFTER");
     return gen_before ? "BEFORE THE PIECE" : "THE PIECE AGAIN";
 }
 
@@ -443,7 +456,14 @@ Panel::GenState Tessera::gen_state()
 }
 
 // a project came in from a file: the DAW's saved state and the MACROs it shows are out of date
-void Tessera::changed_by_file()
+void Tessera::host_undo(const char *what)
+{
+    auto *hu = static_cast<const clap_host_undo_t *>(host->get_extension(host, CLAP_EXT_UNDO));
+    if (hu && hu->change_made)
+        hu->change_made(host, what, nullptr, 0, false);   // (no delta: the host keeps the state from before)
+}
+
+void Tessera::changed_by_file(const char *what)
 {
     {
         std::lock_guard<std::mutex> g(core_lock);
@@ -455,6 +475,7 @@ void Tessera::changed_by_file()
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
+    host_undo(what);
 }
 
 // LISTEN picked in the menu (0 off, 1..16): this instance's, saved in the DAW's state
@@ -597,6 +618,18 @@ void Tessera::midi_in(const clap_event_header_t *h)
         core->midi(e->data[0], e->data[1], e->data[2]);
         break;
     }
+    case CLAP_EVENT_NOTE_EXPRESSION:   // (per note: PRESSURE and BRIGHTNESS, MPE's slide; the rest not yet)
+    {
+        auto *e = reinterpret_cast<const clap_event_note_expression_t *>(h);
+        uint32_t kind = e->expression_id == CLAP_NOTE_EXPRESSION_PRESSURE     ? TESS_EXPR_PRESSURE
+                        : e->expression_id == CLAP_NOTE_EXPRESSION_BRIGHTNESS ? TESS_EXPR_SLIDE
+                                                                               : 99u;
+        if (kind == 99u || e->key > 127 || e->channel > 15 || (e->channel >= 0 && listen.mine(e->channel)))
+            break;   // (LISTEN's channel steers: its notes play nothing to shape)
+        double v = e->value < 0 ? 0 : e->value > 1 ? 1 : e->value;
+        core->note_expr(kind, e->channel < 0 ? -1 : e->channel, e->key < 0 ? -1 : e->key, (uint32_t)(v * 127.0 + 0.5));
+        break;
+    }
     default:
         break;
     }
@@ -666,6 +699,9 @@ void Tessera::params_make()
         }
     param_now.reset(new std::atomic<int32_t>[params.size()]);
     param_look.reset(new uint32_t[params.size()]);
+    gesture_open.assign(params.size(), 0);
+    gesture_list.clear();
+    gesture_list.reserve(params.size());   // (the audio thread pushes, never grows it)
     for (size_t i = 0; i < params.size(); i++)
     {
         param_now[i] = param_core((int)i);
@@ -742,10 +778,40 @@ void Tessera::param_in(const clap_event_param_value_t *e)
     if (i >= 0)
         param_set(i, (int32_t)std::lround(e->value));
 }
+void Tessera::gesture(const clap_output_events_t *out, uint32_t at, int i, bool begin)
+{
+    clap_event_param_gesture_t e = {};
+    e.header = {sizeof e, at, CLAP_CORE_EVENT_SPACE_ID,
+                (uint16_t)(begin ? CLAP_EVENT_PARAM_GESTURE_BEGIN : CLAP_EVENT_PARAM_GESTURE_END), 0};
+    e.param_id = params[i].id;
+    out->try_push(out, &e.header);
+}
+// a block's end: the gestures still open end once the knobs have been still long enough
+void Tessera::gestures_tick(const clap_output_events_t *out, uint32_t n)
+{
+    if (!gesture_left)
+        return;
+    gesture_left = gesture_left > n ? gesture_left - n : 0;
+    if (gesture_left)
+        return;
+    for (int i : gesture_list)
+    {
+        if (out) gesture(out, n ? n - 1 : 0, i, false);
+        gesture_open[i] = 0;
+    }
+    gesture_list.clear();
+}
+
 void Tessera::param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v)
 {
     if (!out)
         return;
+    if (gesture_left && !gesture_open[i])   // (a knob turned: this parameter's undo step begins)
+    {
+        gesture(out, at, i, true);
+        gesture_open[i] = 1;
+        gesture_list.push_back(i);
+    }
     clap_event_param_value_t e = {};
     e.header = {sizeof e, at, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
     e.param_id = params[i].id;
@@ -947,18 +1013,23 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             t->win_keys = pi.keys;
             t->core->buttons(t->win_buttons | t->fm1_buttons);
             t->core->keys(t->win_keys | t->fm1_keys);
+            bool master_turned = pi.master >= 0;
             if (pi.master >= 0)
                 t->master_set(pi.master);
             pi.master = -1;
             if (pi.track >= 0)
                 t->core->track_select((uint32_t)pi.track);
             pi.track = -1;
+            bool turned = master_turned || !pi.zones.empty();   // (a knob: the settings it moves are one undo step)
             for (int r = 0; r < TESS_NE; r++)
                 if (pi.enc[r])
                 {
                     t->core->enc((uint32_t)r, pi.enc[r]);
                     pi.enc[r] = 0;
+                    turned = true;
                 }
+            if (turned)
+                t->gesture_left = (uint32_t)(t->rate * Tessera::GESTURE_MS / 1000);
             for (auto &a : pi.zones)   // the screen's zones: what the mouse did there, in order
                 t->core->zone_do(&a.z, a.action, a.n);
             pi.zones.clear();          // (keeps its room: no allocation on this thread)
@@ -978,9 +1049,15 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             }
             if (fi.master >= 0)
                 t->master_set(fi.master);
+            bool turned = fi.master >= 0;
             for (int r = 0; r < TESS_NE; r++)
                 if (fi.enc[r])
+                {
                     t->core->enc((uint32_t)r, fi.enc[r]);
+                    turned = true;
+                }
+            if (turned)
+                t->gesture_left = (uint32_t)(t->rate * Tessera::GESTURE_MS / 1000);
         }
     }
 
@@ -1013,8 +1090,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
-    t->params_out(proc->out_events, n ? n - 1 : 0, set || t->listen_params);
-    t->listen_params = false;   // (a setting changed on the panel, by a project or a cord's source)
+    t->params_out(proc->out_events, n ? n - 1 : 0, set || t->listen_params);   // (a setting changed on the panel, by a
+    t->listen_params = false;                                               // project, a cord's source or LISTEN)
+    t->gestures_tick(proc->out_events, n);
 
     if (t->view_due <= n)   // the view for the window, ~30 times a second
     {
@@ -1058,7 +1136,8 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
     if (index != 0)
         return false;
     info->id = is_input ? 0 : 1;
-    info->supported_dialects = is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI : CLAP_NOTE_DIALECT_MIDI;
+    info->supported_dialects =
+        is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI | CLAP_NOTE_DIALECT_MIDI_MPE : CLAP_NOTE_DIALECT_MIDI;
     info->preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
     std::strncpy(info->name, is_input ? "MIDI in" : "MIDI out", sizeof(info->name));
     return true;
