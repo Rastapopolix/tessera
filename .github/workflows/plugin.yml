@@ -68,6 +68,9 @@ jobs:
         run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
       - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
         run: build/plugin/tessera-presets-test build/plugin/out/Tessera.clap
+      - name: "Presets test, VST3 (the wrapper's program list: listed and loaded)"
+        timeout-minutes: 5
+        run: build/plugin/tessera-vst3-presets-test build/plugin/out/Tessera.vst3 demos/koto-garden.tsp
       - uses: actions/upload-artifact@v4
         with:
           name: tessera-plugin-linux
@@ -147,6 +150,14 @@ jobs:
         run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
       - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
         run: build/plugin/tessera-presets-test build/plugin/out/Tessera.clap
+      - name: "Presets test, Audio Unit (the wrapper's factory presets: listed and loaded)"
+        timeout-minutes: 5
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R build/plugin/out/Tessera.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep -i tess || true
+          build/plugin/tessera-au-presets-test
       - name: List the outputs (both architectures in each)
         run: |
           find build/plugin/out -maxdepth 4 | sort
