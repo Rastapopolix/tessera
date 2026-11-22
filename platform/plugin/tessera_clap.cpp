@@ -740,7 +740,10 @@ int32_t Tessera::param_core(int i)
 {
     if (i == PARAM_MASTER) return master;
     if (i < PARAM_LEGACY) return (int32_t)core->macro((uint32_t)(i - PARAM_MACRO1));
-    return core->param_get(params[i].pid, params[i].track);
+    // (into the parameter's range: a new project leaves some settings at 0 until used, as EVOLVE ROLL, whose range
+    // is 1..128; the host must never see a value or default outside the range it was told)
+    int32_t v = core->param_get(params[i].pid, params[i].track);
+    return v < params[i].min ? params[i].min : v > params[i].max ? params[i].max : v;
 }
 void Tessera::param_set(int i, int32_t v)
 {

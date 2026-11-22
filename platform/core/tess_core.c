@@ -32,6 +32,19 @@ static uint32_t core_booted, core_last_frame, core_samples_due;
 static uint32_t core_track_req = 0xFFu;           /* tess_core_track_select: the track asked for (0xFF none) */
 
 /* power-on (main.c melodee_init via host_boot.h's ui_power_on, with the device's BPM and scale), in the default ink */
+/* the project now through a record and back, as a state load does: the boot and a new project leave bytes a load
+ * reads otherwise (an FM6 voice's name all zeros, spaces once loaded; tracks 5..8's above all), so a new plugin
+ * instance saved, loaded and saved again would not give the same bytes (clap-validator state-reproducibility-binary) */
+static void core_settle(void)
+{
+    uint32_t len;
+    project_capture(&proj_scratch);
+    proj_wire_gen++;
+    len = tsp_pack(proj_wire_u.raw, &proj_scratch, 1);
+    if (len && tsp_valid(proj_wire_u.raw, len) && !project_restore_runtime(&proj_scratch))
+        tsp_restore(proj_wire_u.raw);
+}
+
 void tess_core_boot(void)
 {
     uint32_t i;
@@ -53,6 +66,7 @@ void tess_core_boot(void)
     core_last_frame = fm1_ms - 15u;
     core_booted = 1;
 #ifdef TESS_PLUGIN_IO
+    core_settle();
     settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
     song.g[G_ROUTE] = 1;                          /* ROUT SEL: a DAW sends on channel 1, and the notes play the selected
                                                    * track, as the panel's keys do (GLO > SYSTEM can set the ranges) */
@@ -622,6 +636,7 @@ void tess_core_slot_load(uint32_t slot)
 void tess_core_project_new(void)
 {
     project_new_blank();
+    core_settle();
     ui.force = 1;
 }
 
