@@ -186,7 +186,7 @@ make_clapfirst_plugins(
 
 # ---- the render test: loads the built .clap as a host would
 if (TESS_PLUGIN_TESTS AND NOT WIN32)
-    add_executable(tessera-render-test render_test.cpp)
+    add_executable(tessera-render-test render_test.cpp midifile.cpp)
     target_link_libraries(tessera-render-test PRIVATE clap ${CMAKE_DL_LIBS})
     if (APPLE)   # (the window's part: Objective-C++, Cocoa)
         set_source_files_properties(render_test.cpp PROPERTIES LANGUAGE OBJCXX COMPILE_OPTIONS "-fobjc-arc")

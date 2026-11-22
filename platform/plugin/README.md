@@ -27,6 +27,11 @@ tracks, in TESSERA's own window or the FM-1's.
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
   another Tessera. On Windows and macOS the system's dialogs (a file dropped on the window opens too); on Linux
   zenity or kdialog, whichever is installed. The DAW is told its saved state changed.
+- **MIDI clip:** MIDI, beside OPEN and SAVE, writes the notes Tessera played since PLAY (or since the song last jumped
+  back: a loop, a locate) as a Standard MIDI File in `Documents/Tessera/MIDI` (`<project> <date time>.mid`), to drag
+  into the DAW: format 1, the project's tempo, a track per channel (T1..T8, each track on its MIDI OUT channel), from
+  the bar of the first note. Only notes (no CCs, no clock); up to 65,536 messages, the oldest dropped past that
+  (`midifile.h`; kept on the audio thread in a fixed ring, nothing allocated there).
 - **The window** (Windows, Linux and macOS): TESSERA's own shell by default (shell 0: flat, the project page's
   colours, a menu under the mark for SHELL / INK / MODE / SIZE / ABOUT, a MIDI lamp), or the FM-1 as the web
   simulator draws it, in any of its eight shells (the swatches
