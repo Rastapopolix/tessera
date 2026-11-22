@@ -5,6 +5,10 @@ instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is t
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
+[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/gallery/plugin-expanded.png)](assets/gallery/plugin-expanded.png)
+
+*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (0.1-beta2 playing STILL TIDE).*
+
 <!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
 
 **The plugin is in public beta.** Download it from the
@@ -90,6 +94,14 @@ and value shown large in a box under the screen:
   notch. Click a row to move there; drag up or down on it to change that row's value (on SCL's Scale row, through the
   scales); double-click to move there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
 - **MENU > COLOR's inks:** click one to pick it; the wheel steps through them.
+- **PROJECT, SAVE > USER and FM6 STORE:** click a slot to pick it; the wheel moves through them; double-click opens
+  the slot's sheet.
+- **PATTERNS:** click a cell to queue that pattern on its track; click a track's number to select it. In Copy to,
+  click where the copy goes.
+- **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
+- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the left
+  half of its MUTE / SOLO box to mute, the right half to solo.
+- **ABOUT and a HELP card longer than the card:** the wheel scrolls the text (drag it as you would push a page).
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
