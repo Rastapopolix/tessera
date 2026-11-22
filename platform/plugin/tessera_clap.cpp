@@ -39,6 +39,7 @@
 #include "core_copies.h"
 #include "gui.h"
 #include "projfile.h"
+#include "resample.h"
 
 namespace
 {
@@ -90,12 +91,10 @@ struct Tessera : GuiLink
     PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
     tess_view_t shared_view{};            // view_lock: the latest view
     double rate = 48000.0;
-    double step = 44100.0 / 48000.0;      // core frames per host frame
-    double pos = 0.0;                     // between prev and cur, 0..1
-    float prev[NCH] = {}, cur[NCH] = {};
+    Resampler<NCH> rs;                    // the core's 44.1 kHz to the host's rate (resample.h)
     float buf[NCH][64];
     uint32_t buf_n = 0, buf_i = 0;
-    uint32_t cur_frame = 0;               // the core frame in cur (tess_core_frames' count)
+    uint32_t cur_frame = 0;               // the newest core frame the resampler has (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
@@ -103,7 +102,7 @@ struct Tessera : GuiLink
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
     std::unique_ptr<Gui> gui;
 
-    void next_core_frame()
+    void next_core_frame(float *f)
     {
         if (buf_i >= buf_n)
         {
@@ -116,10 +115,7 @@ struct Tessera : GuiLink
             buf_i = 0;
         }
         for (uint32_t c = 0; c < NCH; c++)
-        {
-            prev[c] = cur[c];
-            cur[c] = buf[c][buf_i];
-        }
+            f[c] = buf[c][buf_i];
         cur_frame = core->frames() - buf_n + buf_i;
         buf_i++;
     }
@@ -128,17 +124,7 @@ struct Tessera : GuiLink
     void render(float *const *out, uint32_t at, uint32_t n)
     {
         for (uint32_t k = at; k < at + n; k++)
-        {
-            while (pos >= 1.0)
-            {
-                next_core_frame();
-                pos -= 1.0;
-            }
-            float f = (float)pos;
-            for (uint32_t c = 0; c < NCH; c++)
-                if (out[c]) out[c][k] = prev[c] + (cur[c] - prev[c]) * f;
-            pos += step;
-        }
+            rs.frame(out, k, [this](float *f) { next_core_frame(f); });
     }
 
     // MIDI OUT for a block of n host frames that ended with cur_frame: each packet at the host frame its core frame plays
@@ -150,8 +136,9 @@ struct Tessera : GuiLink
         size_t keep = 0;
         for (auto &m : midi_wait)
         {
-            // host frames after this block's last one that core frame m.second plays at (cur_frame: the last)
-            double ahead = (double)(int32_t)(m.second - cur_frame) / step;
+            // host frames after this block's last one that core frame m.second plays at (the resampler plays
+            // delay_core frames behind cur_frame, the newest it has)
+            double ahead = (double)(int32_t)(m.second - (cur_frame - rs.delay_core())) / rs.step();
             if (ahead > 0.5)
             {
                 midi_wait[keep++] = m;   // (not yet: the next block)
@@ -657,8 +644,7 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
 {
     auto *t = self(p);
     t->rate = rate;
-    t->step = (double)t->core->rate() / rate;
-    t->pos = 1.0;
+    t->rs.setup((double)t->core->rate(), rate);
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
     t->view_due = 0;
@@ -681,7 +667,7 @@ bool p_start_processing(const clap_plugin_t *) { return true; }
 void p_stop_processing(const clap_plugin_t *p) { self(p)->notes_due = true; }
 void p_reset(const clap_plugin_t *p)
 {
-    self(p)->pos = 1.0;
+    self(p)->rs.reset();
     self(p)->notes_due = true;
 }
 
@@ -991,6 +977,10 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 }
 const clap_plugin_state_t state = {st_save, st_load};
 
+// ---- latency: the resampler plays half its kernel behind (resample.h: 32 core frames, ~0.7 ms; none at 44.1 kHz)
+uint32_t lat_get(const clap_plugin_t *p) { return self(p)->rs.delay_host(); }
+const clap_plugin_latency_t latency_ext = {lat_get};
+
 // ---- the parameters' extension
 
 uint32_t pr_count(const clap_plugin_t *p) { return (uint32_t)self(p)->params.size(); }
@@ -1150,6 +1140,7 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
+    if (!std::strcmp(id, CLAP_EXT_LATENCY)) return &latency_ext;
     return nullptr;
 }
 
