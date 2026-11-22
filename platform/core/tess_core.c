@@ -282,6 +282,22 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 #endif
 }
 
+void tess_core_text(uint32_t ch)
+{
+#if TESS_HAS_POINTER
+    _Static_assert(NT_BACK == TESS_TEXT_BACK && NT_OK == TESS_TEXT_OK && NT_CANCEL == TESS_TEXT_CANCEL &&
+                   NT_LEFT == TESS_TEXT_LEFT && NT_RIGHT == TESS_TEXT_RIGHT && NT_DELETE == TESS_TEXT_DELETE,
+                   "ui_name.c's keys as tess_core.h's");
+    int r = name_text(ch);
+    if (r == 2 || r == 3)
+        zq_key(r == 2 ? B_OCTUP : B_OCTDN);          /* (OK, cancel: as the keys, through the same queue) */
+    if (r)
+        ui.force = 1;
+#else
+    (void)ch;
+#endif
+}
+
 /* one pass of main.c's loop: what a host has (no USB, editor, UBOOT, flash) */
 static void core_frame(void)
 {
@@ -613,6 +629,7 @@ void tess_core_view(tess_view_t *v)
     v->ink = settings.palette;
     v->track = song.sel;
     v->zone_count = 0;
+    v->typing = 0;
     v->zone_gen = 0;
 #if TESS_HAS_POINTER
     {                                             /* the zones, in the order a hit is looked for: a list over the
@@ -632,6 +649,7 @@ void tess_core_view(tess_view_t *v)
                     str_cpy(z->value, uz[i].value, sizeof z->value);
                 }
         v->zone_count = n;
+        v->typing = name_on() ? 1u : 0u;
         v->zone_gen = uz_gen;
     }
 #endif
