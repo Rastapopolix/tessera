@@ -55,6 +55,8 @@ static void ui_power_on(void)
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
     undo_depth++;
+    fm6_init();                                   /* every track's FM6 patch: the init voice (as main.c; else all 0,
+                                                   * and a saved project's names came back as spaces) */
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         track_defaults(t);
