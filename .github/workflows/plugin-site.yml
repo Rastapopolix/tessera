@@ -3,8 +3,9 @@ name: Plugin site (downloads)
 # Keeps the site's plugin page (docs/plugin/, made by web/make_manual.py) on the newest plugin release: when a release
 # tagged plugin-v... is published (Plugin release makes it a draft; publishing it on GitHub fires this), its files go
 # into web/plugin_release.json, the page is made again from that release's PLUGIN.md with its download buttons on
-# those files, and the change goes to main as a site pull request (branch site/plugin-<version>): merging it makes it
-# live. A run by hand (Actions > Plugin site > Run workflow) does the same for a release already out.
+# those files, its picture of EXPANDED is drawn again from that release's own build (the render test's window, STILL
+# TIDE playing, on a screen wide enough for EXPANDED: assets/gallery/plugin-expanded.png), and the change goes to main
+# as a site pull request (branch site/plugin-<version>): merging it makes it live. A run by hand (Actions > Plugin site > Run workflow) does the same for a release already out.
 #
 # The pull request needs "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General);
 # without it the branch is pushed and the run's summary says to open the pull request from it.
@@ -39,7 +40,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install markdown-it-py
+      - run: pip install markdown-it-py pillow
+      - name: The release's build, for its picture (Linux, as Plugin release builds it)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libharfbuzz-dev libfribidi-dev libraqm-dev libx11-dev xvfb
+          git fetch --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          git worktree add "$RUNNER_TEMP/rel" "$TAG"
+          cd "$RUNNER_TEMP/rel"
+          cmake -S platform/plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang \
+                -DCMAKE_CXX_COMPILER=clang++ -DTESS_VERSION="${TAG#plugin-v}"
+          cmake --build build/plugin -j4
+      - name: Its picture of EXPANDED
+        run: |
+          cd "$RUNNER_TEMP/rel"
+          # (a 1920-wide screen: a new window opens in EXPANDED; the test's FM-1-mode checks fail there, as they should)
+          xvfb-run -s "-screen 0 1920x1080x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 \
+            "$RUNNER_TEMP/st.wav" "$RUNNER_TEMP/window.ppm" || true
+          rm -rf ~/.config/tessera
+          python3 -c "from PIL import Image; im = Image.open('$RUNNER_TEMP/window.ppm'); print('window', im.size); \
+            assert im.size[0] >= 1400, 'not EXPANDED'; im.save('$GITHUB_WORKSPACE/assets/gallery/plugin-expanded.png', optimize=True)"
+          mkdir -p "$GITHUB_WORKSPACE/docs/media/gallery"
+          cp "$GITHUB_WORKSPACE/assets/gallery/plugin-expanded.png" "$GITHUB_WORKSPACE/docs/media/gallery/plugin-expanded.png"
       - name: The release's files and its PLUGIN.md; the page
         run: |
           V="${TAG#plugin-v}"
@@ -68,7 +90,8 @@ jobs:
                                                                 # the firmware's releases)
       - name: The site pull request
         run: |
-          if [ -z "$(git status --porcelain -- web/plugin_release.json docs/plugin PLUGIN.md)" ]; then
+          git worktree remove --force "$RUNNER_TEMP/rel" || true
+          if [ -z "$(git status --porcelain -- web/plugin_release.json docs/plugin PLUGIN.md assets/gallery docs/media/gallery)" ]; then
             echo "The plugin page already shows $TAG" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -76,8 +99,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$b"
-          git add web/plugin_release.json docs/plugin/index.html PLUGIN.md
-          git commit -m "site: the plugin page on $TAG (its downloads, its PLUGIN.md)"
+          git add web/plugin_release.json docs/plugin/index.html PLUGIN.md assets/gallery/plugin-expanded.png \
+                  docs/media/gallery/plugin-expanded.png
+          git commit -m "site: the plugin page on $TAG (its downloads, its PLUGIN.md, its picture)"
           git push -f origin "$b"
           body="The plugin page's download buttons on [$TAG](https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG), and its text from that release's PLUGIN.md (made by .github/workflows/plugin-site.yml). Merging makes it live."
           if gh pr create --base main --head "$b" --title "Site: the plugin page on $TAG" --body "$body"; then
