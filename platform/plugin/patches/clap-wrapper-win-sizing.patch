@@ -1,0 +1,54 @@
+diff --git a/src/detail/standalone/windows/windows_standalone.cpp b/src/detail/standalone/windows/windows_standalone.cpp
+index bb2be63..4bb96e0 100644
+--- a/src/detail/standalone/windows/windows_standalone.cpp
++++ b/src/detail/standalone/windows/windows_standalone.cpp
+@@ -1016,6 +1016,49 @@ Plugin::Plugin(std::shared_ptr<Clap::Plugin> clapPlugin, int nCmdShow)
+                         return 0;
+                       });
+ 
++  // While the frame is dragged: the size the plugin can take (its adjust_size, e.g. fixed steps), anchored on the side
++  // that isn't moving, so the window snaps from one size to the next and never shows more than the plugin draws.
++  message.on(WM_SIZING,
++             [this](Message msg)
++             {
++               if (!plugin.gui || !plugin.gui->can_resize(plugin.plugin)) return static_cast<::LRESULT>(FALSE);
++
++               auto drag{reinterpret_cast<::LPRECT>(msg.lparam)};
++               ::RECT frame{};   // the frame and caption around a client of 0 x 0
++               ::AdjustWindowRectExForDpi(&frame, static_cast<::DWORD>(::GetWindowLongPtrW(msg.hwnd, GWL_STYLE)),
++                                          ::GetMenu(msg.hwnd) != nullptr,
++                                          static_cast<::DWORD>(::GetWindowLongPtrW(msg.hwnd, GWL_EXSTYLE)), dpi);
++               auto fw{frame.right - frame.left}, fh{frame.bottom - frame.top};
++
++               auto w{static_cast<uint32_t>(std::max<::LONG>(drag->right - drag->left - fw, 1))};
++               auto h{static_cast<uint32_t>(std::max<::LONG>(drag->bottom - drag->top - fh, 1))};
++               if (!plugin.gui->adjust_size(plugin.plugin, &w, &h)) return static_cast<::LRESULT>(FALSE);
++
++               auto ww{static_cast<::LONG>(w) + fw}, wh{static_cast<::LONG>(h) + fh};
++               switch (msg.wparam)
++               {
++                 case WMSZ_LEFT:
++                 case WMSZ_TOPLEFT:
++                 case WMSZ_BOTTOMLEFT:
++                   drag->left = drag->right - ww;
++                   break;
++                 default:
++                   drag->right = drag->left + ww;
++               }
++               switch (msg.wparam)
++               {
++                 case WMSZ_TOP:
++                 case WMSZ_TOPLEFT:
++                 case WMSZ_TOPRIGHT:
++                   drag->top = drag->bottom - wh;
++                   break;
++                 default:
++                   drag->bottom = drag->top + wh;
++               }
++
++               return static_cast<::LRESULT>(TRUE);
++             });
++
+   message.on(WM_WINDOWPOSCHANGED,
+              [this](Message msg)
+              {
