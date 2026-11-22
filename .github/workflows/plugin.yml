@@ -64,9 +64,9 @@ jobs:
         run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)
         run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
-      - name: Presets test (the DAW's preset browser: the demos, the user's folder, loading)
+      - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
         run: build/plugin/tessera-presets-test build/plugin/out/Tessera.clap
-      - name: Presets test, VST3 (the wrapper's program list: listed and loaded)
+      - name: "Presets test, VST3 (the wrapper's program list: listed and loaded)"
         timeout-minutes: 5
         run: build/plugin/tessera-vst3-presets-test build/plugin/out/Tessera.vst3 demos/koto-garden.tsp
       - uses: actions/upload-artifact@v4
@@ -144,9 +144,9 @@ jobs:
         run: build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)
         run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
-      - name: Presets test (the DAW's preset browser: the demos, the user's folder, loading)
+      - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
         run: build/plugin/tessera-presets-test build/plugin/out/Tessera.clap
-      - name: Presets test, Audio Unit (the wrapper's factory presets: listed and loaded)
+      - name: "Presets test, Audio Unit (the wrapper's factory presets: listed and loaded)"
         timeout-minutes: 5
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/Components
