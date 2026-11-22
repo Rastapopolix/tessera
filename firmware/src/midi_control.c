@@ -354,6 +354,9 @@ static void mpe_set(uint32_t ch, int32_t key, uint32_t kind, uint32_t v)
 }
 #endif
 
+#if TESS_PC_IN
+void tessera_pc_in(uint32_t n);                    /* (form_chain.c: a DAW's Program Change, sections and banks) */
+#endif
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. */
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
@@ -392,5 +395,9 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
 #if TESS_MPE
     else if (st == 0xA0u)
         mpe_set(ch, (int32_t)d1, 0, d2);           /* (Poly AT: one key's pressure; a CLAP note's PRESSURE) */
+#endif
+#if TESS_PC_IN
+    else if (st == 0xC0u)
+        tessera_pc_in(d1);
 #endif
 }

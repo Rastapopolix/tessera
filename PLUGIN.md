@@ -142,6 +142,19 @@ Tessera follows the DAW's transport:
 - **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Tessera neither follows nor sends
   a MIDI clock.
 
+### Sections and banks from the DAW (Program Change)
+
+A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+MIDI OUT's sheet:
+
+| Program | Does |
+|---|---|
+| **0, 1, 2** | The CHAIN goes to section **A, B or C** at the next phrase line, whatever WANDER or the piece's plan would have picked. Then the FORM goes on from that letter's place. Sent while stopped, the next PLAY starts on it. Sending the letter already playing holds it for another phrase. It does nothing with FORM OFF or for a letter the FORM doesn't have. |
+| **8 .. 15** | Every track goes to pattern bank **1 .. 8**, as the PATTERNS page does: each track switches when its pattern comes round, at once while stopped, not while a SONG runs. |
+
+Other numbers do nothing. Nothing is saved: put the changes in a clip and the DAW sends them again each time it plays.
+To land on a phrase line, send the change during the phrase before it.
+
 ## Saving, and project files
 
 **The DAW saves Tessera with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
@@ -166,6 +179,9 @@ The plugin has eight tracks; the panel works on four at a time, as the FM-1's do
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
 shows **5-8**, inverted, before the track dots.
+
+All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
+FM-1 skips, so the FM-1 still opens the file as its four tracks).
 
 ## Automation: the parameters
 
@@ -254,8 +270,6 @@ sounding at once take about 18 % of a core.
 
 ## Not there yet
 
-- **Tracks 5 to 8's steps** aren't saved yet. Their settings are saved with the DAW song, but a `.tsp` holds tracks 1
-  to 4 only.
 - **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **One window size**, the FM-1's. A larger, wider window is planned.
 - **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.

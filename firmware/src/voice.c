@@ -76,6 +76,19 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
     lfo_sync_rem[ti] = (uint16_t)rem;
     return inc;
 }
+/* Song Position (seq.c seq_seek, right after seq_start): a SYNC + FREE LFO where it would be UNITS from the top, so it
+ * stays on the bar when a DAW starts mid-song, loops or locates (a MIDI master's Song Position too). The phase is
+ * LPHASE plus (units mod cycle) x 2^32 / cycle, as lfo_sync_inc would have summed it, in 32 bits: with r < cycle =
+ * 1024 x, r x 2^22 / x = (r / x) 2^22 + q 2^22 / x, q = r mod x < x (<= 6144), the second in two steps of 2^9 and 2^13 */
+static void lfo_seek(track_t *t, uint32_t units)
+{
+    if (!t->p[P_LSYNC] || !t->p[P_LTRIG]) return;      /* (NOTE: each phrase starts it again; OFF: RATE's, free) */
+    uint32_t x = lsync_cycle((uint32_t)t->p[P_LSYNC]) / 1024u;
+    if (!x) return;
+    uint32_t r = units % (x * 1024u), q = r % x, a = q << 9;
+    t->lfo_ph = ((uint32_t)t->p[P_LPHASE] << 25) + ((r / x) << 22) + ((a / x) << 13) + (((a % x) << 13) / x);
+    lfo_sync_rem[(uint32_t)(t - trk) % NTRK] = 0;
+}
 
 static uint8_t lfo_eoc;                              /* bit tr: its LFO wrapped and the first eighth of the cycle is not over */
 static int lfo_eoc_now(const track_t *t) { return (lfo_eoc >> ((uint32_t)(t - trk) % NTRK)) & 1u; }   /* (cord.c CS_EOC) */

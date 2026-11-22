@@ -41,6 +41,10 @@ struct GuiLink
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
+    /* SIZE (TESSERA's menu): the window's size now, as Panel's halves (2, 3, 4: 100, 150, 200 %), and a pick (100, 150
+     * or 200): the instance remembers it for every window and asks the host for the new size */
+    virtual int size_halves() { return 2; }
+    virtual void size_pick(int pct) { (void)pct; }
     /* GENERATE (TESSERA's strip; on the host's main thread): the styles' names (none: a build without it); a new piece
      * in a style at a VARIATION, from a new seed; before / after; a piece made before made again (dir -1 an older one,
      * +1 a newer); the style and VARIATION picked (remembered for the next window). Each returns what to show under the
@@ -64,6 +68,15 @@ inline void gui_fm1_tick(Panel &panel, GuiLink *link)
         link->fm1_set(f == 1);
     Fm1Link::State s = link->fm1_state();
     panel.set_fm1(s != Fm1Link::OFF, s != Fm1Link::ELSEWHERE, s == Fm1Link::LIVE, fm1_state_text(s));
+}
+
+/* each window's tick: SIZE picked in the menu handed on; the size shown */
+inline void gui_size_tick(Panel &panel, GuiLink *link)
+{
+    int pct = panel.take_size_request();
+    if (pct > 0)
+        link->size_pick(pct);
+    panel.set_size_pct(Panel::size_pct(link->size_halves()));
 }
 
 /* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */
@@ -106,6 +119,8 @@ class Gui
     virtual bool show() = 0;
     virtual bool hide() = 0;
     virtual void tick() = 0;   // ~30 times a second (X11: from the host's timer)
+    /* the window's size: the panel at n / 2 (2, 3, 4: 100, 150, 200 %); before set_parent, the size it opens at */
+    virtual void set_scale(int halves) { (void)halves; }
     static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11 / _COCOA, or nullptr
     static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };

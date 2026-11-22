@@ -42,6 +42,7 @@
 #include "core_copies.h"
 #include "gui.h"
 #include "projfile.h"
+#include "resample.h"
 
 namespace
 {
@@ -93,12 +94,10 @@ struct Tessera : GuiLink
     PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
     tess_view_t shared_view{};            // view_lock: the latest view
     double rate = 48000.0;
-    double step = 44100.0 / 48000.0;      // core frames per host frame
-    double pos = 0.0;                     // between prev and cur, 0..1
-    float prev[NCH] = {}, cur[NCH] = {};
+    Resampler<NCH> rs;                    // the core's 44.1 kHz to the host's rate (resample.h)
     float buf[NCH][64];
     uint32_t buf_n = 0, buf_i = 0;
-    uint32_t cur_frame = 0;               // the core frame in cur (tess_core_frames' count)
+    uint32_t cur_frame = 0;               // the newest core frame the resampler has (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
@@ -106,7 +105,7 @@ struct Tessera : GuiLink
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
     std::unique_ptr<Gui> gui;
 
-    void next_core_frame()
+    void next_core_frame(float *f)
     {
         if (buf_i >= buf_n)
         {
@@ -119,10 +118,7 @@ struct Tessera : GuiLink
             buf_i = 0;
         }
         for (uint32_t c = 0; c < NCH; c++)
-        {
-            prev[c] = cur[c];
-            cur[c] = buf[c][buf_i];
-        }
+            f[c] = buf[c][buf_i];
         cur_frame = core->frames() - buf_n + buf_i;
         buf_i++;
     }
@@ -131,17 +127,7 @@ struct Tessera : GuiLink
     void render(float *const *out, uint32_t at, uint32_t n)
     {
         for (uint32_t k = at; k < at + n; k++)
-        {
-            while (pos >= 1.0)
-            {
-                next_core_frame();
-                pos -= 1.0;
-            }
-            float f = (float)pos;
-            for (uint32_t c = 0; c < NCH; c++)
-                if (out[c]) out[c][k] = prev[c] + (cur[c] - prev[c]) * f;
-            pos += step;
-        }
+            rs.frame(out, k, [this](float *f) { next_core_frame(f); });
     }
 
     // MIDI OUT for a block of n host frames that ended with cur_frame: each packet at the host frame its core frame plays
@@ -153,8 +139,9 @@ struct Tessera : GuiLink
         size_t keep = 0;
         for (auto &m : midi_wait)
         {
-            // host frames after this block's last one that core frame m.second plays at (cur_frame: the last)
-            double ahead = (double)(int32_t)(m.second - cur_frame) / step;
+            // host frames after this block's last one that core frame m.second plays at (the resampler plays
+            // delay_core frames behind cur_frame, the newest it has)
+            double ahead = (double)(int32_t)(m.second - (cur_frame - rs.delay_core())) / rs.step();
             if (ahead > 0.5)
             {
                 midi_wait[keep++] = m;   // (not yet: the next block)
@@ -231,6 +218,12 @@ struct Tessera : GuiLink
     void ink_picked(int i) override;
     void ink_seen(int i) override;
     int tracks() override { return (int)core->tracks(); }
+    // SIZE (gui.h): the one picked in any window (the setting `size`: 100, 150, 200), else the host's scale (a HiDPI
+    // screen: set_scale) to the nearest of the three
+    int size_user = 0, size_host = 2;   // halves; size_user 0: none picked
+    int size_halves() override { return size_user ? size_user : size_host; }
+    void size_pick(int pct) override;
+    bool size_set(int halves);          // the window at that size (the host's set_size, a pick)
     std::atomic<uint32_t> midi_seen{0};   // MIDI in so far (the window's MIDI lamp)
     uint32_t midi_count() override { return midi_seen.load(std::memory_order_relaxed); }
     // an FM-1 on USB plays this Tessera (fm1_link.h): asked for from the first activate when the setting is on
@@ -443,6 +436,33 @@ void Tessera::changed_by_file()
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
+}
+
+// SIZE picked in the menu: remembered for every window, the window that size, and the host asked to make room
+void Tessera::size_pick(int pct)
+{
+    int n = Panel::size_halves(pct);
+    projfile::setting_put("size", std::to_string(Panel::size_pct(n)));
+    size_user = n;
+    if (gui)
+        gui->set_scale(n);
+    auto *hg = static_cast<const clap_host_gui_t *>(host->get_extension(host, CLAP_EXT_GUI));
+    if (hg && hg->request_resize)
+        hg->request_resize(host, (uint32_t)(Panel::W * n / 2), (uint32_t)(Panel::H * n / 2));
+}
+
+bool Tessera::size_set(int n)
+{
+    if (n < 2 || n > 4)
+        return false;
+    if (n != size_halves())   // (the host's own resize, a drag on its frame: kept as the pick)
+    {
+        size_user = n;
+        projfile::setting_put("size", std::to_string(Panel::size_pct(n)));
+    }
+    if (gui)
+        gui->set_scale(n);
+    return true;
 }
 
 // a shell picked under the keys: its ink on this Tessera's screen (as MENU > COLOR; after, that still changes it), and
@@ -764,6 +784,10 @@ bool p_init(const clap_plugin_t *p)
     if (!ink.empty())
         t->core->ink(ink.c_str());
     t->master_set(700);   // (MASTER's default)
+    {   // SIZE: the one last picked in any window (none: the host's scale)
+        std::string sz = projfile::setting_get("size");
+        if (!sz.empty()) t->size_user = Panel::size_halves(std::atoi(sz.c_str()));
+    }
     {   // GENERATE: the style (by name) and VARIATION last picked in any window
         std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
         for (uint32_t i = 0, n = t->core->gen_styles(); i < n; i++)
@@ -789,8 +813,7 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
 {
     auto *t = self(p);
     t->rate = rate;
-    t->step = (double)t->core->rate() / rate;
-    t->pos = 1.0;
+    t->rs.setup((double)t->core->rate(), rate);
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
     t->view_due = 0;
@@ -813,7 +836,7 @@ bool p_start_processing(const clap_plugin_t *) { return true; }
 void p_stop_processing(const clap_plugin_t *p) { self(p)->notes_due = true; }
 void p_reset(const clap_plugin_t *p)
 {
-    self(p)->pos = 1.0;
+    self(p)->rs.reset();
     self(p)->notes_due = true;
 }
 
@@ -1126,6 +1149,10 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 }
 const clap_plugin_state_t state = {st_save, st_load};
 
+// ---- latency: the resampler plays half its kernel behind (resample.h: 32 core frames, ~0.7 ms; none at 44.1 kHz)
+uint32_t lat_get(const clap_plugin_t *p) { return self(p)->rs.delay_host(); }
+const clap_plugin_latency_t latency_ext = {lat_get};
+
 // ---- the parameters' extension
 
 uint32_t pr_count(const clap_plugin_t *p) { return (uint32_t)self(p)->params.size(); }
@@ -1228,25 +1255,60 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
     t->gui = Gui::make(t->host, t);
+    if (t->gui)
+        t->gui->set_scale(t->size_halves());
     return t->gui != nullptr;
 }
 void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
-bool gui_set_scale(const clap_plugin_t *, double) { return false; }   // (fixed size, 1:1)
-bool gui_get_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+// the window's size: the panel at 100, 150 or 200 % (gui.h SIZE). A host's scale (Windows, X11: the screen's DPI) picks
+// the nearest until SIZE is picked; a host that lets its frame be dragged gets the nearest of the three
+bool gui_set_scale(const clap_plugin_t *p, double scale)
 {
-    *w = Panel::W;
-    *h = Panel::H;
+    auto *t = self(p);
+    int n = scale >= 1.75 ? 4 : scale >= 1.25 ? 3 : 2;
+    bool was = t->size_halves() == n;
+    t->size_host = n;
+    if (!was && t->gui && !t->size_user)
+        t->gui->set_scale(n);
     return true;
 }
-bool gui_can_resize(const clap_plugin_t *) { return false; }
-bool gui_get_resize_hints(const clap_plugin_t *, clap_gui_resize_hints_t *) { return false; }
+bool gui_get_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
+{
+    int n = self(p)->size_halves();
+    *w = (uint32_t)(Panel::W * n / 2);
+    *h = (uint32_t)(Panel::H * n / 2);
+    return true;
+}
+bool gui_can_resize(const clap_plugin_t *) { return true; }
+bool gui_get_resize_hints(const clap_plugin_t *, clap_gui_resize_hints_t *h)
+{
+    h->can_resize_horizontally = h->can_resize_vertically = true;
+    h->preserve_aspect_ratio = true;
+    h->aspect_ratio_width = Panel::W;
+    h->aspect_ratio_height = Panel::H;
+    return true;
+}
+int size_nearest(uint32_t w)   // (the halves whose width is nearest w)
+{
+    int best = 2;
+    for (int n = 3; n <= 4; n++)
+        if (std::abs((int)w - Panel::W * n / 2) < std::abs((int)w - Panel::W * best / 2)) best = n;
+    return best;
+}
 bool gui_adjust_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
 {
-    *w = Panel::W;
-    *h = Panel::H;
+    int n = size_nearest(*w);
+    *w = (uint32_t)(Panel::W * n / 2);
+    *h = (uint32_t)(Panel::H * n / 2);
     return true;
 }
-bool gui_set_size(const clap_plugin_t *, uint32_t w, uint32_t h) { return w == Panel::W && h == Panel::H; }
+bool gui_set_size(const clap_plugin_t *p, uint32_t w, uint32_t h)
+{
+    for (int n = 2; n <= 4; n++)
+        if (w == (uint32_t)(Panel::W * n / 2) && h == (uint32_t)(Panel::H * n / 2))
+            return self(p)->size_set(n);
+    return false;
+}
 bool gui_set_parent(const clap_plugin_t *p, const clap_window_t *w)
 {
     auto *t = self(p);
@@ -1285,6 +1347,7 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
+    if (!std::strcmp(id, CLAP_EXT_LATENCY)) return &latency_ext;
     return nullptr;
 }
 

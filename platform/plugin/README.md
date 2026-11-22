@@ -1,13 +1,13 @@
 # Tessera as a plugin
 
 Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument and, through
-[clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3 and a standalone app. This is the first step
-(phases 0 and 1): it plays, and its window is the FM-1.
+[clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3, an Audio Unit (macOS) and a standalone app (Windows, macOS). It plays the whole firmware at up to 8
+tracks, in TESSERA's own window or the FM-1's.
 
 ## What works
 
 - **Sound:** the whole firmware (sequencer, generators, voices, FX) as the web simulator runs it (`web/sim/sim.c`),
-  at 44.1 kHz inside, resampled to the host's rate.
+  at 44.1 kHz inside, resampled to the host's rate by a 64-tap windowed sinc (`resample.h`: flat to 20 kHz, the error ~90 dB under the signal, nothing folded down at lower rates; ~0.4 % of a core). It plays 32 core frames (0.7 ms) behind, reported to the host as latency; at 44.1 kHz it is a plain copy, no latency.
 - **Engines the FM-1 has no room for:** SID (a whole MOS 6581 / 8580 per note), DRUM's SID KIT and SID DIGI, and
   MACRO (Plaits' synthesis), PHASE (the CZ-1's phase distortion, CrispyZebra's waveforms), besides the FM-1's own.
   A project with them opens on the FM-1 too: its SID, MACRO and PHASE tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
@@ -15,7 +15,9 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   it; the standalone app has no transport, so it plays at once.
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample. ROUT starts
   at SEL (a DAW sends on channel 1: the notes play the selected track); a note-off for every key (key -1) is All
-  Notes Off, a choke All Sound Off. CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
+  Notes Off, a choke All Sound Off. **Program Change** (`TESS_PC_IN`, `form_chain.c tessera_pc_in`), on any channel:
+  0..2 cue the CHAIN's section A..C for the next phrase line (the next PLAY while stopped), 8..15 every track's bank
+  1..8 through PATTERNS' queue (`pattern_request`). CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
   (ROUT, DRUM's channel, NOTES OUT, TUNE: `tess_core_setup_save`) goes in the DAW state as its bytes, their count and
   `TGLO`, before `TMST`, never in the `.tsp`; a reused core copy gets its power-on setup back.
 - **MPE and note expression** (`TESS_MPE`): each note from MIDI remembers its channel and key, and keeps its own
@@ -29,8 +31,8 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
   `demos/`) or an **FM-1 backup** (`.json` from the backup page or the Hub: its slots A..D go into the plugin's
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or
-  another Tessera. On Windows the system's dialogs (a file dropped on the window opens too); on Linux zenity or
-  kdialog, whichever is installed. The DAW is told its saved state changed. Not on macOS yet (no window).
+  another Tessera. On Windows and macOS the system's dialogs (a file dropped on the window opens too); on Linux
+  zenity or kdialog, whichever is installed. The DAW is told its saved state changed.
 - **The window** (Windows, Linux and macOS): TESSERA's own shell by default (shell 0: flat, the project page's
   colours, a menu under the mark for SHELL / INK / MODE / SIZE / ABOUT, a MIDI lamp), or the FM-1 as the web
   simulator draws it, in any of its eight shells (the swatches
@@ -39,7 +41,7 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   the screen has ringed, its name on hover; tess_core_ink_at lists them, tess_view_t.ink is the one now). The shell
   picked and the ink last shown (a pick there, a shell's ink, or MENU > COLOR) are remembered for every window, in any
   DAW (files `shell` and `ink` in `%APPDATA%\Tessera`, `~/.config/tessera` or
-  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. The screen at 1:1;
+  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. **SIZE** (TESSERA's menu) 100, 150 or 200 %: the whole window larger (200 % each pixel doubled, 150 % smoothed), remembered for every window (file `size`); until one is picked, the host's scale for the screen (a HiDPI display) picks the nearest; a host that lets its frame be dragged snaps it to the nearest of the three. The screen at 1:1 within it;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. **The screen's zones** (`tess_view_t.zones`, `ui_zones.c`, profile fact `TESS_HAS_POINTER`): the
   Mono pages leave what a mouse can use as they draw it (a value's column, a list's row, OK / BACK / YES / NO, the
@@ -75,17 +77,17 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 - **Following the DAW** (CLK INT): the DAW's PLAY starts every track where it would be after playing from the DAW's
   zero (as a MIDI Song Position), its beat position drives Tessera's clock (fractional tempos and tempo changes, no
   drift), a loop or a locate seeks, STOP stops. The BPM on the screen is the DAW's, rounded; a TEMPO mod has no effect
-  while the DAW plays. With CLK on MIDI, the MIDI master's clock rules and the DAW only starts and stops it.
+  while the DAW plays. CLK stays INT in the plugin (not a parameter), so the DAW is always the clock.
 - **Parameters** (automatable): MASTER and PERF's MACRO 1..4 (the project's, so they are saved with it too), then
-  **every project setting** by its central ID (about 930): each track's ("T1 LEVEL", "T3 TURING LENGTH", in the
-  modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song"); not the device's own (A4, the
-  MIDI routing). Values read as the FM-1 shows them ("SAW", "1/16", "-6dB") and can be typed that way. ENGINE 1..8 mean
+  **every project setting** by its central ID (about 1,700): each of the 8 tracks' ("T1 LEVEL", "T3 TURING LENGTH",
+  in the modules "Track n/Sound and sequence" and "Track n/Generator") and the song's ("Song", TUNE, ROUT and MIDI
+  INPUT among them; not CLK, held at INT). Values read as the FM-1 shows them ("SAW", "1/16", "-6dB") and can be typed that way. ENGINE 1..8 mean
   what the track's engine makes them (their range is the widest any engine has). Changed on the panel, by a project or
   by the core, a value is sent back to the DAW (MASTER and the MACROs at once, the rest within ~20 blocks). Ids are
-  stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 a track, 4 the song).
+  stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 tracks 1..4, 4 the song, 5..8 tracks 5..8).
 
-- **Track outputs:** besides the main mix, TRACK 1..4 each alone (the FM-1's USB stems: the track after its level,
-  before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
+- **Track outputs:** besides the main mix, TRACK 1..8 each alone (`NSTEMS = NTRACKS`: the FM-1's USB stems, the
+  track after its level, before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; AUTO is the track's own 1..8 here,
   whatever ROUT takes in), to drive other instruments. NOTES OUT starts at ALL in the plugin (the generators' notes
   too); MENU can set KEYS or OFF. Channel messages only (no clock or system messages). The notes left on when the host
@@ -101,7 +103,9 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
 
 ## Not yet
 
-- No window on macOS (it plays as in phase 0).
+The list for players is PLUGIN.md's "Not there yet". Here: the window (Windows, Linux, macOS: `gui_win32.cpp`,
+`gui_x11.cpp`, `gui_mac.mm`) is the FM-1's size only; the standalone app is Windows and macOS only; the builds are
+not signed.
 
 ## Build
 
