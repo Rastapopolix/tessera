@@ -3259,6 +3259,17 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
+#if TESS_HAS_POINTER
+    {                                                   /* (zones: LEVEL its knob's, PAN, MUTE | SOLO halves) */
+        int32_t zx = (CARD_X(k - UI_BASE) - 2) / 2, zy = PV_STRIP_TOP / 2;
+        char tn[4] = {'T', (char)('1' + k), 0, 0};
+        uz_begin_row(UZ_G_STRIPS, (int32_t)k);
+        uz_add(UZ_G_STRIPS, UZ_LEVEL, zx, zy, CARD_W / 2 + 2, 46, -1, -1, (int32_t)k, tn, "LEVEL");
+        uz_add(UZ_G_STRIPS, UZ_PAN, zx, zy + 46, CARD_W / 2 + 2, 21, -1, -1, (int32_t)k, tn, "PAN");
+        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 12, 11, -1, -1, (int32_t)k, tn, "MUTE");
+        uz_add(UZ_G_STRIPS, UZ_SOLO, zx + 14, zy + 68, 13, 11, -1, -1, (int32_t)k, tn, "SOLO");
+    }
+#endif
     cv_begin(CARD_W + 4, MO_STRIP_H * 2, MO_BG);
     if (sel)
         mo_box(0, 0, CARD_W / 2 + 2, MO_STRIP_H, MO_TRK(k));
@@ -3704,6 +3715,33 @@ static void mo_patterns(void)
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_LIST);                                /* (zones: a track's number selects it; a cell queues that
+                                                         * pattern on its track, KNOB k turned to it; Copy to: the
+                                                         * place, on the track copied from) */
+    uz_begin(UZ_G_TRACKS);
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
+        const track_t *t = &trk[k];
+        int32_t y = 20 + (int32_t)(k - UI_BASE) * 19;
+        uint32_t from = t->pattern_next < NPAT ? t->pattern_next : t->pattern;
+        char tn[4] = {'T', (char)('1' + k), 0, 0}, pn[16];
+        uz_add(UZ_G_TRACKS, UZ_TRACK, 0, y + 2, 11, 11, -1, -1, (int32_t)k, tn, "");
+        for (b = 0; b < NPAT; b++) {
+            int32_t d = (int32_t)b - (int32_t)from;
+            if (ptc_on()) {                             /* (Copy to: Knob turns from the place, past the source) */
+                int32_t at = ui.ptc_dst, step = b > (uint32_t)at ? 1 : -1, guard;
+                if (k != ui.ptc_trk || b == ui.ptc_src)
+                    continue;
+                for (d = 0, guard = 0; at != (int32_t)b && guard < (int32_t)NPAT; d += step, guard++)
+                    at = (int32_t)ptc_next((uint32_t)at, step);
+            }
+            pn[0] = 'P', pn[1] = (char)('1' + b), pn[2] = 0;
+            str_cpy(pn + 2, b == t->pattern ? " PLAYING" : b == t->pattern_next ? " NEXT" : pattern_used(k, b) ? "" : " EMPTY",
+                    sizeof pn - 2);
+            uz_cell(UZ_G_LIST, 14 + 13 * (int32_t)b, y - 1, 13, 18, EN_K1 + (int32_t)(k - UI_BASE), d, -1, 0, tn, pn);
+        }
+    }
+#endif
     for (s = 0; s < 2u; s++) {                          /* rows 9 .. 59, then 60 .. 119 */
         cv_begin(240, s ? 120u : 102u, MO_BG);
         cv_oy = s ? -120 : -18;
@@ -3799,6 +3837,27 @@ static void mo_song(void)
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_LIST);                                /* (zones: a section's letter picks it, KNOB 1 turned to it;
+                                                         * a block picks its section and its track, KNOBs 1 and 2) */
+    for (j = 0; j < SG_COLS && sg.first + j < sg.ncols; j++) {
+        uint32_t r = sg.first + j;
+        int32_t dr = (int32_t)r - (int32_t)sg.sel;
+        char sl[8] = {'+', 0}, tn[8];
+        if (r < n)
+            sl[0] = row_letter((const uint8_t (*)[NTRK])chain_patterns, r);
+        uz_cell(UZ_G_LIST, 4 + 28 * (int32_t)j, 10, 27, 11, EN_K1, dr, -1, 0, r < n ? "SECTION" : "ADD", sl);
+        for (k = UI_BASE; k < UI_BASE + UI_NT && r < n; k++) {
+            uint32_t p = chain_patterns[r][k];
+            tn[0] = 'T', tn[1] = (char)('1' + k), tn[2] = ' ', tn[3] = sl[0], tn[4] = 0;
+            str_cpy(sl + 1, " P", 3);
+            sl[3] = (char)('1' + p % NPAT), sl[4] = 0;
+            uz_cell(UZ_G_LIST, 5 + 28 * (int32_t)j, 22 + (int32_t)(k - UI_BASE) * 18, 26, 17, EN_K1, dr, EN_K2,
+                    (int32_t)k - (int32_t)song.sel, tn, pattern_used(k, p) ? sl + 2 : "EMPTY");
+            sl[1] = 0;
+        }
+    }
+#endif
     for (s = 0; s < 2u; s++) {
         int32_t x, bat, right;
         cv_begin(240, 120, MO_BG);
