@@ -32,6 +32,11 @@ tracks, in TESSERA's own window or the FM-1's.
   1 or 16) sets the members' range to 48, RPN 0 reaches 96. FM6 bends by its own DX7 range, a track at a time.
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
+- **Presets in the DAW's browser** (CLAP: CLAP preset discovery and preset-load, for the hosts that read them, e.g.
+  Bitwig): the eight demos inside the plugin (factory content, each described as `demos/README.md` has it) and every
+  `.tsp` in **Documents/Tessera/Presets** (your own; the folder is made at the first scan). A preset is a whole
+  project, loaded as OPEN loads one, and the DAW is told which. SAVE under the keys offers that folder, so what you
+  save there shows in the browser. (The VST3 and AU builds: not through their own preset lists yet.)
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in
   `demos/`) or an **FM-1 backup** (`.json` from the backup page or the Hub: its slots A..D go into the plugin's
   slots, then the music it was playing loads), and save the project as `.tsp` under its name, for the FM-1's editor or

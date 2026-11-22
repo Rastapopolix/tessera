@@ -1,0 +1,5 @@
+# clap-validator checks plugin-validate.yml skips: the validator itself hangs in them, whatever the plugin does.
+# None at present. preset-discovery-crawl and preset-discovery-load were here while clap-validator 0.4.1 deadlocked
+# on a preset container holding several presets (begin_preset holds its result lock and calls flush_preset, which
+# takes it again). The workflow now builds the validator with platform/plugin/clap_validator.patch, which
+# drops the lock first; take the patch out when a clap-validator release fixes it.

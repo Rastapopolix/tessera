@@ -54,8 +54,9 @@ ROUT starts at SEL in the plugin). To play each track from its own DAW track ins
 (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
 the FM-1 (the [manual](MANUAL.md) shows how).
 
-**To hear what it can do,** load a demo: **STILL TIDE** waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT,
-then LOAD), and the rest are `.tsp` files in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
+**To hear what it can do,** load a demo: in a DAW that lists CLAP presets (Bitwig, for one), all eight demos are in its
+preset browser under Tessera; **STILL TIDE** also waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT, then
+LOAD); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
 to send it notes, so it opens with STILL TIDE loaded and plays it at once.
 
 ## The window
@@ -172,7 +173,8 @@ with its own project.
 - **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Tessera) or an
   **FM-1 backup** (the `.json` from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
   then the music it was playing loads. On Windows and macOS you can also drop a file on the window.
-- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera.
+- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera. It offers
+  **Documents/Tessera/Presets**: what you save there shows in a CLAP host's preset browser beside the demos.
 
 A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
 [Sounds only the plugin has](#sounds-only-the-plugin-has)).
@@ -281,6 +283,7 @@ sounding at once take about 18 % of a core.
 
 - **PHASE** has 33 presets of its own (brass, pads, basses, keys, bells, sweeps, ring sounds), not the CZ-1's original tones.
 - **One window size**, the FM-1's. A larger, wider window is planned.
-- **No presets in the DAW's browser** yet: use OPEN, or the DAW's own way of saving a plugin's state.
+- **Presets in the DAW's browser** only for the CLAP plugin: the VST3 and the Audio Unit don't list them yet. Use OPEN
+  there, or the DAW's own way of saving a plugin's state.
 - **No standalone app on Linux** yet.
 - **Not signed** on macOS or Windows yet (see [Install](#install)).
