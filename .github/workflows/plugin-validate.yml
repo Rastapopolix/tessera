@@ -1,8 +1,10 @@
 name: Plugin validators (pluginval, clap-validator)
 
 # The plugin (platform/plugin) through the two common validators, as a DAW would load it: pluginval (Tracktion,
-# strictness 10, with the editor) on the VST3, clap-validator (free-audio) on the CLAP, on Linux and Windows. The
-# clap-validator checks listed in platform/plugin/clap_validator_skip.txt are skipped (the validator hangs in them).
+# strictness 10, with the editor) on the VST3, clap-validator (free-audio) on the CLAP, on Linux and Windows.
+# clap-validator is built from its tag with platform/plugin/clap_validator_deadlock.patch (0.4.1 deadlocks on a
+# preset container with more than one preset, such as Tessera's demos). The clap-validator checks listed in
+# platform/plugin/clap_validator_skip.txt are skipped (the validator hangs in them).
 # clap-validator checks listed in platform/plugin/clap_validator_known.txt are known to fail: they run in a step of
 # their own that reports without failing the run; any other failure fails it. Builds the plugin as plugin.yml does
 # (that workflow stays as it is). Nothing is published.
@@ -50,23 +52,28 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cargo-cv
-          key: clap-validator-${{ env.CLAP_VALIDATOR_TAG }}-${{ runner.os }}
+          key: clap-validator-${{ env.CLAP_VALIDATOR_TAG }}-${{ hashFiles('platform/plugin/clap_validator_deadlock.patch') }}-${{ runner.os }}
       - name: Get the validators
         run: |
           curl -sSfL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_Linux.zip"
           unzip -oq pluginval.zip
-          [ -x ~/.cargo-cv/bin/clap-validator ] ||
-            cargo install --locked --git https://github.com/free-audio/clap-validator --tag "$CLAP_VALIDATOR_TAG" --root ~/.cargo-cv
+          [ -x ~/.cargo-cv/bin/clap-validator ] || {
+            git clone -q --depth 1 --branch "$CLAP_VALIDATOR_TAG" https://github.com/free-audio/clap-validator cv-src &&
+              git -C cv-src apply "$GITHUB_WORKSPACE/platform/plugin/clap_validator_deadlock.patch" &&
+              cargo install --locked --path cv-src --root ~/.cargo-cv
+          }
       - name: pluginval (VST3, strictness 10, with the editor)
         run: |
           xvfb-run -a -s "-screen 0 1280x800x24" ./pluginval --strictness-level 10 --validate-in-process \
             --timeout-ms 300000 --validate build/plugin/out/Tessera.vst3 2>&1 | tee pluginval.log
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
+        timeout-minutes: 10
         run: |
           x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt platform/plugin/clap_validator_skip.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $x build/plugin/out/Tessera.clap 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
+        timeout-minutes: 10
         continue-on-error: true
         run: |
           t=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
@@ -108,13 +115,16 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cargo-cv
-          key: clap-validator-${{ env.CLAP_VALIDATOR_TAG }}-${{ runner.os }}
+          key: clap-validator-${{ env.CLAP_VALIDATOR_TAG }}-${{ hashFiles('platform/plugin/clap_validator_deadlock.patch') }}-${{ runner.os }}
       - name: Get the validators
         run: |
           curl -sSfL -o pluginval.zip "https://github.com/Tracktion/pluginval/releases/download/$PLUGINVAL_VERSION/pluginval_Windows.zip"
           unzip -oq pluginval.zip
-          [ -x ~/.cargo-cv/bin/clap-validator.exe ] ||
-            cargo install --locked --git https://github.com/free-audio/clap-validator --tag "$CLAP_VALIDATOR_TAG" --root ~/.cargo-cv
+          [ -x ~/.cargo-cv/bin/clap-validator.exe ] || {
+            git clone -q --depth 1 --branch "$CLAP_VALIDATOR_TAG" https://github.com/free-audio/clap-validator cv-src &&
+              git -C cv-src apply "$GITHUB_WORKSPACE/platform/plugin/clap_validator_deadlock.patch" &&
+              cargo install --locked --path cv-src --root ~/.cargo-cv
+          }
       - name: Find the outputs (Visual Studio puts them in a folder per configuration)
         run: |
           find build/plugin/out -maxdepth 3 | sort
@@ -129,10 +139,12 @@ jobs:
             --validate "$VST3" 2>&1 | tee pluginval.log
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
+        timeout-minutes: 10
         run: |
           x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt platform/plugin/clap_validator_skip.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
           ~/.cargo-cv/bin/clap-validator.exe validate --only-failed $x "$CLAP" 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
+        timeout-minutes: 10
         continue-on-error: true
         run: |
           t=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')

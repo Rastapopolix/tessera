@@ -1,8 +1,5 @@
 # clap-validator checks plugin-validate.yml skips: the validator itself hangs in them, whatever the plugin does.
-# clap-validator 0.4.1 deadlocks in a preset file holding several presets (a container: begin_preset with a load key,
-# as the demos in Tessera's "Tessera demos" location): begin_preset holds its result lock and calls flush_preset,
-# which takes the same lock again. The test times out after 45 s, but its sandbox process stays alive holding the
-# step's log pipe, so the job hangs until GitHub cancels it. Take these out when a clap-validator release fixes it
-# (and CLAP_VALIDATOR_TAG moves to it). tessera-presets-test checks the crawl and the loads instead.
-preset-discovery-crawl
-preset-discovery-load
+# None at present. preset-discovery-crawl and preset-discovery-load were here while clap-validator 0.4.1 deadlocked
+# on a preset container holding several presets (begin_preset holds its result lock and calls flush_preset, which
+# takes it again). The workflow now builds the validator with platform/plugin/clap_validator_deadlock.patch, which
+# drops the lock first; take the patch out when a clap-validator release fixes it.
