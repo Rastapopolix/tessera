@@ -541,6 +541,18 @@ void Tessera::midi_in(const clap_event_header_t *h)
         core->midi(e->data[0], e->data[1], e->data[2]);
         break;
     }
+    case CLAP_EVENT_NOTE_EXPRESSION:   // (per note: PRESSURE and BRIGHTNESS, MPE's slide; the rest not yet)
+    {
+        auto *e = reinterpret_cast<const clap_event_note_expression_t *>(h);
+        uint32_t kind = e->expression_id == CLAP_NOTE_EXPRESSION_PRESSURE     ? TESS_EXPR_PRESSURE
+                        : e->expression_id == CLAP_NOTE_EXPRESSION_BRIGHTNESS ? TESS_EXPR_SLIDE
+                                                                               : 99u;
+        if (kind == 99u || e->key > 127 || e->channel > 15)
+            break;
+        double v = e->value < 0 ? 0 : e->value > 1 ? 1 : e->value;
+        core->note_expr(kind, e->channel < 0 ? -1 : e->channel, e->key < 0 ? -1 : e->key, (uint32_t)(v * 127.0 + 0.5));
+        break;
+    }
     default:
         break;
     }
@@ -977,7 +989,8 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
     if (index != 0)
         return false;
     info->id = is_input ? 0 : 1;
-    info->supported_dialects = is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI : CLAP_NOTE_DIALECT_MIDI;
+    info->supported_dialects =
+        is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI | CLAP_NOTE_DIALECT_MIDI_MPE : CLAP_NOTE_DIALECT_MIDI;
     info->preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
     std::strncpy(info->name, is_input ? "MIDI in" : "MIDI out", sizeof(info->name));
     return true;

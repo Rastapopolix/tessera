@@ -199,7 +199,7 @@ qmap() {
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test echo_sync_test echo_sync_test_plugin fx_performance no_effects_test" ;;
-        firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
+        firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test mpe_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
             firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
         firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test recipes_test" ;;
@@ -544,6 +544,7 @@ sound && t "FX performance: all effects, four-track mixer, shared send bus and o
 sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth Tape, track ownership, dry bypass and frozen legacy storage" fx_test -O1 $FW
 sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms ring" echo_sync_test -O2 $FW
 sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
+sound && t "MPE (the plugin's TESS_MPE): each note's own AT and SLIDE, channels, Poly AT, CLAP BRIGHTNESS, per voice in the mods, cost" mpe_test -O2 $FW -DTESS_MPE=1 -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks

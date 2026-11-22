@@ -18,6 +18,12 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   Notes Off, a choke All Sound Off. CLK stays INT and CLOCK OUT off (the DAW keeps time). The device's MIDI setup
   (ROUT, DRUM's channel, NOTES OUT, TUNE: `tess_core_setup_save`) goes in the DAW state as its bytes, their count and
   `TGLO`, before `TMST`, never in the `.tsp`; a reused core copy gets its power-on setup back.
+- **MPE and note expression** (`TESS_MPE`): each note from MIDI remembers its channel and key, and keeps its own
+  pressure and slide: an MPE member channel's pressure and CC74, Poly AT, and a CLAP note's PRESSURE and BRIGHTNESS
+  (`CLAP_EVENT_NOTE_EXPRESSION` -> `tess_core_note_expr`, queued with the notes). The note port offers the CLAP, MIDI
+  and MIDI MPE dialects. In the mods, AT on a voice destination (PITCH, CUTOFF, SHAPE, GAIN) of its own track is each
+  note's own, and the new source SLIDE (cord code 35) too; a note not from MIDI reads the track's. Pitch bend is still
+  one per track (an MPE note's bend bends its track).
 - **Saving:** the plugin's state in the DAW project is the Tessera project as a `.tsp` record, the same bytes SAVE >
   PROJECT writes on the FM-1.
 - **Project files:** OPEN and SAVE, under the keys, open a `.tsp` (the editor's "project file", the demos in

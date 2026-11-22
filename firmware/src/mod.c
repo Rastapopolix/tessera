@@ -47,7 +47,12 @@ enum { MD_OFF, MD_PITCH, MD_CUT, MD_SHP, MD_AMP, MD_PAN, MD_RESERVED6, MD_RESERV
 _Static_assert(NELEM(N_MSRC) == MS_N && NELEM(N_MDST) == MD_N, "N_MSRC / N_MDST == MS_* / MD_*");
 _Static_assert(P_M2SRC == P_M1SRC + 3 && P_M4AMT == P_M1SRC + 11 && P_M4AMT + 1 == P_FM1_ATK, "matrix slots: 3 ids each");
 #define NMSLOT 4u
+#if TESS_MPE
+#define MS_VOICE(s) (((s) >= MS_ENV && (s) <= MS_RAND) || (s) == MS_AT || (s) == CS_SLIDE)   /* a value per voice (AT
+                                                                  * and the cords' SLIDE: each note's own, mod_mpe) */
+#else
 #define MS_VOICE(s) ((s) >= MS_ENV && (s) <= MS_RAND)             /* a value per voice */
+#endif
 #define MS_BIPOLAR(s) ((s) == MS_LFO || (s) == MS_KEY || (s) == MS_RAND || (s) >= MS_SH)
 #define MD_ENGINE(d) ((d) >= MD_E1 && (d) < MD_E1 + 8)           /* E1..E8: P_E0..P_E7 */
 
@@ -92,6 +97,15 @@ static int32_t mod_key(uint32_t note) { return clamp(((int32_t)note - 60) * 512,
 /* S&H: the value of the LFO's cycle (voice.c lfo_rand; 0 before its first one ends), bipolar */
 static int32_t mod_sh(const track_t *t) { return t->lfo_rnd ? (int32_t)(t->lfo_rnd >> 16) - 32768 : 0; }
 
+#if TESS_MPE
+/* AT (MS_AT) or SLIDE (CS_SLIDE) of voice v (TESS_MPE): a note from MIDI its own (each note's pressure and slide: a
+ * CLAP note expression, Poly AT, its MPE channel's pressure and CC74), any other the track's channel's; 0..1 */
+static int32_t mod_mpe(const track_t *t, const voice_t *v, uint32_t s)
+{
+    return (int32_t)(v->mch ? (s == MS_AT ? v->mat : v->msl) : (s == MS_AT ? t->at : t->sl)) * 258;
+}
+#endif
+
 /* source s of the track: the per-track ones, the per-voice ones of the latest note-on */
 static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
 {
@@ -113,7 +127,11 @@ static int32_t mod_tsrc(const track_t *t, uint32_t s, int32_t lfo)
     case MS_MODW:
         return t->mw * 258;
     case MS_AT:
+#if TESS_MPE
+        return mod_mpe(t, &t->v[t->m_vi % NVOICE], MS_AT);   /* (the latest note's, as VEL) */
+#else
         return t->at * 258;
+#endif
     default:
         return (127 - t->ex_off) * 258;
     }
@@ -241,7 +259,11 @@ static __attribute__((noinline)) void mod_voice(track_t *t, voice_t *v, vmod_t *
         t->m_env = env;                                 /* ENV of the latest note, for per-block destinations */
     for (k = 0; k < mod.nv; k++) {
         uint32_t s = mod.vsrc[k];
-        int32_t x = s == MS_ENV ? env : s == MS_VEL ? v->mvel * 258 : s == MS_KEY ? mod_key(v->note) : v->mrnd;
+        int32_t x = s == MS_ENV ? env : s == MS_VEL ? v->mvel * 258 : s == MS_KEY ? mod_key(v->note) :
+#if TESS_MPE
+                    s == MS_AT || s == CS_SLIDE ? mod_mpe(t, v, s) :
+#endif
+                    v->mrnd;
         mod_voice_add(s, mod.vdst[k], x, mod.vamt[k], &pit, &cut, &shp, &gain);
     }
     if (pit) {
@@ -287,6 +309,12 @@ static __attribute__((noinline)) void mod_midi(track_t *t, uint32_t st, uint32_t
             fm6_fn_set((uint32_t)(t - trk), FN_PTIME, (int32_t)d2);   /* FM6's portamento time (the track's) */
         else if (d1 == 121u)
             t->mw = t->at = t->ex_off = t->breath = t->foot = t->porta = 0;
+#if TESS_MPE
+        if (d1 == 74u)
+            t->sl = (uint8_t)d2;                        /* (SLIDE for the notes not from MIDI: mod_mpe) */
+        else if (d1 == 121u)
+            t->sl = 0;
+#endif
     }
 }
 
