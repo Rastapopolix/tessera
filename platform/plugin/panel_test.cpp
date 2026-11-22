@@ -4,7 +4,8 @@
  *   - the panel draws; the screen shows the firmware's picture (not black) once it has run;
  *   - a click on PLAY starts the song, and its LED lights; a click on SEQ changes the screen;
  *   - a knob dragged turns its encoder; a key clicked sounds;
- *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB), the MIDI lamp;
+ *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB, SIZE), the MIDI lamp; the window
+ *     at 150 and 200 % (Panel::scale);
  *   - GENERATE's strip in it: a click asks for a piece, a hold for before / after, the style's list and arrows, VAR,
  *     the seed's wheel; a piece made through the core shows its seed (none of it in an FM-1 shell or without styles);
  *   - the screen's zones: the mouse over FX's MIX outlines it, with a card under the screen; the wheel there, a drag and a
@@ -388,6 +389,50 @@ int main(int argc, char **argv)
         q.up(100, 25);
         q.key(0x01, true);
         CHECK(!q.menu_shown(), "Esc shuts the menu");
+        // SIZE: 100, 150 or 200 picked in the menu (asked once, the menu shut); the pixels at 150 and 200 %
+        CHECK(q.take_size_request() == -1, "no size asked for yet");
+        q.down(100, 25), q.up(100, 25);
+        CHECK(q.menu_shown(), "the menu again");
+        q.down(300, 200), q.up(300, 200);   // (SIZE's row, its right end: 200)
+        CHECK(q.take_size_request() == 200 && !q.menu_shown(), "SIZE 200 picked from the menu");
+        q.set_size_pct(200);
+        q.down(100, 25), q.up(100, 25);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/14_tessera_size.ppm", px);   // (the menu: SIZE 200 lit)
+        q.down(247, 200), q.up(247, 200);
+        CHECK(q.take_size_request() == 150, "SIZE 150 picked from the menu");
+        q.down(100, 25), q.up(100, 25);
+        q.down(300, 200), q.up(300, 200);
+        CHECK(q.take_size_request() == -1, "SIZE 200 again: nothing to ask (it is 200 already)");
+        q.key(0x01, true);
+        q.draw(px.data(), v);
+        std::vector<uint32_t> big((size_t)Panel::W * Panel::H * 4), mid((size_t)Panel::W * Panel::H * 9 / 4);
+        Panel::scale(px.data(), big.data(), 4);
+        Panel::scale(px.data(), mid.data(), 3);
+        int same = 0, even = 0;
+        for (int y = 0; y < Panel::H; y += 7)
+            for (int x = 0; x < Panel::W; x += 7)
+            {
+                uint32_t c = px[y * Panel::W + x];
+                same += big[(2 * y) * 2 * Panel::W + 2 * x] == c && big[(2 * y + 1) * 2 * Panel::W + 2 * x + 1] == c;
+                even += mid[(3 * y / 2) * (3 * Panel::W / 2) + 3 * x / 2] == c || (x & 1) || (y & 1);
+            }
+        CHECK(same == ((Panel::H + 6) / 7) * ((Panel::W + 6) / 7), "200 %%: every pixel doubled");
+        CHECK(even == ((Panel::H + 6) / 7) * ((Panel::W + 6) / 7), "150 %%: an even pixel lands whole");
+        if (!out.empty())
+        {
+            FILE *f = std::fopen((out + "/15_tessera_150.ppm").c_str(), "wb");
+            if (f)
+            {
+                std::fprintf(f, "P6\n%d %d\n255\n", Panel::W * 3 / 2, Panel::H * 3 / 2);
+                for (uint32_t c : mid)
+                {
+                    unsigned char rgb[3] = {(unsigned char)(c >> 16), (unsigned char)(c >> 8), (unsigned char)c};
+                    std::fwrite(rgb, 1, 3, f);
+                }
+                std::fclose(f);
+            }
+        }
     }
 
     // FM-1 USB: TESSERA's menu row (OFF / ON, or a click on the row: the other one), the FM-1 shells' button

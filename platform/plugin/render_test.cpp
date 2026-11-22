@@ -8,6 +8,7 @@
  *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
  *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
+ *     the host sizes it to 200 % (a dragged frame snapped to the nearest of 100, 150, 200 %) and back;
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
@@ -585,6 +586,24 @@ int main(int argc, char **argv)
                 if (all) XDestroyImage(all);
             }
             if (img) XDestroyImage(img);
+            // SIZE: the host sets 200 % (its frame dragged near 2000 wide: adjust_size snaps), then 100 % again
+            {
+                uint32_t aw = 1950, ah = 1200, gw = 0, gh = 0;
+                CHECK(gui->can_resize(p) && gui->adjust_size(p, &aw, &ah) && aw == 2000 && ah == 1248,
+                      "a frame dragged to 1950 x 1200 snaps to 200 %% (%ux%u)", aw, ah);
+                CHECK(gui->set_size(p, aw, ah) && gui->get_size(p, &gw, &gh) && gw == 2000 && gh == 1248, "the window at 200 %%");
+                for (int i = 0; i < 4; i++) { for (int b = 0; b < 3; b++) p->process(p, &proc); tim->on_timer(p, 0); }
+                Window root_r, parent_r, *kids = nullptr;
+                unsigned nk = 0, cw = 0, ch = 0, bw, dp;
+                int cx, cy;
+                XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                if (nk) XGetGeometry(d, kids[0], &root_r, &cx, &cy, &cw, &ch, &bw, &dp);
+                if (kids) XFree(kids);
+                std::printf("size: the window %ux%u at 200 %%\n", cw, ch);
+                CHECK(cw == 2000 && ch == 1248, "the plugin's X window at 200 %% (%ux%u)", cw, ch);
+                CHECK(!gui->set_size(p, 1234, 567), "a size not one of the three refused");
+                CHECK(gui->set_size(p, 1000, 624), "back to 100 %%");
+            }
             // GENERATE (TESSERA's strip): a click on it makes a new piece, held half a second the project before it
             // comes back (the DAW's state: another project, then the one before again)
             {

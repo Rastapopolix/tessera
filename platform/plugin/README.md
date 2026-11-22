@@ -33,7 +33,7 @@ Tessera inside a DAW: the same firmware as the FM-1, built as a CLAP instrument 
   the screen has ringed, its name on hover; tess_core_ink_at lists them, tess_view_t.ink is the one now). The shell
   picked and the ink last shown (a pick there, a shell's ink, or MENU > COLOR) are remembered for every window, in any
   DAW (files `shell` and `ink` in `%APPDATA%\Tessera`, `~/.config/tessera` or
-  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. The screen at 1:1;
+  `~/Library/Application Support/Tessera`; the ink over the shell's own), not in the project. **SIZE** (TESSERA's menu) 100, 150 or 200 %: the whole window larger (200 % each pixel doubled, 150 % smoothed), remembered for every window (file `size`); until one is picked, the host's scale for the screen (a HiDPI display) picks the nearest; a host that lets its frame be dragged snaps it to the nearest of the three. The screen at 1:1 within it;
   click the buttons and keys (drag across the keys to glide); drag a knob up/down or left/right, or use the mouse
   wheel over it. **The screen's zones** (`tess_view_t.zones`, `ui_zones.c`, profile fact `TESS_HAS_POINTER`): the
   Mono pages leave what a mouse can use as they draw it (a value's column, a list's row, OK / BACK / YES / NO, the
