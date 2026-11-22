@@ -23,7 +23,7 @@ steps, what you expected and what happened).
   with the DAW song and in a `.tsp`.
 - **The mouse on the screen:** turn the wheel or drag a value; the wheel scrolls lists and texts; click a row, a slot,
   a pattern, a section, an ink or a mixer strip's MUTE / SOLO; double-click for OK or a default.
-- **The computer keyboard** plays it, as in the web simulator.
+- **The computer keyboard** plays it, as in the web simulator, and types names (NAME) directly.
 - A new Tessera opens on an empty project and plays nothing until it gets notes; the demos are in slots A and B, in
   the DAW's preset list, and in the `demos/` folder. The standalone app opens with STILL TIDE playing.
 - The DAW's transport, tempo, loops and jumps drive Tessera; its undo takes back Tessera's GENERATE and preset loads.

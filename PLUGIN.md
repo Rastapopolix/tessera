@@ -117,7 +117,11 @@ presses those keys for you, so a page behaves the same either way.
 - **[** and **]**: OCT- and OCT+.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
-Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
+**Naming** a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and `- . _ / # +` go
+in at the cursor; Backspace and Delete remove, Left / Right move the cursor, **Enter** is OK and **Esc** cancels. While
+NAME is open the computer keyboard types instead of playing.
+
+Keys go by where they sit, not what they print, so any keyboard layout works (typing a name follows your layout). With Ctrl or Alt held, keys go to the
 DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
 To leave every key to the DAW, set **KEYS** to OFF in Tessera's menu (it applies to every Tessera window).
 

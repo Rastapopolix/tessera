@@ -33,7 +33,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12 };
+enum { B_FX = 0, B_SEL = 1, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -363,6 +363,29 @@ static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel 
     CHECK(found, "a HELP card longer than the card: a SCROLL zone (SEQ's pages)");
     tap(B_HOME);
 }
+static void typing()   // NAME (SAVE > PROJECT, EDIT renames slot A): a computer keyboard types into it
+{
+    tap(B_HOME);
+    tap(B_SAVE);
+    for (int i = 0; i < 6 && find("A", TESS_ZONE_ROW) < 0; i++) tap(B_SAVE);
+    act(find("A", TESS_ZONE_ROW), TESS_ZA_CLICK, 0, 40);
+    CHECK(!v.typing, "PROJECT: not typing");
+    tap(B_EDIT);
+    tess_core_view(&v);
+    CHECK(v.typing, "EDIT on PROJECT's slot A: NAME open, typing");
+    for (int i = 0; i < 14; i++) tess_core_text(TESS_TEXT_BACK);   // (the name it has: gone)
+    for (const char *c = "dub sketch!7"; *c; c++) tess_core_text((uint8_t)*c);   // ('!' isn't in the set: left out)
+    tess_core_text(TESS_TEXT_LEFT);
+    tess_core_text(TESS_TEXT_BACK);   // (the H before the cursor's 7: gone)
+    tess_core_text(TESS_TEXT_OK);
+    run(80);
+    tess_core_view(&v);
+    CHECK(!v.typing, "OK (Enter): NAME shut");
+    int c = find("A", TESS_ZONE_ROW);
+    CHECK(c >= 0 && !std::strcmp(v.zones[c].value, "DUB SKETC7"), "slot A renamed by typing: DUB SKETC7 (%s)",
+          c >= 0 ? v.zones[c].value : "?");
+    tap(B_HOME);
+}
 static void settings()
 {
     tap(B_HOME);
@@ -531,6 +554,7 @@ int main(int argc, char **argv)
     grids();
     mixer();
     reading();
+    typing();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
 

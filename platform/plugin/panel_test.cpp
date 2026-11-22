@@ -412,6 +412,16 @@ int main(int argc, char **argv)
         q.down(ix, iy);
         q.up(ix, iy);
         CHECK(q.take_ink_request() == 8 && q.take_ink_request() == -1 && !q.menu_shown(), "an ink picked from the menu");
+        // typing: a character goes to NAME only while the view says NAME is open, and isn't a key then
+        CHECK(!q.text('a') && q.input.text.empty(), "not typing: a character is a key's, not NAME's");
+        {
+            tess_view_t tv2 = v;
+            tv2.typing = 1;
+            q.draw(px.data(), tv2);
+            CHECK(q.text('a') && q.input.text.size() == 1 && q.input.text[0] == 'a', "NAME open: a character typed into it");
+            q.input.text.clear();
+            q.draw(px.data(), v);
+        }
         // INK's row shows the ink as its swatch does: a four-ink palette (MOSAIC) in quarters, not its first ink alone
         {
             int mos = -1;
