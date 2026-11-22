@@ -201,8 +201,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         zq_turn(z->role, -n);
         return;
     }
-    if (action == TESS_ZA_WHEEL)                      /* (anything else: as a turn) */
+    if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_SCROLL) {   /* (a text: wheel up, up it) */
         action = TESS_ZA_TURN;
+        n = -n;
+    } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn) */
+        action = TESS_ZA_TURN;
+    }
     switch (z->kind) {
     case TESS_ZONE_KNOB:
         if (action == TESS_ZA_TURN)
@@ -242,6 +246,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_SOLO:
         if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NTRK)
             core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_SCROLL:                            /* a text to read: its knob, the wheel the other way round */
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->role, n);
         break;
     case TESS_ZONE_LEVEL:                             /* MIXER's strips: a track's level, pan */
     case TESS_ZONE_PAN:

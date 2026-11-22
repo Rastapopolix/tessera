@@ -642,6 +642,10 @@ static void draw_menu(void)
     menu_head();
     if (ui.menu >= 2) {
         int32_t scroll = ui.menu_scroll, max = menu_scroll_max();
+#if TESS_HAS_POINTER
+        uz_begin(UZ_G_LIST);                            /* (zones: the document scrolls under the wheel, PRESETS's) */
+        uz_add(UZ_G_LIST, UZ_SCROLL, 0, MENU_HEAD / 2, 120, (240 - MENU_HEAD) / 2, EN_PRESET, -1, 0, "ABOUT", "");
+#endif
         int32_t thumb = MENU_DOC_H * MENU_DOC_H / (max + MENU_DOC_H);
         if (thumb < 12) thumb = 12;
         for (pass = 0; pass < 2u; pass++) {

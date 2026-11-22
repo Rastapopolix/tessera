@@ -85,9 +85,10 @@ void tess_core_screen(tess_screen_t *s);
  * list moves when the row is the value; wheel: the list moves, a row a notch, up the wheel up the list); KEY: OK,
  * BACK, YES, NO (click); TRACK: HOME's column (click: that track); CELL: a place in a grid (PATTERNS, SONG: click,
  * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
- * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre) */
+ * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
+ * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
-enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL };
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;

@@ -33,7 +33,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_SEQ = 9, B_OCTDN = 12 };
+enum { B_FX = 0, B_SEL = 1, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -306,6 +306,63 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(tess_core_param_get(mute, 1) == m0, "again: unmuted");
     tap(B_HOME);
 }
+static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)
+{
+    tess_screen_t sc;
+    tess_core_screen(&sc);
+    uint32_t h = 2166136261u;
+    for (uint32_t i = 0; i < sc.w * sc.h; i++) h = (h ^ sc.pixels[i]) * 16777619u;
+    return h;
+}
+static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel scrolls (down, then back up)
+{
+    tap(B_HOME);
+    hold(B_HOME, 120);   // SETTINGS
+    for (int i = 0; i < 6 && find("ABOUT", TESS_ZONE_ROW) < 0; i++) act(0, TESS_ZA_WHEEL, -6, 40);
+    act(find("ABOUT", TESS_ZONE_ROW), TESS_ZA_DOUBLE, 0, 60);   // (there, OK: ABOUT)
+    int z = find("ABOUT", TESS_ZONE_SCROLL);
+    CHECK(z >= 0, "ABOUT: its text a SCROLL zone");
+    if (z >= 0)
+    {
+        uint32_t top = screen_hash();
+        act(z, TESS_ZA_WHEEL, -4, 40);   // (down)
+        uint32_t down = screen_hash();
+        act(find("ABOUT", TESS_ZONE_SCROLL), TESS_ZA_WHEEL, 4, 40);   // (back up)
+        CHECK(down != top && screen_hash() == top, "ABOUT: the wheel down scrolls it, up brings it back");
+    }
+    else dump("ABOUT");
+    tap(B_OCTDN);
+    hold(B_HOME, 120);
+    tap(B_HOME);
+    // a HELP card (ARP held, a knob turned) longer than the card: the wheel over it scrolls it
+    int found = 0;
+    for (int page = 0; page < 10 && !found; page++)
+    {
+        tap(B_SEQ);
+        for (int k = 0; k < 4 && !found; k++)
+        {
+            tess_core_buttons(1u << B_ARP);
+            run(5);
+            tess_core_enc(3 + k, 1);
+            run(30);
+            tess_core_view(&v);
+            for (uint32_t i = 0; i < v.zone_count && !found; i++)
+                if (v.zones[i].kind == TESS_ZONE_SCROLL)
+                {
+                    found = 1;
+                    uint32_t top = screen_hash();
+                    tess_zone_t zz = v.zones[i];
+                    tess_core_zone_do(&zz, TESS_ZA_WHEEL, -2);
+                    run(30);
+                    CHECK(screen_hash() != top, "HELP (%s): the wheel down scrolls the card", zz.name);
+                }
+            tess_core_buttons(0);
+            run(20);
+        }
+    }
+    CHECK(found, "a HELP card longer than the card: a SCROLL zone (SEQ's pages)");
+    tap(B_HOME);
+}
 static void settings()
 {
     tap(B_HOME);
@@ -473,6 +530,7 @@ int main(int argc, char **argv)
     slots();
     grids();
     mixer();
+    reading();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
 

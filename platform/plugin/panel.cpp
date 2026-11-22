@@ -743,7 +743,8 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
-        if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN)   // (a value: dragged)
+        if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
+            z.kind == TESS_ZONE_SCROLL)   // (a value, a text: dragged)
         {
             drag = ZONE;
             drag_zone = z;
