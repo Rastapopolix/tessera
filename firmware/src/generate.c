@@ -4061,43 +4061,43 @@ static void rnd_tempo(void)
  * track's sound, each style its engines and how often (gen_new_engines), and as the sound of tracks 5..8, each the
  * alternate of a track 1..4: its part copied with a SEED of its own, taking turns with it through ENTRIES (ROLE TURNS,
  * entries.c), so a piece has more sounds over its length and never more parts at once (gen_alternates) */
-enum { GC_BASS, GC_LEAD, GC_PAD, GC_PLUCK, GC_NONE };
+enum { GC_BASS, GC_LEAD, GC_PAD, GC_PLUCK, GC_NONE, GC_METAL = 0x80u };   /* (METAL: a bell, a chime, a mallet) */
 enum { GE_PHASE = 1u, GE_SID = 2u, GE_MACRO = 4u };
 static const struct { uint8_t e, cls; const char *name; } GEN_COLOUR[] = {
     {GE_PHASE, GC_BASS, "PD BASS"}, {GE_PHASE, GC_BASS, "DEEP"},
     {GE_PHASE, GC_LEAD, "MELLOW HN"}, {GE_PHASE, GC_LEAD, "REED ORG"},
     {GE_PHASE, GC_PAD, "GLASS PAD"}, {GE_PHASE, GC_PAD, "DUSK"}, {GE_PHASE, GC_PAD, "ENSEMBLE"}, {GE_PHASE, GC_PAD, "CHOIR"},
-    {GE_PHASE, GC_PLUCK, "PLUCK"}, {GE_PHASE, GC_PLUCK, "TINE"}, {GE_PHASE, GC_PLUCK, "CHIME"},
-    {GE_PHASE, GC_PLUCK, "HARP"}, {GE_PHASE, GC_PLUCK, "MALLET"},
+    {GE_PHASE, GC_PLUCK, "PLUCK"}, {GE_PHASE, GC_PLUCK | GC_METAL, "TINE"}, {GE_PHASE, GC_PLUCK | GC_METAL, "CHIME"},
+    {GE_PHASE, GC_PLUCK, "HARP"}, {GE_PHASE, GC_PLUCK | GC_METAL, "MALLET"},
     {GE_SID, GC_BASS, "RUBBER BASS"}, {GE_SID, GC_BASS, "SUB PULSE"},
     {GE_SID, GC_LEAD, "PULSE LEAD"}, {GE_SID, GC_LEAD, "8580 LEAD"},
     {GE_SID, GC_PAD, "PWM PAD"}, {GE_SID, GC_PAD, "DREAM CHIP"}, {GE_SID, GC_PAD, "8580 PAD"},
-    {GE_SID, GC_PLUCK, "ARP PLUCK"}, {GE_SID, GC_PLUCK, "C64 KEYS"}, {GE_SID, GC_PLUCK, "BELL RING"},
+    {GE_SID, GC_PLUCK, "ARP PLUCK"}, {GE_SID, GC_PLUCK, "C64 KEYS"}, {GE_SID, GC_PLUCK | GC_METAL, "BELL RING"},
     {GE_MACRO, GC_BASS, "VCF BASS"}, {GE_MACRO, GC_BASS, "FM BASS"},
     {GE_MACRO, GC_LEAD, "SAW LEAD"},
     {GE_MACRO, GC_PAD, "VA PAD"}, {GE_MACRO, GC_PAD, "ORGAN HARM"},
-    {GE_MACRO, GC_PLUCK, "PLUCK"}, {GE_MACRO, GC_PLUCK, "MALLET"}, {GE_MACRO, GC_PLUCK, "SOFT BELL"},
-    {GE_MACRO, GC_PLUCK, "FM BELL"},
+    {GE_MACRO, GC_PLUCK, "PLUCK"}, {GE_MACRO, GC_PLUCK | GC_METAL, "MALLET"}, {GE_MACRO, GC_PLUCK | GC_METAL, "SOFT BELL"},
+    {GE_MACRO, GC_PLUCK | GC_METAL, "FM BELL"},
 };
 /* each style's: the engines it may take, how often (%, at VARIATION 100) a track 1..4 takes one, the alternates on
  * tracks 5..8 at most (only where ENTRIES moves the parts: the still styles keep their four) */
-static const struct { uint8_t eng, swap, alts; } GEN_NEW[RND_MODES - 1u] = {
-    /* AUTUMN    */ {0, 0, 0},                      /* (TRIO's triangles on every track, as the roll made it) */
-    /* SHORE     */ {GE_PHASE | GE_MACRO, 15, 2},
-    /* WOZZA     */ {GE_PHASE, 15, 2},
-    /* ORBIT     */ {GE_PHASE | GE_MACRO, 20, 2},
-    /* LOOPS     */ {GE_PHASE | GE_MACRO, 20, 0},
-    /* HALO      */ {GE_PHASE | GE_MACRO, 15, 0},
-    /* MIRROR    */ {GE_PHASE, 10, 0},
-    /* INTERLOCK */ {GE_MACRO, 10, 0},
-    /* CRATE     */ {GE_PHASE, 15, 0},
-    /* COSMIC    */ {GE_PHASE | GE_SID | GE_MACRO, 25, 3},
-    /* STATIC    */ {GE_SID, 25, 0},
-    /* FORGE     */ {GE_SID, 15, 2},
-    /* CHAOS     */ {GE_SID, 25, 1},                /* (busy: one alternate at most) */
-    /* FRACTURED */ {GE_SID | GE_PHASE, 20, 1},
-    /* RND       */ {GE_PHASE | GE_SID | GE_MACRO, 30, 3},
-    /* MAITREYA  */ {0, 0, 0},                      /* (its own sounds: rnd_maitreya) */
+static const struct { uint8_t eng, swap, alts, metal; } GEN_NEW[RND_MODES - 1u] = {   /* (metal 0: no bells) */
+    /* AUTUMN    */ {0, 0, 0, 0},                   /* (TRIO's triangles on every track, as the roll made it) */
+    /* SHORE     */ {GE_PHASE | GE_MACRO, 15, 2, 1},
+    /* WOZZA     */ {0, 0, 0, 0},
+    /* ORBIT     */ {GE_PHASE | GE_MACRO, 20, 2, 1},
+    /* LOOPS     */ {GE_PHASE | GE_MACRO, 20, 0, 1},
+    /* HALO      */ {GE_PHASE | GE_MACRO, 15, 0, 0},
+    /* MIRROR    */ {GE_PHASE, 10, 0, 1},
+    /* INTERLOCK */ {0, 0, 0, 0},
+    /* CRATE     */ {GE_PHASE, 15, 0, 1},
+    /* COSMIC    */ {GE_PHASE | GE_SID | GE_MACRO, 25, 3, 1},
+    /* STATIC    */ {GE_SID, 25, 0, 1},
+    /* FORGE     */ {GE_SID, 15, 2, 1},
+    /* CHAOS     */ {GE_SID, 25, 1, 1},                /* (busy: one alternate at most) */
+    /* FRACTURED */ {GE_SID | GE_PHASE, 20, 1, 1},
+    /* RND       */ {GE_PHASE | GE_SID | GE_MACRO, 30, 3, 1},
+    /* MAITREYA  */ {0, 0, 0, 1},                      /* (its own sounds: rnd_maitreya) */
 };
 static uint32_t gen_cls(uint32_t tr)                /* a track's role as a kind of sound; GC_NONE: left as rolled */
 {
@@ -4116,13 +4116,14 @@ static int gen_same(const char *a, const char *b)
     return *a == *b;
 }
 /* track tr on a preset of kind cls from the engines in mask (one drawn among those this build has): 1 loaded */
-static int gen_colour(uint32_t tr, uint32_t mask, uint32_t cls)
+static int gen_colour(uint32_t tr, uint32_t mask, uint32_t cls, uint32_t metal)
 {
     uint8_t pick[NELEM(GEN_COLOUR)];
     uint32_t n = 0, k, i, e;
     if (cls == GC_NONE || !mask) return 0;
     for (k = 0; k < NELEM(GEN_COLOUR); k++)
-        if ((GEN_COLOUR[k].e & mask) && GEN_COLOUR[k].cls == cls && eng_ok(gen_engi(GEN_COLOUR[k].e)))
+        if ((GEN_COLOUR[k].e & mask) && (GEN_COLOUR[k].cls & ~GC_METAL) == cls && (metal || !(GEN_COLOUR[k].cls & GC_METAL)) &&
+            eng_ok(gen_engi(GEN_COLOUR[k].e)))
             pick[n++] = (uint8_t)k;
     if (!n) return 0;
     k = pick[rnd_next() % n];
@@ -4141,7 +4142,7 @@ static void gen_new_engines(void)
     if (s >= RND_MODES - 1u || !GEN_NEW[s].eng) return;
     undo_depth++;
     for (tr = 0; tr < RND_NT; tr++)
-        if (rnd_pct(GEN_NEW[s].swap)) gen_colour(tr, GEN_NEW[s].eng, gen_cls(tr));
+        if (rnd_pct(GEN_NEW[s].swap)) gen_colour(tr, GEN_NEW[s].eng, gen_cls(tr), GEN_NEW[s].metal);
     undo_depth--;
 }
 
@@ -4406,8 +4407,8 @@ static void gen_alternates(void)
         uint32_t src = cand[k], dst = src + 4u, cls = gen_cls(src);
         if (cls == GC_NONE) cls = rnd_pct(50) ? GC_PAD : GC_PLUCK;
         gen_alt_copy(dst, src);
-        if (!gen_colour(dst, GEN_NEW[s].eng ? GEN_NEW[s].eng : GE_PHASE | GE_SID | GE_MACRO, cls) &&
-            !gen_colour(dst, GE_PHASE | GE_SID | GE_MACRO, cls))
+        if (!gen_colour(dst, GEN_NEW[s].eng ? GEN_NEW[s].eng : GE_PHASE | GE_SID | GE_MACRO, cls, GEN_NEW[s].metal) &&
+            !gen_colour(dst, GE_PHASE | GE_SID | GE_MACRO, cls, GEN_NEW[s].metal))
             engine_load_of(&trk[dst], trk[src].eng_req, trk[src].preset);   /* (none in this build: the same sound) */
         rnd_tx(dst, TX_EV_SEED, rnd_seed_pick());
         rnd_tx(dst, TX_ET_ROLE, ET_TURNS);
@@ -4455,7 +4456,7 @@ static void rnd_maitreya(void)
     for (tr = 0; tr < RND_NT; tr++) {
         uint32_t cls = tr == 0u ? GC_PAD : tr == RND_NT - 1u ? (rnd_pct(50) ? GC_PAD : GC_PLUCK) : GC_PLUCK;
         rnd_role_of[tr] = (uint8_t)(tr == 0u ? RND_ROLE_DRONE : RND_ROLE_MELODY);
-        if (!gen_colour(tr, GE_PHASE | GE_MACRO, cls)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
+        if (!gen_colour(tr, GE_PHASE | GE_MACRO, cls, 1)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
         rnd_tp(tr, P_SCALE, (int32_t)scale);
         rnd_tp(tr, P_ROOT, (int32_t)root);
         rnd_tp(tr, P_QUANT, Q_WHITE);
