@@ -37,7 +37,7 @@ const E = vm.runInNewContext(proto + `
 ;({ frame, unframe, parse, req, Link, parseWav, resample, normalize, takeSample, autoTrim, zoomView, rootFromName, buildSlot, makeMockDevice, CMD, SMP,
    UP, bank, nativeBank, capturePatch, auditionPatch, startWatch, libraryFile, readLibraryFile, paramKeys, patternFromSteps, stepsFromPattern, upName,
    mixer, parseNotes, parseHits, hitsText, gridFromSteps, LANE_NOTE, LANE_OF, readDevicePreferences, devicePresetRows, engineOrder, ENGINE_ORDER, aliasOf, fmtValue, FM6,
-   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1, writesDevice })`,
+   FM4, fromDigital, nativeImportTargets, scaleRows, SCALE_INFO, parseScala, tuneName, tuneValid, TUNE, STATS, statsFields, findDevicePorts, probeFm1, writesDevice, MidiRec, smfBytes })`,
 { setTimeout, clearTimeout, setInterval, clearInterval, console, Date: TestDate });
 
 {
@@ -1062,6 +1062,81 @@ async function editorFm6() {
   [...old.access.inputs.values()][0].onmidimessage = (ev) => l2.receive(ev.data);
   ok(E.parse[C.INFO](await l2.request(E.req.info())).fm6 === null, "FM6: firmware without it: no tag, no FM6 tab");
   l2.close(); old.stop();
+}
+
+/* ------------------------------------------------- RECORD MIDI (MidiRec, smfBytes) --- */
+{
+  /* a .mid read back: format, ticks a quarter, tempo (BPM), and each track's name, notes [tick, ch, note, vel, len], end */
+  const readSmf = (b) => {
+    const u32 = (i) => (b[i] << 24 | b[i + 1] << 16 | b[i + 2] << 8 | b[i + 3]) >>> 0, tag = (i) => String.fromCharCode(...b.slice(i, i + 4));
+    if (tag(0) !== "MThd") return null;
+    const out = { format: b[9], ppq: b[12] << 8 | b[13], bpm: 0, tracks: [] };
+    let i = 14;
+    for (let k = 0; k < (b[10] << 8 | b[11]); k++) {
+      if (tag(i) !== "MTrk") return null;
+      const end = i + 8 + u32(i + 4), tr = { name: "", notes: [], end: 0 }, held = new Map();
+      let p = i + 8, at = 0;
+      const vlq = () => { let n = 0, c; do { c = b[p++]; n = n << 7 | c & 127; } while (c & 128); return n; };
+      while (p < end) {
+        at += vlq();
+        const s = b[p++];
+        if (s === 0xFF) {
+          const ty = b[p++], len = vlq(), d = b.slice(p, p + len); p += len;
+          if (ty === 0x03) tr.name = new TextDecoder().decode(d);
+          if (ty === 0x51) out.bpm = Math.round(6e9 / (d[0] << 16 | d[1] << 8 | d[2])) / 100;
+          if (ty === 0x2F) tr.end = at;
+        } else {
+          const n = b[p++], v = b[p++], key = (s & 15) << 7 | n;
+          if ((s & 0xF0) === 0x90 && v) { const x = [at, s & 15, n, v, null]; tr.notes.push(x); held.set(key, x); }
+          else if (held.has(key)) { const x = held.get(key); x[4] = at - x[0]; held.delete(key); }
+        }
+      }
+      tr.held = held.size;
+      out.tracks.push(tr);
+      i = end;
+    }
+    return out;
+  };
+  const on = (ch, n, v = 100) => [0x90 | ch, n, v], off = (ch, n) => [0x80 | ch, n, 0];
+  /* with the FM-1's clock (120 BPM: a tick every 500/24 ms) and a START */
+  let r = new E.MidiRec(90, 0), ms = 1000;
+  const tickMs = 500 / 24, tick = () => { r.feed([0xF8], ms); ms += tickMs; };
+  r.feed(on(0, 50), 900); r.feed(off(0, 51), 950);                  /* before START: dropped */
+  r.feed([0xFA], ms);
+  for (let k = 0; k < 24 * 8; k++) {                                /* 2 bars: T1 a quarter note each beat, T3 every half */
+    if (k % 24 === 0) r.feed(on(0, 60 + k / 24), ms + 1);
+    if (k % 24 === 12) r.feed(off(0, 60 + (k - 12) / 24), ms + 1);
+    if (k % 48 === 0) r.feed(on(2, 40, 80), ms + 1);
+    if (k % 48 === 47) r.feed(off(2, 40), ms + 1);
+    tick();
+  }
+  r.feed(on(1, 72), ms - 2);                                        /* still held at STOP */
+  ok(r.feed([0xFC], ms) === true && r.notes() === 13, "MIDI rec: START..STOP keeps the notes after START only");
+  let f = readSmf(r.smf("UNDERTOW"));
+  const t1 = f && f.tracks.find((x) => x.name === "T1"), t3 = f && f.tracks.find((x) => x.name === "T3");
+  ok(f && f.format === 1 && f.ppq === 480 && f.tracks.length === 4 && f.tracks[0].name === "UNDERTOW" && Math.abs(f.bpm - 120) < 0.5,
+    `MIDI rec: SMF format 1, 480 ppq, a track per channel, tempo from the clock (${f && f.bpm})`);
+  ok(t1 && t1.notes.length === 8 && t1.notes.every((x, k) => Math.abs(x[0] - k * 480) <= 20 && x[2] === 60 + k && Math.abs(x[4] - 240) <= 20),
+    "MIDI rec: T1's notes on the beat, eighth notes long");
+  ok(t3 && t3.notes.length === 4 && t3.notes[1][0] >= 940 && t3.notes[1][0] <= 980 && t3.notes[0][3] === 80, "MIDI rec: T3 on its own track, its velocity kept");
+  ok(f.tracks.every((x) => !x.held) && f.tracks.every((x) => x.end === f.tracks[0].end) && f.tracks[0].end >= 3800, "MIDI rec: a note held at STOP ends there; every track ends together");
+  /* N bars: it ends itself on the bar */
+  r = new E.MidiRec(120, 1); ms = 0;
+  r.feed([0xFA], ms);
+  let ended = false;
+  for (let k = 0; k < 24 * 6 && !ended; k++) { ended = r.feed([0xF8], ms); if (!ended && k % 24 === 0) { r.feed(on(0, 60), ms + 1); r.feed(off(0, 60), ms + 5); } ms += tickMs; }
+  f = readSmf(r.smf());
+  ok(ended && r.endBeat === 4 && f.tracks[1].notes.length === 4 && f.tracks[0].end === 1920, "MIDI rec: 1 bar stops itself after 4 quarters");
+  /* no clock: the computer's time at the project's BPM, the first note on the top */
+  r = new E.MidiRec(100, 0);
+  r.feed(off(0, 64), 10);                                           /* an off from before: left out */
+  r.feed(on(0, 64), 2000); r.feed(off(0, 64), 2300); r.feed(on(0, 65), 2600); r.feed(on(0, 65), 2900);   /* played again while held */
+  r.end(r.beatAt(3200));
+  f = readSmf(r.smf());
+  const n = f.tracks[1].notes;
+  ok(Math.abs(f.bpm - 100) < 0.01 && n.length === 3 && n[0][0] === 0 && n[1][0] === 480 && n[1][4] === 240 && n[2][0] === 720 && n[2][4] === 240 && !f.tracks[1].held,
+    "MIDI rec: no clock: BPM time from the first note; a note played again ends the last");
+  ok(new E.MidiRec(120).smf().length === 0, "MIDI rec: nothing recorded, no file");
 }
 
 /* ------------------------------------------------- editor tabs and strings --- */
