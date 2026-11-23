@@ -1,14 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* Tessera's projects in the DAW's preset browser (presets.cpp), as a minimal CLAP host and indexer over the built
- * Tessera.clap (POSIX), with HOME in a folder of its own:
+ * Smalti.clap (POSIX), with HOME in a folder of its own:
  *   - the preset discovery factory: one provider; its init declares the .tsp file type, the demos inside the plugin
  *     (factory content) and the user's folder Documents/Tessera/Presets (user content, made by it);
  *   - the demos' metadata: the eight, each by its NAME and file name, for this plugin, with a description;
  *   - a .tsp saved into the user's folder: its metadata names it; a file that is not a project is refused with why;
  *   - preset-load: a demo by its load key, then the user's file, each loaded (the state is that project), the host
  *     told; an unknown key refused and the host told why.
- * usage: tessera-presets-test path/to/Tessera.clap */
+ * usage: tessera-presets-test path/to/Smalti.clap */
 #include <clap/clap.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
@@ -119,7 +119,7 @@ static std::string state_text(const clap_plugin_t *p, const clap_plugin_state_t 
     return s;
 }
 
-// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+// the library inside a plugin path: on macOS Smalti.clap is a bundle, its code in Contents/MacOS/Tessera
 static std::string clap_library(const char *path)
 {
 #ifdef __APPLE__
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        std::fprintf(stderr, "usage: tessera-presets-test path/to/Tessera.clap\n");
+        std::fprintf(stderr, "usage: tessera-presets-test path/to/Smalti.clap\n");
         return 2;
     }
     char tmpl[] = "/tmp/tessera-presets-XXXXXX";

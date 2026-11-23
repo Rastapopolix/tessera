@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* Tessera's presets in an Audio Unit host's browser (macOS), over the installed Tessera.component (aumu Tsra Tess:
+/* Tessera's presets in an Audio Unit host's browser (macOS), over the installed Smalti.component (aumu Tsra Tess:
  * CI copies it to ~/Library/Audio/Plug-Ins/Components first). clap-wrapper publishes the CLAP preset discovery
  * (presets.cpp) as the AU's factory presets:
  *   - once the unit is initialised and the crawl is done, the factory presets hold the eight demos;
@@ -37,7 +37,7 @@ int main()
 {
     AudioComponentDescription desc{kAudioUnitType_MusicDevice, 'Tsra', 'Tess', 0, 0};
     AudioComponent c = AudioComponentFindNext(nullptr, &desc);
-    CHECK(c, "Tessera.component found (aumu Tsra Tess)");
+    CHECK(c, "Smalti.component found (aumu Tsra Tess)");
     if (!c) return 1;
     AudioUnit au = nullptr;
     CHECK(AudioComponentInstanceNew(c, &au) == noErr && au, "an instance");

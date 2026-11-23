@@ -1,27 +1,31 @@
-Tessera plugin VERSION for Windows (64-bit)
+Smalti VERSION for Windows (64-bit): Tessera as a plugin
 ===========================================
 
 In this folder:
-  Tessera.clap    the CLAP instrument (use this one if your DAW has CLAP: Bitwig, Reaper, FL Studio, ...)
-  Tessera.vst3    the VST3 instrument
-  Tessera.exe     the standalone app: no DAW needed
+  Smalti.clap    the CLAP instrument (use this one if your DAW has CLAP: Bitwig, Reaper, FL Studio, ...)
+  Smalti.vst3    the VST3 instrument
+  Smalti.exe     the standalone app: no DAW needed
 
 Install
 -------
-1. Copy Tessera.clap to   C:\Program Files\Common Files\CLAP\
-   Copy Tessera.vst3 to   C:\Program Files\Common Files\VST3\
+1. Copy Smalti.clap to   C:\Program Files\Common Files\CLAP\
+   Copy Smalti.vst3 to   C:\Program Files\Common Files\VST3\
    (Make the CLAP folder if it isn't there. Windows asks for an administrator's OK to copy there.)
-2. In your DAW, rescan the plugins. Tessera is an instrument, under "Tessera".
+2. In your DAW, rescan the plugins. Smalti is an instrument, under "Rastapopolix".
 
-The standalone app needs no install: double-click Tessera.exe and pick an audio output.
+Until beta 4 Smalti was called Tessera: before step 1, delete Tessera.clap and Tessera.vst3 from
+those folders (and Tessera.exe), so the DAW doesn't find it twice. Songs saved with them open in
+Smalti.
+
+The standalone app needs no install: double-click Smalti.exe and pick an audio output.
 
 "Windows protected your PC"
 ---------------------------
-This beta isn't signed, so Windows SmartScreen may warn about Tessera.exe the first time. Click
+This beta isn't signed, so Windows SmartScreen may warn about Smalti.exe the first time. Click
 "More info", then "Run anyway". The plugins themselves are loaded by your DAW and don't show this.
 
 Signing takes this warning away; a Windows code-signing certificate costs money every year. If you'd
-like to help get Tessera signed: https://ko-fi.com/Rastapopolix
+like to help get Smalti signed: https://ko-fi.com/Rastapopolix
 
 If Windows blocks the downloaded zip's files: right-click the zip, Properties, tick "Unblock", OK,
 then unzip again.
@@ -31,5 +35,5 @@ What's in this beta, and what isn't yet: BETA_NOTES.md in this folder.
 Found a problem? https://github.com/Rastapopolix/tessera/issues (the plugin's version, your DAW and its
 version, Windows' version, the steps, what you expected and what happened).
 
-Tessera is free software under the GPL-3.0 (LICENSE). Credits and the licences of the parts it uses:
+Smalti (the Tessera firmware as a plugin) is free software under the GPL-3.0 (LICENSE). Credits and the licences of the parts it uses:
 LICENSING.md.

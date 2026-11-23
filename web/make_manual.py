@@ -32,7 +32,7 @@ PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start", "PLUGIN.md": "plu
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 PDF_SRC = "docs/manual/tessera-manual.pdf"          # the manual as a PDF (tools/gen_manual_pdf.py)
 PDF_NAME = "tessera-manual.pdf"                     # its name on the site, next to the manual's page
-TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Tessera as a plugin"}
+TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Smalti: Tessera as a plugin"}
 
 
 def slug(text, seen):
