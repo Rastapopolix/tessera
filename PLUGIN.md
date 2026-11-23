@@ -1,11 +1,15 @@
-# Tessera as a plugin
+# Smalti: Tessera as a plugin
 
-Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
+**Smalti** is Tessera inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
 instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1's panel: the same screen, buttons,
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
-[![Tessera in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
+Until beta 4 the plugin was called Tessera, like the firmware; Audio Damage makes a plugin called Tessera, so the plugin
+has a name of its own. Songs saved with the old name open in Smalti (delete the old Tessera.clap, .vst3, .component and
+app when you install it, so your DAW doesn't list it twice).
+
+[![Smalti in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
 
 *EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).*
 
@@ -28,7 +32,7 @@ edges, and please report what you find.
 - [EXPANDED: all eight tracks at once](#expanded-all-eight-tracks-at-once)
 - [Automation: the parameters](#automation-the-parameters)
 - [Track outputs and MIDI out](#track-outputs-and-midi-out)
-- [Several Tesseras in one song](#several-tesseras-in-one-song)
+- [Several Smaltis in one song](#several-smaltis-in-one-song)
 - [Playing with an MPE controller](#playing-with-an-mpe-controller)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
 - [Echoes on the beat](#echoes-on-the-beat)
@@ -44,39 +48,41 @@ Download the zip for your system (a `.tar.gz` on Linux) from the
 [releases](https://github.com/Rastapopolix/tessera/releases), where the betas are marked *Pre-release*. Each zip has an
 INSTALL text with these steps and the beta's notes.
 
-| | CLAP (`Tessera.clap`) | VST3 (`Tessera.vst3`) | Audio Unit (`Tessera.component`) |
+| | CLAP (`Smalti.clap`) | VST3 (`Smalti.vst3`) | Audio Unit (`Smalti.component`) |
 |---|---|---|---|
 | Windows | `C:\Program Files\Common Files\CLAP\` | `C:\Program Files\Common Files\VST3\` | |
 | Linux | `~/.clap/` | `~/.vst3/` | |
 | macOS | `~/Library/Audio/Plug-Ins/CLAP/` | `~/Library/Audio/Plug-Ins/VST3/` | `~/Library/Audio/Plug-Ins/Components/` |
 
-Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 and the Audio
+Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Smalti's own format, and VST3 and the Audio
 Unit are wrappers around it. Logic and GarageBand use the Audio Unit. The standalone app (Windows and macOS) needs no
 DAW: start it, pick an audio output, and it plays at once.
+
+In the DAW's list Smalti is an instrument from **Rastapopolix** (in Logic: AU Instruments > Rastapopolix > Smalti).
 
 **macOS:** the beta isn't signed with an Apple Developer ID yet, so macOS calls it "damaged" or says it "can't be
 verified". After copying, clear the download's quarantine once, in Terminal:
 
 ```
-xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Library/Audio/Plug-Ins/VST3/Tessera.vst3 ~/Library/Audio/Plug-Ins/Components/Tessera.component
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Smalti.clap ~/Library/Audio/Plug-Ins/VST3/Smalti.vst3 ~/Library/Audio/Plug-Ins/Components/Smalti.component
 ```
 
-(and the same for `Tessera.app` where you put it). **Windows:** SmartScreen may warn about the unsigned `Tessera.exe`
+(and the same for `Smalti.app` where you put it). **Windows:** SmartScreen may warn about the unsigned `Smalti.exe`
 the first time: click *More info*, then *Run anyway*.
 
 Signing takes these steps away, and costs about USD 99 a year with Apple, plus a code-signing certificate for Windows.
-If you'd like to help get Tessera signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
+If you'd like to help get Smalti signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
 
 ## First sound
 
-A new Tessera opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
+A new Smalti opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
 pattern is empty and no generator runs, so pressing PLAY in the DAW plays nothing yet. Play notes from a MIDI track or
-a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO > SYSTEM
+a keyboard routed to Smalti: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO > SYSTEM
 ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
 (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
 the FM-1 (the [manual](MANUAL.md) shows how).
 
-**To hear what it can do,** load a demo: all eight demos are in the DAW's list of Tessera's presets (the preset
+**To hear what it can do,** load a demo: all eight demos are in the DAW's list of Smalti's presets (the preset
 browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
 Reaper, Cubase or Logic); **STILL TIDE** also waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT, then
 LOAD); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
@@ -125,8 +131,8 @@ in at the cursor; Backspace and Delete remove, Left / Right move the cursor, **E
 NAME is open the computer keyboard types instead of playing.
 
 Keys go by where they sit, not what they print, so any keyboard layout works (typing a name follows your layout). With Ctrl or Alt held, keys go to the
-DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
-To leave every key to the DAW, set **KEYS** to OFF in Tessera's menu (it applies to every Tessera window).
+DAW. Keys reach Smalti only while its window has focus; click back in the DAW and its own shortcuts work as usual.
+To leave every key to the DAW, set **KEYS** to OFF in Smalti's menu (it applies to every Smalti window).
 
 **Button combos with the mouse:** right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
 as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,
@@ -154,7 +160,7 @@ the first) and the row labelled INK, between the buttons and the keys, picks the
 Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU > COLOR, stays until you pick a
 shell again. The **MIDI** lamp beside the mark lights when notes come in from the DAW.
 
-Tessera remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
+Smalti remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
 project's: a project opens in your shell and ink.
 
 The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.
@@ -162,7 +168,7 @@ The window moves only while the DAW is processing audio. If it looks frozen, che
 ## Playing it from your FM-1
 
 An FM-1 running Tessera 3.5.1 or later can play the plugin from its own knobs, buttons and keys, as it can play the
-[web simulator](https://rastapopolix.github.io/tessera/webapp/sim/). Connect it by USB and turn on **FM-1 USB** (Tessera's
+[web simulator](https://rastapopolix.github.io/tessera/webapp/sim/). Connect it by USB and turn on **FM-1 USB** (Smalti's
 menu, or the **FM-1 USB** button under the keys in an FM-1 shell). When the FM-1 answers, the menu says
 **FM-1 CONNECTED**.
 
@@ -172,29 +178,29 @@ menu, or the **FM-1 USB** button under the keys in an FM-1 shell). When the FM-1
   settings, and close the editor if it's open in a browser. Otherwise the menu says **PORT IN USE**.
 - **macOS:** the DAW can keep the FM-1 on, but then its keys also reach whatever track the DAW sends them to. Turning
   it off in the DAW is simplest.
-- **Several Tesseras:** the FM-1 plays one of them at a time. Turning FM-1 USB on in a Tessera's window takes the FM-1
+- **Several Smaltis:** the FM-1 plays one of them at a time. Turning FM-1 USB on in a Smalti's window takes the FM-1
   for that one; the others say **IN ANOTHER TESSERA**. Turning it off turns it off for all of them.
 - **Other messages:** **NO FM-1 FOUND** means no FM-1 is plugged in, or its port has another name. **UPDATE THE FM-1**
   means it doesn't answer: it runs Tessera 3.5 or older, or other firmware.
 
-Tessera remembers FM-1 USB for every new Tessera, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
+Smalti remembers FM-1 USB for every new Smalti, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
 the window's to reach tracks 5 to 8.
 
 ## Playing with the DAW
 
-Tessera follows the DAW's transport:
+Smalti follows the DAW's transport:
 
 - **PLAY** starts every track where it would be if the song had played from the DAW's zero. Starting at bar 9 sounds
   like the song has been playing for eight bars.
-- **The DAW's tempo** drives Tessera's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
+- **The DAW's tempo** drives Smalti's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
   TEMPO mod has no effect while the DAW plays.
-- **A loop or a jump** in the DAW moves Tessera to that point. **STOP** stops it.
-- **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Tessera neither follows nor sends
+- **A loop or a jump** in the DAW moves Smalti to that point. **STOP** stops it.
+- **CLK** stays INT in the plugin and **CLOCK OUT** stays off: the DAW keeps time, so Smalti neither follows nor sends
   a MIDI clock.
 
 ### Sections and banks from the DAW (Program Change)
 
-A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+A Program Change from a MIDI clip, on any channel, steers Smalti. It works the other way round from SECTION PC on
 MIDI OUT's sheet:
 
 | Program | Does |
@@ -207,18 +213,18 @@ To land on a phrase line, send the change during the phrase before it.
 
 ## Saving, and project files
 
-**The DAW saves Tessera with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
-writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Tessera
+**The DAW saves Smalti with your song.** The saved state is the Tessera project, the same bytes SAVE > PROJECT
+writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Smalti
 with its own project.
 
 **OPEN** and **SAVE**, under the keys, work with files:
 
-- **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Tessera) or an
+- **OPEN** loads a `.tsp` project (from the editor, from the `demos/` folder, or saved by another Smalti) or an
   **FM-1 backup** (the `.json` from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
   then the music it was playing loads. On Windows and macOS you can also drop a file on the window.
-- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Tessera. It offers
+- **SAVE** writes the project as a `.tsp` under its name, ready for the FM-1's editor or another Smalti. It offers
   **Documents/Tessera/Presets**: what you save there shows in the DAW's list of presets beside the demos (the VST3 and
-  the Audio Unit read the folder once, when the DAW first loads Tessera, so there a new file shows after the DAW
+  the Audio Unit read the folder once, when the DAW first loads Smalti, so there a new file shows after the DAW
   starts again).
 
 A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
@@ -240,7 +246,7 @@ FM-1 skips, so the FM-1 still opens the file as its four tracks).
 
 ## EXPANDED: all eight tracks at once
 
-A new Tessera opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
+A new Smalti opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
 Windows screen), and in FM-1 mode on a smaller screen such as a 13" laptop's. Once you pick a MODE yourself, every
 new window opens in that one. In EXPANDED the window is wider (1500 x 624 at 100%) and a second screen,
 **TRACKS**, sits beside the FM-1's. The FM-1's screen and all its pages stay exactly as they are; the knobs and
@@ -272,7 +278,7 @@ Almost every project setting is a DAW parameter you can automate, about 1,700 in
 Values read as the FM-1 shows them ("SAW", "1/16", "-6dB"), and you can type them that way. ENGINE 1 to 8 mean what
 the track's engine makes of them, as on the FM-1, so their names change when the engine does.
 
-When a setting changes on the panel, by loading a project or by Tessera itself (a scale shared by every track, a
+When a setting changes on the panel, by loading a project or by Smalti itself (a scale shared by every track, a
 generator moving), the DAW hears about it: MASTER and the MACROs at once, the rest within a fraction of a second.
 
 Not parameters: the device's own settings (A4, the MIDI routing), and the MOD cords. Make those on the panel; the
@@ -281,19 +287,19 @@ DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's chann
 
 ## Track outputs and MIDI out
 
-- **Track outputs:** besides the main stereo mix, Tessera has eight more outputs, TRACK 1 to TRACK 8, each track on
+- **Track outputs:** besides the main stereo mix, Smalti has eight more outputs, TRACK 1 to TRACK 8, each track on
   its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
   own mixer channels in the DAW to process each track apart.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 8, whatever
   ROUT is set to, so the DAW's routing holds), so Tessera's generators can play other instruments. NOTES OUT starts
   at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. Only notes go out (no clock).
-  When the DAW stops, bypasses or restarts Tessera, every note it left on gets its note-off. Not every DAW takes MIDI
+  When the DAW stops, bypasses or restarts Smalti, every note it left on gets its note-off. Not every DAW takes MIDI
   from an instrument: Bitwig and Reaper do, Ableton Live does not.
 
-## Several Tesseras in one song
+## Several Smaltis in one song
 
-You can use up to **8 Tesseras** in one DAW song. Each is wholly its own: its project, its transport, its window and
-its parameters. A ninth won't open. Each new Tessera starts from a new project.
+You can use up to **8 Smaltis** in one DAW song. Each is wholly its own: its project, its transport, its window and
+its parameters. A ninth won't open. Each new Smalti starts from a new project.
 
 ## Playing with an MPE controller
 
@@ -339,9 +345,9 @@ holds about 3 s, so a 1/2 or a 1/1 rings as set; on the FM-1 it holds 371 ms and
 
 ## How much CPU it takes
 
-On average, one Tessera playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
+On average, one Smalti playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
 Eight of them on one core take about 20 %, and less when the DAW spreads them over several cores. Very small audio
-buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Tesseras, raise
+buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Smaltis, raise
 the buffer to 256.
 
 There's no shared voice budget as on the FM-1, where all the tracks share 16 points and a busy project steals notes:

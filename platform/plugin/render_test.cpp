@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Tessera.clap and checks
+/* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Smalti.clap and checks
  *   - one instance: a second create is refused while the first lives;
  *   - a new instance starts from a new project: with the host's transport playing it is silent;
  *   - with the host's transport playing at 48 kHz, STILL TIDE (demos/still-tide.tsp, loaded as the host's state)
@@ -15,7 +15,7 @@
  *     MODE EXPANDED in its menu makes it 1500 wide with TRACKS beside the screen, FM-1 1000 again;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
- * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
+ * usage: tessera-render-test path/to/Smalti.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <clap/ext/draft/undo.h>
 #include <dlfcn.h>
@@ -168,14 +168,14 @@ static void wav_write(const char *path, const std::vector<float> &l, const std::
     std::fclose(f);
 }
 
-// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+// the library inside a plugin path: on macOS Smalti.clap is a bundle, its code in Contents/MacOS/Tessera
 static std::string clap_library(const char *path)
 {
 #ifdef __APPLE__
     std::string p(path);
     while (p.size() > 1 && p.back() == '/') p.pop_back();
     std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
-    std::string stem = base.substr(0, base.rfind('.'));   // (Tessera.clap: Tessera)
+    std::string stem = base.substr(0, base.rfind('.'));   // (Smalti.clap: Tessera)
     std::string inner = p + "/Contents/MacOS/" + stem;
     if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
 #endif
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     std::setvbuf(stdout, nullptr, _IONBF, 0);   // (every line out before a crash, in CI's log too)
     if (argc < 2)
     {
-        std::printf("usage: %s Tessera.clap [seconds] [out.wav]\n", argv[0]);
+        std::printf("usage: %s Smalti.clap [seconds] [out.wav]\n", argv[0]);
         return 2;
     }
     double seconds = argc > 2 ? std::atof(argv[2]) : 12.0;

@@ -55,7 +55,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/rel"
           # (a 1920-wide screen: a new window opens in EXPANDED; the test's FM-1-mode checks fail there, as they should)
-          xvfb-run -s "-screen 0 1920x1080x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 \
+          xvfb-run -s "-screen 0 1920x1080x24" build/plugin/tessera-render-test build/plugin/out/Smalti.clap 12 \
             "$RUNNER_TEMP/st.wav" "$RUNNER_TEMP/window.ppm" || true
           rm -rf ~/.config/tessera
           python3 -c "from PIL import Image; im = Image.open('$RUNNER_TEMP/window.ppm'); print('window', im.size); \
