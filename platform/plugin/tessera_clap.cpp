@@ -61,6 +61,7 @@ std::mutex copies_lock;
 bool copy_used[16], copy_booted[16];
 uint8_t copy_setup[16][64];   // each copy's MIDI setup at its power-on (tess_core_setup_save), for the next instance
 uint32_t copy_setup_n[16];
+constexpr uint32_t MIDI_BARS = 16;   // (MIDI while stopped: the bars rendered from the top)
 
 // the parameters: MASTER (0..1023) and MACRO 1..4 (0..100) first, with the ids they had (0..4); then the core's by
 // central ID: id PARAM_PID + slot * 0x1000 + pid, slot 0..3 tracks 1..4, 4 the song's, 5..8 tracks 5..8 (added with
@@ -399,21 +400,65 @@ std::string Tessera::save_file(const std::string &path)
     return "SAVED " + (name.empty() ? std::string("THE PROJECT") : name);
 }
 
-// MIDI under the keys: the clip as a .mid in Documents/Tessera/MIDI, named after the project and the time
+// the project (a .tsp record) played from the top for bars bars on a spare copy of the core (midifile::render), as
+// fast as it renders. The instance's own copy plays on untouched. "" done, else why not
+std::string render_bars(const std::vector<uint8_t> &tsp, uint32_t bars, std::vector<midifile::Ev> &ev, double &bpm)
+{
+    uint32_t copy = 0;
+    bool again;
+    {
+        std::lock_guard<std::mutex> c(copies_lock);   // a copy no instance holds, held while it plays
+        while (copy < tess_copy_count() && copy_used[copy])
+            copy++;
+        if (copy >= tess_copy_count())
+            return "NO SPARE CORE: CLOSE AN INSTANCE";
+        copy_used[copy] = true;
+        again = copy_booted[copy];
+        copy_booted[copy] = true;
+    }
+    const tess_core_vt *c = tess_copy(copy);
+    c->boot();
+    if (again)   // (as p_init: a new project and the power-on MIDI setup, NOTES OUT ALL)
+    {
+        c->project_new();
+        c->setup_load(copy_setup[copy], copy_setup_n[copy]);
+    }
+    else
+        copy_setup_n[copy] = c->setup_save(copy_setup[copy], sizeof copy_setup[0]);
+    std::string err = midifile::render(c, tsp, bars, ev, bpm);
+    std::lock_guard<std::mutex> g(copies_lock);
+    copy_used[copy] = false;
+    return err;
+}
+
+// MIDI under the keys: a clip as a .mid in Documents/Tessera/MIDI, named after the project and the time. Playing: the
+// notes played since PLAY; stopped: the project rendered from the top for MIDI_BARS bars (render_bars)
 std::string Tessera::export_midi()
 {
     std::string name;
-    projfile::tsp_name(record_of(this), name);
+    std::vector<uint8_t> tsp = record_of(this);
+    projfile::tsp_name(tsp, name);
     std::vector<midifile::Ev> ev;
     double bpm;
+    bool playing;
     {
         std::lock_guard<std::mutex> g(core_lock);
-        ev = clip.take();
+        playing = core->playing() != 0;
+        if (playing)
+            ev = clip.take();
         bpm = core->bpm();
     }
-    std::vector<uint8_t> f = midifile::smf(ev, bpm, name);
+    uint32_t bars = 0;
+    if (!playing)
+    {
+        bars = MIDI_BARS;
+        std::string err = render_bars(tsp, bars, ev, bpm);
+        if (!err.empty())
+            return err;
+    }
+    std::vector<uint8_t> f = midifile::smf(ev, bpm, name, bars);
     if (f.empty())
-        return "NO NOTES YET: PLAY, THEN MIDI";
+        return playing ? "NO NOTES YET: PLAY, THEN MIDI" : "NO NOTES IN THE FIRST BARS";
     std::string dir = midifile::folder();
     if (dir.empty())
         return "NO DOCUMENTS FOLDER FOR THE CLIP";

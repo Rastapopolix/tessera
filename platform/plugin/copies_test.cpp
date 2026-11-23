@@ -3,13 +3,17 @@
 /* Several instances: the copies of the core are wholly apart (core_copies.h). Two copies boot; one plays STILL TIDE,
  * the other stays stopped and silent; the playing one renders exactly what it renders with the other running beside
  * it (and doing something else); a project saved from one loads into the other; two threads render two copies at
- * once. Exit 0: all passed. */
+ * once; MIDI's N bars rendered offline on a spare copy (midirender.cpp) give the same notes beside a copy that plays.
+ * Exit 0: all passed. */
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <thread>
 #include <vector>
 
 #include "core_copies.h"
+#include "midifile.h"
 #include "sim_demos.h"   // (build/gen: SIM_DEMO_A, demos/still-tide.tsp; the plugin's slots start empty)
 
 static int fails = 0;
@@ -104,6 +108,47 @@ int main()
     uint32_t n = a->save(tsp.data(), (uint32_t)tsp.size());
     CHECK(n > 0, "a's project saves");
     CHECK(b->load(tsp.data(), n) == 0 && b->macro(0) == 77, "a's project loads into b");
+
+    // MIDI while stopped: STILL TIDE's first 4 bars on a spare copy, as fast as it renders, alone and again on a thread
+    // while a plays: the same notes both times, each inside the 4 bars, a file of 16 quarters
+    if (tess_copy_count() > 3)
+    {
+        const tess_core_vt *x = tess_copy(3);
+        x->boot();
+        std::vector<uint8_t> demo(SIM_DEMO_A, SIM_DEMO_A + sizeof SIM_DEMO_A);
+        std::vector<midifile::Ev> ev1, ev2;
+        double bpm1 = 0, bpm2 = 0;
+        auto t0 = std::chrono::steady_clock::now();
+        std::string err = midifile::render(x, demo, 4, ev1, bpm1);
+        double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        CHECK(err.empty(), "4 bars render (%s)", err.c_str());
+        int ons = 0;
+        double lo = 1e9, hi = -1;
+        for (auto &e : ev1)
+        {
+            if ((e.status & 0xF0) == 0x90 && e.d2) ons++;
+            lo = std::min(lo, e.beat), hi = std::max(hi, e.beat);
+        }
+        std::printf("4 bars offline: %d notes, beats %.3f .. %.3f, %.0f BPM, %.2f s (%.0fx real time)\n", ons, lo, hi,
+                    bpm1, secs, bpm1 > 0 ? 16.0 * 60.0 / bpm1 / secs : 0.0);
+        CHECK(ons > 4, "STILL TIDE plays notes in its first 4 bars (%d)", ons);
+        CHECK(lo >= 0 && hi < 16.0 + 1e-6, "every note inside the 4 bars (%.3f .. %.3f)", lo, hi);
+        std::vector<float> before, during;
+        a->transport(1);
+        std::thread tx([&] { midifile::render(x, demo, 4, ev2, bpm2); });
+        run(a, 200, &during);
+        tx.join();
+        bool same = ev1.size() == ev2.size() && bpm1 == bpm2;
+        for (size_t i = 0; same && i < ev1.size(); i++)
+            same = std::fabs(ev1[i].beat - ev2[i].beat) < 1e-9 && ev1[i].status == ev2[i].status && ev1[i].d1 == ev2[i].d1;
+        CHECK(same, "the same notes again, rendered while another copy plays (%zu, %zu)", ev1.size(), ev2.size());
+        std::vector<uint8_t> f = midifile::smf(ev1, bpm1, "STILL TIDE", 4);
+        int tr = 0, notes = 0;
+        double q = 0;
+        CHECK(midifile::read_back(f, tr, notes, q) && notes == ons && std::fabs(q - 16.0) < 1e-9,
+              "a .mid of the 4 bars: %d notes, %.3f quarters", notes, q);
+        CHECK(x->playing() == 0, "the spare copy stopped after");
+    }
 
     // two threads, two copies at once
     double e1 = 0, e2 = 0;
