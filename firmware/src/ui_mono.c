@@ -1017,6 +1017,10 @@ static void mo_pic_matrix(void)
     uint32_t r, k, rb = UI_BANK(mx_from), cb = UI_BANK(mx_to);   /* (8 tracks: the four rows of the picked cell's
                                                                  * FROM and the four columns of its TO) */
     mo_text("FR>TO", 1, 53, MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);                             /* (zones: a cell, FROM and TO turned to it, then OPEN) */
+#endif
 #if CORE_TRACKS > 4
     for (k = 0; k < UI_NT; k++) {
         char n[2] = {(char)('1' + cb + k), 0};
@@ -1037,6 +1041,13 @@ static void mo_pic_matrix(void)
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
                 mo_box(x - 1, y - 1, 22, 11, MO_HOT);
+#if TESS_HAS_POINTER
+            {
+                char nm[8] = {'T', (char)('1' + r), '>', 'T', (char)('1' + k), 0};
+                uz_cell(UZ_G_PIC, x - 1, y - 1, 22, 11, EN_K1, (int32_t)r - (int32_t)mx_from, EN_K2,
+                        (int32_t)k - (int32_t)mx_to, nm, lv ? "OPEN" : "--");
+            }
+#endif
             mo_box(x, y, 20, 9, lv ? MO_TRK(r) : mo_tdim(r));
             if (lv)
                 mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_TRK(r));
@@ -3764,6 +3775,25 @@ static void mo_browser(uint32_t cur, uint32_t total)
         if (!s) {                                       /* (zones: the two lists' knobs, BACK and OK) */
             UZ(uz_begin(UZ_G_SIDES));
             UZ(uz_begin(UZ_G_KEYS));
+#if TESS_HAS_POINTER
+            uz_begin(UZ_G_PIC);                         /* (a LIST name or a sound: a click turns its knob to it; a
+                                                         * sound's double-click also OK, tess_core.c) */
+            for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++)
+                if (first + (uint32_t)r != m)
+                    uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
+                            "LIST", browser_list_name(first + (uint32_t)r));
+            for (r = -2; total && r <= 3; r++) {
+                int32_t n = (int32_t)at + r;
+                if (n < 0 || n >= (int32_t)total)
+                    continue;
+                if (r) {
+                    src = preset_at((uint32_t)n, &k);
+                    entry_label(src, k, tag, nm);
+                }
+                uz_cell(UZ_G_PIC, 47, r ? (r < 0 ? 39 + r * 12 : 53 + r * 12) : 38, 70, r ? 10 : 25, EN_K2, r, -1, 0,
+                        "SOUND", r ? (nm[0] ? nm : tag) : "");
+            }
+#endif
             UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 97, EN_K1, -1, 0, "LIST", ""));
             UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 97, EN_K2, -1, 0, "SOUND", ""));
             if (back)
