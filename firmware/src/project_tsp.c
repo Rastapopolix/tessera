@@ -1087,7 +1087,7 @@ static const uint8_t XT_BMAX[] = {   /* (each one's largest, as the 4-track part
     SUB_SHAPES - 1u, TESS_MIDI_OFF, 1u, TESS_SD_KEEPS - 1u, 100u, TESS_SV_HOWS - 1u,
     100u, 100u, TESS_SPLIT_HOWS - 1u, ET_ORDERS - 1u, TESS_STRUM_MS, TESS_STR_DIRS - 1u,
     TESS_CW_N - 1u, TESS_CB_N - 1u, TESS_FH_COUNT - 1u, TESS_FR_COUNT - 1u, TESS_DM_COUNT - 1u, TESS_HUMAN_MS,
-    TESS_ACC_LIMIT, TESS_ACC_MODES - 1u, 100u, 2u, 100u, 5u,
+    TESS_ACC_LIMIT, TESS_ACC_MODES - 1u, 100u, 2u, 100u, ET_ROLES - 1u,   /* (et_role: TURNS on 5..8, entries.c) */
     1u,
 };
 #define XT_NB (sizeof XT_B / sizeof XT_B[0])
