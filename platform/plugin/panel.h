@@ -240,6 +240,7 @@ class Panel
     // a drag
     enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
+    bool zone_still = false;   // a value's or a text's zone pressed and not turned yet: its release is a click
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
     int master_mine = -1;   // MASTER as this panel last set it, while it turns and a moment after (-1: none): the next
                             // turn goes on from here, not from the view, which is a block or two behind (a fast drag
