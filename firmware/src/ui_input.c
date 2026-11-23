@@ -2581,6 +2581,11 @@ static void ui_input(void)
             }
             if (oct_nav())                              /* off Stage: Esc / Enter, on release (below) */
                 break;
+#if TESS_HAS_POINTER
+            if (uz_key_words)                           /* (Smalti's BACK / OK: no octave; its OCT- / OCT+ step it,
+                                                         * tess_core_buttons) */
+                break;
+#endif
             if ((fm1_in.buttons & both) == both) {
                 song.octave = 0;
                 ui.oct_t0 |= 2u;                        /* (OCT+ then neither a tap nor a sheet) */
