@@ -33,7 +33,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12 };
+enum { B_FX = 0, B_SEL = 1, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12, B_OCTUP = 13 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -497,6 +497,20 @@ static void mosaic(const char *ppm)
     CHECK(row_ink(0) == row_ink(4), "one ink: tracks 5..8 the same ink as 1..4 (%04x, %04x)", row_ink(0), row_ink(4));
 }
 
+static void sheet_track()   // a sheet open on one track: another track picked (TRACKS' row) closes it
+{
+    tap(B_HOME);
+    act(find("T1"), TESS_ZA_CLICK);
+    hold(B_OCTUP, 120);   // (OCT+ held: the page's sheet)
+    int rows = count(TESS_ZONE_ROW);
+    if (!rows) { dump("no sheet"); CHECK(rows > 0, "OCT+ held on HOME opens its sheet"); return; }
+    tess_core_track_select(1);   // (as TRACKS' row in EXPANDED, beside the sheet)
+    run(5);
+    tess_core_view(&v);
+    CHECK(v.track == 1 && count(TESS_ZONE_ROW) == 0, "another track picked: the last track's sheet closes (%d rows)",
+          count(TESS_ZONE_ROW));
+    tap(B_HOME);
+}
 static void tabs()   // the footer's tabs: a click goes to that page
 {
     tap(B_GLO);   // (MIXER, GLO's first page: its tabs in the footer)
@@ -522,6 +536,7 @@ int main(int argc, char **argv)
 
     // ---- HOME: the tracks
     CHECK(count(TESS_ZONE_TRACK) == 4, "HOME: a zone a track (%d)", count(TESS_ZONE_TRACK));
+    sheet_track();
     tabs();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);

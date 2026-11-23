@@ -324,6 +324,7 @@ void tess_core_text(uint32_t ch)
 static void core_frame(void)
 {
     if (core_track_req < NTRK) {                  /* (between passes, as KNOB 1 on TRACKS would) */
+        if (core_track_req != song.sel) pop_close();   /* (an open sheet is the last track's: it closes) */
         track_select(core_track_req);
         core_track_req = 0xFFu;
     }
