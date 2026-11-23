@@ -153,7 +153,7 @@ click it, or press **Esc** to let go.
 
 In Tessera's look, the FM-1's two OCT buttons are split into what they do, each a button of its own:
 
-- **BACK**, **SHIFT** and **OK**, under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
+- **SHIFT**, **BACK** and **OK**, under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
   opens the page's sheet). **SHIFT** is OCT- held: hold it for the knobs' second set on the pages that have one (a
   right-click latches it); it never goes back. The screen's hints say BACK, OK and SHIFT where the FM-1 says OCT-
   and OCT+.

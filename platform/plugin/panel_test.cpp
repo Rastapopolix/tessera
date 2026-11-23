@@ -603,20 +603,20 @@ int main(int argc, char **argv)
         CHECK(!q.input.key_words, "an FM-1 on USB playing it: OCT- / OCT+ as ever");
         q.set_fm1(false, false, false, "");
         CHECK(q.input.key_words, "and back to BACK / OK / SHIFT");
-        q.move(127 + 33, 258 + 17);   // the mouse over SHIFT: what it does, in a card over it
+        q.move(50 + 33, 258 + 17);   // the mouse over SHIFT: what it does, in a card over it
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/10b_tessera_shift_tip.ppm", px);
         int tip = 0;
         for (int yy = 258 - 40; yy < 258; yy++)
             for (int xx = 20; xx < 400; xx++) tip += px[yy * Panel::W + xx] == 0xFFFFD020u;
         CHECK(tip > 100, "SHIFT's card over it (%d yellow pixels)", tip);
-        q.down(127 + 33, 258 + 17);
+        q.down(50 + 33, 258 + 17);
         CHECK(q.input.buttons == 1u << 16, "SHIFT held (%#x)", q.input.buttons);
         q.up(0, 0);
         q.down(36 + 30, 332 + 128 + 5 + 23);   // (OCT-: under OCT+, at the keys' left)
         CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
         q.up(0, 0);
-        q.down(50 + 33, 258 + 17);
+        q.down(127 + 33, 258 + 17);
         CHECK(q.input.buttons == 1u << 12, "BACK is the FM-1's OCT- (%#x)", q.input.buttons);
         q.up(0, 0);
         q.down(204 + 33, 258 + 17);
