@@ -108,7 +108,7 @@ and value shown large in a box under the screen:
   click where the copy goes.
 - **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
 - **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
-  under a strip to mute it, double-click it to solo.
+  under a strip to mute it, right-click it (or double-click) to solo.
 - **The tempo** in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
   double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.
 - **The footer's page tabs and its arrows:** click a tab for that page, an arrow for the page just past it.

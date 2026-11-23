@@ -120,7 +120,7 @@ typedef struct {
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP };
-/* HELP (a right-click): a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
+/* HELP (a right-click): on MIXER's MUTE word, that track's solo (on, or off again); a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
  * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
  * on any zone, or a button pressed, closes it (that click does nothing more) */
 /* do what the mouse did on zone z: TURN n detents (+ clockwise / up: a drag), CLICK, DOUBLE, WHEEL n notches (+ up). A

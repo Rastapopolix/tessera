@@ -241,6 +241,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             help_unpin();
             tess_core_zone_do(z, TESS_ZA_CLICK, 0);   /* (the cursor on the row) */
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
+            help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
+            core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
+            ui.force = 1;
         }
         return;
     }
