@@ -348,11 +348,28 @@ static void cu_rows(void)
     sig = sg;
     memset(cu_led_was, 0xFF, sizeof cu_led_was);        /* (the rows over their lights and moves: cu_leds again) */
     memset(cu_bar_was, 0xFF, sizeof cu_bar_was);
+    UZ(uz_list_set(EN_K2, EN_K4, (int32_t)cord_ui_sel, (int32_t)cu_slot(0), 1));   /* (zones: KNOB 2 the mod, KNOB 4
+                                                         * its amount, OCT+ its BI / UNI / GATE / HOLD) */
+#if TESS_HAS_POINTER
+    if (!cv_under)                                      /* (under a picker: its list's zones stay) */
+        uz_begin(UZ_G_LIST);
+#endif
     for (k = 0; k < 4u; k++) {
         uint32_t i = cu_slot(k);
         const cord_t *c = cord_get(i);
         int sel = i == cord_ui_sel, on;
         if (i >= CORD_LIVE) continue;
+#if TESS_HAS_POINTER
+        {                                               /* (zones: its SOURCE and DESTINATION, a click their picker,
+                                                         * then the row; Mono cells, mo_cu_row's places) */
+            int32_t y = (CU_Y + (int32_t)k * CU_H) / 2;
+            char nb[4];
+            uz_add(UZ_G_LIST, UZ_PICK, 12, y, 34, 10, EN_K1, EN_K2, (int32_t)i, "SOURCE", cu_src_name(c));
+            uz_add(UZ_G_LIST, UZ_PICK, 53, y, 42, 10, EN_K1 + 2, EN_K2, (int32_t)i, "DEST", cu_dst_mono(c));
+            fmt_int(nb, (int32_t)(i + 1u));
+            uz_add(UZ_G_LIST, UZ_ROW, 1, y, 118, CU_H / 2 - 1, EN_K2, EN_K4, (int32_t)i, nb, "MOD");
+        }
+#endif
         on = cord_live(c);
         uint16_t bg = sel ? T_LIFT : T_BG;
         int32_t a = cu_pct(c);

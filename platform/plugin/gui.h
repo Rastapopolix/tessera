@@ -73,6 +73,9 @@ struct GuiLink
     virtual void listen_split_pick(int note) { (void)note; }
     virtual bool keys_on() { return projfile::setting_get("keys") != "0"; }
     virtual void keys_set(bool on) { projfile::setting_put("keys", on ? "1" : "0"); }
+    /* HOVER HELP (TESSERA's menu), remembered as KEYS is: off unless turned on */
+    virtual bool hover_help_on() { return projfile::setting_get("hover_help") == "1"; }
+    virtual void hover_help_set(bool on) { projfile::setting_put("hover_help", on ? "1" : "0"); }
 };
 
 /* each window's tick: a click on FM-1 USB handed on, and its state shown */

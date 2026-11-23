@@ -241,6 +241,12 @@ struct Tessera : GuiLink
         pending.key_words = in.key_words;
         pending.away = pending.away || in.away;
         in.away = false;
+        if (in.hover_changed)
+        {
+            pending.hover = in.hover;
+            pending.hover_changed = true;
+            in.hover_changed = false;
+        }
         if (in.master >= 0)
             pending.master = in.master;
         in.master = -1;
@@ -1226,6 +1232,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             if (pi.away)               // a click away: a picker, a sheet or a pinned help card closed
                 t->core->away();
             pi.away = false;
+            if (pi.hover_changed)      // HOVER HELP: the zone the mouse rests on
+                t->core->hover(pi.hover.kind ? &pi.hover : nullptr);
+            pi.hover_changed = false;
             pi.changed = false;
         }
     }
