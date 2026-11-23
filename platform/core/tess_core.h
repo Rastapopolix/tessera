@@ -74,6 +74,16 @@ uint32_t tess_core_playing(void);
 /* ---- MIDI out (Settings > NOTES OUT; each track on its own channel, GLO > MIDI OUT), as USB MIDI packets: the
  * next one whose frame (tess_core_frames' count) has been rendered. 0 = none. A build with TESS_PLUGIN_IO only */
 uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame);
+/* ---- a Standard MIDI File of notes played (firmware/src/smf.c): format 1, 480 ticks a quarter, 4/4, a track per
+ * channel. ev: messages in tick order (ticks from the song's top: tess_core_position() * 480), notes only kept. bars 0:
+ * from the bar of the first note to the last message; bars N: from the top for N bars exactly. Its length (more than
+ * cap: out holds its start only), 0 no notes. A build with MELODEE_SMF only (the Daisy's; 0 elsewhere) */
+typedef struct tess_smf_ev {
+    uint32_t tick;
+    uint8_t status, d1, d2, pad;
+} tess_smf_ev;
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap);
 /* note-offs for every note MIDI out still has on (they come out of tess_core_midi_out after the next render) */
 void tess_core_notes_off(void);
 

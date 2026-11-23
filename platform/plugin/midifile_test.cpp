@@ -4,6 +4,7 @@
  *   - a recorder keeps notes only, oldest first, and drops the oldest once full;
  *   - the file: a header, the tempo track, one track per channel, every note-on, the length in quarters; it starts on
  *     the bar of the first note; an off of a note from before the clip is left out, a note still on is ended;
+ *   - bars N: from the top for N bars exactly, the notes past the end left out, a note still on ended there;
  *   - no notes: no file; the clip's file name leaves out what a file name cannot have.
  * usage: tessera-midifile-test */
 #include <cmath>
@@ -59,6 +60,12 @@ int main()
             tempo = (f[i + 3] << 16 | f[i + 4] << 8 | f[i + 5]) == 625000;
     CHECK(tempo, "the tempo is the project's");
 
+    // bars 2: from the top, 8 quarters exactly; the note still on (7.0) ends at 8; the notes from 8 on are left out
+    f = midifile::smf(r.take(), 96, "UNDERTOW", 2);
+    CHECK(midifile::read_back(f, tracks, notes, q), "the bars clip reads back");
+    CHECK(tracks == 3 && notes == 3, "bars 2: three notes before beat 8 (%d tracks, %d notes)", tracks, notes);
+    CHECK(std::fabs(q - 8.0) < 1e-9, "bars 2: the clip is 8 quarters long (%.3f)", q);
+    CHECK(midifile::smf(r.take(), 96, "", 1).empty(), "bars 1: no note in the first bar, no file");
     CHECK(midifile::smf({}, 120, "").empty(), "no notes: no file");
     midifile::Recorder offs(4);
     offs.add(1, 0x80, 60, 0);
