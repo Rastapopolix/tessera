@@ -14,8 +14,8 @@
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
  *     standalone app) it plays at once on its own clock;
  *   - a new instance starts from a new project, as an FM-1 with nothing saved does (the power-on sounds, every
- *     pattern empty, no generator): it plays nothing until it gets notes. STILL TIDE and KOTO GARDEN wait in slots A
- *     and B (SAVE > PROJECT). The standalone app, which has no DAW to send notes, loads STILL TIDE and plays it;
+ *     pattern empty, no generator, every slot empty): it plays nothing until it gets notes. The demos are in the DAW's
+ *     preset browser and under OPEN; the standalone app starts empty too;
  *   - parameters (automatable): MASTER and PERF's MACRO 1..4 (ids 0..4, as since phase 2), then every project setting
  *     by its central ID (pid.h), each track's and the song's, with the FM-1's names and values; changed on the panel
  *     or by the core, they are sent back to the host;
@@ -112,8 +112,6 @@ struct Tessera : GuiLink
     uint32_t cur_frame = 0;               // the newest core frame the resampler has (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
-    bool demo_done = false;               // the standalone app's STILL TIDE: loaded once, at its first block, and not
-                                          // over a state the host loaded (st_load sets it too)
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
     uint32_t view_due = 0;               // host frames until the next view
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
@@ -1128,11 +1126,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->transport_known = true;
         t->was_playing = playing;
     }
-    else if (!t->free_started)   // a free-running host (the standalone app): STILL TIDE (slot A), and play at once
-    {
-        if (!t->demo_done)
-            t->core->slot_load(0);
-        t->demo_done = true;
+    else if (!t->free_started)   // a free-running host (the standalone app): its clock runs at once (a new project:
+    {                            // silent till notes, a demo from OPEN or a song)
         t->core->transport(1);
         t->free_started = true;
     }
@@ -1412,8 +1407,6 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             x58 = b.data() + len;
         }
         ok = t->core->load(b.data(), len) == 0;
-        if (ok)
-            t->demo_done = true;     // (the standalone app: what the host loaded, not STILL TIDE over it)
         if (ok)
             t->gen_before = false;   // (GENERATE: what plays is the DAW's state, not BEFORE)
         if (ok && setup)

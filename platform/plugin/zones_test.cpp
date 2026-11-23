@@ -18,6 +18,7 @@
 #include <string>
 
 #include "tess_core.h"
+#include "sim_demos.h"   // (build/gen: SIM_DEMO_A, demos/still-tide.tsp)
 
 static int fails = 0;
 #define CHECK(c, ...)                          \
@@ -181,7 +182,8 @@ static void slots()   // SAVE > PROJECT: a zone a slot; a click picks it, the wh
     int a = find("A", TESS_ZONE_ROW), b = find("B", TESS_ZONE_ROW);
     CHECK(a >= 0 && b >= 0, "PROJECT: a zone a slot (A %d, B %d; %u zones)", a, b, v.zone_count);
     if (a < 0 || b < 0) { dump("PROJECT"); return; }
-    CHECK(std::string(v.zones[b].value) == "KOTO GARDEN", "PROJECT: slot B is KOTO GARDEN (%s)", v.zones[b].value);
+    CHECK(!std::strstr(v.zones[a].value, "STILL") && !std::strstr(v.zones[b].value, "KOTO"),
+          "PROJECT: the plugin's slots start empty (A %s, B %s)", v.zones[a].value, v.zones[b].value);
     act(b, TESS_ZA_CLICK, 0, 40);
     int c = find("C", TESS_ZONE_ROW);
     act(c, TESS_ZA_CLICK, 0, 40);
@@ -527,17 +529,55 @@ static void tabs()   // the footer's tabs: a click goes to that page
     CHECK(here >= 0 && want == v.zones[here].value, "a click on %s's tab: that page (now %s)", want.c_str(),
           here >= 0 ? v.zones[here].value : "?");
     tap(B_HOME);
+    tap(B_GLO);   // the footer's arrow: the page past it (MIXER's family has more tabs than fit)
+    int arrow = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x >= 116) arrow = i;
+    CHECK(arrow >= 0, "GLO's footer: a zone on the right arrow");
+    if (arrow >= 0)
+    {
+        want = v.zones[arrow].value;
+        act(arrow, TESS_ZA_CLICK, 0, 40);
+        here = -1;
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) here = i;
+        CHECK(here >= 0 && want == v.zones[here].value, "a click on the right arrow: %s (now %s)", want.c_str(),
+              here >= 0 ? v.zones[here].value : "?");
+        int left = -1;
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x == 0) left = i;
+        CHECK(left >= 0 && v.zones[left].row < 0, "then a left arrow, a page back");
+    }
+    tap(B_HOME);
+}
+static void help_close()   // a help card the mouse opened (right-click): a click on it closes it, even a short one
+{
+    tap(B_FX);
+    act(0, TESS_ZA_HELP);
+    int card = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_SCROLL) card = i;
+    CHECK(card >= 0, "FX: KNOB 1's help card, a zone (to click)");
+    uint32_t open = screen_hash();
+    act(card, TESS_ZA_CLICK);
+    card = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_SCROLL) card = i;
+    CHECK(card < 0 && screen_hash() != open, "a click on the card closes it");
+    tap(B_HOME);
 }
 int main(int argc, char **argv)
 {
     tess_core_boot();
-    tess_core_slot_load(0);   // (STILL TIDE, slot A: the values below are its; a new project's FX MIX sits at 0 %)
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);   // (STILL TIDE: the values below are its; a new project's FX MIX
+                                                     // sits at 0 %)
     run(50);
 
     // ---- HOME: the tracks
     CHECK(count(TESS_ZONE_TRACK) == 4, "HOME: a zone a track (%d)", count(TESS_ZONE_TRACK));
     sheet_track();
     tabs();
+    help_close();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
@@ -618,6 +658,7 @@ int main(int argc, char **argv)
     grids();
     mixer();
     reading();
+    tess_core_slot_put(0, SIM_DEMO_A, sizeof SIM_DEMO_A);   // (a song saved in slot A, to rename)
     typing();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);

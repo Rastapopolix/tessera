@@ -808,6 +808,7 @@ bool Panel::down(int x, int y)
         {
             drag = ZONE;
             drag_zone = z;
+            zone_still = !dbl;   // (let go unturned: a click, which closes a pinned help card)
             if (dbl) zone_act(z, TESS_ZA_DOUBLE, 0);
             return dbl;
         }
@@ -925,7 +926,7 @@ bool Panel::move(int x, int y)
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
         int n = acc / 8;
-        if (n) { acc -= n * 8; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }
+        if (n) { acc -= n * 8; zone_still = click_known = false; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }   // (turned: no click, nor half a double-click)
     }
     else if (drag == GEN_VAR)   // VAR: 5 a detent, a detent every 8 px
     {
@@ -986,6 +987,8 @@ bool Panel::up(int, int)
     gen_swapped = false;
     if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
     if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
+    if (drag == ZONE && zone_still) { zone_act(drag_zone, TESS_ZA_CLICK, 0); ch = true; }   // (a help card's text, a
+    zone_still = false;                                                                       // knob's column: a click)
     drag = NONE;
     file_held = bank_held = -1;
     return ch;

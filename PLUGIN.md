@@ -84,9 +84,8 @@ the FM-1 (the [manual](MANUAL.md) shows how).
 
 **To hear what it can do,** load a demo: all eight demos are in the DAW's list of Cosmati's presets (the preset
 browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
-Reaper, Cubase or Logic); **STILL TIDE** also waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT, then
-LOAD); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
-to send it notes, so it opens with STILL TIDE loaded and plays it at once.
+Reaper, Cubase or Logic); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**, which is how
+the **standalone app** loads one. The project slots (SAVE > PROJECT) start empty, for your own songs.
 
 ## The window
 
