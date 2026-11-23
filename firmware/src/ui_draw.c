@@ -303,6 +303,9 @@ static void mo_song(void);
 static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
+static void mo_page_head(void);
+static void mo_foot_line(void);
+static void mo_slot_sound(void);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
 static void mo_msc(void);
 static void mo_smap(uint32_t cur);
@@ -1906,8 +1909,10 @@ static int own_screen(void)                             /* a page drawn whole by
 static int foot_tabs_on(void)
 {
     uint32_t k = pv_kind(), g = cur_page()->graph;
-    if (ui.home || own_screen() || slot_kind() || motion_page() || list_on())
-        return 0;
+    if (ui.home || own_screen() || ((slot_kind() || list_on()) && !MELODEE_LOOK) || motion_page())
+        return 0;                                       /* (Mono: a slot page has its family's tabs too, as its
+                                                         * neighbours, PROJECT / USER / STORE and the lists: Theo
+                                                         * 2026-11-24) */
     if (k == PV_NONE)
         return !(g == GR_ROLL && (!grid_on() || live_rec_sel()));
     return k == PV_CURVE || k == PV_RINGS || k == PV_FADERS || k == PV_NOTES || k == PV_GRID;

@@ -4067,6 +4067,48 @@ static void mo_song(void)
 /* ---- PROJECT, USER, the STOREs (slot_draw): a strip a row ---- */
 /* the slot picked (46 px = 23 cells): framed, its tag inverted, its name, a line about it (dim), BOOT inverted at the
  * right on the one power-on loads */
+/* a slot page's or a list page's header (PROJECT, SAVE > USER, FM6 STORE; SCL, VOICE ..): the page's own, as its
+ * neighbours in the family have it (mo_head: the title, its place, the engine, the tracks), not a list's chip; drawn
+ * when it changes (Theo, 2026-11-24: the same chrome page to page, its footer's tabs too) */
+static uint32_t mo_page_head_sig;
+static void mo_page_head(void)
+{
+    uint32_t sig = ui.page * 2654435761u + song.sel * 13u + ux.gen * 977u + ux.pal * 31u + TSEL->eng_req * 104729u +
+                   (uint32_t)(batt_head() + 1) * 7919u + mo_hold_sig() * 31337u + (uint32_t)ovl_lit() * 65537u +
+                   song.rec * 5u + (ui.msg_t ? str_hash(3u, ui.msg) : 0u);
+    if (!ui.force && sig == mo_page_head_sig)
+        return;
+    mo_page_head_sig = sig;
+    cv_begin(240, SL_Y0 - 2, MO_BG);                    /* (its line on row 9: 20 px) */
+    mo_head();
+    cv_blit(0, 0);
+}
+/* the track's sound under a slot page's rows (the foot has the page tabs now): "T5 FM6 KUGO HARP", as the foot had it
+ * (mo_sound): what SAVE here would store */
+static void mo_slot_sound(void)
+{
+    char a[24], b[24], nm[20];
+    int32_t x;
+    sound_name(TSEL, nm);
+    cv_begin(240, 18, MO_BG);                           /* (rows 200 .. 217: under the last slot, over the tabs' line) */
+    b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
+    mo_inv(b, 1, 1);
+    mo_ascii(a, ENGINES[eng_idx(TSEL->eng_req)]->name, sizeof a);
+    mo_cut(b, a, 8);
+    x = mo_text(b, 16, 1, MO_INK) + 6;
+    mo_ascii(a, nm, sizeof a);
+    mo_cut(b, a, (uint32_t)(119 - x) / 6u);
+    mo_text(b, x, 1, MO_DIM);
+    cv_blit(0, PV_SOUND_Y - 20);
+}
+/* the line over the page tabs (mo_foot draws it on row 109, which a slot or list page's foot, from row 110, leaves
+ * out) */
+static void mo_foot_line(void)
+{
+    cv_begin(240, 2, MO_BG);
+    mo_hl(0, 0, 120, MO_INK);
+    cv_blit(0, PV_SOUND_Y - 2);
+}
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y)
 {
     char a[24], b[24];

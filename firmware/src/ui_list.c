@@ -307,7 +307,12 @@ static void list_draw(void)
         lst.page = ui.page;
         lst.row = lst.first = 0;
     }
+#if MELODEE_LOOK
+    mo_page_head();                                     /* (the page's own header and its family's tabs, as the pages
+                                                         * beside it: ui_mono.c, foot_tabs_on) */
+#else
     draw_head();
+#endif
     pv_sound();
     vis = (uint32_t)((pic_y - LIST_Y0 - 2) / LIST_ROW);
     if (lst.row >= list_n(l)) lst.row = 0;
@@ -322,6 +327,9 @@ static void list_draw(void)
         lst.sig = sig;
         list_drawn = l;
         list_rows(list_n(l), lst.row, lst.first, vis);
+#if MELODEE_LOOK
+        mo_foot_line();                                 /* (the line over the page tabs) */
+#endif
     }
     if (l->pic == LP_SCALE) {
         static uint32_t ps;
@@ -329,7 +337,7 @@ static void list_draw(void)
         if (ui.force || s2 != ps) {
             ps = s2;
 #if MELODEE_LOOK
-            mo_scale_pic(pic_y, PV_SOUND_Y - pic_y);
+            mo_scale_pic(pic_y, PV_SOUND_Y - 2 - pic_y);   /* (over the tabs' line) */
 #else
             list_scale_pic(pic_y, PV_SOUND_Y - pic_y);
 #endif
