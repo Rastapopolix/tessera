@@ -1,4 +1,4 @@
-# Cosmati: Tessera as a plugin
+# Cosmati
 
 **Cosmati** is Tessera inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
 instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1's panel: the same screen, buttons,
