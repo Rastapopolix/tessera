@@ -303,8 +303,9 @@ static void mo_song(void);
 static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
-static void mo_page_head(void);
 static void mo_foot_line(void);
+static void mo_head(void);
+static int mo_page_chrome(void);                       /* (ui_mono.c: a slot or list page) */
 static void mo_slot_sound(void);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
 static void mo_msc(void);
@@ -352,6 +353,13 @@ static void draw_head(void)
     }
     ui.head_sig = sig;
 #if MELODEE_LOOK
+    if (mo_page_chrome()) {                             /* a slot or list page: the page's own header, as the pages
+                                                         * beside it in its family (Theo, 2026-11-24) */
+        cv_begin(240, H_HEAD + 2, T_BG);
+        mo_head();
+        cv_blit(0, 0);
+        return;
+    }
     mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, bat);
     return;
 #endif

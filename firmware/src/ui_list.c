@@ -307,12 +307,7 @@ static void list_draw(void)
         lst.page = ui.page;
         lst.row = lst.first = 0;
     }
-#if MELODEE_LOOK
-    mo_page_head();                                     /* (the page's own header and its family's tabs, as the pages
-                                                         * beside it: ui_mono.c, foot_tabs_on) */
-#else
     draw_head();
-#endif
     pv_sound();
     vis = (uint32_t)((pic_y - LIST_Y0 - 2) / LIST_ROW);
     if (lst.row >= list_n(l)) lst.row = 0;

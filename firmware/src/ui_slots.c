@@ -168,11 +168,7 @@ static void slot_draw(void)
         lcd_fill(0, H_HEAD, 240, PV_SOUND_Y - H_HEAD, T_BG);
         ui.graph_sig = 0;
     }
-#if MELODEE_LOOK
-    mo_page_head();                                     /* (the page's own header, as the pages beside it) */
-#else
     draw_head();
-#endif
     pv_sound();                                         /* (Mono: the page tabs, foot_tabs_on) */
     if (vis > n)
         vis = n;
