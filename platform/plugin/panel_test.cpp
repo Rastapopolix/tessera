@@ -613,7 +613,7 @@ int main(int argc, char **argv)
         q.down(127 + 33, 258 + 17);
         CHECK(q.input.buttons == 1u << 16, "SHIFT held (%#x)", q.input.buttons);
         q.up(0, 0);
-        q.down(574 + 30, 160 + 2 * 56 + 20);
+        q.down(36 + 30, 332 + 128 + 5 + 23);   // (OCT-: under OCT+, at the keys' left)
         CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
         q.up(0, 0);
         q.down(50 + 33, 258 + 17);
