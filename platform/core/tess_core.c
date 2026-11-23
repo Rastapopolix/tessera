@@ -88,7 +88,7 @@ void tess_core_boot(void)
  * detents as the hand's (a quick wheel speeds up as a quick knob does) */
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE };
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -126,6 +126,10 @@ static void zq_run(void)
         break;
     case ZQ_DETENT:
         tess_core_enc(arg, sg);
+        break;
+    case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
+        page_scroll(sg);
+        ui.force = 1;
         break;
     case ZQ_PRESS:
         m = 1u << panel.btn[arg % NB];
@@ -244,8 +248,26 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         break;
     case TESS_ZONE_MUTE:                              /* MIXER's strips: as TRACKS' M, S */
     case TESS_ZONE_SOLO:
-        if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NTRK)
-            core_mute_solo(z->kind, (uint32_t)z->row);
+        if (action == TESS_ZA_TURN || z->row < 0 || z->row >= (int32_t)NTRK) break;
+        if (z->kind == TESS_ZONE_MUTE && z->role == 1) {   /* (MIXER's word, the strip wide: click MUTE, soloed SOLO
+                                                       * off; double-click SOLO, the click's MUTE taken back) */
+            static int32_t last_tr = -1;              /* (the track the last click muted) */
+            uint32_t tr = (uint32_t)z->row;
+            if (action == TESS_ZA_DOUBLE) {
+                if (last_tr == (int32_t)tr) core_mute_solo(TESS_ZONE_MUTE, tr), core_mute_solo(TESS_ZONE_SOLO, tr);
+                last_tr = -1;
+            } else if (track_solo >> tr & 1u) {
+                core_mute_solo(TESS_ZONE_SOLO, tr), last_tr = -1;
+            } else {
+                core_mute_solo(TESS_ZONE_MUTE, tr), last_tr = (int32_t)tr;
+            }
+            break;
+        }
+        core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_TAB:                               /* the footer's tabs: that page (row: the pages from here) */
+        if (action == TESS_ZA_CLICK)
+            for (k = 0; k < (z->row < 0 ? -z->row : z->row) && k < 16; k++) zq_put(ZQ_PAGE, 0, z->row);
         break;
     case TESS_ZONE_SCROLL:                            /* a text to read: its knob, the wheel the other way round */
         if (action == TESS_ZA_TURN)
@@ -636,7 +658,7 @@ void tess_core_view(tess_view_t *v)
     {                                             /* the zones, in the order a hit is looked for: a list over the
                                                    * page, a dialog's or a screen's keys, the page's columns,
                                                    * MIXER's strips, a screen's two lists, HOME's tracks */
-        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS};
+        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS, UZ_G_TABS};
         _Static_assert(sizeof ORDER == UZ_GROUPS, "every zone group in ORDER, once");
         uint32_t g, n = 0;
         for (g = 0; g < UZ_GROUPS; g++)

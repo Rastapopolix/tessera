@@ -286,10 +286,14 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     for (int i = 0; i < 8 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
     uint32_t lvl = pid_named("LEVEL"), pan = pid_named("PAN"), mute = pid_named("MUTE");
     int l2 = find_strip(TESS_ZONE_LEVEL, "T2", "LEVEL"), p2 = find_strip(TESS_ZONE_PAN, "T2", "PAN"),
-        m2 = find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), s2 = find_strip(TESS_ZONE_SOLO, "T2", "SOLO");
-    CHECK(l2 >= 0 && p2 >= 0 && m2 >= 0 && s2 >= 0, "MIXER: T2's strip: LEVEL, PAN, MUTE, SOLO zones");
+        m2 = find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO");
+    CHECK(l2 >= 0 && p2 >= 0 && m2 >= 0, "MIXER: T2's strip: LEVEL, PAN, the MUTE / SOLO word");
     CHECK(lvl != 0xFFFFu && pan != 0xFFFFu && mute != 0xFFFFu, "LEVEL, PAN, MUTE by name");
-    if (l2 < 0 || p2 < 0 || m2 < 0 || s2 < 0) { dump("MIXER"); return; }
+    if (l2 < 0 || p2 < 0 || m2 < 0) { dump("MIXER"); return; }
+    {
+        auto &z = v.zones[m2];
+        CHECK(z.w >= 48, "the word's zone as wide as the word (%u)", (unsigned)z.w);
+    }
     int32_t l0 = tess_core_param_get(lvl, 1), p0 = tess_core_param_get(pan, 1);
     act(l2, TESS_ZA_TURN, -6, 40);
     CHECK(tess_core_param_get(lvl, 1) < l0, "a drag down on T2's LEVEL lowers it (%d, was %d)", tess_core_param_get(lvl, 1), l0);
@@ -300,10 +304,18 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     act(find_strip(TESS_ZONE_PAN, "T2", "PAN"), TESS_ZA_DOUBLE, 0, 40);
     CHECK(tess_core_param_get(pan, 1) == 0, "a double-click: T2's PAN centred");
     int32_t m0 = tess_core_param_get(mute, 1);
-    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), TESS_ZA_CLICK, 0, 40);
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO"), TESS_ZA_CLICK, 0, 40);
     CHECK(tess_core_param_get(mute, 1) != m0, "a click on T2's MUTE mutes it (%d)", tess_core_param_get(mute, 1));
-    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE"), TESS_ZA_CLICK, 0, 40);
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO"), TESS_ZA_CLICK, 0, 40);
     CHECK(tess_core_param_get(mute, 1) == m0, "again: unmuted");
+    int w2 = find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO");
+    act(w2, TESS_ZA_CLICK, 0, 2);
+    act(w2, TESS_ZA_DOUBLE, 0, 40);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
+          "a double-click: T2 soloed, its click's MUTE taken back (%d)", tess_core_param_get(mute, 1));
+    act(find_strip(TESS_ZONE_MUTE, "T2", "SOLO"), TESS_ZA_CLICK, 0, 40);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
+          "a click on SOLO: T2 not soloed, not muted");
     tap(B_HOME);
 }
 static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)
@@ -499,6 +511,23 @@ static void sheet_track()   // a sheet open on one track: another track picked (
           count(TESS_ZONE_ROW));
     tap(B_HOME);
 }
+static void tabs()   // the footer's tabs: a click goes to that page
+{
+    tap(B_GLO);   // (MIXER, GLO's first page: its tabs in the footer)
+    int n = count(TESS_ZONE_TAB), far = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row >= 2) { far = i; break; }
+    CHECK(n >= 3 && far >= 0, "GLO's footer: a zone a tab (%d)", n);
+    if (far < 0) { dump("tabs"); tap(B_HOME); return; }
+    std::string want = v.zones[far].value;
+    act(far, TESS_ZA_CLICK, 0, 40);
+    int here = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) here = i;
+    CHECK(here >= 0 && want == v.zones[here].value, "a click on %s's tab: that page (now %s)", want.c_str(),
+          here >= 0 ? v.zones[here].value : "?");
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -508,6 +537,7 @@ int main(int argc, char **argv)
     // ---- HOME: the tracks
     CHECK(count(TESS_ZONE_TRACK) == 4, "HOME: a zone a track (%d)", count(TESS_ZONE_TRACK));
     sheet_track();
+    tabs();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 

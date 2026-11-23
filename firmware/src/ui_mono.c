@@ -639,6 +639,7 @@ static void mo_foot(void)
     int32_t x0 = fit ? 1 : 5, x1 = fit ? 119 : 113, x;   /* (a tab's block reaches x1 + 1) */
     char t[8];
     mo_hl(0, 109, 120, MO_INK);                         /* (row 110 clear: the selected tab's block below it) */
+    UZ(uz_begin(UZ_G_TABS));
     for (;; first++) {                                  /* the first tab: the shown one fits after it */
         for (x = x0, i = first; i <= cur; i++) {
             mo_tab_name(t, idx, i);
@@ -653,6 +654,8 @@ static void mo_foot(void)
             break;
         if (i == cur) mo_inv(t, x + 1, 112);
         else mo_text(t, x + 1, 112, MO_DIM);
+        UZ(uz_add(UZ_G_TABS, UZ_TAB, x, 110, mo_tw(t) + 3, 10, -1, -1, (int32_t)i - (int32_t)cur, t,
+                  mo_title(&PAGES[idx[i]])));   /* (zones: a tab, its page; row the pages from here) */
         x += mo_tw(t) + 5;
     }
     if (first > 0u)                                     /* pages before: an arrow left, a 3 x 5 wedge */
@@ -3270,14 +3273,14 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     char a[8], b[8];
     int32_t h;
 #if TESS_HAS_POINTER
-    {                                                   /* (zones: LEVEL its knob's, PAN, MUTE | SOLO halves) */
+    {                                                   /* (zones: LEVEL its knob's, PAN, the word under them: MUTE,
+                                                         * double-click SOLO; soloed, SOLO off (role 1: tess_core.c)) */
         int32_t zx = (CARD_X(k - UI_BASE) - 2) / 2, zy = PV_STRIP_TOP / 2;
         char tn[4] = {'T', (char)('1' + k), 0, 0};
         uz_begin_row(UZ_G_STRIPS, (int32_t)k);
         uz_add(UZ_G_STRIPS, UZ_LEVEL, zx, zy, CARD_W / 2 + 2, 46, -1, -1, (int32_t)k, tn, "LEVEL");
         uz_add(UZ_G_STRIPS, UZ_PAN, zx, zy + 46, CARD_W / 2 + 2, 21, -1, -1, (int32_t)k, tn, "PAN");
-        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 12, 11, -1, -1, (int32_t)k, tn, "MUTE");
-        uz_add(UZ_G_STRIPS, UZ_SOLO, zx + 14, zy + 68, 13, 11, -1, -1, (int32_t)k, tn, "SOLO");
+        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 25, 11, 1, -1, (int32_t)k, tn, solo ? "SOLO" : "MUTE/SOLO");
     }
 #endif
     cv_begin(CARD_W + 4, MO_STRIP_H * 2, MO_BG);

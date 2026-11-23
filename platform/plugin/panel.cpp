@@ -760,8 +760,17 @@ bool Panel::down(int x, int y)
             if (dbl) zone_act(z, TESS_ZA_DOUBLE, 0);
             return dbl;
         }
+        if (z.kind == TESS_ZONE_ROW && z.vrole >= 0)   // (a row with a value, a sheet's or MENU's: click there,
+        {                                             // then held and dragged up or down, its value turns)
+            zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
+            drag = ZONE;
+            drag_zone = z;
+            acc = 0;
+            return true;
+        }
         drag = NONE;
-        if (dbl && z.kind != TESS_ZONE_ROW) return false;   // (OK, YES, a track: once, however often clicked)
+        if (dbl && z.kind != TESS_ZONE_ROW && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
+            return false;   // (OK, YES, a track: once, however often clicked; MIXER's MUTE word: double-click SOLO)
         zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
         return true;
     }
@@ -1113,19 +1122,25 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
     }
 
-    // the keys: naturals a dim outline, sharps dim and solid; lit yellow, held warm white
+    // the keys: naturals a dim outline, sharps dim and solid; held warm white; lit, an LED on the key (Theo
+    // 2026-11-23: the whole key yellow was too much while they blink): its outline yellow and a bar across its top
     dotted(c, KEYBED[0], KEYBED[0] + kb_w, KEYBED[1], T_DIM);
     for (size_t i = 0; i < keys.size(); i++)
     {
         const Key &k = keys[i];
         uint32_t bit = 1u << k.k;
         bool natural = i < 16;
-        uint32_t base = natural ? T_BLACK : T_DIM, border = T_DIM, fill = base;
+        uint32_t base = natural ? T_BLACK : T_DIM, border = T_DIM, fill = base, led = 0;
         if (input.keys & bit) border = fill = T_HELD;
-        else if (v.lit_keys & bit) border = fill = T_YEL;
-        else if (v.breath_keys & bit) border = T_YEL, fill = mix(base, T_YEL, 0.6 * breath);
+        else if (v.lit_keys & bit) border = T_YEL, led = T_YEL;
+        else if (v.breath_keys & bit) border = T_YEL, led = mix(base, T_YEL, 0.6 * breath);
         else if (v.dim_keys & bit) border = T_YEL;
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
+        if (led)
+        {
+            int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
+            c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
+        }
     }
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them

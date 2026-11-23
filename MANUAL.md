@@ -2521,7 +2521,7 @@ See the recipe [An LFO for another synth's filter](RECIPES.md#an-lfo-for-another
 - **SYNC ECHO** is ECHO on the beat: its TIME is a note value (1/32, 16T, 1/16, 8T, 16D, 1/8, 4T, 8D, 1/4, 2T, 4D,
   1/2, 2D, 1/1; T a triplet, D dotted), a knob step each, at the tempo playing (BPM, a MIDI clock, a TEMPO mod). It
   follows a tempo change by gliding, as ECHO's TIME does. On the FM-1 the echo holds up to 371 ms: a longer note value
-  halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin holds about 3 s. Older firmware, without
+  halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin (Smalti) holds about 3 s. Older firmware, without
   SYNC ECHO, plays it as DRIVE.
 - **REVERB** changes SIZE a sample at a time.
 - The **send effects'** mods are the project's, not a track's, so [MATRIX](#matrix) leaves them out.

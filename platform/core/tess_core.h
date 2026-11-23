@@ -88,7 +88,8 @@ void tess_core_screen(tess_screen_t *s);
  * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
-enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
+       TESS_ZONE_TAB };   /* (TAB: a page's tab in the footer; click: that page) */
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;

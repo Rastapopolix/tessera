@@ -13,8 +13,8 @@
  * every UZ(...) is nothing: the FM-1's image is unchanged. Included by core_ui_sources.h and melodee.c before
  * ui_draw.c */
 #if TESS_HAS_POINTER
-enum { UZ_KNOB = 1, UZ_ROW, UZ_KEY, UZ_TRACK, UZ_MUTE, UZ_SOLO, UZ_LEVEL, UZ_CELL, UZ_PAN, UZ_SCROLL };   /* (tess_core.h's TESS_ZONE_*) */
-enum { UZ_G_COLS, UZ_G_LIST, UZ_G_KEYS, UZ_G_TRACKS, UZ_G_SIDES, UZ_G_STRIPS, UZ_GROUPS };
+enum { UZ_KNOB = 1, UZ_ROW, UZ_KEY, UZ_TRACK, UZ_MUTE, UZ_SOLO, UZ_LEVEL, UZ_CELL, UZ_PAN, UZ_SCROLL, UZ_TAB };   /* (tess_core.h's TESS_ZONE_*) */
+enum { UZ_G_COLS, UZ_G_LIST, UZ_G_KEYS, UZ_G_TRACKS, UZ_G_SIDES, UZ_G_STRIPS, UZ_G_TABS, UZ_GROUPS };
 #define UZ_MAX 48
 typedef struct {
     int16_t x, y, w, h;                                 /* in screen pixels (2 a Mono cell) */
