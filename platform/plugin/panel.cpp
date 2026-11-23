@@ -339,6 +339,12 @@ void Panel::note(const std::string &text)
 
 void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
 {
+    for (int k = 0; k < TESS_KEYS; k++)   // (the keys' jobs on the page: their labels and hover cards)
+    {
+        std::memcpy(key_short[k], v.key_short[k], sizeof key_short[k]);
+        std::memcpy(key_long[k], v.key_long[k], sizeof key_long[k]);
+        key_short[k][sizeof key_short[k] - 1] = key_long[k][sizeof key_long[k] - 1] = 0;
+    }
     zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
     if (expanded() && t2 && t2->w == TESS_TRACKS_W)
         zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
@@ -442,6 +448,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
         else if (v.dim_keys & bit) s = mix(SLIT, 0xFFFFFFFF, 0.08);
         c.rrect(k.cx - sw / 2.0, y + kw * 0.4 + dy, sw, kh - kw * 0.8, sw / 2.0, s);
     }
+    draw_key_labels(px, mix(TRAY, LABEL, 0.55));   // (smaller and dimmer than TESSERA's: the device has none)
 
     // the project files: OPEN, SAVE, and what the last one did
     for (size_t i = 0; i < files.size(); i++)
@@ -1184,6 +1191,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
         }
     }
+    draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
     for (size_t i = 0; i < files.size(); i++)
@@ -1633,6 +1641,17 @@ int Panel::fm1_seg_at(int x) const
     return -1;
 }
 
+// the keys' jobs on this page (tess_view_t.key_short): a tiny label in the Mono face just over each key that has one
+void Panel::draw_key_labels(uint32_t *px, uint32_t col)
+{
+    Canvas c{px, width()};
+    for (const Key &k : keys)
+    {
+        const char *t = key_short[k.k];
+        if (t[0]) c.ptext_c(k.cx, k.cy - kh / 2 - 9, t, 1, col);
+    }
+}
+
 // ---- the screen's zones (tess_view_t.zones): where the page put its values, rows and keys; TRACKS' (EXPANDED)
 int Panel::zone2_at(int x, int y) const
 {
@@ -1692,6 +1711,22 @@ void Panel::draw_hover(uint32_t *px)
         c.box(x, y, w, 2, 0xFFFFD020), c.box(x, y + h - 2, w, 2, 0xFFFFD020);
         c.box(x, y, 2, h, 0xFFFFD020), c.box(x + w - 2, y, 2, h, 0xFFFFD020);
         c.ptext(x + 10, y + 8, b.tip, 2, 0xFFB9B2A0);
+        return;
+    }
+    int ki = zi < 0 && z2 < 0 && bi < 0 && hover_in && drag == NONE && !(native() && menu_open) ? key_at(hover_x, hover_y)
+                                                                                                 : -1;
+    if (ki >= 0 && key_long[keys[ki].k][0])   // a key with a job on this page: its meaning, in a card over it
+    {
+        Canvas c{px, width()};
+        const Key &k = keys[ki];
+        const char *t = key_long[k.k];
+        int w = Canvas::ptext_w(t, 2) + 20, h = 30, x = k.cx - w / 2, y = k.cy - kh / 2 - h - 14;
+        if (x < 8) x = 8;
+        if (x + w > width() - 8) x = width() - 8 - w;
+        c.box(x, y, w, h, 0xFF000000);
+        c.box(x, y, w, 2, 0xFFFFD020), c.box(x, y + h - 2, w, 2, 0xFFFFD020);
+        c.box(x, y, 2, h, 0xFFFFD020), c.box(x + w - 2, y, 2, h, 0xFFFFD020);
+        c.ptext(x + 10, y + 8, t, 2, 0xFFFFD020);
         return;
     }
     if (zi < 0 && z2 < 0) return;

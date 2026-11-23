@@ -708,6 +708,49 @@ int main(int argc, char **argv)
         tess_core_buttons(0);
         CHECK(shifted == held && shifted != mixer, "SHIFT held shows what OCT- held shows (the page's second layer)");
         CHECK(shot(0.4) == mixer, "OCT- let go after a hold: still the page");
+        // the keys' jobs (tess_view_t.key_short / key_long): GLO held, MIXER's keys (M / S, ALL HLD FIL TAP); SEQ held,
+        // the patterns; HOME: the keys play, no labels; the labels drawn over the keys, a key's meaning in a card
+        press(1u << 6, 0.05);   // HOME
+        shot(0.3);
+        int labelled = 0;
+        for (int k = 0; k < TESS_KEYS; k++) labelled += v.key_short[k][0] != 0;
+        CHECK(!labelled, "HOME: the keys play, no labels (%d)", labelled);
+        tess_core_buttons(1u << 5);   // GLO held
+        shot(0.4);
+        CHECK(!std::strcmp(v.key_short[1], "M1") && !std::strcmp(v.key_long[1], "T1 MUTE"), "GLO: F#3 is T1's MUTE (%s, %s)",
+              v.key_short[1], v.key_long[1]);
+        CHECK(!std::strcmp(v.key_short[0], "S1") && !std::strcmp(v.key_short[7], "ALL") && !std::strcmp(v.key_short[11], "FIL"),
+              "GLO: F3 T1's SOLO, C4 ALL, E4 FILL (%s %s %s)", v.key_short[0], v.key_short[7], v.key_short[11]);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10c_tessera_glo_keys.ppm", px);
+        {
+            int lab = 0;   // (dim yellow over F#3, the first black key)
+            for (int yy = 332; yy < 342; yy++)
+                for (int xx = 36; xx < 300; xx++) lab += px[yy * Panel::W + xx] != 0xFF111111u && px[yy * Panel::W + xx] != 0xFF3B3007u;
+            CHECK(lab > 10, "the labels drawn over the keys (%d pixels)", lab);
+        }
+        tess_core_buttons(0);
+        shot(0.4);   // (GLO let go: its page, MIXER, whose keys are GLO's)
+        CHECK(!std::strcmp(v.key_long[3], "T2 MUTE"), "MIXER: G#3 T2's MUTE (%s)", v.key_long[3]);
+        press(1u << 6, 0.05);   // HOME
+        run(q, 0.3);
+        tess_core_buttons(1u << 9);   // SEQ held: the patterns
+        shot(0.4);
+        CHECK(!std::strcmp(v.key_short[0], "P1") && !std::strcmp(v.key_long[12], "PATTERN 8") && !v.key_short[1][0],
+              "SEQ held: F3 P1, F4 PATTERN 8, F#3 nothing (%s %s)", v.key_short[0], v.key_long[12]);
+        q.draw(px.data(), v);
+        q.move(36 + 76 + 12 + (int)(0.5 * ((928 - 76 - 24) / 16)), 332 + 192);   // over F3 (right of OCT+ / OCT-): PATTERN 1
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10d_tessera_seq_keys.ppm", px);
+        {
+            int card = 0;
+            for (int yy = 400; yy < 470; yy++)
+                for (int xx = 20; xx < 360; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+            CHECK(card > 100, "PATTERN 1 in a card over F3 (%d)", card);
+        }
+        q.move(5, 5);
+        tess_core_buttons(0);
+        run(q, 0.2);
         tess_core_key_words(0);
         run(q, 0.2);
     }

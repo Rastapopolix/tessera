@@ -128,6 +128,13 @@ presses those keys for you, so a page behaves the same either way.
 - **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
+**Key labels:** where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
+hovering over the key says it in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M4 mute on the black keys, S1..S4 solo
+while held on the white, then ALL, HOLD, FILL, TAP), SEL held (the key sets the ROOT), SEQ held (PATTERN 1..8), the
+DRUM grid (steps, lanes, ACC, the pages), AWAKE's steps, CHORD USER and ATLAS's PART 4 with SHIFT held, a USER scale
+(each note IN or out) and NAME (the letters, cursor, space, delete). Where the keys just play notes there are none.
+The FM-1 shells show them smaller and dimmer.
+
 **Naming** a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and `- . _ / # +` go
 in at the cursor; Backspace and Delete remove, Left / Right move the cursor, **Enter** is OK and **Esc** cancels. While
 NAME is open the computer keyboard types instead of playing.
