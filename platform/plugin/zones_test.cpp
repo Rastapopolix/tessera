@@ -14,6 +14,7 @@
  *     once), S latches a solo that stays, the wheel on the level turns it; 128 x 64 (Andamento's screen) draws too.
  * usage: tessera-zones-test [tracks.ppm] [mosaic.ppm] (the TRACKS page as a picture, and in MOSAIC) */
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -628,6 +629,69 @@ static void ux_round()   // beta7: a click away, the tempo, TRACKS' double-click
     tess_core_track_select(0);
     tap(B_HOME);
 }
+static void slot_tabs()   // a slot page (FM6's STORE): its family's tabs in the footer, as the pages beside it; the
+{                         // tabs walked by clicks across it
+    bool found = false;
+    for (uint32_t tr = 0; tr < tess_core_tracks() && !found; tr++)
+    {
+        tess_core_track_select(tr);
+        run(5);
+        tap(B_HOME);
+        tap(B_EDIT);
+        int dir = 1;
+        for (int i = 0; i < 20 && !found; i++)
+        {
+            tess_core_view(&v);
+            bool slots = false;
+            for (uint32_t z = 0; z < v.zone_count; z++)
+                slots |= v.zones[z].kind == TESS_ZONE_ROW && v.zones[z].name[0] == 'F' && v.zones[z].name[1] == '0';
+            if (slots)
+            {
+                found = true;
+                CHECK(count(TESS_ZONE_TAB) >= 3, "FM6's STORE: the EDIT pages' tabs in its footer (%d)", count(TESS_ZONE_TAB));
+                if (const char *o = std::getenv("ZONES_SHOT"))   // (a look at it: ZONES_SHOT=file.ppm)
+                    if (FILE *f = std::fopen(o, "wb"))
+                    {
+                        tess_screen_t sc;
+                        tess_core_screen(&sc);
+                        std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+                        for (uint32_t p = 0; p < sc.w * sc.h; p++)
+                        {
+                            uint16_t c = sc.pixels[p];
+                            unsigned char rgb[3] = {(unsigned char)((c >> 11) << 3), (unsigned char)(((c >> 5) & 63) << 2),
+                                                    (unsigned char)((c & 31) << 3)};
+                            std::fwrite(rgb, 1, 3, f);
+                        }
+                        std::fclose(f);
+                    }
+                int next = -1;
+                for (uint32_t z = 0; z < v.zone_count; z++)
+                    if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == 1) next = (int)z;
+                std::string want = next >= 0 ? v.zones[next].value : "";
+                act(next, TESS_ZA_CLICK, 0, 40);
+                int here = -1;
+                for (uint32_t z = 0; z < v.zone_count; z++)
+                    if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == 0) here = (int)z;
+                CHECK(next >= 0 && here >= 0 && want == v.zones[here].value, "from STORE, the next tab clicked: %s",
+                      want.c_str());
+                break;
+            }
+            int next = -1;   // (the next page that way: its tab; at the family's end, back the other way)
+            for (int pass = 0; pass < 2 && next < 0; pass++)
+            {
+                for (uint32_t z = 0; z < v.zone_count; z++)
+                    if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == dir) next = (int)z;
+                if (next < 0) dir = -dir;
+            }
+            if (next < 0) break;
+            act(next, TESS_ZA_CLICK, 0, 40);
+        }
+    }
+    CHECK(found, "an FM6 track's STORE page");
+    tess_core_track_select(0);
+    run(5);
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -641,6 +705,7 @@ int main(int argc, char **argv)
     tabs();
     help_close();
     ux_round();
+    slot_tabs();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
