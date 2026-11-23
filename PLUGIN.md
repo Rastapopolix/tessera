@@ -126,6 +126,7 @@ presses those keys for you, so a page behaves the same either way.
 - **[** and **]**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
 - **Shift** (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).
 - **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
+- **F1** (Tessera's look): **?**, the help card of the knob or row under the cursor.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
 **Key labels:** where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
@@ -146,7 +147,7 @@ To leave every key to the DAW, set **KEYS** to OFF in Smalti's menu (it applies 
 **Help:** right-click a knob's column or a list's row on the screen for its help card (what it does; hovering gives
 its name and value). The card stays until you click: turn another knob meanwhile for that one's card, and the wheel
 over a long card scrolls it. The **?** button beside OK opens KNOB 1's card the same way (turn a knob for its own);
-press it again to close. On the FM-1, hold ARP and turn a knob.
+press it again to close (**F1** does the same). On the FM-1, hold ARP and turn a knob.
 
 **Button combos with the mouse:** right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
 as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,

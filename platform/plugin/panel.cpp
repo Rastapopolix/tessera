@@ -676,10 +676,11 @@ bool Panel::key(int code, bool down)
     if (code == 0x1A) b = B_OCTDN;
     if (code == 0x1B) b = B_OCTUP;
     if (native())   // TESSERA's shell: Shift its SHIFT (held while the key is; not while NAME takes capitals), Page Up /
-    {               // Page Down its OCT+ / OCT-
+    {               // Page Down its OCT+ / OCT-, F1 its ?
         if ((code == 0x2A || code == 0x36) && (!typing_ || !down)) b = BIT_SHIFT;
         if (code == KEY_PGUP) b = BIT_OCT_UP;
         if (code == KEY_PGDN) b = BIT_OCT_DOWN;
+        if (code == 0x3B) b = BIT_HELP;   // F1: ?
     }
     if (code == 0x0F && banked())   // Tab: the other bank (T1 or T5)
     {

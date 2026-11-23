@@ -77,7 +77,7 @@ class Panel
     /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
      * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
      * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (TESSERA's shell: BACK, OK;
-     * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-; each held while its key is), up / down SELECT, left / right
+     * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-, F1 its ?; each held while its key is), up / down SELECT, left / right
      * ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
     enum { KEY_UP = 0x148, KEY_PGUP = 0x149, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150, KEY_PGDN = 0x151 };
     bool key(int code, bool down);

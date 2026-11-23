@@ -645,6 +645,9 @@ int main(int argc, char **argv)
         q.key(Panel::KEY_PGDN, true);
         CHECK(q.input.buttons == 1u << 17, "Page Down: OCT- (%#x)", q.input.buttons);
         q.key(Panel::KEY_PGDN, false);
+        q.key(0x3B, true);
+        CHECK(q.input.buttons == 1u << 19, "F1: ? (%#x)", q.input.buttons);
+        q.key(0x3B, false);
         CHECK(q.input.buttons == 0, "every key up (%#x)", q.input.buttons);
         int shot_n = 0;
         auto shot = [&](double t) {
