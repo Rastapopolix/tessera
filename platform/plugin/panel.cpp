@@ -240,7 +240,7 @@ void Panel::layout()
     const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
     if (n)   // TESSERA's shell: SHIFT, BACK and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
     {        // and a third row of the grid, the octave a step down and up (the FM-1's OCT- / OCT+ on Stage)
-        buttons.push_back({50, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});   // (Theo:
+        buttons.push_back({50, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "CLICK: THE KNOBS' SECOND SET, AGAIN: OFF"});   // (Theo:
         buttons.push_back({127, 258, 66, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});        // SHIFT, BACK, OK)
         buttons.push_back({204, 258, 66, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
         for (int i = 0; i < 6; i++)
@@ -815,6 +815,13 @@ bool Panel::down(int x, int y)
     {
         drag = NONE;
         latch_buttons &= ~(1u << buttons[drag_i].bit);
+        merge_held();
+        return true;
+    }
+    if (drag_i >= 0 && buttons[drag_i].bit == BIT_SHIFT)   // SHIFT: a click latches it (the mouse then free for a
+    {                                                      // knob), a second lets go (above)
+        drag = NONE;
+        latch_buttons |= 1u << BIT_SHIFT;
         merge_held();
         return true;
     }
