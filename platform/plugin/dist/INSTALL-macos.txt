@@ -1,28 +1,28 @@
-Smalti VERSION for macOS (Apple silicon and Intel, macOS 10.15 or later): Tessera as a plugin
+Cosmati VERSION for macOS (Apple silicon and Intel, macOS 10.15 or later): Tessera as a plugin
 ================================================================================
 
 In this folder:
-  Smalti.clap        the CLAP instrument (Bitwig, Reaper, ...)
-  Smalti.vst3        the VST3 instrument (Ableton Live, Cubase, ...)
-  Smalti.component   the Audio Unit (Logic Pro, GarageBand, MainStage)
-  Smalti.app         the standalone app: no DAW needed
+  Cosmati.clap        the CLAP instrument (Bitwig, Reaper, ...)
+  Cosmati.vst3        the VST3 instrument (Ableton Live, Cubase, ...)
+  Cosmati.component   the Audio Unit (Logic Pro, GarageBand, MainStage)
+  Cosmati.app         the standalone app: no DAW needed
 
 Each runs natively on Apple silicon and on Intel Macs.
 
 Install
 -------
 1. Copy each plugin to your own Plug-Ins folders (in Finder: Go > Go to Folder..., paste the path):
-     Smalti.clap       to  ~/Library/Audio/Plug-Ins/CLAP/
-     Smalti.vst3       to  ~/Library/Audio/Plug-Ins/VST3/
-     Smalti.component  to  ~/Library/Audio/Plug-Ins/Components/
-   (Make the CLAP folder if it isn't there.) Smalti.app can go in Applications.
+     Cosmati.clap       to  ~/Library/Audio/Plug-Ins/CLAP/
+     Cosmati.vst3       to  ~/Library/Audio/Plug-Ins/VST3/
+     Cosmati.component  to  ~/Library/Audio/Plug-Ins/Components/
+   (Make the CLAP folder if it isn't there.) Cosmati.app can go in Applications.
 2. SIGNING (see below).
-3. In your DAW, rescan the plugins. Smalti is an instrument, under "Rastapopolix". Logic finds the
-   Audio Unit under AU Instruments > Rastapopolix > Smalti; if it doesn't, restart Logic, or the Mac.
+3. In your DAW, rescan the plugins. Cosmati is an instrument, under "Rastapopolix". Logic finds the
+   Audio Unit under AU Instruments > Rastapopolix > Cosmati; if it doesn't, restart Logic, or the Mac.
 
-Until beta 4 Smalti was called Tessera: before step 2, delete Tessera.clap, Tessera.vst3 and
+Until beta 4 Cosmati was called Tessera: before step 2, delete Tessera.clap, Tessera.vst3 and
 Tessera.component from those folders (and Tessera.app), so the DAW doesn't find it twice. Songs
-saved with them open in Smalti.
+saved with them open in Cosmati.
 
 Signing: "damaged" or "can't be verified"
 -----------------------------------------
@@ -33,5 +33,5 @@ What's in this beta, and what isn't yet: BETA_NOTES.md in this folder.
 Found a problem? https://github.com/Rastapopolix/tessera/issues (the plugin's version, your DAW and its
 version, macOS' version, Apple silicon or Intel, the steps, what you expected and what happened).
 
-Smalti (the Tessera firmware as a plugin) is free software under the GPL-3.0 (LICENSE). Credits and the licences of the parts it uses:
+Cosmati (the Tessera firmware as a plugin) is free software under the GPL-3.0 (LICENSE). Credits and the licences of the parts it uses:
 LICENSING.md.

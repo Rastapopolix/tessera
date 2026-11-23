@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* Tessera's presets in a VST3 host's browser, as a minimal VST3 host over the built Smalti.vst3 (Linux), with HOME
+/* Tessera's presets in a VST3 host's browser, as a minimal VST3 host over the built Cosmati.vst3 (Linux), with HOME
  * in a folder of its own. clap-wrapper publishes the CLAP preset discovery (presets.cpp) as a program list on the
  * root unit, with a program-change parameter that loads one:
  *   - the root unit has a program list; once the plugin is active and the crawl is done it holds the eight demos and
@@ -8,7 +8,7 @@
  *   - its parameter is a program-change list with a step per preset;
  *   - choosing a preset through that parameter loads it: two different demos leave the parameters different, the
  *     same demo twice leaves them the same.
- * usage: tessera-vst3-presets-test path/to/Smalti.vst3 path/to/a.tsp */
+ * usage: tessera-vst3-presets-test path/to/Cosmati.vst3 path/to/a.tsp */
 #include <dlfcn.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 {
     if (argc < 3)
     {
-        std::fprintf(stderr, "usage: tessera-vst3-presets-test path/to/Smalti.vst3 path/to/a.tsp\n");
+        std::fprintf(stderr, "usage: tessera-vst3-presets-test path/to/Cosmati.vst3 path/to/a.tsp\n");
         return 2;
     }
     char tmpl[] = "/tmp/tessera-vst3-presets-XXXXXX";
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     mkdir(user.c_str(), 0755);
     copy_file(argv[2], user + "/mine.tsp");
 
-    std::string so = std::string(argv[1]) + "/Contents/x86_64-linux/Smalti.so";
+    std::string so = std::string(argv[1]) + "/Contents/x86_64-linux/Cosmati.so";
     void *lib = dlopen(so.c_str(), RTLD_NOW | RTLD_LOCAL);
     CHECK(lib, "dlopen %s: %s", so.c_str(), dlerror());
     if (!lib) return 1;

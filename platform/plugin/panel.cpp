@@ -1092,8 +1092,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             c.box(x, y, 8, 8, T_YEL);
             if (!(ty == 0 && tx == 2)) c.box(x + 2, y + 2, 4, 4, T_BODY);
         }
-    c.ptext(72, 14, "SMALTI", 3, T_YEL);   // (the plugin's name beside Tessera's mark)
-    int ax = 72 + Canvas::ptext_w("SMALTI", 3) + 10;
+    c.ptext(72, 14, "COSMATI", 3, T_YEL);   // (the plugin's name beside Tessera's mark)
+    int ax = 72 + Canvas::ptext_w("COSMATI", 3) + 10;
     c.box(ax, 22, 12, 2, T_YEL);
     c.box(ax + 2, 24, 8, 2, T_YEL);
     c.box(ax + 4, 26, 4, 2, T_YEL);
@@ -1310,7 +1310,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         }
         else
         {
-            std::string ver = version.empty() ? "SMALTI" : version;
+            std::string ver = version.empty() ? "COSMATI" : version;
             for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
             c.ptext(right - Canvas::ptext_w(ver.c_str(), 2), y + 11, ver.c_str(), 2, T_WORD);
         }
