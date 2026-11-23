@@ -625,6 +625,27 @@ int main(int argc, char **argv)
         q.down(204 + 33, 258 + 17);
         CHECK(q.input.buttons == 1u << 13, "OK is the FM-1's OCT+ (%#x)", q.input.buttons);
         q.up(0, 0);
+        // the computer keyboard: Shift SHIFT (held only), [ ] BACK / OK, Page Up / Page Down OCT+ / OCT-
+        q.key(0x2A, true);
+        CHECK(q.input.buttons == 1u << 16, "Shift: SHIFT held (%#x)", q.input.buttons);
+        q.key(0x2A, false);
+        CHECK(q.input.buttons == 0, "Shift let go: SHIFT too, never latched (%#x)", q.input.buttons);
+        q.key(0x36, true);
+        CHECK(q.input.buttons == 1u << 16, "right Shift: SHIFT (%#x)", q.input.buttons);
+        q.key(0x36, false);
+        q.key(0x1A, true);
+        CHECK(q.input.buttons == 1u << 12, "[: BACK (%#x)", q.input.buttons);
+        q.key(0x1A, false);
+        q.key(0x1B, true);
+        CHECK(q.input.buttons == 1u << 13, "]: OK (%#x)", q.input.buttons);
+        q.key(0x1B, false);
+        q.key(Panel::KEY_PGUP, true);
+        CHECK(q.input.buttons == 1u << 18, "Page Up: OCT+ (%#x)", q.input.buttons);
+        q.key(Panel::KEY_PGUP, false);
+        q.key(Panel::KEY_PGDN, true);
+        CHECK(q.input.buttons == 1u << 17, "Page Down: OCT- (%#x)", q.input.buttons);
+        q.key(Panel::KEY_PGDN, false);
+        CHECK(q.input.buttons == 0, "every key up (%#x)", q.input.buttons);
         int shot_n = 0;
         auto shot = [&](double t) {
             run(q, t);
