@@ -311,6 +311,7 @@ class GuiX11 : public Gui
             link->input(panel.input);
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();

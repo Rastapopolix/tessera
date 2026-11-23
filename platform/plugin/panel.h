@@ -26,6 +26,7 @@ struct PanelInput
     std::vector<ZoneAct> zones, tzones;
     std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
     bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
+    bool away = false;                // a click on nothing while a picker, sheet or help card is open: tess_core_away
     bool changed = false;
 };
 
@@ -76,7 +77,7 @@ class Panel
     uint32_t latched_buttons() const { return latch_buttons; }
     /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
      * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
-     * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (TESSERA's shell: BACK, OK;
+     * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] and Esc / Enter OCT- OCT+ (TESSERA's shell: BACK, OK;
      * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-, F1 its ?; each held while its key is), up / down SELECT, left / right
      * ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
     enum { KEY_UP = 0x148, KEY_PGUP = 0x149, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150, KEY_PGDN = 0x151 };
@@ -85,6 +86,11 @@ class Panel
     // Enter, Esc, the arrows, Delete): while NAME is open it goes to the name (true: the panel's, not a key)
     bool text(uint32_t ch);
     bool typing() const { return typing_; }
+    /* the standalone app (no DAW: tessera_clap.cpp's free-running host): Space plays and stops, Ctrl+O / Ctrl+S (Cmd on
+     * a Mac) open and save; in a DAW those keys stay the DAW's */
+    void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)
+    bool standalone() const { return standalone_; }
+    bool shortcut(char c);   // 'O' or 'S' with Ctrl / Cmd: true if taken (then the window's files())
     bool release_keys();
     /* KEYS (TESSERA's menu): the computer keyboard plays Tessera (on), or every key is left to the DAW (off). A click
      * asks (take_keys_request: 1 on, 0 off, -1 none); the window remembers it */
@@ -240,7 +246,11 @@ class Panel
     // a drag
     enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
-    bool zone_still = false;   // a value's or a text's zone pressed and not turned yet: its release is a click
+    bool zone_still = false;
+    bool closable_ = false;
+    bool standalone_ = false;
+    int row2_last = -1;       // (TRACKS: the row clicked last, and when: a second click soon is a double-click)
+    double row2_t = 0;   // (tess_view_t.closable: a click on nothing closes what is open)   // a value's or a text's zone pressed and not turned yet: its release is a click
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)
     int master_mine = -1;   // MASTER as this panel last set it, while it turns and a moment after (-1: none): the next
                             // turn goes on from here, not from the view, which is a block or two behind (a fast drag

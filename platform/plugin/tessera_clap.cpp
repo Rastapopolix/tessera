@@ -237,6 +237,9 @@ struct Tessera : GuiLink
         std::lock_guard<std::mutex> g(input_lock);
         pending.buttons = in.buttons;
         pending.keys = in.keys;
+        pending.key_words = in.key_words;
+        pending.away = pending.away || in.away;
+        in.away = false;
         if (in.master >= 0)
             pending.master = in.master;
         in.master = -1;
@@ -259,6 +262,7 @@ struct Tessera : GuiLink
     }
 
     // gui.h: the project files (the host's main thread)
+    bool standalone() override { return free_started && !transport_known; }
     std::string open_file(const std::string &path) override;
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
@@ -1174,6 +1178,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             for (uint32_t ch : pi.text)   // typed into NAME
                 t->core->text(ch);
             pi.text.clear();
+            if (pi.away)               // a click away: a picker, a sheet or a pinned help card closed
+                t->core->away();
+            pi.away = false;
             pi.changed = false;
         }
     }

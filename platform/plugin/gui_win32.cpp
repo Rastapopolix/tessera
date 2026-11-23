@@ -115,6 +115,12 @@ class GuiWin32 : public Gui
         case WM_KEYUP:
         {
             // the computer keyboard (panel.h key): by scan code, as the web simulator does; Ctrl / Alt are the host's
+            if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 && (wp == 'O' || wp == 'S') &&
+                g->panel.shortcut((char)wp))   // (the standalone app: Ctrl+O / Ctrl+S, OPEN / SAVE)
+            {
+                g->files();
+                return 0;
+            }
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;
@@ -321,6 +327,7 @@ class GuiWin32 : public Gui
     {
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
         gui_size_tick(panel, link);
         if (panel.width() != pw)   // (MODE, or a shell picked: the window follows)

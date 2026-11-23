@@ -39,6 +39,8 @@ int scan_code(unsigned short kc)
     case 0x74: return Panel::KEY_PGUP;
     case 0x79: return Panel::KEY_PGDN;
     case 0x7A: return 0x3B;   // F1
+    case 0x35: return 0x01;   // Esc
+    case 0x24: return 0x1C;   // Return
     }
     return kc < sizeof SC ? SC[kc] : 0;
 }
@@ -218,6 +220,7 @@ class GuiMac : public Gui
     {
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
         gui_size_tick(panel, link);
         if (panel.width() != pw)   // (MODE, or a shell picked: the view follows)
@@ -296,6 +299,13 @@ void v_wheel(id self, SEL, NSEvent *e)
 bool v_key(id self, NSEvent *e, bool down)
 {
     GuiMac *g = gui_of(self);
+    if (g && down && (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl |
+                                         NSEventModifierFlagOption)) == NSEventModifierFlagCommand &&
+        (e.keyCode == 0x1F || e.keyCode == 0x01) && g->panel.shortcut(e.keyCode == 0x1F ? 'O' : 'S'))
+    {   // (the standalone app: Cmd+O / Cmd+S, OPEN / SAVE)
+        g->files();
+        return true;
+    }
     if (!g || (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)))
         return false;   // (the host's)
     if (down && g->panel.typing())   // NAME open: the character the layout gives, typed
