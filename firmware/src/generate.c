@@ -44,11 +44,11 @@
 
 /* the styles, in LEMONADE SANDWICH's menu order (rnd.c's codes; 0 its OFF) */
 enum { RND_OFF, RND_FALL, RND_TIDE, RND_WOZZA, RND_ORBIT, RND_LOOPS, RND_HALO, RND_MIRROR, RND_PHASE, RND_CRATE,
-       RND_COSMIC, RND_STATIC, RND_FORGE, RND_CHAOS, RND_FRACTURED, RND_FREE, RND_MODES };
+       RND_COSMIC, RND_STATIC, RND_FORGE, RND_CHAOS, RND_FRACTURED, RND_FREE, RND_MAITREYA, RND_MODES };
 /* (on screen: FALL, TIDE and PHASE are AUTUMN, SHORE and INTERLOCK; RND (RND_FREE, each track's role free) is WILD) */
 static const char *const GEN_STYLE_NAME[RND_MODES - 1u] = {
     "AUTUMN", "SHORE", "WOZZA", "ORBIT", "LOOPS", "HALO", "MIRROR", "INTERLOCK", "CRATE", "COSMIC", "STATIC", "FORGE",
-    "CHAOS", "FRACTURED", "WILD"};
+    "CHAOS", "FRACTURED", "WILD", "MAITREYA"};
 static uint8_t rnd_style = RND_FALL;                /* the style being made (rnd.c: MENU > REC BUTTON) */
 static uint32_t rnd_setting(void) { return rnd_style; }
 
@@ -4055,6 +4055,96 @@ static void rnd_tempo(void)
     else if (rnd_orbit) pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(100, 120));
     else if (rnd_setting() == RND_FREE) pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(80, 130));
 }
+/* ------------------------------------------------------------ the plugin's engines, tracks 5..8 --- */
+/* The engines the FM-1 has none of (PHASE, SID, MACRO) come into a piece by their presets only, a role's few picked
+ * by ear, never a patch rolled (Theo 2026-11-23: musical without fine tuning by hand): now and then in place of a
+ * track's sound, each style its engines and how often (gen_new_engines), and as the sound of tracks 5..8, each the
+ * alternate of a track 1..4: its part copied with a SEED of its own, taking turns with it through ENTRIES (ROLE TURNS,
+ * entries.c), so a piece has more sounds over its length and never more parts at once (gen_alternates) */
+enum { GC_BASS, GC_LEAD, GC_PAD, GC_PLUCK, GC_NONE };
+enum { GE_PHASE = 1u, GE_SID = 2u, GE_MACRO = 4u };
+static const struct { uint8_t e, cls; const char *name; } GEN_COLOUR[] = {
+    {GE_PHASE, GC_BASS, "PD BASS"}, {GE_PHASE, GC_BASS, "DEEP"},
+    {GE_PHASE, GC_LEAD, "MELLOW HN"}, {GE_PHASE, GC_LEAD, "REED ORG"},
+    {GE_PHASE, GC_PAD, "GLASS PAD"}, {GE_PHASE, GC_PAD, "DUSK"}, {GE_PHASE, GC_PAD, "ENSEMBLE"}, {GE_PHASE, GC_PAD, "CHOIR"},
+    {GE_PHASE, GC_PLUCK, "PLUCK"}, {GE_PHASE, GC_PLUCK, "TINE"}, {GE_PHASE, GC_PLUCK, "CHIME"},
+    {GE_PHASE, GC_PLUCK, "HARP"}, {GE_PHASE, GC_PLUCK, "MALLET"},
+    {GE_SID, GC_BASS, "RUBBER BASS"}, {GE_SID, GC_BASS, "SUB PULSE"},
+    {GE_SID, GC_LEAD, "PULSE LEAD"}, {GE_SID, GC_LEAD, "8580 LEAD"},
+    {GE_SID, GC_PAD, "PWM PAD"}, {GE_SID, GC_PAD, "DREAM CHIP"}, {GE_SID, GC_PAD, "8580 PAD"},
+    {GE_SID, GC_PLUCK, "ARP PLUCK"}, {GE_SID, GC_PLUCK, "C64 KEYS"}, {GE_SID, GC_PLUCK, "BELL RING"},
+    {GE_MACRO, GC_BASS, "VCF BASS"}, {GE_MACRO, GC_BASS, "FM BASS"},
+    {GE_MACRO, GC_LEAD, "SAW LEAD"},
+    {GE_MACRO, GC_PAD, "VA PAD"}, {GE_MACRO, GC_PAD, "ORGAN HARM"},
+    {GE_MACRO, GC_PLUCK, "PLUCK"}, {GE_MACRO, GC_PLUCK, "MALLET"}, {GE_MACRO, GC_PLUCK, "SOFT BELL"},
+    {GE_MACRO, GC_PLUCK, "FM BELL"},
+};
+/* each style's: the engines it may take, how often (%, at VARIATION 100) a track 1..4 takes one, the alternates on
+ * tracks 5..8 at most (only where ENTRIES moves the parts: the still styles keep their four) */
+static const struct { uint8_t eng, swap, alts; } GEN_NEW[RND_MODES - 1u] = {
+    /* AUTUMN    */ {0, 0, 0},                      /* (TRIO's triangles on every track, as the roll made it) */
+    /* SHORE     */ {GE_PHASE | GE_MACRO, 15, 2},
+    /* WOZZA     */ {GE_PHASE, 15, 2},
+    /* ORBIT     */ {GE_PHASE | GE_MACRO, 20, 2},
+    /* LOOPS     */ {GE_PHASE | GE_MACRO, 20, 0},
+    /* HALO      */ {GE_PHASE | GE_MACRO, 15, 0},
+    /* MIRROR    */ {GE_PHASE, 10, 0},
+    /* INTERLOCK */ {GE_MACRO, 10, 0},
+    /* CRATE     */ {GE_PHASE, 15, 0},
+    /* COSMIC    */ {GE_PHASE | GE_SID | GE_MACRO, 25, 3},
+    /* STATIC    */ {GE_SID, 25, 0},
+    /* FORGE     */ {GE_SID, 15, 2},
+    /* CHAOS     */ {GE_SID, 25, 1},                /* (busy: one alternate at most) */
+    /* FRACTURED */ {GE_SID | GE_PHASE, 20, 1},
+    /* RND       */ {GE_PHASE | GE_SID | GE_MACRO, 30, 3},
+    /* MAITREYA  */ {0, 0, 0},                      /* (its own sounds: rnd_maitreya) */
+};
+static uint32_t gen_cls(uint32_t tr)                /* a track's role as a kind of sound; GC_NONE: left as rolled */
+{
+    switch (rnd_role_of[tr]) {
+    case RND_ROLE_BASS: return GC_BASS;
+    case RND_ROLE_CHORDS: case RND_ROLE_DRONE: return GC_PAD;
+    case RND_ROLE_OSTI: return GC_PLUCK;
+    case RND_ROLE_MELODY: case RND_ROLE_COUNTER: case RND_ROLE_FREE: return rnd_pct(50) ? GC_LEAD : GC_PLUCK;
+    default: return GC_NONE;                        /* (percussion, glitch, noise; HALO's T-voice and canon: theirs) */
+    }
+}
+static uint32_t gen_engi(uint32_t g) { return g == GE_PHASE ? ENGI_PHASE : g == GE_SID ? ENGI_SID : ENGI_MACRO; }
+static int gen_same(const char *a, const char *b)
+{
+    while (*a && *a == *b) a++, b++;
+    return *a == *b;
+}
+/* track tr on a preset of kind cls from the engines in mask (one drawn among those this build has): 1 loaded */
+static int gen_colour(uint32_t tr, uint32_t mask, uint32_t cls)
+{
+    uint8_t pick[NELEM(GEN_COLOUR)];
+    uint32_t n = 0, k, i, e;
+    if (cls == GC_NONE || !mask) return 0;
+    for (k = 0; k < NELEM(GEN_COLOUR); k++)
+        if ((GEN_COLOUR[k].e & mask) && GEN_COLOUR[k].cls == cls && eng_ok(gen_engi(GEN_COLOUR[k].e)))
+            pick[n++] = (uint8_t)k;
+    if (!n) return 0;
+    k = pick[rnd_next() % n];
+    e = gen_engi(GEN_COLOUR[k].e);
+    for (i = 0; i < ENGINES[e]->npresets; i++)
+        if (gen_same(eng_preset(ENGINES[e], i)->name, GEN_COLOUR[k].name)) {
+            engine_load_of(&trk[tr], e, i);
+            return 1;
+        }
+    return 0;
+}
+/* tracks 1..4: now and then a sound from the plugin's engines (after the style's sounds, before its levels) */
+static void gen_new_engines(void)
+{
+    uint32_t s = rnd_style - 1u, tr;
+    if (s >= RND_MODES - 1u || !GEN_NEW[s].eng) return;
+    undo_depth++;
+    for (tr = 0; tr < RND_NT; tr++)
+        if (rnd_pct(GEN_NEW[s].swap)) gen_colour(tr, GEN_NEW[s].eng, gen_cls(tr));
+    undo_depth--;
+}
+
 static void rnd_roll(void)                           /* (rnd.c's, from a new project and the seed) */
 {
     uint32_t tr, fm6s = 0, phys = 0, oracles = 0, chords = 0;
@@ -4123,6 +4213,7 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
                 else rnd_sound(tr, &fm6s, &phys, &oracles, role[tr]);
     }
     undo_depth--;
+    gen_new_engines();                              /* (the plugin's engines, now and then: GEN_NEW) */
     if (rnd_wozza) rnd_wozza_registers(role);
     else if (rnd_halo) rnd_halo_registers(role);
     else if (rnd_mirror) rnd_mirror_registers(role);
@@ -4242,6 +4333,7 @@ static const struct {
     /* CHAOS     */ {40, 2, 45, 0, 20, {50, 70, 90, 100, 60, 95, 100, 40}},
     /* FRACTURED */ {45, 2, 45, 10, 20, {40, 70, 50, 90, 40, 100, 70, 30}},
     /* RND       */ {30, 2, 30, 0, 30, {30, 50, 70, 85, 90, 75, 50, 25}},
+    /* MAITREYA  */ {0, 2, 0, 0, 0, {50, 50, 50, 50, 50, 50, 50, 50}},     /* (still: the loops are the piece) */
 };
 static uint32_t gen_et_role(uint32_t tr)            /* rnd.c's role -> ENTRIES' ROLE (entries.c ET_*) */
 {
@@ -4273,6 +4365,134 @@ static void generate_layers(void)
         rnd_tx(tr, TX_ET_ROLE, (int32_t)gen_et_role(tr));
         if (pid_get(PID_TESS(TX_EV_EVERY), tr)) rnd_tx(tr, TX_SD_GRAVITY, GEN_LF[s].gravity);
     }
+}
+
+/* ------------------------------------------------------------ GENERATE: tracks 5..8, the alternates --- */
+/* track dst a copy of src's part: every per-track setting (the central IDs, pid_count / pid_at), its steps */
+static void gen_alt_copy(uint32_t dst, uint32_t src)
+{
+    uint32_t i, n = pid_count();
+    for (i = 0; i < n; i++) {
+        const pid_entry_t *e = pid_at(i);
+        if (!(e->flags & PID_F_TRACK) || (e->flags & (PID_F_ACTION | PID_F_DEVICE))) continue;
+        pid_set(e->pid, dst, pid_get(e->pid, src));
+    }
+    memcpy(trk[dst].step, trk[src].step, sizeof trk[src].step);
+}
+/* up to GEN_NEW's alts (VARIATION: how many) of the tracks Entries moves (BASS, HARMONY, MELODY, not a source others
+ * follow) get an alternate four above: the same part, a SEED of its own, a sound from the plugin's engines (the
+ * style's, else any), ROLE TURNS (entries.c): the two take turns, a section each as drawn, the track 1..4 first */
+#if TESSERA_TRACKS > 4
+static void gen_alternates(void)
+{
+    uint32_t s = rnd_style - 1u, most, n, k, nc = 0, tr;
+    uint8_t cand[RND_NT];
+    if (s >= RND_MODES - 1u || NTRK < 8u) return;
+    most = GEN_NEW[s].alts;
+    if (!most || !pid_get(PID_TESS(TX_ET_AMOUNT), 0)) return;
+    for (tr = 0; tr < RND_NT; tr++) {
+        int32_t r = pid_get(PID_TESS(TX_ET_ROLE), tr);
+        if ((r == ET_BASS || r == ET_HARMONY || r == ET_MELODY) && trk[tr].eng_req != ENGI_DRUM) cand[nc++] = (uint8_t)tr;
+    }
+    for (k = nc; k > 1u; k--) {                     /* (shuffled: which ones, from the seed) */
+        uint32_t j = rnd_next() % k;
+        uint8_t x = cand[k - 1u];
+        cand[k - 1u] = cand[j], cand[j] = x;
+    }
+    n = ((uint32_t)rnd_rr(1, (int32_t)most) * rnd_var + 50u) / 100u;
+    if (n > nc) n = nc;
+    undo_depth++;
+    for (k = 0; k < n; k++) {
+        uint32_t src = cand[k], dst = src + 4u, cls = gen_cls(src);
+        if (cls == GC_NONE) cls = rnd_pct(50) ? GC_PAD : GC_PLUCK;
+        gen_alt_copy(dst, src);
+        if (!gen_colour(dst, GEN_NEW[s].eng ? GEN_NEW[s].eng : GE_PHASE | GE_SID | GE_MACRO, cls) &&
+            !gen_colour(dst, GE_PHASE | GE_SID | GE_MACRO, cls))
+            engine_load_of(&trk[dst], trk[src].eng_req, trk[src].preset);   /* (none in this build: the same sound) */
+        rnd_tx(dst, TX_EV_SEED, rnd_seed_pick());
+        rnd_tx(dst, TX_ET_ROLE, ET_TURNS);
+        rnd_tx(dst, TX_ET_ORDER, 0);
+    }
+    undo_depth--;
+}
+#else
+#define gen_alternates() ((void)0)                    /* (four tracks: none) */
+#endif
+
+/* ------------------------------------------------------------ GENERATE: MAITREYA --- */
+/* After the loop players (Theo 2026-11-23: "Buddha Machine type compositions"; the name his): four short loops of a
+ * few notes, each a length of its own (TURING locked, PROB 0: 3, 4, 5, 7 .. steps), so they drift against each other
+ * and never quite come round together; slow (56..72 BPM), a pentatonic or Japanese scale, soft pads and bells from
+ * PHASE and MACRO (TRIO where neither is built), long notes and releases, the reverb deep, the echo faint; ENTRIES,
+ * the arc and EVOLVE off: it just hangs there */
+static uint32_t gen_scale_named(const char *nm)
+{
+    uint32_t i;
+    for (i = 0; i < NELEM(N_SCALE); i++)
+        if (gen_same(N_SCALE[i], nm)) return i;
+    return 5u;                                      /* (PEN) */
+}
+static void rnd_maitreya(void)
+{
+    static const char *const SCL[] = {"PEN", "MPEN", "YO", "MINYO"};
+    static const uint8_t SW[] = {4, 3, 3, 2};
+    static const uint8_t LENS[] = {3, 4, 5, 6, 7, 9};
+    static const int8_t TRN[RND_NT] = {-12, 0, 0, 12};
+    uint8_t lens[NELEM(LENS)], code[NELEM(SCL)];
+    uint32_t tr, k, root, scale;
+    rnd_state = rnd_seed ? rnd_seed : 0x2545F491u;
+    for (k = 0; k < NELEM(SCL); k++) code[k] = (uint8_t)k;
+    scale = gen_scale_named(SCL[rnd_pick(code, SW, NELEM(SCL))]);
+    root = (uint32_t)rnd_rr(0, 11);
+    memcpy(lens, LENS, sizeof lens);
+    for (k = NELEM(lens); k > 1u; k--) {            /* (four lengths apart, from the seed) */
+        uint32_t j = rnd_next() % k;
+        uint8_t x = lens[k - 1u];
+        lens[k - 1u] = lens[j], lens[j] = x;
+    }
+    rnd_tx(0, TX_KEY_LINK, 1);
+    undo_depth++;
+    for (tr = 0; tr < RND_NT; tr++) {
+        uint32_t cls = tr == 0u ? GC_PAD : tr == RND_NT - 1u ? (rnd_pct(50) ? GC_PAD : GC_PLUCK) : GC_PLUCK;
+        rnd_role_of[tr] = (uint8_t)(tr == 0u ? RND_ROLE_DRONE : RND_ROLE_MELODY);
+        if (!gen_colour(tr, GE_PHASE | GE_MACRO, cls)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
+        rnd_tp(tr, P_SCALE, (int32_t)scale);
+        rnd_tp(tr, P_ROOT, (int32_t)root);
+        rnd_tp(tr, P_QUANT, Q_WHITE);
+        rnd_tp(tr, P_TRANS, TRN[tr] + (tr == 2u && rnd_pct(40) ? 12 : 0));
+        rnd_tp(tr, P_SDIV, tr == 0u ? 7 : rnd_pct(70) ? 0 : 6);   /* (the drone a bar a note; the loops 1/4 or 1/2) */
+        rnd_tp(tr, P_ATK, cls == GC_PAD ? rnd_rr(20, 50) : rnd_rr(0, 10));
+        rnd_tp(tr, P_REL, rnd_rr(90, 120));
+        rnd_tp(tr, P_FXSEND, rnd_rr(70, 110));
+        rnd_tx(tr, TX_MODE, TESS_ENG_TURING);
+        rnd_tx(tr, TX_TUR_LEN, tr == 0u ? rnd_rr(2, 3) : lens[tr]);
+        rnd_tx(tr, TX_TUR_PROB, 0);                 /* (locked: the loop as it is) */
+        rnd_tx(tr, TX_TUR_SPAN, 1);
+        rnd_tx(tr, TX_EV_SEED, rnd_seed_pick());
+        rnd_tx(tr, TX_EV_EVERY, 0);
+        rnd_tx(tr, TX_FM_FORM, 0);
+        rnd_tx(tr, TX_TW_DROP, 0);
+        rnd_tx(tr, TX_TW_HUMAN, rnd_rr(5, 25));
+        rnd_tx(tr, TX_TW_FOLLOW, 0);
+        rnd_tx(tr, TX_SUB_RATCH, 0);
+        rnd_tx(tr, TX_NL_MODE, 1);                  /* (long notes, overlapping) */
+        rnd_tx(tr, TX_NL_LEN, rnd_rr(4, 5));
+    }
+    undo_depth--;
+    scale_share(&trk[0]);
+    pid_set(PID_GLOBAL(G_FXMODE), 0, 1);            /* the sends: a deep reverb, a faint echo */
+    pid_set(PID_GLOBAL(G_MFXTYPE), 0, MELODEE_FX_LEAN ? FX_ECHO : FX_REVERB);
+    pid_set(PID_GLOBAL(G_MFXTYPE + 1u), 0, rnd_rr(100, 120));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 2u), 0, rnd_rr(80, 120));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 3u), 0, rnd_rr(90, 120));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 4u), 0, FX_ECHO);
+    pid_set(PID_GLOBAL(G_MFXTYPE + 5u), 0, rnd_rr(60, 90));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 6u), 0, rnd_rr(20, 50));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 7u), 0, rnd_rr(20, 50));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 8u), 0, FX_OFF);
+    pid_set(PID_GLOBAL(G_FXRETURN), 0, rnd_rr(80, 100));
+    rnd_tp(0, P_LEVEL, clamp(trk[0].p[P_LEVEL] + 6, 0, 127));   /* (the bed under the loops) */
+    pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(56, 72));
 }
 
 /* ------------------------------------------------------------ GENERATE: before / after --- */
@@ -4360,13 +4580,15 @@ static uint32_t generate(uint32_t style, uint32_t seed, uint32_t variation, uint
     rnd_var = (uint8_t)(variation > 100u ? 100u : variation);
     project_new_blank();                            /* (from nothing: the same seed, the same piece) */
     gen_tracks_rest();
-    rnd_roll();
+    if (rnd_style == RND_MAITREYA) rnd_maitreya();
+    else rnd_roll();
     gen_patches_reset();
     generate_layers();
     for (tr = 0; tr < RND_NT; tr++) {               /* every track's SEED from the piece's: PLAY replays it */
         int32_t sd = rnd_seed_pick();
         if (!pid_get(PID_TESS(TX_EV_SEED), tr)) rnd_tx(tr, TX_EV_SEED, sd);
     }
+    gen_alternates();                               /* (tracks 5..8: an 8-track build's) */
     if (flags & GEN_KEEP_TEMPO) song.g[G_BPM] = bpm;
     sync_reload = 1;
     gen_last.style = (uint8_t)style; gen_last.seed = rnd_seed; gen_last.var = rnd_var; gen_last.made = 1;
