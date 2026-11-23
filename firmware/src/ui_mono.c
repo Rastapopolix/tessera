@@ -3270,14 +3270,14 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     char a[8], b[8];
     int32_t h;
 #if TESS_HAS_POINTER
-    {                                                   /* (zones: LEVEL its knob's, PAN, MUTE | SOLO halves) */
+    {                                                   /* (zones: LEVEL its knob's, PAN, the word under them: MUTE,
+                                                         * double-click SOLO; soloed, SOLO off (role 1: tess_core.c)) */
         int32_t zx = (CARD_X(k - UI_BASE) - 2) / 2, zy = PV_STRIP_TOP / 2;
         char tn[4] = {'T', (char)('1' + k), 0, 0};
         uz_begin_row(UZ_G_STRIPS, (int32_t)k);
         uz_add(UZ_G_STRIPS, UZ_LEVEL, zx, zy, CARD_W / 2 + 2, 46, -1, -1, (int32_t)k, tn, "LEVEL");
         uz_add(UZ_G_STRIPS, UZ_PAN, zx, zy + 46, CARD_W / 2 + 2, 21, -1, -1, (int32_t)k, tn, "PAN");
-        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 12, 11, -1, -1, (int32_t)k, tn, "MUTE");
-        uz_add(UZ_G_STRIPS, UZ_SOLO, zx + 14, zy + 68, 13, 11, -1, -1, (int32_t)k, tn, "SOLO");
+        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 25, 11, 1, -1, (int32_t)k, tn, solo ? "SOLO" : "MUTE/SOLO");
     }
 #endif
     cv_begin(CARD_W + 4, MO_STRIP_H * 2, MO_BG);

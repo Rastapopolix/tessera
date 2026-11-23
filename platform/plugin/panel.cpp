@@ -761,7 +761,8 @@ bool Panel::down(int x, int y)
             return dbl;
         }
         drag = NONE;
-        if (dbl && z.kind != TESS_ZONE_ROW) return false;   // (OK, YES, a track: once, however often clicked)
+        if (dbl && z.kind != TESS_ZONE_ROW && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
+            return false;   // (OK, YES, a track: once, however often clicked; MIXER's MUTE word: double-click SOLO)
         zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
         return true;
     }

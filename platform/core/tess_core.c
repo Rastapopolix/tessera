@@ -244,8 +244,22 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         break;
     case TESS_ZONE_MUTE:                              /* MIXER's strips: as TRACKS' M, S */
     case TESS_ZONE_SOLO:
-        if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NTRK)
-            core_mute_solo(z->kind, (uint32_t)z->row);
+        if (action == TESS_ZA_TURN || z->row < 0 || z->row >= (int32_t)NTRK) break;
+        if (z->kind == TESS_ZONE_MUTE && z->role == 1) {   /* (MIXER's word, the strip wide: click MUTE, soloed SOLO
+                                                       * off; double-click SOLO, the click's MUTE taken back) */
+            static int32_t last_tr = -1;              /* (the track the last click muted) */
+            uint32_t tr = (uint32_t)z->row;
+            if (action == TESS_ZA_DOUBLE) {
+                if (last_tr == (int32_t)tr) core_mute_solo(TESS_ZONE_MUTE, tr), core_mute_solo(TESS_ZONE_SOLO, tr);
+                last_tr = -1;
+            } else if (track_solo >> tr & 1u) {
+                core_mute_solo(TESS_ZONE_SOLO, tr), last_tr = -1;
+            } else {
+                core_mute_solo(TESS_ZONE_MUTE, tr), last_tr = (int32_t)tr;
+            }
+            break;
+        }
+        core_mute_solo(z->kind, (uint32_t)z->row);
         break;
     case TESS_ZONE_SCROLL:                            /* a text to read: its knob, the wheel the other way round */
         if (action == TESS_ZA_TURN)
