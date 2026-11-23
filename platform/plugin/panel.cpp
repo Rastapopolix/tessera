@@ -1122,19 +1122,25 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
     }
 
-    // the keys: naturals a dim outline, sharps dim and solid; lit yellow, held warm white
+    // the keys: naturals a dim outline, sharps dim and solid; held warm white; lit, an LED on the key (Theo
+    // 2026-11-23: the whole key yellow was too much while they blink): its outline yellow and a bar across its top
     dotted(c, KEYBED[0], KEYBED[0] + kb_w, KEYBED[1], T_DIM);
     for (size_t i = 0; i < keys.size(); i++)
     {
         const Key &k = keys[i];
         uint32_t bit = 1u << k.k;
         bool natural = i < 16;
-        uint32_t base = natural ? T_BLACK : T_DIM, border = T_DIM, fill = base;
+        uint32_t base = natural ? T_BLACK : T_DIM, border = T_DIM, fill = base, led = 0;
         if (input.keys & bit) border = fill = T_HELD;
-        else if (v.lit_keys & bit) border = fill = T_YEL;
-        else if (v.breath_keys & bit) border = T_YEL, fill = mix(base, T_YEL, 0.6 * breath);
+        else if (v.lit_keys & bit) border = T_YEL, led = T_YEL;
+        else if (v.breath_keys & bit) border = T_YEL, led = mix(base, T_YEL, 0.6 * breath);
         else if (v.dim_keys & bit) border = T_YEL;
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
+        if (led)
+        {
+            int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
+            c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
+        }
     }
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
