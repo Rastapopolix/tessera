@@ -639,6 +639,7 @@ static void mo_foot(void)
     int32_t x0 = fit ? 1 : 5, x1 = fit ? 119 : 113, x;   /* (a tab's block reaches x1 + 1) */
     char t[8];
     mo_hl(0, 109, 120, MO_INK);                         /* (row 110 clear: the selected tab's block below it) */
+    UZ(uz_begin(UZ_G_TABS));
     for (;; first++) {                                  /* the first tab: the shown one fits after it */
         for (x = x0, i = first; i <= cur; i++) {
             mo_tab_name(t, idx, i);
@@ -653,6 +654,8 @@ static void mo_foot(void)
             break;
         if (i == cur) mo_inv(t, x + 1, 112);
         else mo_text(t, x + 1, 112, MO_DIM);
+        UZ(uz_add(UZ_G_TABS, UZ_TAB, x, 110, mo_tw(t) + 3, 10, -1, -1, (int32_t)i - (int32_t)cur, t,
+                  mo_title(&PAGES[idx[i]])));   /* (zones: a tab, its page; row the pages from here) */
         x += mo_tw(t) + 5;
     }
     if (first > 0u)                                     /* pages before: an arrow left, a 3 x 5 wedge */
