@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core_copies.h"
+#include "sim_demos.h"   // (build/gen: SIM_DEMO_A, demos/still-tide.tsp; the plugin's slots start empty)
 
 static int fails = 0;
 #define CHECK(c, ...)                                                                                                  \
@@ -60,8 +61,8 @@ int main()
         std::printf("a new copy playing: energy %.9f\n", ec);
         CHECK(ec < 1e-6, "a new copy plays nothing until it gets notes");
     }
-    a->slot_load(0);   // (STILL TIDE, slot A: the demos wait in the slots)
-    b->slot_load(0);
+    a->load(SIM_DEMO_A, sizeof SIM_DEMO_A);   // (STILL TIDE in both)
+    b->load(SIM_DEMO_A, sizeof SIM_DEMO_A);
 
     // a alone, then a again from a fresh state (copy 2 if there is one, else skip) is not possible: so compare a with
     // a reference rendered by copy b first, before b does anything else

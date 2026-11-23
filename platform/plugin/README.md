@@ -13,9 +13,9 @@ tracks, in TESSERA's own window or the FM-1's.
   MACRO (Plaits' synthesis), PHASE (the CZ-1's phase distortion, CrispyZebra's waveforms), besides the FM-1's own.
   A project with them opens on the FM-1 too: its SID, MACRO and PHASE tracks play FM6's INIT there, a SID kit the 909. The Daisy build (Andamento) has them as well.
 - **Start:** a new project (`project_new_blank`, as an FM-1 with nothing saved: the power-on sounds, every pattern
-  empty, no generator), so a new instance plays nothing until it gets notes; STILL TIDE and KOTO GARDEN wait in slots
-  A and B (`web/sim/sim.c`). The host's PLAY / STOP start and stop the song. The standalone app has no transport and
-  no DAW to send notes: it loads STILL TIDE (slot A) at its first block, unless a state was loaded, and plays at once.
+  empty, no generator, every slot empty: `web/sim/sim.c`), so a new instance plays nothing until it gets notes; the
+  demos are presets (`presets.cpp`) and `.tsp` files for OPEN. The host's PLAY / STOP start and stop the song. The
+  standalone app has no transport: its clock runs from its first block.
 - **MIDI in:** notes and MIDI messages reach Tessera as USB MIDI does on the FM-1, at their exact sample. ROUT starts
   at SEL (a DAW sends on channel 1: the notes play the selected track); a note-off for every key (key -1) is All
   Notes Off, a choke All Sound Off. **Program Change** (`TESS_PC_IN`, `form_chain.c tessera_pc_in`), on any channel:
