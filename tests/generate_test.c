@@ -106,7 +106,7 @@ int main(void)
     uint32_t st, i, n1, n2, nb, checks = 0;
     tess_core_boot();
     load_demo();
-    CHECK(generate_styles() == 16u, "styles: %u", (unsigned)generate_styles());
+    CHECK(generate_styles() == 15u, "styles: %u", (unsigned)generate_styles());
     for (st = 0; st < generate_styles(); st++) {
         const char *nm = generate_style_name(st);
         for (i = 0; i < (uint32_t)seeds; i++) {

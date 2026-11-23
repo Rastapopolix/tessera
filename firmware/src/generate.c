@@ -44,11 +44,11 @@
 
 /* the styles, in LEMONADE SANDWICH's menu order (rnd.c's codes; 0 its OFF) */
 enum { RND_OFF, RND_FALL, RND_TIDE, RND_WOZZA, RND_ORBIT, RND_LOOPS, RND_HALO, RND_MIRROR, RND_PHASE, RND_CRATE,
-       RND_COSMIC, RND_STATIC, RND_FORGE, RND_CHAOS, RND_FRACTURED, RND_FREE, RND_MAITREYA, RND_MODES };
+       RND_COSMIC, RND_STATIC, RND_FORGE, RND_CHAOS, RND_FRACTURED, RND_FREE, RND_MODES };
 /* (on screen: FALL, TIDE and PHASE are AUTUMN, SHORE and INTERLOCK; RND (RND_FREE, each track's role free) is WILD) */
 static const char *const GEN_STYLE_NAME[RND_MODES - 1u] = {
     "AUTUMN", "SHORE", "WOZZA", "ORBIT", "LOOPS", "HALO", "MIRROR", "INTERLOCK", "CRATE", "COSMIC", "STATIC", "FORGE",
-    "CHAOS", "FRACTURED", "WILD", "MAITREYA"};
+    "CHAOS", "FRACTURED", "WILD"};
 static uint8_t rnd_style = RND_FALL;                /* the style being made (rnd.c: MENU > REC BUTTON) */
 static uint32_t rnd_setting(void) { return rnd_style; }
 
@@ -4097,7 +4097,6 @@ static const struct { uint8_t eng, swap, alts, metal; } GEN_NEW[RND_MODES - 1u] 
     /* CHAOS     */ {GE_SID, 25, 1, 1},                /* (busy: one alternate at most) */
     /* FRACTURED */ {GE_SID | GE_PHASE, 20, 1, 1},
     /* RND       */ {GE_PHASE | GE_SID | GE_MACRO, 30, 3, 1},
-    /* MAITREYA  */ {0, 0, 0, 1},                      /* (its own sounds: rnd_maitreya) */
 };
 static uint32_t gen_cls(uint32_t tr)                /* a track's role as a kind of sound; GC_NONE: left as rolled */
 {
@@ -4334,7 +4333,6 @@ static const struct {
     /* CHAOS     */ {40, 2, 45, 0, 20, {50, 70, 90, 100, 60, 95, 100, 40}},
     /* FRACTURED */ {45, 2, 45, 10, 20, {40, 70, 50, 90, 40, 100, 70, 30}},
     /* RND       */ {30, 2, 30, 0, 30, {30, 50, 70, 85, 90, 75, 50, 25}},
-    /* MAITREYA  */ {0, 2, 0, 0, 0, {50, 50, 50, 50, 50, 50, 50, 50}},     /* (still: the loops are the piece) */
 };
 static uint32_t gen_et_role(uint32_t tr)            /* rnd.c's role -> ENTRIES' ROLE (entries.c ET_*) */
 {
@@ -4419,101 +4417,6 @@ static void gen_alternates(void)
 #else
 #define gen_alternates() ((void)0)                    /* (four tracks: none) */
 #endif
-
-/* ------------------------------------------------------------ GENERATE: MAITREYA --- */
-/* After the loop players (Theo 2026-11-23: "Buddha Machine type compositions"; the name his): four short loops of a
- * few notes, each a length of its own (TURING locked, PROB 0: 3, 4, 5, 7 .. steps), so they drift against each other
- * and never quite come round together; unhurried (66..82 BPM), light (Theo, after the first listen: no bells, nothing
- * doom-laden): major pentatonic or YO mostly, no low drone, soft pads and plucks (gen_mt_sound; TRIO where neither
- * engine is built), notes that overlap, a reverb, a faint echo; ENTRIES, the arc and EVOLVE off: it just hangs there */
-static uint32_t gen_scale_named(const char *nm)
-{
-    uint32_t i;
-    for (i = 0; i < NELEM(N_SCALE); i++)
-        if (gen_same(N_SCALE[i], nm)) return i;
-    return 5u;                                      /* (PEN) */
-}
-/* MAITREYA's own few sounds, soft and light (Theo 2026-11-23: no bells, nothing doom-laden): -> 1 loaded */
-static int gen_mt_sound(uint32_t tr, int pad)
-{
-    static const struct { uint8_t e; const char *name; } PAD[] = {{GE_PHASE, "GLASS PAD"}, {GE_PHASE, "ENSEMBLE"},
-                                                                  {GE_MACRO, "VA PAD"}},
-                                                     PLK[] = {{GE_PHASE, "PLUCK"}, {GE_PHASE, "HARP"}, {GE_MACRO, "PLUCK"}};
-    uint32_t n = pad ? NELEM(PAD) : NELEM(PLK), k = rnd_next() % n, j, i, e;
-    for (j = 0; j < n; j++) {                       /* (the drawn one, else the next this build has) */
-        uint32_t m = (k + j) % n;
-        e = gen_engi(pad ? PAD[m].e : PLK[m].e);
-        if (!eng_ok(e)) continue;
-        for (i = 0; i < ENGINES[e]->npresets; i++)
-            if (gen_same(eng_preset(ENGINES[e], i)->name, pad ? PAD[m].name : PLK[m].name)) {
-                engine_load_of(&trk[tr], e, i);
-                return 1;
-            }
-    }
-    return 0;
-}
-static void rnd_maitreya(void)
-{
-    static const char *const SCL[] = {"PEN", "YO", "MPEN"};   /* (bright first: lighter, Theo) */
-    static const uint8_t SW[] = {5, 3, 1};
-    static const uint8_t LENS[] = {3, 4, 5, 6, 7, 9};
-    static const int8_t TRN[RND_NT] = {0, 0, 12, 12};   /* (no low drone: light) */
-    uint8_t lens[NELEM(LENS)], code[NELEM(SCL)];
-    uint32_t tr, k, root, scale;
-    rnd_state = rnd_seed ? rnd_seed : 0x2545F491u;
-    for (k = 0; k < NELEM(SCL); k++) code[k] = (uint8_t)k;
-    scale = gen_scale_named(SCL[rnd_pick(code, SW, NELEM(SCL))]);
-    root = (uint32_t)rnd_rr(0, 11);
-    memcpy(lens, LENS, sizeof lens);
-    for (k = NELEM(lens); k > 1u; k--) {            /* (four lengths apart, from the seed) */
-        uint32_t j = rnd_next() % k;
-        uint8_t x = lens[k - 1u];
-        lens[k - 1u] = lens[j], lens[j] = x;
-    }
-    rnd_tx(0, TX_KEY_LINK, 1);
-    undo_depth++;
-    for (tr = 0; tr < RND_NT; tr++) {
-        uint32_t cls = tr == 0u ? GC_PAD : tr == RND_NT - 1u ? (rnd_pct(50) ? GC_PAD : GC_PLUCK) : GC_PLUCK;
-        rnd_role_of[tr] = (uint8_t)(tr == 0u ? RND_ROLE_DRONE : RND_ROLE_MELODY);
-        if (!gen_mt_sound(tr, cls == GC_PAD)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
-        rnd_tp(tr, P_SCALE, (int32_t)scale);
-        rnd_tp(tr, P_ROOT, (int32_t)root);
-        rnd_tp(tr, P_QUANT, Q_WHITE);
-        rnd_tp(tr, P_TRANS, TRN[tr] + (tr == 3u && rnd_pct(30) ? 12 : 0));
-        rnd_tp(tr, P_SDIV, tr == 0u ? 7 : rnd_pct(70) ? 0 : 6);   /* (the drone a bar a note; the loops 1/4 or 1/2) */
-        rnd_tp(tr, P_VOICE, 0);                     /* (POLY: a note never cuts the last one off, no clicks) */
-        rnd_tp(tr, P_ATK, cls == GC_PAD ? rnd_rr(30, 60) : rnd_rr(8, 14));   /* (never sharp: no clicks) */
-        rnd_tp(tr, P_REL, cls == GC_PAD ? rnd_rr(80, 105) : rnd_rr(60, 90));
-        rnd_tp(tr, P_FXSEND, rnd_rr(50, 80));
-        rnd_tx(tr, TX_MODE, TESS_ENG_TURING);
-        rnd_tx(tr, TX_TUR_LEN, tr == 0u ? rnd_rr(2, 3) : lens[tr]);
-        rnd_tx(tr, TX_TUR_PROB, 0);                 /* (locked: the loop as it is) */
-        rnd_tx(tr, TX_TUR_SPAN, 1);
-        rnd_tx(tr, TX_EV_SEED, rnd_seed_pick());
-        rnd_tx(tr, TX_EV_EVERY, 0);
-        rnd_tx(tr, TX_FM_FORM, 0);
-        rnd_tx(tr, TX_TW_DROP, 0);
-        rnd_tx(tr, TX_TW_HUMAN, rnd_rr(5, 25));
-        rnd_tx(tr, TX_TW_FOLLOW, 0);
-        rnd_tx(tr, TX_SUB_RATCH, 0);
-        rnd_tx(tr, TX_NL_MODE, 1);                  /* (long notes, overlapping) */
-        rnd_tx(tr, TX_NL_LEN, cls == GC_PAD ? rnd_rr(3, 4) : rnd_rr(2, 3));
-    }
-    undo_depth--;
-    scale_share(&trk[0]);
-    pid_set(PID_GLOBAL(G_FXMODE), 0, 1);            /* the sends: a deep reverb, a faint echo */
-    pid_set(PID_GLOBAL(G_MFXTYPE), 0, MELODEE_FX_LEAN ? FX_ECHO : FX_REVERB);
-    pid_set(PID_GLOBAL(G_MFXTYPE + 1u), 0, rnd_rr(70, 95));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 2u), 0, rnd_rr(60, 90));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 3u), 0, rnd_rr(60, 90));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 4u), 0, FX_ECHO);
-    pid_set(PID_GLOBAL(G_MFXTYPE + 5u), 0, rnd_rr(60, 90));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 6u), 0, rnd_rr(20, 50));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 7u), 0, rnd_rr(20, 50));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 8u), 0, FX_OFF);
-    pid_set(PID_GLOBAL(G_FXRETURN), 0, rnd_rr(65, 85));
-    pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(66, 82));
-}
 
 /* ------------------------------------------------------------ GENERATE: before / after --- */
 /* The project before the last press, as its own .tsp (never a list of fields: it cannot go stale), and swapping it
@@ -4600,8 +4503,7 @@ static uint32_t generate(uint32_t style, uint32_t seed, uint32_t variation, uint
     rnd_var = (uint8_t)(variation > 100u ? 100u : variation);
     project_new_blank();                            /* (from nothing: the same seed, the same piece) */
     gen_tracks_rest();
-    if (rnd_style == RND_MAITREYA) rnd_maitreya();
-    else rnd_roll();
+    rnd_roll();
     gen_patches_reset();
     generate_layers();
     for (tr = 0; tr < RND_NT; tr++) {               /* every track's SEED from the piece's: PLAY replays it */

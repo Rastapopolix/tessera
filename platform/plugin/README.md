@@ -91,7 +91,7 @@ tracks, in TESSERA's own window or the FM-1's.
   `tessera-fm1-test`: the decoder over captured byte streams, the port names, the link with a stand-in FM-1.
 
 - **GENERATE** (TESSERA's shell, the strip at the top): one click, a whole piece (LEMONADE SANDWICH's fifteen
-  styles and MAITREYA, loops of lengths apart after the loop players; `firmware/src/generate.c`): the four tracks'
+  styles, `firmware/src/generate.c`): the four tracks'
   sounds, generators, key, cords and the long-form layers, from a new project, all ordinary settings. Now and then a
   track takes a preset of the plugin's own engines (PHASE, SID, MACRO: a few picked a role, never a patch rolled), and
   in the styles that move their parts (ENTRIES) up to three of tracks 5..8 are alternates of tracks 1..4: the same part
