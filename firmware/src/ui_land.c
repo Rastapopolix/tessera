@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* LANDSCAPE (GLO, the Mono look): rain on water at night, played by the music. A track's note is a drop: where it
- * lands across the water is its pitch (low at the left), how near is its track (T1 far, T4 near), how wide its rings
+ * lands across the water is its pitch (low at the left), how near is its track (T1 far, T4 near; eight tracks: T5..T8
+ * as T1..T4, in their own lighter inks), how wide its rings
  * open its velocity. ENERGY's tide gathers the clouds and lowers them (full) or thins them (sparse); while playing they
  * drift. Stars come out as the music thins, all of them when nothing has played for a while; then the water is still
  * and nothing is drawn again. Drawn from code; the notes come from land_feed.c, read only while the page is open. The
@@ -248,6 +249,7 @@ static void land_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)   /* mo_dis
 }
 
 /* a ring of its own (a fish's splash): no drop, no note, dim */
+#define LAND_SPLASH 0xFFu                               /* (its track: none; 4..7 are tracks 5..8) */
 static void land_splash(int32_t x, int32_t y)
 {
     uint32_t i, k = 0;
@@ -256,7 +258,7 @@ static void land_splash(int32_t x, int32_t y)
         if (fm1_ms - land.t0[i] > fm1_ms - land.t0[k]) k = i;
     }
     land.used[k] = 1, land.t0[k] = fm1_ms - 180u;       /* (past the drop) */
-    land.x[k] = (uint8_t)x, land.y[k] = (uint8_t)y, land.r[k] = 6, land.tr[k] = 4, land.vel[k] = 0;
+    land.x[k] = (uint8_t)x, land.y[k] = (uint8_t)y, land.r[k] = 6, land.tr[k] = (uint8_t)LAND_SPLASH, land.vel[k] = 0;
 }
 
 /* where a drop lands: across by pitch (C1 .. C7), the track a band deeper and nearer, a little apart from the last */
@@ -536,7 +538,7 @@ static void mo_pic_land(void)
         if (a < 90u) mo_vl(land.x[i], land.y[i] - 7 + (int32_t)a / 15, 3, MO_TRK(land.tr[i]));   /* (the drop) */
         else if (a < 180u) mo_px(land.x[i] - 1, land.y[i] - 2, MO_INK), mo_px(land.x[i] + 1, land.y[i] - 2, MO_INK);
         land_ring(land.x[i], land.y[i], r, 1 + r * (b + 12) / 100, a > LAND_LIFE / 2u,
-                  a > LAND_LIFE * 2u / 3u || land.tr[i] > 3u ? MO_DIM : MO_TRK(land.tr[i]));
+                  a > LAND_LIFE * 2u / 3u || land.tr[i] == LAND_SPLASH ? MO_DIM : MO_TRK(land.tr[i]));
         if (land.vel[i] > 80u && a > 200u && a < LAND_LIFE * 2u / 3u && r > 5)
             land_ring(land.x[i], land.y[i], r / 2, 1 + r / 2 * (b + 12) / 100, 0, MO_DIM);
     }
