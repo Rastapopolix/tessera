@@ -129,6 +129,10 @@ typedef struct {
     tess_zone_t zones[TESS_ZONES];
     uint32_t typing;                 /* 1: NAME is open (a name being typed): a computer keyboard types into it
                                       * (tess_core_text) rather than playing the keys */
+    /* each key's job on this page, where the page gives the keys one (a build with TESS_HAS_POINTER; else, and where the
+     * keys just play, empty): short, 1-3 characters for a label over the key ("M3", "P5", "ACC"); long, its meaning
+     * ("T3 MUTE", "PATTERN 5", "PART 4: TOM") */
+    char key_short[TESS_KEYS][4], key_long[TESS_KEYS][16];
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

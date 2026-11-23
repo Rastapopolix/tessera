@@ -663,6 +663,102 @@ static const uint8_t *led_dim_plane(void)
         led_dim[c] = (uint8_t)((fm1_led_dim[0][c] | fm1_led_dim[1][c]) & ~fm1_led[c]);
     return led_dim;
 }
+#if TESS_HAS_POINTER
+/* the keys' jobs on the page shown (tessera-notes docs/analysis/plugin-key-roles.md), for a front end's labels over the
+ * keys: sh 1-3 characters, lg the hover's meaning; both empty where the keys just play. The same tests in the same order
+ * as ui_input.c gives the keys to NAME, a held layer (MIXER, PERF, LANDSCAPE: GLO's), the pattern keys, AWAKE, CHORD
+ * USER, ATLAS's PART 4, the DRUM grid and a USER scale */
+static void key_put(char *sh, char *lg, const char *a, const char *b, const char *c)   /* lg: a, b and c joined */
+{
+    str_cpy(sh, a, 4);
+    lg[0] = 0;
+    str_cpy(lg, b, 16);
+    if (c)
+        str_cpy(lg + str_len(lg), c, 16 - str_len(lg));
+}
+static void key_legend(uint32_t k, char *sh, char *lg)
+{
+    uint32_t p = key_place(k), blk = (uint32_t)key_black(k), l = layer_held() ? ui.ly : mixer_live() ? LAYER_GLO : 0u;
+    char a[8], b[16];
+    sh[0] = lg[0] = 0;
+    if (name_on()) {
+        static const char *const NB[] = {"<", "SPC", ">", "DEL", "MOD"}, *const NL[] = {"CURSOR LEFT", "SPACE",
+                                         "CURSOR RIGHT", "DELETE", "ABC / 123"};
+        uint32_t f = blk ? nm_black(k) : (uint32_t)NB_NONE;
+        _Static_assert(NB_LEFT == 0 && NB_SPACE == 1 && NB_RIGHT == 2 && NB_DEL == 3 && NB_MODE == 4 && NB_NONE == 5,
+                       "ui_name.c's black keys in NB's order");
+        if (!blk && p < 16u)
+            key_put(sh, lg, nm_group(p), "TYPE ", nm_group(p));
+        else if (f < NB_NONE)
+            key_put(sh, lg, NB[f], NL[f], 0);
+        return;
+    }
+    if (l == LAYER_GLO) {
+        static const char *const W[4] = {"ALL", "HLD", "FIL", "TAP"}, *const WL[4] = {"UNMUTE ALL", "HOLD (2X: LATCH)",
+                                         "FILL (HELD)", "TAP TEMPO"};
+        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + UI_BASE + p), a[2] = 0;
+        b[0] = 'T', b[1] = a[1], b[2] = 0;
+        if (p < UI_NT && UI_BASE + p < NTRK)
+            key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
+        else if (!blk && p >= 4u && p < 8u)
+            key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
+        return;
+    }
+    if (l == LAYER_SCL) {
+        key_put(sh, lg, N_NOTE[(k + 5u) % 12u], "ROOT ", N_NOTE[(k + 5u) % 12u]);
+        return;
+    }
+    if (l)
+        return;
+    if (pattern_keys_on()) {
+        for (uint32_t i = 0; i < NPAT; i++)
+            if (PAT_KEY[i] == k) {
+                a[0] = 'P', a[1] = (char)('1' + i), a[2] = 0;
+                key_put(sh, lg, a, "PATTERN ", a + 1);
+            }
+        return;
+    }
+    if (awake_entry_on()) {
+        if (!blk && p < 16u) {
+            fmt_int(a, (int32_t)p + 1);
+            key_put(sh, lg, a, "STEP ", a);
+        }
+        return;
+    }
+    if (ch_user_entry_on()) {
+        key_put(sh, lg, N_NOTE[(k + 5u) % 12u], "NEXT CHORD ON ", N_NOTE[(k + 5u) % 12u]);
+        return;
+    }
+    if (gr_layer_on()) {
+        for (uint32_t i = 0; blk && p < NLANE && i < GEN_GRIDS_P4_N; i++)
+            if (GEN_GRIDS_P4_NOTE[i] == DRUM_LANE_NOTE[p])
+                key_put(sh, lg, drum_lane_abbr(TSEL, p), "PART 4: ", drum_lane_name(TSEL, p));
+        return;
+    }
+    if (song.grid == 1u) {                                /* the DRUM grid (grid_keys) */
+        if (!blk) {
+            uint32_t i = ui.bank * 16u + p;
+            if (i < (uint32_t)TSEL->p[P_SLEN]) {
+                fmt_int(a, (int32_t)i + 1);
+                key_put(sh, lg, a, "STEP ", a);
+            }
+        } else if (p < NLANE) {
+            key_put(sh, lg, drum_lane_abbr(TSEL, p), "LANE ", drum_lane_name(TSEL, p));
+        } else if (p == GK_ACC) {
+            key_put(sh, lg, "ACC", "ACCENT (HELD)", 0);
+        } else {
+            key_put(sh, lg, p == GK_PGUP ? "PG>" : "<PG", p == GK_PGUP ? "NEXT PAGE" : "PAGE BEFORE", 0);
+        }
+        return;
+    }
+    if (uscale_edit()) {                                  /* a USER scale: each key's note in or out (the root stays) */
+        uint32_t d = (53u + k + 120u - (uint32_t)TSEL->p[P_ROOT]) % 12u;
+        uint32_t in = (uscale_mask[(uscale_sel - 1u) % USCALE_SLOTS] >> d) & 1u;
+        str_cpy(b, N_NOTE[(53u + k) % 12u], sizeof b);
+        key_put(sh, lg, !d ? "R" : in ? "IN" : "-", b, !d ? " ROOT" : in ? " IN: TAKE OUT" : " OUT: ADD");
+    }
+}
+#endif
 void tess_core_view(tess_view_t *v)
 {
     uint32_t i;
@@ -687,6 +783,13 @@ void tess_core_view(tess_view_t *v)
         v->dim_buttons &= ~oct;
         v->breath_buttons &= ~oct;
     }
+#endif
+#if TESS_HAS_POINTER
+    for (i = 0; i < TESS_KEYS; i++)
+        key_legend(i, v->key_short[i], v->key_long[i]);
+#else
+    for (i = 0; i < TESS_KEYS; i++)
+        v->key_short[i][0] = v->key_long[i][0] = 0;
 #endif
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;

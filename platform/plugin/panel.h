@@ -225,6 +225,8 @@ class Panel
     std::vector<Knob> knobs;
     std::vector<Button> buttons;
     std::vector<Key> keys;
+    char key_short[TESS_KEYS][4] = {}, key_long[TESS_KEYS][16] = {};   // the view's: each key's job on the page
+    void draw_key_labels(uint32_t *px, uint32_t col);
     int pitch = 0, kw = 0, kh = 0, sw = 0, kb_w = 928;   // (kb_w: the keybed's width, as wide as the window less 72)
     // held by the mouse and by the computer keyboard, apart (input.keys / input.buttons: the two together)
     uint32_t mouse_keys = 0, mouse_buttons = 0, kbd_keys = 0, kbd_buttons = 0, latch_keys = 0, latch_buttons = 0;
