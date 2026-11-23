@@ -1,6 +1,6 @@
-# Smalti: Tessera as a plugin
+# Cosmati: Tessera as a plugin
 
-**Smalti** is Tessera inside a DAW (called Tessera until 0.1-beta4; Audio Damage has a plugin of that name). The visible
+**Cosmati** is Tessera inside a DAW (called Tessera until 0.1-beta4; Audio Damage has a plugin of that name). The visible
 names changed; the CLAP id, VST3 class ids, AU codes and the settings folders stay `tessera`, so saved songs still load: the same firmware as the FM-1, built as a CLAP instrument and, through
 [clap-wrapper](https://github.com/free-audio/clap-wrapper), as VST3, an Audio Unit (macOS) and a standalone app (Windows, macOS). It plays the whole firmware at up to 8
 tracks, in TESSERA's own window or the FM-1's.
@@ -150,9 +150,9 @@ cmake --build build/plugin -j
 build/plugin/tessera-panel-test shots/                                             # the window's test: PPM pictures in shots/
 build/plugin/tessera-sync-test                                                     # following the DAW
 build/plugin/tessera-copies-test                                                   # several instances: the copies apart
-xvfb-run build/plugin/tessera-render-test build/plugin/out/Smalti.clap 12 still-tide.wav window.ppm   # Linux / macOS
-build/plugin/tessera-session-test build/plugin/out/Smalti.clap                     # a DAW session saved and opened again
-build/plugin/tessera-cpu-bench build/plugin/out/Smalti.clap 10 48000 256          # what 1, 4 and 8 instances cost (measures only)
+xvfb-run build/plugin/tessera-render-test build/plugin/out/Cosmati.clap 12 still-tide.wav window.ppm   # Linux / macOS
+build/plugin/tessera-session-test build/plugin/out/Cosmati.clap                     # a DAW session saved and opened again
+build/plugin/tessera-cpu-bench build/plugin/out/Cosmati.clap 10 48000 256          # what 1, 4 and 8 instances cost (measures only)
 ```
 
 Windows (Visual Studio 2022 with its "C++ Clang tools for Windows" component). Windows' Pillow has no Raqm for the
@@ -163,8 +163,8 @@ cmake -S platform/plugin -B build/plugin -G "Visual Studio 17 2022" -A x64 -T Cl
 cmake --build build/plugin --config Release
 ```
 
-The outputs are in `build/plugin/out/`: `Smalti.clap`, `Smalti.vst3` and (Windows, macOS) the standalone
-`Smalti` app. The GitHub workflow `plugin.yml` builds them on every pull request that touches the firmware and keeps
+The outputs are in `build/plugin/out/`: `Cosmati.clap`, `Cosmati.vst3` and (Windows, macOS) the standalone
+`Cosmati` app. The GitHub workflow `plugin.yml` builds them on every pull request that touches the firmware and keeps
 them as the run's artifact.
 
 ## Licences
