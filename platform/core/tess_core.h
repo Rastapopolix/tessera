@@ -98,7 +98,9 @@ void tess_core_screen(tess_screen_t *s);
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
-       TESS_ZONE_TAB };   /* (TAB: a page's tab in the footer; click: that page) */
+       TESS_ZONE_TAB, TESS_ZONE_TEMPO };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
+                                            * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
+                                            * transport keeps its own) */
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;
@@ -122,6 +124,9 @@ enum { TESS_TEXT_BACK = 8, TESS_TEXT_OK = 13, TESS_TEXT_CANCEL = 27, TESS_TEXT_L
        TESS_TEXT_DELETE };          /* BACK: the character before the cursor; OK, CANCEL: as OCT+, OCT-; DELETE: the
                                      * one at it */
 void tess_core_text(uint32_t ch);
+/* a click away from what tess_view_t.closable says is open (the panel's empty space, the screen where no zone is): a
+ * pinned help card closes, else a picker or sheet as BACK closes it. Nothing when nothing is (or a YES / NO is) */
+void tess_core_away(void);
 /* what the FM-1 panel shows */
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
@@ -137,6 +142,9 @@ typedef struct {
      * keys just play, empty): short, 1-3 characters for a label over the key ("M3", "P5", "ACC"); long, its meaning
      * ("T3 MUTE", "PATTERN 5", "PART 4: TOM") */
     char key_short[TESS_KEYS][4], key_long[TESS_KEYS][16];
+    uint32_t closable;               /* 1: a picker, a sheet or a help card the mouse opened is over the page, which a
+                                      * click away closes (tess_core_away); not a YES / NO question (a build with
+                                      * TESS_HAS_POINTER; else 0) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
@@ -160,7 +168,7 @@ typedef struct {
 } tess_tracks_t;
 void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h);
 /* what the mouse did on a TRACKS zone, as tess_tracks_t gave it: a row's CLICK selects that track (as
- * tess_core_track_select); M's CLICK is GLO's mute key (MENU MUTES: now, or waits for the bar or phrase); S's CLICK
+ * tess_core_track_select), its DOUBLE selects it and opens its EDIT page; M's CLICK is GLO's mute key (MENU MUTES: now, or waits for the bar or phrase); S's CLICK
  * latches that track's solo, or lets it go (GLO's white keys solo while held; this one stays); TURN n on the level: its
  * LEVEL n steps. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
 void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n);

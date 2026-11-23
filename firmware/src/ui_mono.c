@@ -2852,6 +2852,10 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
     mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_HEAD);                                /* (zones: the tempo; turn, wheel, double-click) */
+    uz_add(UZ_G_HEAD, UZ_TEMPO, x - 1, 0, mo_tw(b) + 2, 9, -1, -1, 0, "TEMPO", b);
+#endif
     if (!msg || (int32_t)str_len(msg) * 6 <= x - 7 - (song.rec ? 7 : 0) - 6) {   /* (a message too long: in its place) */
         x -= 7;
         if (chain.running || song.playing) {            /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
@@ -3153,6 +3157,10 @@ static void mo_stage_head(void)
         fmt_int(b, song.g[G_BPM]);
         mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
         if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
+#if TESS_HAS_POINTER
+        uz_begin(UZ_G_HEAD);                            /* (zones: the tempo, with the PLAY mark before it) */
+        uz_add(UZ_G_HEAD, UZ_TEMPO, 0, 0, mo_tw(b) + 10, 9, -1, -1, 0, "TEMPO", b);
+#endif
     }
     if (!msg && !lit) {                                 /* (a message: in the engine's place too; overload: the dots) */
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
