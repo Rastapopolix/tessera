@@ -156,10 +156,10 @@ in a DAW.</p>
 <p>Until beta 4 the plugin was called Tessera, like the firmware; Audio Damage makes a plugin called Tessera, so the plugin
 has a name of its own. Songs saved with the old name open in Cosmati (delete the old Tessera.clap, .vst3, .component and
 app when you install it, so your DAW doesn't list it twice).</p>
-<p><a href="../media/plugin/plugin-expanded.png?v=0.1-beta5"><img src="../media/plugin/plugin-expanded.png?v=0.1-beta5" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
+<p><a href="../media/plugin/plugin-expanded.png?v=0.1-beta7"><img src="../media/plugin/plugin-expanded.png?v=0.1-beta7" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
 <p><em>EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).</em></p>
 <h2 id="download">Download</h2>
-<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta5, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
+<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta7, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
 <ul>
 <li><a href="#install">Install</a></li>
 <li><a href="#first-sound">First sound</a></li>
@@ -235,9 +235,8 @@ ROUT starts at SEL in the plugin). To play each track from its own DAW track ins
 the FM-1 (the <a href="../manual/">manual</a> shows how).</p>
 <p><strong>To hear what it can do,</strong> load a demo: all eight demos are in the DAW's list of Cosmati's presets (the preset
 browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
-Reaper, Cubase or Logic); <strong>STILL TIDE</strong> also waits in slot A and <strong>KOTO GARDEN</strong> in slot B (SAVE &gt; PROJECT, then
-LOAD); and every demo is a <code>.tsp</code> file in the <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/demos/">demos folder</a> for <strong>OPEN</strong>. The <strong>standalone app</strong> has no DAW
-to send it notes, so it opens with STILL TIDE loaded and plays it at once.</p>
+Reaper, Cubase or Logic); and every demo is a <code>.tsp</code> file in the <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/demos/">demos folder</a> for <strong>OPEN</strong>, which is how
+the <strong>standalone app</strong> loads one. The project slots (SAVE &gt; PROJECT) start empty, for your own songs.</p>
 <h2 id="the-window">The window</h2>
 <p>The window shows the FM-1's panel, 1:1, in Tessera's own look or one of the FM-1's colours (see <strong>Shells</strong> below).
 Click the buttons and keys (drag across the keys to glide). Drag a knob up and down or left and right, or turn the
@@ -256,26 +255,35 @@ the slot's sheet.</li>
 <li><strong>PATTERNS:</strong> click a cell to queue that pattern on its track; click a track's number to select it. In Copy to,
 click where the copy goes.</li>
 <li><strong>SONG:</strong> click a section's letter to pick it; click a block to pick its section and its track.</li>
-<li><strong>MIXER:</strong> drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the left
-half of its MUTE / SOLO box to mute, the right half to solo.</li>
+<li><strong>MIXER:</strong> drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
+under a strip to mute it, double-click it to solo.</li>
+<li><strong>The tempo</strong> in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
+double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.</li>
+<li><strong>The footer's page tabs and its arrows:</strong> click a tab for that page, an arrow for the page just past it.</li>
 <li><strong>ABOUT and a HELP card longer than the card:</strong> the wheel scrolls the text (drag it as you would push a page).</li>
 <li><strong>OK, BACK, YES and NO</strong> on the screen: click them.</li>
 <li><strong>The sound browser and SCALES:</strong> the wheel over the left side turns KNOB 1 (the list, the scale family), over the
 right side KNOB 2 (the sound, the scale).</li>
 <li><strong>HOME:</strong> click a track's column to select it.</li>
+<li><strong>TRACKS</strong> (EXPANDED): click a row to select that track; double-click it to open its EDIT page.</li>
 </ul>
+<p><strong>Click away to close:</strong> with a list, a sheet or a help card open over the page, click anywhere with nothing to
+use (the panel's body, the screen beside it) to close it, as BACK would. A YES / NO question waits for its answer.</p>
 <p>The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
 presses those keys for you, so a page behaves the same either way.</p>
 <p><strong>The computer keyboard</strong> plays it too, as in the web simulator (click the window first):</p>
 <ul>
 <li><strong>Z</strong> to <strong>'</strong> and <strong>Q</strong> to <strong>O</strong>: the keys.</li>
 <li><strong>1</strong> to <strong>=</strong>: the twelve buttons, in the panel's order.</li>
-<li><strong>[</strong> and <strong>]</strong>: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).</li>
+<li><strong>[</strong> and <strong>]</strong>, or <strong>Esc</strong> and <strong>Enter</strong>: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).</li>
+<li><strong>Space</strong> (the standalone app): PLAY / STOP. <strong>Ctrl+O</strong> and <strong>Ctrl+S</strong> (<strong>Cmd</strong> on a Mac): OPEN and SAVE. In a
+DAW these stay the DAW's.</li>
 <li><strong>Shift</strong> (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).</li>
 <li><strong>Page Up / Page Down</strong> (Tessera's look): OCT+ and OCT-.</li>
 <li><strong>F1</strong> (Tessera's look): <strong>?</strong>, the help card of the knob or row under the cursor.</li>
 <li><strong>Up / Down</strong>: turn SELECT. <strong>Left / Right</strong>: turn ALGORITHM.</li>
 </ul>
+<p>Hover over a button for the key that does the same.</p>
 <p><strong>Key labels:</strong> where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
 hovering over the key says it in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M4 mute on the black keys, S1..S4 solo
 while held on the white, then ALL, HOLD, FILL, TAP), SEL held (the key sets the ROOT), SEQ held (PATTERN 1..8), the
@@ -297,7 +305,8 @@ as held, while you click the second one, so GLO + a button or SEL + a key work w
 click it, or press <strong>Esc</strong> to let go.</p>
 <p><strong>Shells:</strong> the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:</p>
 <ul>
-<li><strong>SHELL:</strong> Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.</li>
+<li><strong>SHELL:</strong> Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink: Tessera's look
+starts in MOSAIC, a colour for each track (track 1 yellow, 2 blue, 3 pink, 4 green; 5-8 lighter).</li>
 <li><strong>INK:</strong> the screen's ink, the same 13 choices as MENU &gt; COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
 which colour each track). Hover over a swatch to see its name.</li>
 <li><strong>MODE:</strong> FM-1 (the FM-1's panel) or EXPANDED (a wider window with every track on screen at once: see
