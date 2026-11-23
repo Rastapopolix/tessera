@@ -2980,27 +2980,36 @@ static void mo_scale_pic(int32_t y, int32_t h)
 }
 /* the sound's strip at the bottom (pv_sound; 20 px): the page tabs where the page has them, else the track, its
  * engine and its sound's name */
+static void mo_sound_strip(int32_t y, const char *en, const char *nm);
 static void mo_sound(const char *en, const char *nm)
+{
+    if (!foot_tabs_on()) {
+        mo_sound_strip(PV_SOUND_Y, en, nm);
+        return;
+    }
+    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
+    cv_oy = -PV_SOUND_Y;
+    mo_foot();
+    cv_oy = 0;
+    cv_blit(0, PV_SOUND_Y);
+}
+/* the sound strip at y: "T5" inverted, the engine, the sound's name dim; at the foot (y PV_SOUND_Y) its line over it */
+static void mo_sound_strip(int32_t y, const char *en, const char *nm)
 {
     char a[24], b[24];
     int32_t x;
-    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
-    if (foot_tabs_on()) {
-        cv_oy = -PV_SOUND_Y;
-        mo_foot();
-        cv_oy = 0;
-    } else {
+    cv_begin(240, 20, MO_BG);
+    if (y == PV_SOUND_Y)
         mo_hl(0, 0, 120, MO_INK);
-        b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
-        mo_inv(b, 1, 2);
-        mo_ascii(a, en, sizeof a);
-        mo_cut(b, a, 8);
-        x = mo_text(b, 16, 2, MO_INK) + 6;
-        mo_ascii(a, nm, sizeof a);
-        mo_cut(b, a, (uint32_t)(119 - x) / 6u);
-        mo_text(b, x, 2, MO_DIM);
-    }
-    cv_blit(0, PV_SOUND_Y);
+    b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
+    mo_inv(b, 1, 2);
+    mo_ascii(a, en, sizeof a);
+    mo_cut(b, a, 8);
+    x = mo_text(b, 16, 2, MO_INK) + 6;
+    mo_ascii(a, nm, sizeof a);
+    mo_cut(b, a, (uint32_t)(119 - x) / 6u);
+    mo_text(b, x, 2, MO_DIM);
+    cv_blit(0, (uint32_t)y);
 }
 /* a confirm dialog (draw_confirm): a frame, a warning sign, the question, the name it is about, NO (OCT-) outlined and
  * YES (OCT+) filled */
@@ -4102,6 +4111,23 @@ static void mo_song(void)
 /* ---- PROJECT, USER, the STOREs (slot_draw): a strip a row ---- */
 /* the slot picked (46 px = 23 cells): framed, its tag inverted, its name, a line about it (dim), BOOT inverted at the
  * right on the one power-on loads */
+/* the track's sound under a slot page's rows (the foot has the page tabs now): "T5 FM6 KUGO HARP", as the foot had it
+ * (mo_sound's strip, its own line left out): what SAVE here would store */
+static int mo_page_chrome(void) { return !ui.home && (slot_kind() || list_on()); }
+static void mo_slot_sound(void)
+{
+    char nm[20];
+    sound_name(TSEL, nm);
+    mo_sound_strip(PV_SOUND_Y - 20, ENGINES[eng_idx(TSEL->eng_req)]->name, nm);
+}
+/* the line over the page tabs (mo_foot draws it on row 109, which a slot or list page's foot, from row 110, leaves
+ * out) */
+static void mo_foot_line(void)
+{
+    cv_begin(240, 2, MO_BG);
+    mo_hl(0, 0, 120, MO_INK);
+    cv_blit(0, PV_SOUND_Y - 2);
+}
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y)
 {
     char a[24], b[24];

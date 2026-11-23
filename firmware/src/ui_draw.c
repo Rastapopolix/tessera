@@ -303,6 +303,10 @@ static void mo_song(void);
 static void mo_grid_panel(void);
 static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fav);
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y);
+static void mo_foot_line(void);
+static void mo_head(void);
+static int mo_page_chrome(void);                       /* (ui_mono.c: a slot or list page) */
+static void mo_slot_sound(void);
 static void mo_slot_row(const char *tag, const char *nm, int used, int boot, int mark, int32_t y, int32_t ty, int32_t th);
 static void mo_msc(void);
 static void mo_smap(uint32_t cur);
@@ -349,6 +353,13 @@ static void draw_head(void)
     }
     ui.head_sig = sig;
 #if MELODEE_LOOK
+    if (mo_page_chrome()) {                             /* a slot or list page: the page's own header, as the pages
+                                                         * beside it in its family (Theo, 2026-11-24) */
+        cv_begin(240, H_HEAD + 2, T_BG);
+        mo_head();
+        cv_blit(0, 0);
+        return;
+    }
     mo_dhead(chip, seq_erase_active(TSEL) ? "ERASING" : msg ? (ui.msg_t ? ui.msg : layer_head()) : 0, bat);
     return;
 #endif
@@ -1906,8 +1917,10 @@ static int own_screen(void)                             /* a page drawn whole by
 static int foot_tabs_on(void)
 {
     uint32_t k = pv_kind(), g = cur_page()->graph;
-    if (ui.home || own_screen() || slot_kind() || motion_page() || list_on())
-        return 0;
+    if (ui.home || own_screen() || ((slot_kind() || list_on()) && !MELODEE_LOOK) || motion_page())
+        return 0;                                       /* (Mono: a slot page has its family's tabs too, as its
+                                                         * neighbours, PROJECT / USER / STORE and the lists: Theo
+                                                         * 2026-11-24) */
     if (k == PV_NONE)
         return !(g == GR_ROLL && (!grid_on() || live_rec_sel()));
     return k == PV_CURVE || k == PV_RINGS || k == PV_FADERS || k == PV_NOTES || k == PV_GRID;
