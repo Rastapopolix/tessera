@@ -702,7 +702,7 @@ int main(int argc, char **argv)
         {
             int lab = 0;   // (dim yellow over F#3, the first black key)
             for (int yy = 332; yy < 342; yy++)
-                for (int xx = 36; xx < 200; xx++) lab += px[yy * Panel::W + xx] != 0xFF111111u && px[yy * Panel::W + xx] != 0xFF3B3007u;
+                for (int xx = 36; xx < 300; xx++) lab += px[yy * Panel::W + xx] != 0xFF111111u && px[yy * Panel::W + xx] != 0xFF3B3007u;
             CHECK(lab > 10, "the labels drawn over the keys (%d pixels)", lab);
         }
         tess_core_buttons(0);
@@ -715,13 +715,13 @@ int main(int argc, char **argv)
         CHECK(!std::strcmp(v.key_short[0], "P1") && !std::strcmp(v.key_long[12], "PATTERN 8") && !v.key_short[1][0],
               "SEQ held: F3 P1, F4 PATTERN 8, F#3 nothing (%s %s)", v.key_short[0], v.key_long[12]);
         q.draw(px.data(), v);
-        q.move(36 + 12 + (int)(0.5 * ((928 - 24) / 16)), 332 + 192);   // over F3: PATTERN 1 in a card
+        q.move(36 + 76 + 12 + (int)(0.5 * ((928 - 76 - 24) / 16)), 332 + 192);   // over F3 (right of OCT+ / OCT-): PATTERN 1
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/10d_tessera_seq_keys.ppm", px);
         {
             int card = 0;
             for (int yy = 400; yy < 470; yy++)
-                for (int xx = 20; xx < 300; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+                for (int xx = 20; xx < 360; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
             CHECK(card > 100, "PATTERN 1 in a card over F3 (%d)", card);
         }
         q.move(5, 5);
