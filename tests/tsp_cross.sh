@@ -63,7 +63,7 @@ build web build/gen -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -D
 build plugin build/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 \
     -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 $EXTRA
 build daisy build/andamento/gen -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DHOST_HAL_SCREEN=0 \
-    -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 '-DMELODEE_VERSION="daisy"' $EXTRA
+    -DTESS_CORE_UI=0 -DCORE_OUT_HOOKS=1 '-DMELODEE_VERSION="daisy"' -DMELODEE_SMF=1 $EXTRA
 TARGETS="fm1 web plugin daisy"
 for t in $TARGETS; do printf '%-7s %s\n' "$t" "$("$OUT/tsp_cross_$t" info)"; done
 
@@ -93,6 +93,9 @@ done
 for t in plugin daisy; do   # SID, the SID kit, MACRO and PHASE play and save there (tests/engines_extra.c)
     "$OUT/engines_extra_$t" > "$OUT/engines_extra_$t.log" 2>&1 || { cat "$OUT/engines_extra_$t.log"; fails=$((fails + 1)); }
     echo "$t: $(tail -1 "$OUT/engines_extra_$t.log")"
+done
+for t in $TARGETS; do   # the .mid writer: Andamento's (MELODEE_SMF), off elsewhere
+    "$OUT/tsp_cross_$t" smf > /dev/null || { echo "FAIL $t: tess_core_smf"; fails=$((fails + 1)); }
 done
 echo "tsp_cross: $checks loads ($(ls demos/*.tsp | wc -l) demos x 4 x 4 targets), $fails failed"
 [ $fails = 0 ]

@@ -59,6 +59,17 @@ int main(int argc, char **argv)
         out = fm1_view(buf_in, n, buf_out);
         return write_file(argv[3], buf_out, out) ? 0 : 3;
     }
+    if (argc == 2 && !strcmp(argv[1], "smf")) {   /* tsp_cross smf: tess_core_smf (MELODEE_SMF: Andamento's .mid) */
+        static const tess_smf_ev ev[] = {{0, 0x90, 60, 100, 0}, {240, 0x80, 60, 0, 0}, {480, 0x92, 36, 90, 0}};
+        uint32_t len = tess_core_smf(ev, 3, 120, "X", 1, 0, 0), got;
+        if (!MELODEE_SMF) {
+            printf("smf: off\n");
+            return len != 0;
+        }
+        got = tess_core_smf(ev, 3, 120, "X", 1, buf_out, sizeof buf_out);
+        printf("smf: %u bytes\n", (unsigned)got);
+        return !(len > 14u && got == len && !memcmp(buf_out, "MThd", 4) && buf_out[11] == 3);   /* (tempo, T1, T3) */
+    }
     if (argc == 2 && !strcmp(argv[1], "info")) {
         printf("rate %u  TSP_MAX %u  UI %d  screen %d  access %d  usb-audio %d  usb-host %d\n", (unsigned)tess_core_rate(),
                (unsigned)tess_core_tsp_max(), TESS_CORE_UI, HOST_HAL_SCREEN, MELODEE_ACCESS, MELODEE_USB_AUDIO,
