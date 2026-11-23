@@ -39,6 +39,8 @@ struct GuiLink
     virtual int tracks() = 0;
     /* MIDI in so far (notes and messages from the host, a count that wraps): TESSERA's shell lights its MIDI lamp */
     virtual uint32_t midi_count() { return 0; }
+    /* the standalone app (no DAW's transport): its own shortcuts (Panel::set_standalone) */
+    virtual bool standalone() { return false; }
     /* an FM-1 on USB (fm1_link.h): this instance's state, and a click: on (taken from any other Tessera) or off (for
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }

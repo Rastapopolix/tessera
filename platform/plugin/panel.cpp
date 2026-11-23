@@ -241,18 +241,21 @@ void Panel::layout()
     const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
     if (n)   // TESSERA's shell: SHIFT, BACK and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
     {        // and a third row of the grid, the octave a step down and up (the FM-1's OCT- / OCT+ on Stage)
-        buttons.push_back({50, 258, 62, 34, BIT_SHIFT, "SHIFT", nullptr, "CLICK: THE KNOBS' SECOND SET, AGAIN: OFF"});   // (Theo:
-        buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});        // SHIFT, BACK, OK)
-        buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
-        buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)"});
+        buttons.push_back({50, 258, 62, 34, BIT_SHIFT, "SHIFT", nullptr, "CLICK: THE KNOBS' SECOND SET, AGAIN: OFF   KEY: SHIFT"});   // (Theo:
+        buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)   KEY: ESC"});        // SHIFT, BACK, OK)
+        buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET   KEY: ENTER"});
+        buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)   KEY: F1"});
+        static const char *K1[6] = {"KEY: 1", "KEY: 2", "KEY: 3", "KEY: 4", "KEY: 5", "KEY: 6"},   // (panel.h key)
+                          *K2[6] = {"KEY: 7", "KEY: 8", "KEY: 9", "KEY: 0", "KEY: -", "KEY: ="};
         for (int i = 0; i < 6; i++)
         {
-            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
-            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], nullptr});
+            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr, K1[i]});
+            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], nullptr,
+                               R2[i] == B_PLAY && standalone_ ? "KEY: SPACE  (OR -)" : K2[i]});
         }
         const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
-        buttons.push_back({KEYBED[0], oy - 5 - OCT_H, OCT_W, OCT_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP"});
-        buttons.push_back({KEYBED[0], oy + 5, OCT_W, OCT_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN"});
+        buttons.push_back({KEYBED[0], oy - 5 - OCT_H, OCT_W, OCT_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP   KEY: PAGE UP"});
+        buttons.push_back({KEYBED[0], oy + 5, OCT_W, OCT_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN   KEY: PAGE DOWN"});
     }
     else
     {
@@ -377,6 +380,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
         ink_pending = -1;
     }
     typing_ = v.typing != 0;
+    closable_ = v.closable != 0;
     track_now = (int)v.track;
     if (native())
     {
@@ -674,8 +678,9 @@ bool Panel::key(int code, bool down)
     }
     if (!keys_on_)   // KEYS OFF: every key the DAW's
         return false;
-    if (code == 0x1A) b = B_OCTDN;
-    if (code == 0x1B) b = B_OCTUP;
+    if (code == 0x1A || code == 0x01) b = B_OCTDN;   // [ and Esc: OCT- (TESSERA's shell: BACK)
+    if (code == 0x1B || code == 0x1C) b = B_OCTUP;   // ] and Enter: OCT+ (OK)
+    if (code == 0x39 && standalone_) b = B_PLAY;     // Space: PLAY (the standalone app; in a DAW, the DAW's)
     if (native())   // TESSERA's shell: Shift its SHIFT (held while the key is; not while NAME takes capitals), Page Up /
     {               // Page Down its OCT+ / OCT-, F1 its ?
         if ((code == 0x2A || code == 0x36) && (!typing_ || !down)) b = BIT_SHIFT;
@@ -704,6 +709,16 @@ bool Panel::key(int code, bool down)
     if (b >= 0) kbd_buttons = down ? kbd_buttons | 1u << b : kbd_buttons & ~(1u << b);
     if (kbd_keys == was_k && kbd_buttons == was_b) return false;   // (not ours, or a key's repeat)
     merge_held();
+    return true;
+}
+
+// Ctrl+O / Ctrl+S (Cmd on a Mac): OPEN and SAVE, as the buttons under the keys; the standalone app's only (a DAW keeps
+// its own). true: the window should take the file request now
+bool Panel::shortcut(char c)
+{
+    if (!standalone_ || (c != 'O' && c != 'S'))
+        return false;
+    file_req = c == 'O' ? FILE_OPEN : FILE_SAVE;
     return true;
 }
 
@@ -790,7 +805,11 @@ bool Panel::down(int x, int y)
     {
         drag = NONE;
         if (zones2[z2].kind == TESS_ZONE_LEVEL) return false;
-        input.tzones.push_back({zones2[z2], TESS_ZA_CLICK, 0});
+        double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        bool dbl = zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row == row2_last && now - row2_t < 0.4;   // (a row
+        row2_last = dbl ? -1 : zones2[z2].kind == TESS_ZONE_TRACK ? zones2[z2].row : -1;   // twice: its EDIT page)
+        row2_t = now;
+        input.tzones.push_back({zones2[z2], dbl ? (uint32_t)TESS_ZA_DOUBLE : (uint32_t)TESS_ZA_CLICK, 0});
         input.changed = true;
         return true;
     }
@@ -805,7 +824,7 @@ bool Panel::down(int x, int y)
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
-            z.kind == TESS_ZONE_SCROLL)   // (a value, a text: dragged)
+            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO)   // (a value, a text, the tempo: dragged)
         {
             drag = ZONE;
             drag_zone = z;
@@ -864,6 +883,7 @@ bool Panel::down(int x, int y)
         return true;
     }
     drag = NONE;
+    bool hit = false;   // (anything below: not a click away)
     int bk = bank_at(x, y);
     if (bk >= 0)
     {
@@ -875,6 +895,7 @@ bool Panel::down(int x, int y)
         return true;
     }
     int sw_i = swatch_at(x, y);
+    hit = sw_i >= 0;
     if (sw_i >= 0 && sw_i != shell_)
     {
         set_shell(sw_i);
@@ -882,6 +903,7 @@ bool Panel::down(int x, int y)
         return false;
     }
     int in_i = ink_at(x, y);
+    hit = hit || in_i >= 0;
     if (in_i >= 0 && in_i != ink_now)
     {
         ink_now = ink_pending = ink_req = in_i;   // (ringed at once; the view follows)
@@ -891,11 +913,19 @@ bool Panel::down(int x, int y)
         {
             file_held = (int)i;
             file_req = files[i].action;
+            hit = true;
         }
     if (!native() && x >= usb.x && x < usb.x + usb.w && y >= usb.y && y < usb.y + usb.h)
     {
         file_held = 100;   // (pressed in, as OPEN and SAVE)
         fm1_req = fm1_on && fm1_mine ? 0 : 1;
+        hit = true;
+    }
+    if (!hit && closable_)   // a click on nothing (the body, the screen off its zones): a picker, a sheet or a pinned
+    {                        // help card closes, as BACK
+        input.away = true;
+        input.changed = true;
+        return true;
     }
     return false;
 }
