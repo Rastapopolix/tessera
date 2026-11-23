@@ -108,7 +108,7 @@ and value shown large in a box under the screen:
   click where the copy goes.
 - **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
 - **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
-  under a strip to mute it, double-click it to solo.
+  under a strip to mute it, right-click it (or double-click) to solo.
 - **The tempo** in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
   double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.
 - **The footer's page tabs and its arrows:** click a tab for that page, an arrow for the page just past it.
@@ -116,8 +116,17 @@ and value shown large in a box under the screen:
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
-- **HOME:** click a track's column to select it.
+- **HOME:** click a track's column to select it; double-click it to open its sounds (the sound browser).
+- **The sound browser:** click a list name (ALL, FAVES, a category, an engine) or a sound to go to it; double-click a
+  sound to keep it (OK). BACK and OK at the foot: click them.
+- **MODS:** the wheel scrolls the 16 mods; click a mod's row to pick it, drag up or down on it to change its amount,
+  double-click it for its type (+-, +, GATE, HOLD, as OK). Click a mod's source or destination for its list: it stays
+  open until you click one (the wheel scrolls it), or click away.
+- **MATRIX:** click a cell to open its mod in MODS.
 - **TRACKS** (EXPANDED): click a row to select that track; double-click it to open its EDIT page.
+
+**HOVER HELP** (Cosmati's menu, OFF to start): rest the mouse on a value, a list's row or a mod for half a second and
+the box under the screen also shows its help text, the same text as its help card.
 
 **Click away to close:** with a list, a sheet or a help card open over the page, click anywhere with nothing to
 use (the panel's body, the screen beside it) to close it, as BACK would. A YES / NO question waits for its answer.
