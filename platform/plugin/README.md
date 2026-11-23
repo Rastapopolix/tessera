@@ -91,8 +91,12 @@ tracks, in TESSERA's own window or the FM-1's.
   `tessera-fm1-test`: the decoder over captured byte streams, the port names, the link with a stand-in FM-1.
 
 - **GENERATE** (TESSERA's shell, the strip at the top): one click, a whole piece (LEMONADE SANDWICH's fifteen
-  styles, `firmware/src/generate.c`): the four tracks' sounds, generators, key, cords and the long-form layers, from a
-  new project, all ordinary settings. GENERATE makes a new piece in the style shown from a new seed; **held** half a
+  styles and MAITREYA, loops of lengths apart after the loop players; `firmware/src/generate.c`): the four tracks'
+  sounds, generators, key, cords and the long-form layers, from a new project, all ordinary settings. Now and then a
+  track takes a preset of the plugin's own engines (PHASE, SID, MACRO: a few picked a role, never a patch rolled), and
+  in the styles that move their parts (ENTRIES) up to three of tracks 5..8 are alternates of tracks 1..4: the same part
+  with a SEED of its own and another sound, taking turns with it a section at a time (ENTRIES ROLE TURNS), so a piece
+  has more sounds over its length, never more parts at once. GENERATE makes a new piece in the style shown from a new seed; **held** half a
   second, the project before the piece comes back (held again: the piece). The style: click its name for the list, or
   the arrows / the wheel. **VAR** 0..100: how wide each pick is in its range (100 the styles as tuned, 0 the middle of
   every range; drag or wheel, double-click 100). The seed shows the piece's; the wheel over it makes the pieces made
