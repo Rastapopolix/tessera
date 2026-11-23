@@ -566,6 +566,68 @@ static void help_close()   // a help card the mouse opened (right-click): a clic
     CHECK(card < 0 && screen_hash() != open, "a click on the card closes it");
     tap(B_HOME);
 }
+static std::string page_tab()   // the footer's tab of the page shown (its title)
+{
+    tess_core_view(&v);
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) return v.zones[i].value;
+    return "";
+}
+static void ux_round()   // beta7: a click away, the tempo, TRACKS' double-click
+{
+    // a click away closes a sheet, then a pinned help card; nothing open: not closable
+    tap(B_HOME);
+    hold(B_OCTUP, 120);
+    CHECK(count(TESS_ZONE_ROW) > 0 && v.closable, "OCT+ held: HOME's sheet, closable (%u)", v.closable);
+    tess_core_away();
+    run(20);
+    tess_core_view(&v);
+    CHECK(count(TESS_ZONE_ROW) == 0 && !v.closable, "a click away closes the sheet (%d rows)", count(TESS_ZONE_ROW));
+    tap(B_FX);
+    act(0, TESS_ZA_HELP);
+    CHECK(count(TESS_ZONE_SCROLL) == 1 && v.closable, "a help card the mouse opened: closable");
+    tess_core_away();
+    run(20);
+    tess_core_view(&v);
+    CHECK(count(TESS_ZONE_SCROLL) == 0 && !v.closable, "a click away closes the help card");
+    // the tempo in the header: the wheel a step a notch, a double-click its default
+    tap(B_HOME);
+    int t = find("TEMPO", TESS_ZONE_TEMPO);
+    CHECK(t >= 0, "HOME's header: a TEMPO zone");
+    if (t >= 0)
+    {
+        uint32_t was = tess_core_bpm();
+        act(t, TESS_ZA_WHEEL, 3);
+        CHECK(tess_core_bpm() == was + 3, "the wheel up 3 on the tempo: %u, then %u", was, tess_core_bpm());
+        t = find("TEMPO", TESS_ZONE_TEMPO);
+        act(t, TESS_ZA_DOUBLE);
+        CHECK(tess_core_bpm() == 120, "a double-click: 120 (%u)", tess_core_bpm());
+    }
+    tap(B_GLO);   // (MIXER: a screen of its own, its header with the tempo; a page of four values has no room for it)
+    t = find("TEMPO", TESS_ZONE_TEMPO);
+    CHECK(t >= 0, "MIXER's header: a TEMPO zone too");
+    // TRACKS (EXPANDED): a row double-clicked opens that track's EDIT page
+    tess_core_track_select(2);
+    run(5);
+    tap(B_HOME);
+    tap(B_EDIT);
+    std::string edit = page_tab();   // (T3's EDIT page, as its EDIT button opens it)
+    tess_core_track_select(0);
+    run(5);
+    tap(B_HOME);
+    tess_zone_t row = {};
+    row.kind = TESS_ZONE_TRACK;
+    row.row = 2;
+    tess_core_tracks_do(&row, TESS_ZA_DOUBLE, 0);
+    run(30);
+    CHECK(tess_core_track() == 2 && !edit.empty() && page_tab() == edit, "TRACKS: T3 double-clicked: T3, its EDIT page "
+          "(%s, want %s)", page_tab().c_str(), edit.c_str());
+    tess_core_tracks_do(&row, TESS_ZA_DOUBLE, 0);   // (there already: it stays, not the next EDIT page)
+    run(30);
+    CHECK(page_tab() == edit, "again: the same EDIT page (%s)", page_tab().c_str());
+    tess_core_track_select(0);
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -578,6 +640,7 @@ int main(int argc, char **argv)
     sheet_track();
     tabs();
     help_close();
+    ux_round();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 

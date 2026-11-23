@@ -107,13 +107,20 @@ and value shown large in a box under the screen:
 - **PATTERNS:** click a cell to queue that pattern on its track; click a track's number to select it. In Copy to,
   click where the copy goes.
 - **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
-- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the left
-  half of its MUTE / SOLO box to mute, the right half to solo.
+- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
+  under a strip to mute it, double-click it to solo.
+- **The tempo** in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
+  double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.
+- **The footer's page tabs and its arrows:** click a tab for that page, an arrow for the page just past it.
 - **ABOUT and a HELP card longer than the card:** the wheel scrolls the text (drag it as you would push a page).
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
 - **HOME:** click a track's column to select it.
+- **TRACKS** (EXPANDED): click a row to select that track; double-click it to open its EDIT page.
+
+**Click away to close:** with a list, a sheet or a help card open over the page, click anywhere with nothing to
+use (the panel's body, the screen beside it) to close it, as BACK would. A YES / NO question waits for its answer.
 
 The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
 presses those keys for you, so a page behaves the same either way.
@@ -122,11 +129,15 @@ presses those keys for you, so a page behaves the same either way.
 
 - **Z** to **'** and **Q** to **O**: the keys.
 - **1** to **=**: the twelve buttons, in the panel's order.
-- **[** and **]**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **[** and **]**, or **Esc** and **Enter**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **Space** (the standalone app): PLAY / STOP. **Ctrl+O** and **Ctrl+S** (**Cmd** on a Mac): OPEN and SAVE. In a
+  DAW these stay the DAW's.
 - **Shift** (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).
 - **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
 - **F1** (Tessera's look): **?**, the help card of the knob or row under the cursor.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
+
+Hover over a button for the key that does the same.
 
 **Key labels:** where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
 hovering over the key says it in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M4 mute on the black keys, S1..S4 solo

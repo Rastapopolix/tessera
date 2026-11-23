@@ -190,7 +190,31 @@ int main(int argc, char **argv)
     p.input.enc[0] = 0;
     CHECK(p.key(Panel::KEY_UP, true) && p.input.enc[0] == 1, "up arrow turns SELECT");
     p.input.enc[0] = 0;
-    CHECK(!p.key(0x39, true), "space: not a panel key");
+    CHECK(!p.key(0x39, true), "space: not a panel key (in a DAW)");
+    CHECK(!p.shortcut('O') && p.take_file_request() == Panel::FILE_NONE, "Ctrl+O in a DAW: the DAW's");
+    CHECK(p.key(0x01, true) && (p.input.buttons >> 12 & 1u), "Esc holds OCT- (BACK)");
+    CHECK(p.key(0x01, false) && !(p.input.buttons >> 12 & 1u), "Esc let go");
+    CHECK(p.key(0x1C, true) && (p.input.buttons >> 13 & 1u), "Enter holds OCT+ (OK)");
+    CHECK(p.key(0x1C, false) && !(p.input.buttons >> 13 & 1u), "Enter let go");
+    p.set_standalone(true);
+    CHECK(p.key(0x39, true) && (p.input.buttons >> 10 & 1u), "the standalone app: space holds PLAY");
+    CHECK(p.key(0x39, false) && !(p.input.buttons >> 10 & 1u), "space let go");
+    CHECK(p.shortcut('S') && p.take_file_request() == Panel::FILE_SAVE, "the standalone app: Ctrl+S asks for SAVE");
+    p.set_standalone(false);
+    {   // a click on nothing (the body) while a picker, sheet or help card is open: away (tess_core_away); else nothing
+        tess_view_t cv;
+        tess_core_view(&cv);
+        cv.closable = 1;
+        p.draw(px.data(), cv);
+        p.input.away = false;
+        CHECK(p.down(280, 315) && p.input.away, "a click on the body with a picker open: away");
+        p.up(280, 315);
+        p.input.away = false;
+        cv.closable = 0;
+        p.draw(px.data(), cv);
+        CHECK(!p.down(280, 315) && !p.input.away, "nothing open: a click on the body does nothing");
+        p.up(280, 315);
+    }
     CHECK(p.key(0x10, true) && p.release_keys() && !p.input.keys, "focus lost: every key up");
 
     // OPEN and SAVE under the keys: a click asks once (the window answers with its dialog), the outcome is shown
