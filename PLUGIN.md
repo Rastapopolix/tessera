@@ -124,6 +124,8 @@ presses those keys for you, so a page behaves the same either way.
 - **Z** to **'** and **Q** to **O**: the keys.
 - **1** to **=**: the twelve buttons, in the panel's order.
 - **[** and **]**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **Shift** (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).
+- **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
 **Naming** a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and `- . _ / # +` go

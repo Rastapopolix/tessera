@@ -36,6 +36,8 @@ int scan_code(unsigned short kc)
     case 0x7D: return Panel::KEY_DOWN;
     case 0x7B: return Panel::KEY_LEFT;
     case 0x7C: return Panel::KEY_RIGHT;
+    case 0x74: return Panel::KEY_PGUP;
+    case 0x79: return Panel::KEY_PGDN;
     }
     return kc < sizeof SC ? SC[kc] : 0;
 }
@@ -328,6 +330,19 @@ void v_key_up(id self, SEL, NSEvent *e)
     if (!v_key(self, e, false))
         [[self nextResponder] keyUp:e];
 }
+// Shift (left 56, right 60): no keyDown / keyUp of its own, only the modifiers' change; to the panel as the PC's 0x2A
+void v_flags(id self, SEL, NSEvent *e)
+{
+    GuiMac *g = gui_of(self);
+    bool ours = false;
+    if (g && (e.keyCode == 56 || e.keyCode == 60))
+    {
+        ours = g->panel.key(0x2A, (e.modifierFlags & NSEventModifierFlagShift) != 0);
+        g->input(ours);
+    }
+    if (!ours)
+        [[self nextResponder] flagsChanged:e];
+}
 BOOL v_resign(id self, SEL)
 {
     if (GuiMac *g = gui_of(self))
@@ -384,6 +399,7 @@ Class view_class()
     add(cls, @selector(scrollWheel:), (IMP)v_wheel, types_of(@selector(scrollWheel:)));
     add(cls, @selector(keyDown:), (IMP)v_key_down, types_of(@selector(keyDown:)));
     add(cls, @selector(keyUp:), (IMP)v_key_up, types_of(@selector(keyUp:)));
+    add(cls, @selector(flagsChanged:), (IMP)v_flags, types_of(@selector(flagsChanged:)));
     add(cls, @selector(resignFirstResponder), (IMP)v_resign, types_of(@selector(resignFirstResponder)));
     add(cls, @selector(updateTrackingAreas), (IMP)v_tracking, types_of(@selector(updateTrackingAreas)));
     char t_enter[16], t_drop[16];   // (NSDraggingDestination: no NSView method to copy the types from)
