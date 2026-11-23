@@ -38,6 +38,7 @@ int scan_code(unsigned short kc)
     case 0x7C: return Panel::KEY_RIGHT;
     case 0x74: return Panel::KEY_PGUP;
     case 0x79: return Panel::KEY_PGDN;
+    case 0x7A: return 0x3B;   // F1
     }
     return kc < sizeof SC ? SC[kc] : 0;
 }

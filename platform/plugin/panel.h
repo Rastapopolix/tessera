@@ -69,14 +69,15 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
-    /* a right-click (or Ctrl-click on a Mac): a button or key latched, held until it is right-clicked or clicked again
+    /* a right-click (or Ctrl-click on a Mac): on the screen, a value's column or a list's row: its help card (TESS_ZA_HELP);
+     * else a button or key latched, held until it is right-clicked or clicked again
      * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
     bool latch(int x, int y);
     uint32_t latched_buttons() const { return latch_buttons; }
     /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
      * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
      * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (TESSERA's shell: BACK, OK;
-     * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-; each held while its key is), up / down SELECT, left / right
+     * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-, F1 its ?; each held while its key is), up / down SELECT, left / right
      * ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
     enum { KEY_UP = 0x148, KEY_PGUP = 0x149, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150, KEY_PGDN = 0x151 };
     bool key(int code, bool down);

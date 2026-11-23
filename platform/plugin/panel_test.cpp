@@ -619,10 +619,10 @@ int main(int argc, char **argv)
         q.down(36 + 30, 332 + 128 + 5 + 23);   // (OCT-: under OCT+, at the keys' left)
         CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
         q.up(0, 0);
-        q.down(127 + 33, 258 + 17);
+        q.down(118 + 28, 258 + 17);
         CHECK(q.input.buttons == 1u << 12, "BACK is the FM-1's OCT- (%#x)", q.input.buttons);
         q.up(0, 0);
-        q.down(204 + 33, 258 + 17);
+        q.down(180 + 25, 258 + 17);
         CHECK(q.input.buttons == 1u << 13, "OK is the FM-1's OCT+ (%#x)", q.input.buttons);
         q.up(0, 0);
         // the computer keyboard: Shift SHIFT (held only), [ ] BACK / OK, Page Up / Page Down OCT+ / OCT-
@@ -645,6 +645,9 @@ int main(int argc, char **argv)
         q.key(Panel::KEY_PGDN, true);
         CHECK(q.input.buttons == 1u << 17, "Page Down: OCT- (%#x)", q.input.buttons);
         q.key(Panel::KEY_PGDN, false);
+        q.key(0x3B, true);
+        CHECK(q.input.buttons == 1u << 19, "F1: ? (%#x)", q.input.buttons);
+        q.key(0x3B, false);
         CHECK(q.input.buttons == 0, "every key up (%#x)", q.input.buttons);
         int shot_n = 0;
         auto shot = [&](double t) {
@@ -708,6 +711,42 @@ int main(int argc, char **argv)
         tess_core_buttons(0);
         CHECK(shifted == held && shifted != mixer, "SHIFT held shows what OCT- held shows (the page's second layer)");
         CHECK(shot(0.4) == mixer, "OCT- let go after a hold: still the page");
+        // help by the mouse: a right-click on FX's KNOB 2 column opens its card, kept without ARP; a click closes it and
+        // does nothing more; ? opens KNOB 1's and closes it again
+        press(1u << 0, 0.05);   // FX
+        fx = shot(0.6);
+        {
+            int mix = -1;
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_KNOB && v.zones[i].role == 4) mix = (int)i;
+            CHECK(mix >= 0, "FX: KNOB 2's column is a zone (help)");
+            if (mix >= 0)
+            {
+                const tess_zone_t m = v.zones[mix];
+                std::string before = m.value;
+                const int mx = 292 + 8 + m.x + m.w / 2, my = 44 + 8 + m.y + m.h / 2;
+                q.draw(px.data(), v);
+                CHECK(q.latch(mx, my) && q.input.zones.size() == 1 && q.input.zones[0].action == TESS_ZA_HELP,
+                      "a right-click on KNOB 2's column asks for its help");
+                q.input.buttons = 0;
+                std::vector<uint16_t> card = shot(0.3);
+                CHECK(card != fx, "its help card over FX");
+                CHECK(shot(1.0) == card, "the card stays without ARP held");
+                q.draw(px.data(), v);
+                if (!out.empty()) ppm(out + "/10e_tessera_help.ppm", px);
+                tess_zone_t any = v.zones[0];
+                for (uint32_t i = 0; i < v.zone_count; i++)
+                    if (v.zones[i].kind == TESS_ZONE_KNOB) any = v.zones[i];
+                tess_core_zone_do(&any, TESS_ZA_CLICK, 0);   // (a click anywhere on the screen)
+                CHECK(shot(0.4) == fx, "a click closes it");
+                CHECK(v.zones[mix].value == before, "and changes nothing (%s)", v.zones[mix].value);
+                press(1u << 19, 0.05);   // ?
+                CHECK(shot(0.4) != fx, "? opens KNOB 1's card");
+                press(1u << 19, 0.05);
+                CHECK(shot(0.4) == fx, "? again closes it");
+            }
+        }
+
         // the keys' jobs (tess_view_t.key_short / key_long): GLO held, MIXER's keys (M / S, ALL HLD FIL TAP); SEQ held,
         // the patterns; HOME: the keys play, no labels; the labels drawn over the keys, a key's meaning in a card
         press(1u << 6, 0.05);   // HOME

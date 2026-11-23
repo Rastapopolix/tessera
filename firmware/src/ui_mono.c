@@ -3599,6 +3599,8 @@ static void mo_help(const char *name, const char *val, const char *text)
     else if (help.top) hint = "CCW: UP";
     else hint = "ARP + KNOB: HELP";
 #if TESS_HAS_POINTER
+    if (uz_help_pin && !help.top && n <= rows)
+        hint = "CLICK: CLOSE";                          /* (a card the mouse opened, tess_core.c core_help) */
     uz_begin(UZ_G_LIST);                                /* (zones: the card, over the page: its text under the wheel,
                                                          * the knob it is about's) */
     if (n > rows)

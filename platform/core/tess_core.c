@@ -88,7 +88,7 @@ void tess_core_boot(void)
  * detents as the hand's (a quick wheel speeds up as a quick knob does) */
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE };
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -104,6 +104,27 @@ static void zq_turn(int32_t role, int32_t n)          /* n detents of a knob (at
         return;
     for (k = 0; k < a && k < 64; k++)
         zq_put(ZQ_DETENT, (uint32_t)role, n);
+}
+/* the mouse's help (TESS_ZA_HELP, TESS_BTN_HELP): knob k's card (0..3: KNOB 1..4), as ARP held + that knob opens it,
+ * pinned (UZ_HELP_PIN) till help_unpin: a click */
+static void core_help(uint32_t k)
+{
+    if (ui.menu || ui.confirm || ui.layer || pop.on)
+        return;
+    help.on = 0;                                      /* (another knob's, or again: from its top) */
+    uz_help_pin = 1;
+    (void)help_knob(k & 3u, 0);
+}
+static int help_unpin(void)                           /* 1: a pinned card closed */
+{
+    if (!uz_help_pin)
+        return 0;
+    uz_help_pin = 0;
+    if (help.on) {
+        help.on = 0;
+        ui.force = 1;
+    }
+    return 1;
 }
 static void zq_run(void)
 {
@@ -130,6 +151,10 @@ static void zq_run(void)
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
         page_scroll(sg);
         ui.force = 1;
+        break;
+    case ZQ_HELP:                                     /* KNOB arg+1's help card, kept till a click (a list's row:
+                                                       * the cursor there first, KNOB 2 its value's) */
+        core_help(arg);
         break;
     case ZQ_PRESS:
         m = 1u << panel.btn[arg % NB];
@@ -198,8 +223,25 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
     int32_t d, k;
+    if (z && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && help_unpin())
+        return;                                       /* a pinned help card: any click closes it, and does no more */
     if (!z || !zone_live(z))
         return;
+    if (action == TESS_ZA_HELP) {                     /* a value's column or a list's row: what it does */
+        if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
+            help_unpin();
+            zq_put(ZQ_HELP, (uint32_t)(z->role - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_ROW && z->vrole >= EN_K1 && z->vrole <= EN_K4) {
+            help_unpin();
+            tess_core_zone_do(z, TESS_ZA_CLICK, 0);   /* (the cursor on the row) */
+            zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
+        }
+        return;
+    }
+    if (uz_help_pin && help.on && z->kind == TESS_ZONE_SCROLL && (action == TESS_ZA_WHEEL || action == TESS_ZA_TURN)) {
+        (void)help_knob(help.knob, action == TESS_ZA_WHEEL ? -n : n);   /* (the card's text: as ARP + its knob) */
+        return;
+    }
     if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_ROW) {   /* a list under the wheel: it moves, a row a notch
                                                                   * (up: up the list, its knob anticlockwise) */
         zq_turn(z->role, -n);
@@ -520,7 +562,14 @@ void tess_core_buttons(uint32_t labels)
     {   /* Smalti's own buttons: SHIFT holds OCT- with no press (no edge: never BACK, never an octave; its release no
          * tap), the knobs' second layer; OCTAVE DOWN / UP step the keys' octave, on any page, as OCT- / OCT+ do on
          * Stage (both: back to 0) */
-        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP), go = ex & ~host_extra;
+        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP | TESS_BTN_HELP),
+                 go = ex & ~host_extra;
+        if (go & TESS_BTN_HELP) {                     /* ?: KNOB 1's help card (turn another knob for its), or it closes */
+            if (!help_unpin())
+                zq_put(ZQ_HELP, 0, 1);
+        } else if (m & ~fm1_in.buttons) {
+            help_unpin();                             /* (a button pressed: a pinned card closes, the press goes on) */
+        }
         if (ex & TESS_BTN_SHIFT)
             m |= 1u << panel.btn[B_OCTDN];
         if ((ex ^ host_extra) & TESS_BTN_SHIFT)
@@ -545,6 +594,10 @@ void tess_core_buttons(uint32_t labels)
 void tess_core_keys(uint32_t mask)
 {
     mask &= (1u << TESS_KEYS) - 1u;
+#if TESS_HAS_POINTER
+    if (mask & ~fm1_in.notes)
+        help_unpin();                                 /* (a key played: a pinned help card closes) */
+#endif
     host_notes |= mask & ~fm1_in.notes;
     fm1_in.notes = mask;
 }

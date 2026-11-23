@@ -2615,7 +2615,8 @@ static void ui_input(void)
     msc_frame();                                        /* (FX held for a mod amount: its release opens no page) */
     if (help.on) {                                      /* (ARP held for help: its release opens no page) */
         ui.pg_down &= (uint16_t)~(1u << panel.btn[B_ARP]);
-        if (!(fm1_in.buttons & (1u << panel.btn[B_ARP]))) {
+        if (!(fm1_in.buttons & (1u << panel.btn[B_ARP])) && !UZ_HELP_PIN) {   /* (a card the mouse opened: a click
+                                                                                * closes it, tess_core.c) */
             help.on = 0;
             ui.force = 1;
         }
