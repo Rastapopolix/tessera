@@ -122,11 +122,11 @@ int main()
         std::string err = midifile::render(x, demo, 4, ev1, bpm1);
         double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         CHECK(err.empty(), "4 bars render (%s)", err.c_str());
-        int ons = 0;
+        int ons = 0, kept = 0;
         double lo = 1e9, hi = -1;
         for (auto &e : ev1)
         {
-            if ((e.status & 0xF0) == 0x90 && e.d2) ons++;
+            if ((e.status & 0xF0) == 0x90 && e.d2) ons++, kept += std::lround(e.beat * 480) < 16 * 480;
             lo = std::min(lo, e.beat), hi = std::max(hi, e.beat);
         }
         std::printf("4 bars offline: %d notes, beats %.3f .. %.3f, %.0f BPM, %.2f s (%.0fx real time)\n", ons, lo, hi,
@@ -140,13 +140,14 @@ int main()
         tx.join();
         bool same = ev1.size() == ev2.size() && bpm1 == bpm2;
         for (size_t i = 0; same && i < ev1.size(); i++)
-            same = std::fabs(ev1[i].beat - ev2[i].beat) < 1e-9 && ev1[i].status == ev2[i].status && ev1[i].d1 == ev2[i].d1;
+            same = std::fabs(ev1[i].beat - ev2[i].beat) < 0.005 &&   // (the core's clock steps in ms: a step's grain)
+                    ev1[i].status == ev2[i].status && ev1[i].d1 == ev2[i].d1;
         CHECK(same, "the same notes again, rendered while another copy plays (%zu, %zu)", ev1.size(), ev2.size());
         std::vector<uint8_t> f = midifile::smf(ev1, bpm1, "STILL TIDE", 4);
         int tr = 0, notes = 0;
         double q = 0;
-        CHECK(midifile::read_back(f, tr, notes, q) && notes == ons && std::fabs(q - 16.0) < 1e-9,
-              "a .mid of the 4 bars: %d notes, %.3f quarters", notes, q);
+        CHECK(midifile::read_back(f, tr, notes, q) && notes == kept && std::fabs(q - 16.0) < 1e-9,
+              "a .mid of the 4 bars: %d notes (%d before the end), %.3f quarters", notes, kept, q);
         CHECK(x->playing() == 0, "the spare copy stopped after");
     }
 

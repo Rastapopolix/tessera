@@ -48,6 +48,10 @@ tracks, in TESSERA's own window or the FM-1's.
   into the DAW: format 1, the project's tempo, a track per channel (T1..T8, each track on its MIDI OUT channel), from
   the bar of the first note. Only notes (no CCs, no clock); up to 65,536 messages, the oldest dropped past that
   (`midifile.h`; kept on the audio thread in a fixed ring, nothing allocated there).
+  Stopped, MIDI renders the project from the top for 16 bars instead, faster than real time, on a spare copy of the
+  core (`midirender.cpp`; the instance's own copy is untouched), and writes those 16 bars exactly. It needs a copy no
+  instance holds (8 are built in). The file itself comes from `firmware/src/smf.c`, the writer Andamento shares
+  (`tess_core_smf`, `MELODEE_SMF`; never on the FM-1).
 - **LISTEN** (the menu: `< OFF >`, then CH 1..16, and SPLIT under it): the notes on that MIDI channel steer Tessera
   instead of playing it (`listen.h`). From SPLIT up (note 48 unless moved, an octave at a time from 12 to 108; shown
   as a note number, since DAWs name that note C2 or C3), what is held sets the key: one note its ROOT, a chord its
