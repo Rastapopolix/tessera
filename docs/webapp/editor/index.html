@@ -408,6 +408,14 @@
         <button id="pf-load" data-t="pfLoad" data-ic="symbol_upload"></button><input id="pf-file" type="file" accept=".tsp" hidden>
         <span id="pf-status" class="dim" aria-live="polite"></span></p>
     </div>
+    <div id="midirec-panel" style="margin-top:16px">
+      <h2 data-t="mrTitle"></h2>
+      <p class="dim" data-t="mrHelp"></p>
+      <p class="bar"><select id="mr-len"></select>
+        <button id="mr-rec" data-t="mrRec"></button>
+        <button id="mr-stop" data-t="mrStop" data-ic="symbol_download" disabled></button>
+        <span id="mr-status" class="dim" aria-live="polite"></span></p>
+    </div>
     <div class="group" id="tunings" hidden style="margin-top:16px">
       <h2 data-t="tuneTitle"></h2>
       <p class="dim" data-t="tuneHelp"></p>
@@ -2851,6 +2859,129 @@ function writesDevice([cmd, a]) {
     default: return true;
   }
 }
+/* ---------------------------------------------------------- MIDI recorder --- */
+/* What the FM-1 plays, as a Standard MIDI File (RECORD MIDI on the Projects tab). With MENU > NOTES OUT on ALL the
+   FM-1 sends every track's notes (steps, ARP, recordings, every generator) on the track's channel; with CLOCK OUT on,
+   its clock and START / STOP too. The recorder keeps the notes as they come, so a generator, a chance step or an
+   evolving track is written as it was heard. Time: the FM-1's clock when it sends one (24 ticks a quarter; a START
+   puts the clip's top on the bar the song starts from), otherwise the computer's clock at the project's BPM with the
+   first note on the clip's top. bars: stop after that many 4/4 bars from the top (0: until stop). */
+class MidiRec {
+  constructor(bpm = 120, bars = 0) {
+    this.bpm = bpm > 0 ? bpm : 120;
+    this.bars = bars;
+    this.ev = [];                  /* { beat, s, d1, d2 } note on / off, in the order they came */
+    this.on = new Set();           /* ch << 7 | note held */
+    this.base = null;              /* "clock" or "ms": set by the first thing that gives the clip its top */
+    this.t0 = 0;                   /* (ms) the first note's time */
+    this.ticks = -1;               /* (clock) ticks since the top: the first tick after START is the downbeat (0) */
+    this.tickMs = 0; this.tick0Ms = 0; this.tickN = 0;   /* the last tick's time, the first's, ticks timed */
+    this.shift = 0;                /* (clock, no START) beats taken off so the first note's beat is the top */
+    this.started = false;          /* a START came */
+    this.endBeat = null;           /* set once it has ended */
+  }
+  /* where ms falls, in quarters from the clip's top */
+  beatAt(ms) {
+    if (this.base === "clock") {
+      if (this.ticks < 0) return 0;
+      const per = this.tickN > 1 ? (this.tickMs - this.tick0Ms) / (this.tickN - 1) : 60000 / this.bpm / 24;
+      const frac = Math.min(Math.max((ms - this.tickMs) / per, 0), 0.999);
+      return (this.ticks + frac) / 24 - this.shift;
+    }
+    return this.base === "ms" ? (ms - this.t0) * this.bpm / 60000 : 0;
+  }
+  /* one incoming message at ms (Web MIDI's timeStamp); true once the recording has ended */
+  feed(data, ms) {
+    if (this.endBeat !== null || !data || !data.length) return this.endBeat !== null;
+    const s = data[0];
+    if (s === 0xFA) {                           /* START: the clip's top is the song's, anything before is dropped */
+      this.ev = []; this.on.clear();
+      this.base = "clock"; this.ticks = -1; this.tickN = 0; this.shift = 0; this.started = true;
+      return false;
+    }
+    if (s === 0xF8) {
+      if (this.base === null) this.base = "clock";   /* a clock before any note: its ticks time the clip */
+      if (this.base !== "clock") return this.due(ms);
+      this.ticks++;
+      if (!this.tickN) this.tick0Ms = ms;
+      this.tickMs = ms; this.tickN++;
+      return this.due(ms);
+    }
+    if (s === 0xFC) {                           /* STOP */
+      if (this.started || this.ev.length) this.end(this.beatAt(ms));
+      return this.endBeat !== null;
+    }
+    const kind = s & 0xF0, ch = s & 15;
+    if ((kind !== 0x90 && kind !== 0x80) || data.length < 3) return this.due(ms);
+    if (this.due(ms)) return true;
+    const note = data[1] & 127, vel = data[2] & 127, key = ch << 7 | note;
+    if (kind === 0x90 && vel) {
+      if (this.base === null) { this.base = "ms"; this.t0 = ms; }
+      if (this.base === "clock" && !this.started && !this.ev.length) this.shift = Math.floor(this.beatAt(ms));
+      if (this.on.has(key)) this.ev.push({ beat: this.beatAt(ms), s: 0x80 | ch, d1: note, d2: 0 });
+      this.on.add(key);
+      this.ev.push({ beat: this.beatAt(ms), s: 0x90 | ch, d1: note, d2: vel });
+    } else if (this.on.has(key)) {              /* (an off for a note from before the recording is left out) */
+      this.on.delete(key);
+      this.ev.push({ beat: this.beatAt(ms), s: 0x80 | ch, d1: note, d2: 0 });
+    }
+    return false;
+  }
+  /* ends it once the clip's bars are full (true then) */
+  due(ms) {
+    if (this.endBeat !== null) return true;
+    if (this.bars > 0 && (this.ev.length || this.started) && this.beatAt(ms) >= this.bars * 4) this.end(this.bars * 4);
+    return this.endBeat !== null;
+  }
+  /* ends it at beat: a note still held ends there */
+  end(beat) {
+    if (this.endBeat !== null) return;
+    const last = this.ev.length ? this.ev[this.ev.length - 1].beat : 0;
+    this.endBeat = Math.max(beat, last);
+    for (const key of this.on) this.ev.push({ beat: this.endBeat, s: 0x80 | key >> 7, d1: key & 127, d2: 0 });
+    this.on.clear();
+  }
+  notes() { return this.ev.reduce((n, e) => n + ((e.s & 0xF0) === 0x90 ? 1 : 0), 0); }
+  /* the tempo the clip is written at: the FM-1's clock's when it was timed, else the project's */
+  tempo() {
+    if (this.base === "clock" && this.tickN > 24) return Math.round(6000000 / ((this.tickMs - this.tick0Ms) / (this.tickN - 1) * 24)) / 100;
+    return this.bpm;
+  }
+  /* the Standard MIDI File (format 1, 480 ticks a quarter): the tempo, 4/4 and name, then a track per channel (T1..);
+     empty if no note came */
+  smf(name = "") {
+    if (this.endBeat === null) this.end(0);       /* (not ended by stop or the bars: it ends on its last note) */
+    if (!this.notes()) return new Uint8Array(0);
+    return smfBytes(this.ev, this.tempo(), name, this.endBeat);
+  }
+}
+const SMF_PPQ = 480;
+function smfBytes(ev, bpm, name, endBeat) {
+  const vlq = (n) => { const b = [n & 127]; while ((n >>= 7) > 0) b.unshift(n & 127 | 128); return b; };
+  const text = (s) => Array.from(unescape(encodeURIComponent(String(s).slice(0, 64))), (c) => c.charCodeAt(0));   /* (UTF-8) */
+  const chunk = (id, body) => [...id].map((c) => c.charCodeAt(0)).concat([body.length >>> 24, body.length >> 16 & 255, body.length >> 8 & 255, body.length & 255], body);
+  const track = (items, endTick) => {          /* items: [tick, bytes], kept in order */
+    const out = []; let at = 0;
+    for (const [tick, bytes] of items) { out.push(...vlq(Math.max(tick - at, 0)), ...bytes); at = Math.max(tick, at); }
+    out.push(...vlq(Math.max(endTick - at, 0)), 0xFF, 0x2F, 0x00);
+    return chunk("MTrk", out);
+  };
+  const tick = (b) => Math.max(Math.round(b * SMF_PPQ), 0), endTick = tick(endBeat);
+  const us = Math.round(60000000 / bpm), nm = text(name);
+  const head = [[0, [0xFF, 0x51, 3, us >> 16 & 255, us >> 8 & 255, us & 255]], [0, [0xFF, 0x58, 4, 4, 2, 24, 8]]];
+  if (nm.length) head.unshift([0, [0xFF, 0x03, ...vlq(nm.length), ...nm]]);
+  const chans = [...new Set(ev.map((e) => e.s & 15))].sort((a, b) => a - b);
+  const tracks = [track(head, endTick)];
+  for (const ch of chans) {
+    const nmT = text(ch < 8 ? "T" + (ch + 1) : "CH" + (ch + 1));
+    const items = [[0, [0xFF, 0x03, nmT.length, ...nmT]]];
+    /* by time, in the order they came at the same tick (the FM-1 ends a note before it plays it again) */
+    const mine = ev.filter((e) => (e.s & 15) === ch).map((e, i) => ({ e, i, t: tick(e.beat) })).sort((a, b) => a.t - b.t || a.i - b.i);
+    for (const { e, t } of mine) items.push([t, [e.s, e.d1, e.d2]]);
+    tracks.push(track(items, endTick));
+  }
+  return Uint8Array.from(chunk("MThd", [0, 1, 0, tracks.length, SMF_PPQ >> 8, SMF_PPQ & 255]).concat(...tracks));
+}
 /*PROTO-END*/
 
 /* ===================================================================== UI === */
@@ -2928,6 +3059,7 @@ const TEXT = {
     chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
     chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
     demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
+    mrTitle: "MIDI 録音", mrHelp: "FM-1 の演奏を DAW 用の MIDI ファイルとして録音します。FM-1 の各トラックは別々のトラックに、ジェネレーターや確率ステップは聞こえたとおりに入ります。FM-1 で MENU > NOTES OUT を ALL に、クリップを小節頭から始めるには CLOCK OUT を ON にします。録音を押してから FM-1 の PLAY を押します。ミュートしたトラックは送られません。", mrLen: "長さ", mrUntil: "STOP まで", mrBars: "{n} 小節", mrRec: "録音", mrStop: "止めて保存", mrArmed: "待機中：FM-1 の PLAY を押してください", mrRecording: "録音中、ノート数: ", mrSaved: "保存しました: ", mrNone: "ノートが届きませんでした。NOTES OUT は ALL ですか？",
     pfTitle: "プロジェクト・ファイル", pfHelp: "スロットのプロジェクトを .tsp ファイルとして保存、または .tsp ファイルをスロットへ。Webシミュレーターと同じファイルです。書き込んだら SAVE > PROJECT から読み込みます。読み書きの間、再生は止まります。", pfSave: "ファイルに保存", pfLoad: "ファイルを読み込む", pfEmpty: "このスロットは空です", pfSaved: "保存しました: ", pfNotTsp: "Tessera のプロジェクト・ファイル（.tsp）ではありません: ", pfReplace: "スロット {s} の {old} を {new} に置き換えますか？", pfWorking: "プロジェクトを書き込み中 ", pfDone: "スロット {s} に書き込みました。SAVE > PROJECT から読み込めます: ",
     demosConfirm: "次のデモを書き込みますか？", demosWas: "現在", demosEmpty: "空き", demosOld: "読めない古い形式のプロジェクト", demosUnnamed: "名前なしのプロジェクト", demosKeep: "置き換えるプロジェクトを残したい場合は、キャンセルして先にバックアップを保存してください。", demosWorking: "デモを書き込み中 ", demosDone: "デモを書き込みました。SAVE > PROJECT から読み込めます: ", demosFetch: "デモ・ファイルを読み込めません: ",
     demoStill: "アンビエント: ORACLE のドローン、GRAVITY、FILTER を通る FALL、STEP を種にしたベース", demoKoto: "HIRA の FM 箏が QUAD で 2 列、FORM で育つ ORACLE の笛、条件付きステップの木魚", demoHarbour: "アンビエント・ダブ: ORACLE のコードがエコーへ、サブベース、909 のワンドロップ",
@@ -3056,6 +3188,7 @@ const TEXT = {
     chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
     chkCpu: "Four ORACLE tracks: watch Settings > Health",
     demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
+    mrTitle: "Record MIDI", mrHelp: "Record what the FM-1 plays as a MIDI file for a DAW: each FM-1 track on its own track, generators and chance steps as they were heard. On the FM-1 set MENU > NOTES OUT to ALL, and CLOCK OUT to ON so the clip starts on the bar. Press Record, then PLAY on the FM-1. Muted tracks are not sent.", mrLen: "Length", mrUntil: "Until STOP", mrBars: "{n} bars", mrRec: "Record", mrStop: "Stop and save", mrArmed: "Waiting: press PLAY on the FM-1", mrRecording: "Recording, notes: ", mrSaved: "Saved: ", mrNone: "No notes came in. Is NOTES OUT set to ALL?",
     pfTitle: "Project files", pfHelp: "Save a slot's project as a .tsp file, or put a .tsp file into a slot: the same file the web simulator saves and loads. Load it on the FM-1 from SAVE > PROJECT. Playback stops while the slot is read or written.", pfSave: "Save as file", pfLoad: "Load a file", pfEmpty: "This slot is empty", pfSaved: "Saved: ", pfNotTsp: "Not a Tessera project file (.tsp): ", pfReplace: "Replace slot {s} ({old}) with {new}?", pfWorking: "Putting the project on the FM-1 ", pfDone: "Written to slot {s}. Load it from SAVE > PROJECT: ",
     demosConfirm: "Put these demos on the FM-1?", demosWas: "now", demosEmpty: "empty", demosOld: "a project in an older format", demosUnnamed: "a project with no name", demosKeep: "To keep a project that will be replaced, cancel and save a backup first.", demosWorking: "Putting the demos on the FM-1 ", demosDone: "Demos written. Load them from SAVE > PROJECT: ", demosFetch: "Could not read the demo file: ",
     demoStill: "Ambient: an ORACLE drone, GRAVITY, FALL through the FILTER effect, a bass from STEP as seed", demoKoto: "FM koto in HIRA on two QUAD rows, an ORACLE flute in a FORM that develops, a mokugyo with conditions", demoHarbour: "Ambient dub: ORACLE chord stabs into a drifting echo, a sub bass, a 909 one drop",
@@ -3223,6 +3356,7 @@ const TEXT = {
     demosNone: "Elige una ranura para al menos una demo",
     demosTwice: "Elige cada ranura solo una vez",
     demosSkip: "Omitir",
+    mrTitle: "Grabar MIDI", mrHelp: "Graba lo que toca el FM-1 como archivo MIDI para un DAW: cada pista del FM-1 en su propia pista, generadores y pasos de probabilidad tal como sonaron. En el FM-1 pon MENU > NOTES OUT en ALL, y CLOCK OUT en ON para que el clip empiece en el compás. Pulsa Grabar y luego PLAY en el FM-1. Las pistas silenciadas no se envían.", mrLen: "Duración", mrUntil: "Hasta STOP", mrBars: "{n} compases", mrRec: "Grabar", mrStop: "Parar y guardar", mrArmed: "Esperando: pulsa PLAY en el FM-1", mrRecording: "Grabando, notas: ", mrSaved: "Guardado: ", mrNone: "No llegó ninguna nota. ¿Está NOTES OUT en ALL?",
     pfTitle: "Archivos de proyecto",
     pfHelp: "Guarda el proyecto de una ranura como archivo .tsp, o pon un archivo .tsp en una ranura: el mismo archivo que guarda y carga el simulador web. Cárgalo en el FM-1 desde SAVE > PROJECT. La reproducción se detiene mientras se lee o escribe la ranura.",
     pfSave: "Guardar como archivo",
@@ -3558,6 +3692,7 @@ const TEXT = {
     demosNone: "Scegli uno slot per almeno una demo",
     demosTwice: "Scegli ogni slot una sola volta",
     demosSkip: "Escludi",
+    mrTitle: "Registra MIDI", mrHelp: "Registra ciò che suona l'FM-1 come file MIDI per una DAW: ogni traccia dell'FM-1 sulla sua traccia, generatori e step di probabilità come si sono sentiti. Sull'FM-1 imposta MENU > NOTES OUT su ALL, e CLOCK OUT su ON perché la clip inizi sulla battuta. Premi Registra, poi PLAY sull'FM-1. Le tracce in mute non vengono inviate.", mrLen: "Durata", mrUntil: "Fino a STOP", mrBars: "{n} battute", mrRec: "Registra", mrStop: "Ferma e salva", mrArmed: "In attesa: premi PLAY sull'FM-1", mrRecording: "Registrazione, note: ", mrSaved: "Salvato: ", mrNone: "Nessuna nota ricevuta. NOTES OUT è su ALL?",
     pfTitle: "File di progetto",
     pfHelp: "Salva il progetto di uno slot come file .tsp, oppure metti un file .tsp in uno slot: lo stesso file che il simulatore web salva e carica. Caricalo sull'FM-1 da SAVE > PROJECT. La riproduzione si ferma mentre lo slot viene letto o scritto.",
     pfSave: "Salva come file",
@@ -3893,6 +4028,7 @@ const TEXT = {
     demosNone: "Wähle für mindestens eine Demo einen Slot",
     demosTwice: "Wähle jeden Slot nur einmal",
     demosSkip: "Weglassen",
+    mrTitle: "MIDI aufnehmen", mrHelp: "Nimm auf, was das FM-1 spielt, als MIDI-Datei für eine DAW: jede Spur des FM-1 auf einer eigenen Spur, Generatoren und Zufallsschritte so, wie sie zu hören waren. Stelle am FM-1 MENU > NOTES OUT auf ALL und CLOCK OUT auf ON, damit der Clip auf dem Takt beginnt. Drücke Aufnehmen, dann PLAY am FM-1. Stummgeschaltete Spuren werden nicht gesendet.", mrLen: "Länge", mrUntil: "Bis STOP", mrBars: "{n} Takte", mrRec: "Aufnehmen", mrStop: "Stoppen und speichern", mrArmed: "Wartet: drücke PLAY am FM-1", mrRecording: "Aufnahme, Noten: ", mrSaved: "Gespeichert: ", mrNone: "Keine Noten angekommen. Steht NOTES OUT auf ALL?",
     pfTitle: "Projektdateien",
     pfHelp: "Speichere das Projekt eines Slots als .tsp-Datei oder lege eine .tsp-Datei in einen Slot: dieselbe Datei, die der Web-Simulator speichert und lädt. Lade sie auf dem FM-1 unter SAVE > PROJECT. Die Wiedergabe stoppt, während der Slot gelesen oder geschrieben wird.",
     pfSave: "Als Datei speichern",
@@ -4228,6 +4364,7 @@ const TEXT = {
     demosNone: "Choisissez un emplacement pour au moins une démo",
     demosTwice: "Choisissez chaque emplacement une seule fois",
     demosSkip: "Ignorer",
+    mrTitle: "Enregistrement MIDI", mrHelp: "Enregistrez ce que joue le FM-1 dans un fichier MIDI pour une STAN : chaque piste du FM-1 sur sa propre piste, générateurs et pas de probabilité tels qu'ils ont été entendus. Sur le FM-1, réglez MENU > NOTES OUT sur ALL, et CLOCK OUT sur ON pour que le clip commence sur la mesure. Appuyez sur Enregistrer, puis sur PLAY sur le FM-1. Les pistes muettes ne sont pas envoyées.", mrLen: "Durée", mrUntil: "Jusqu'à STOP", mrBars: "{n} mesures", mrRec: "Enregistrer", mrStop: "Arrêter et sauvegarder", mrArmed: "En attente : appuyez sur PLAY sur le FM-1", mrRecording: "Enregistrement, notes : ", mrSaved: "Sauvegardé : ", mrNone: "Aucune note reçue. NOTES OUT est-il sur ALL ?",
     pfTitle: "Fichiers de projet",
     pfHelp: "Enregistrez le projet d'un emplacement dans un fichier .tsp, ou placez un fichier .tsp dans un emplacement : le même fichier que le simulateur web enregistre et charge. Chargez-le sur le FM-1 depuis SAVE > PROJECT. La lecture s'arrête pendant la lecture ou l'écriture de l'emplacement.",
     pfSave: "Enregistrer dans un fichier",
@@ -4563,6 +4700,7 @@ const TEXT = {
     demosNone: "Escolha um slot para pelo menos uma demo",
     demosTwice: "Escolha cada slot só uma vez",
     demosSkip: "Deixar de fora",
+    mrTitle: "Gravar MIDI", mrHelp: "Grave o que o FM-1 toca como arquivo MIDI para uma DAW: cada faixa do FM-1 na sua própria faixa, geradores e passos de probabilidade como foram ouvidos. No FM-1, coloque MENU > NOTES OUT em ALL, e CLOCK OUT em ON para o clipe começar no compasso. Aperte Gravar e depois PLAY no FM-1. Faixas mudas não são enviadas.", mrLen: "Duração", mrUntil: "Até STOP", mrBars: "{n} compassos", mrRec: "Gravar", mrStop: "Parar e salvar", mrArmed: "Aguardando: aperte PLAY no FM-1", mrRecording: "Gravando, notas: ", mrSaved: "Salvo: ", mrNone: "Nenhuma nota chegou. NOTES OUT está em ALL?",
     pfTitle: "Arquivos de projeto",
     pfHelp: "Salve o projeto de um slot como arquivo .tsp, ou coloque um arquivo .tsp em um slot: o mesmo arquivo que o simulador web salva e carrega. Carregue-o no FM-1 em SAVE > PROJECT. A reprodução para enquanto o slot é lido ou gravado.",
     pfSave: "Salvar como arquivo",
@@ -4898,6 +5036,7 @@ const TEXT = {
     demosNone: "적어도 하나의 데모에 슬롯을 고르세요",
     demosTwice: "각 슬롯은 한 번만 고르세요",
     demosSkip: "빼기",
+    mrTitle: "MIDI 녹음", mrHelp: "FM-1이 연주하는 것을 DAW용 MIDI 파일로 녹음합니다. FM-1의 각 트랙은 따로, 제너레이터와 확률 스텝은 들린 그대로 담깁니다. FM-1에서 MENU > NOTES OUT을 ALL로, 클립이 마디에서 시작하도록 CLOCK OUT을 ON으로 두세요. 녹음을 누른 다음 FM-1의 PLAY를 누르세요. 뮤트한 트랙은 보내지 않습니다.", mrLen: "길이", mrUntil: "STOP까지", mrBars: "{n}마디", mrRec: "녹음", mrStop: "멈추고 저장", mrArmed: "대기 중: FM-1의 PLAY를 누르세요", mrRecording: "녹음 중, 노트: ", mrSaved: "저장했습니다: ", mrNone: "노트가 들어오지 않았습니다. NOTES OUT이 ALL인가요?",
     pfTitle: "프로젝트 파일",
     pfHelp: "슬롯의 프로젝트를 .tsp 파일로 저장하거나 .tsp 파일을 슬롯에 넣으세요. 웹 시뮬레이터가 저장하고 불러오는 것과 같은 파일입니다. FM-1에서는 SAVE > PROJECT에서 불러오세요. 슬롯을 읽거나 쓰는 동안 재생이 멈춥니다.",
     pfSave: "파일로 저장",
@@ -5225,6 +5364,7 @@ function applyLang() {
   renderBank();
   renderPreferences(true);
   renderPanels();
+  renderMidiRec();
 }
 $("lang").addEventListener("change", () => {
   lang = $("lang").value;
@@ -5397,12 +5537,13 @@ async function connect() {
       onPush: (f) => onPush(f),
       onGap: () => { rewatch = true; },
     });
-    input.onmidimessage = (e) => link.receive(e.data);
+    input.onmidimessage = (e) => { if (midiRec) midiRecFeed(e); link.receive(e.data); };
     if (input.open) await input.open().catch(() => {});
     dev = { link, input, output, info: null, pdesc: [], gdesc: [], names: [], dump: null, steps: [], slotUsed: [null, null, null, null], slotName: [null, null, null, null],
       keys: null, watch: false, bank: null, editOn: false, backedUp: false };
     connectedDevice = dev;
     setLabel($("connect"), t("disconnect"));
+    renderMidiRec();
     await load(connectedDevice);
   } catch (e) {
     console.error(e);
@@ -5422,7 +5563,9 @@ function disconnect(reasonKey = "disconnected") {
     dev.link.close();
     dev.input.onmidimessage = null;
   }
+  midiRecSave();                                     /* (what was recorded before the FM-1 went is kept) */
   dev = null;
+  renderMidiRec();
   resetBusy();
   needReload = false;
   renderPanels();
@@ -7641,6 +7784,58 @@ function downloadBytes(name, bytes) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+/* RECORD MIDI (MidiRec): what the FM-1 plays, saved as a .mid for a DAW */
+let midiRec = null, midiRecTimer = null;
+const MR_BARS = [0, 8, 16, 32, 64];
+function renderMidiRec() {
+  const sel = $("mr-len"), v = sel.value || "0";
+  sel.replaceChildren(...MR_BARS.map((n) => el("option", { value: String(n), text: n ? t("mrBars").replace("{n}", n) : t("mrUntil") })));
+  sel.value = v;
+  sel.setAttribute("aria-label", t("mrLen"));
+  $("mr-rec").disabled = !dev || !!midiRec;
+  $("mr-stop").disabled = !midiRec;
+  sel.disabled = !!midiRec;
+}
+const mrSay = (k, a = "") => { $("mr-status").textContent = t(k) + a; };
+function midiRecFeed(e) {
+  const r = midiRec;
+  if (!r) return;
+  if (r.feed(e.data, e.timeStamp || performance.now())) midiRecSave();
+}
+function midiRecShow() {
+  const r = midiRec;
+  if (!r) return;
+  if (r.due(performance.now())) { midiRecSave(); return; }
+  const n = r.notes();
+  if (n || r.started) mrSay("mrRecording", String(n));
+}
+function midiRecSave() {
+  const r = midiRec;
+  if (!r) return;
+  midiRec = null;
+  clearInterval(midiRecTimer); midiRecTimer = null;
+  if (r.endBeat === null) r.end(r.beatAt(performance.now()));
+  const bytes = r.smf("Tessera");
+  if (!bytes.length) mrSay("mrNone");
+  else {
+    const d = new Date(), p2 = (n) => String(n).padStart(2, "0");
+    const file = `tessera-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}.mid`;
+    downloadBytes(file, bytes);
+    mrSay("mrSaved", `${file} (${r.notes()})`);
+  }
+  renderMidiRec();
+}
+$("mr-rec").addEventListener("click", () => {
+  if (!dev || midiRec) return;
+  const i = dev.gdesc.findIndex((g) => g && g.label === "BPM");
+  const bpm = i >= 0 && dev.dump && dev.dump.g ? dev.dump.g[i] : 120;
+  midiRec = new MidiRec(bpm, +$("mr-len").value);
+  midiRecTimer = setInterval(midiRecShow, 250);
+  mrSay("mrArmed");
+  renderMidiRec();
+});
+$("mr-stop").addEventListener("click", () => midiRecSave());
+renderMidiRec();
 $("fm6export").addEventListener("click", () => downloadBytes(`${fileSlug(FM6.name(fm6v))}.syx`, FM6.singleSysex(fm6v)));
 $("fm6bankexp").addEventListener("click", () => op(async () => {
   const out = [];
