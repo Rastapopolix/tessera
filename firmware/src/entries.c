@@ -22,7 +22,11 @@
  *   is heard whatever Entries says. Every draw is a hash of the SEEDs taken at PLAY, so a piece replays. Included by
  *   tessera.c after form_chain.c. */
 
-enum { ET_AUTO, ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR, ET_ROLES };
+enum { ET_AUTO, ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR,
+#if TESSERA_TRACKS > 4
+       ET_TURNS,                                      /* (tracks 5..8: takes turns with the track four below, et_heard_out) */
+#endif
+       ET_ROLES };
 #define ET_ORDERS 5u                                  /* ORDER: 0 AUTO, 1ST..4TH */
 #define ET_RANK_LO 1u                                 /* the layering order, low (in first, out last) to high */
 #define ET_RANK_MEL (4u + ET_MELODY)                  /* an AUTO melody's: the top (it waits for a bass or harmony) */
@@ -43,7 +47,16 @@ static struct {
     uint8_t since[TESSERA_TRACKS];                    /* phrases a track has been in or out since it changed, up to 255 */
     uint16_t avg[TESSERA_TRACKS];                     /* its notes' average, x16 (AUTO's bass), 0 none yet */
     uint8_t guess[TESSERA_TRACKS];                    /* AUTO's guess, held while playing (et_guess_all) */
+#if TESSERA_TRACKS > 4
+    uint8_t alts;                                     /* TURNS: the tracks 5..8 taking turns (et_alts, at PLAY and each line) */
+    uint8_t turn, pend_turn;                          /* TURNS: those heard in place of their partner; on the next line */
+#endif
 } et;
+#if TESSERA_TRACKS > 4
+#define ET_ALTS ((uint32_t)et.alts)
+#else
+#define ET_ALTS 0u                                    /* (four tracks: no TURNS) */
+#endif
 
 static int32_t tess_flourish(const track_t *t, uint32_t tr);
 static int32_t tess_trn(const track_t *t, uint32_t tr);
@@ -116,6 +129,9 @@ static void et_guess_all(void)
 static uint32_t et_role(uint32_t tr)
 {
     uint32_t r = tessera.et_role[tr];
+#if TESSERA_TRACKS > 4
+    if (r == ET_TURNS && tr < 4u) r = ET_AUTO;        /* (TURNS: a track 5..8's; on 1..4, AUTO) */
+#endif
     if (r && r < ET_ROLES) return r;
     return et.guess[tr] ? et.guess[tr] : ET_MELODY;
 }
@@ -155,12 +171,47 @@ static uint32_t et_hand_muted(void)
     return m;
 }
 
+/* TURNS (ROLE on tracks 5..8): the track and the one four below take turns. The pair is one place to the rules (the
+ * lower track's: in or out as Entries says); in it one of the two is heard, the one drawn on each section's line (the
+ * lower one from PLAY and on every return to A). Both need something to play; else the TURNS track plays on, never moved. An
+ * 8-track build's (the plugin: GENERATE's alternates); the FM-1 has four tracks and none of this */
+#if TESSERA_TRACKS > 4
+static uint32_t et_alts(void)
+{
+    uint32_t tr, m = 0, pr = et_present();
+    for (tr = 4; tr < TESSERA_TRACKS; tr++)
+        if (tessera.et_role[tr] == ET_TURNS && (pr >> tr & 1u) && (pr >> (tr - 4u) & 1u)) m |= 1u << tr;
+    return m;
+}
+#endif
+/* the tracks out as heard: the rules' (et.out), and of each TURNS pair the one not having its turn */
+#if TESSERA_TRACKS > 4
+static uint32_t et_heard_out(void)
+{
+    uint32_t o = et.out;
+    uint32_t tr;
+    for (tr = 4; tr < TESSERA_TRACKS; tr++) {
+        uint32_t q = tr - 4u;
+        if (!(et.alts >> tr & 1u)) continue;
+        if ((et.out >> q & 1u) || !(et.turn >> tr & 1u)) o |= 1u << tr;
+        else o &= ~(1u << tr);
+        if (et.turn >> tr & 1u) o |= 1u << q;
+    }
+    return o;
+}
+#else
+#define et_heard_out() ((uint32_t)et.out)
+#endif
+
 /* everything in, levels full (PLAY, STOP, ENTRIES 0) */
 static void et_clear(void)
 {
     uint32_t tr;
     et.out = et.pend_in = et.pend_out = et.lock = 0;
     et.want = et.final = 0;
+#if TESSERA_TRACKS > 4
+    et.turn = et.pend_turn = 0;
+#endif
     et.pend_p = 0xFFFFFFFFu;
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
         et.since[tr] = 0;
@@ -179,6 +230,9 @@ void entries_play(void)
     memset(et.avg, 0, sizeof et.avg);
     et_clear();
     et_guess_all();                                   /* (AUTO's roles from the settings, for the first section) */
+#if TESSERA_TRACKS > 4
+    et.alts = (uint8_t)et_alts();
+#endif
 }
 
 /* what the CHAIN does at phrase p: a section begins there; it is a return to A; the next phrase is one, after two
@@ -213,10 +267,14 @@ static void et_decide(uint32_t p)
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if (et_rank(tr) == ET_RANK_MEL) mel |= 1u << tr;   /* (the melodies that wait for their ground: AUTO's) */
     if (sec) lock = 0;                                /* (a new section: the hand's tracks are the rules' again) */
-    can = et_present() & ~mute & ~anchor & ~lock;     /* (the tracks the rules may move) */
+#if TESSERA_TRACKS > 4
+    et.alts = (uint8_t)et_alts();
+#endif
+    can = et_present() & ~mute & ~anchor & ~lock & ~ET_ALTS;   /* (the tracks the rules may move; TURNS:
+                                                       * the pair's lower track stands for both) */
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if ((uint32_t)et.since[tr] + 1u >= dwell) ready |= 1u << tr;
-    play = et_present() & ~mute & ~et.out;            /* (sounding now) */
+    play = et_present() & ~mute & ~et.out & ~ET_ALTS;   /* (sounding now, as the rules count) */
     most = (et_count(can) * tessera.et_amount + 50u) / 100u;
     if (!(play & anchor) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;   /* (one plays) */
     h = et_hash(p, 1u);
@@ -279,6 +337,14 @@ static void et_decide(uint32_t p)
     et.pend_out = (uint8_t)go_out;
     et.pend_sec = (uint8_t)sec;
     et.pend_p = p;
+#if TESSERA_TRACKS > 4
+    et.pend_turn = et.turn;
+    if (sec)                                          /* TURNS: whose turn, each section (A: the lower track's) */
+        for (tr = 4; tr < TESSERA_TRACKS; tr++)
+            if (!(et.alts >> tr & 1u) || home) et.pend_turn &= (uint8_t)~(1u << tr);
+            else if (et_hash(p, 16u + tr) >> 7 & 1u) et.pend_turn |= (uint8_t)(1u << tr);
+            else et.pend_turn &= (uint8_t)~(1u << tr);
+#endif
 }
 
 /* phrase p's line: the decided changes happen */
@@ -287,6 +353,9 @@ static void et_apply(uint32_t p)
     uint32_t tr;
     if (et.pend_p == p) {
         et.out = (uint8_t)((et.out | et.pend_out) & ~et.pend_in);
+#if TESSERA_TRACKS > 4
+        et.turn = et.pend_turn;
+#endif
         if (et.pend_sec) et.lock = 0;
     }
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
@@ -301,7 +370,8 @@ static void et_apply(uint32_t p)
 /* a planned piece's start: as many tracks out as its SHAPE is low there, at once (the intro layers in from them) */
 static void et_intro(void)
 {
-    uint32_t mute = et_hand_muted(), can = et_present() & ~mute & ~et_mask(ET_ANCHOR), play = et_present() & ~mute;
+    uint32_t mute = et_hand_muted(), can = et_present() & ~mute & ~et_mask(ET_ANCHOR) & ~ET_ALTS,
+             play = et_present() & ~mute & ~ET_ALTS;
     uint32_t most = (et_count(can) * tessera.et_amount + 50u) / 100u, want, r, tr, n = 0;
     if (!(play & et_mask(ET_ANCHOR)) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;
     want = planner_out(0, most);
@@ -325,15 +395,19 @@ static void entries_all_out(void)
 
 void entries_tick(uint32_t n)
 {
-    uint32_t tr, b = bar_n, bars = fc_bars(), step;
+    uint32_t tr, b = bar_n, bars = fc_bars(), step, heard;
     mute_tick();                                      /* (MENU MUTES: before the downbeat's steps) */
     planner_tick(n);
     fc_pc_tick();                                     /* (SECTION PC: form_chain.c, on the same phrase line) */
     if (et.final && song.playing) {
         /* (the end: everything fades out, nothing decided) */
     } else if (!song.playing || !tessera.et_amount) {
-        if (et.out || et.pend_in || et.pend_out || et.lock) {   /* (off or stopped: everything back in) */
+        if (et.out || et.pend_in || et.pend_out || et.lock || et_heard_out()) {   /* (off or stopped: everything
+                                                       * back in) */
             et.out = et.pend_in = et.pend_out = et.lock = 0;
+#if TESSERA_TRACKS > 4
+            et.turn = et.pend_turn = 0;
+#endif
             et.pend_p = 0xFFFFFFFFu;
         }
         et.bar = song.playing ? b : 0xFFFFFFFFu;
@@ -352,8 +426,9 @@ void entries_tick(uint32_t n)
     if (!et.final) et.out &= (uint8_t)~et_mask(ET_ANCHOR);   /* (an ANCHOR never drops, set so now: back at once) */
     step = tessera.et_style ? 32768u * n / ((tessera.et_fade ? tessera.et_fade : 1u) * 4u * seq_beat_samples() + 1u) + 1u
                             : 32768u;
+    heard = et_heard_out();
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
-        int32_t g = entry_gain[tr], to = (et.out >> tr & 1u) ? 0 : 32768, d = to - g;
+        int32_t g = entry_gain[tr], to = (heard >> tr & 1u) ? 0 : 32768, d = to - g;
         if (d > (int32_t)step) d = (int32_t)step;
         else if (d < -(int32_t)step) d = -(int32_t)step;
         entry_gain[tr] = g + d;
@@ -368,7 +443,7 @@ static int entries_note(const track_t *t, uint32_t note)
     b = 1u << tr;
     et.heard |= (uint8_t)b;
     et.avg[tr] = (uint16_t)(et.avg[tr] ? (int32_t)et.avg[tr] + ((int32_t)(note << 4) - (int32_t)et.avg[tr]) / 8 : (int32_t)(note << 4));
-    if (!(et.out & b) || (track_solo & b)) return 1;
+    if (!(et_heard_out() & b) || (track_solo & b)) return 1;
     if ((et.pend_in & b) && tess_flourish(t, tr)) {   /* (its FLOURISH leads it in) */
         et.out &= (uint8_t)~b;
         entry_gain[tr] = 32768;
@@ -447,7 +522,13 @@ static void mute_tick(void)                           /* entries_tick: a waiting
 int entries_hand_in(uint32_t tr)
 {
     uint32_t b = 1u << tr;
-    if (tr >= TESSERA_TRACKS || !(et.out & b)) return 0;
+    if (tr >= TESSERA_TRACKS || !(et_heard_out() & b)) return 0;
+#if TESSERA_TRACKS > 4
+    if (tr >= 4u && (et.alts >> tr & 1u)) et.turn |= (uint8_t)b, et.pend_turn |= (uint8_t)b;   /* (TURNS: its turn) */
+    if (tr < 4u && (et.alts >> (tr + 4u) & 1u))
+        et.turn &= (uint8_t)~(b << 4), et.pend_turn &= (uint8_t)~(b << 4);
+    if (!(et.out & b)) { entry_gain[tr] = 32768; return 1; }
+#endif
     et.out &= (uint8_t)~b;
     et.pend_out &= (uint8_t)~b;
     et.lock |= (uint8_t)b;
@@ -461,12 +542,19 @@ int entries_hand_in(uint32_t tr)
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[TESSERA_TRACKS])
 {
     uint32_t tr;
-    if (warn) *warn = song.playing && tessera.et_amount ? (uint32_t)(et.pend_in | et.pend_out) : 0u;
+    if (warn) {
+        uint32_t w = (uint32_t)(et.pend_in | et.pend_out);
+#if TESSERA_TRACKS > 4
+        uint32_t x = (uint32_t)(et.turn ^ et.pend_turn) & 0xF0u;
+        w |= x | x >> 4;                              /* (TURNS: the pair changing hands) */
+#endif
+        *warn = song.playing && tessera.et_amount ? w : 0u;
+    }
     if (role && !song.playing) {                      /* (stopped: AUTO's guess from the settings as they are now) */
         memset(et.avg, 0, sizeof et.avg);
         et_guess_all();
     }
     if (role)
         for (tr = 0; tr < TESSERA_TRACKS; tr++) role[tr] = (uint8_t)et_role(tr);
-    return song.playing && (tessera.et_amount || et.final) ? et.out : 0u;
+    return song.playing && (tessera.et_amount || et.final) ? et_heard_out() : 0u;
 }
