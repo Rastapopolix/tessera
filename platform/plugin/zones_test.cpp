@@ -318,6 +318,11 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     act(find_strip(TESS_ZONE_MUTE, "T2", "SOLO"), TESS_ZA_CLICK, 0, 40);
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
           "a click on SOLO: T2 not soloed, not muted");
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO"), TESS_ZA_HELP, 0, 40);   // (a right-click)
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
+          "a right-click on the word: T2 soloed, not muted");
+    act(find_strip(TESS_ZONE_MUTE, "T2", "SOLO"), TESS_ZA_HELP, 0, 40);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
 static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)

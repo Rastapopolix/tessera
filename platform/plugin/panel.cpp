@@ -995,7 +995,8 @@ bool Panel::latch(int x, int y)
     if (zi >= 0)   // the screen: a value's column or a list's row, its help card (tess_core_zone_do TESS_ZA_HELP)
     {
         const tess_zone_t &z = zones[zi];
-        if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0)) return false;
+        if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0) &&
+            !(z.kind == TESS_ZONE_MUTE && z.role == 1)) return false;   // (MIXER's MUTE word: its solo)
         zone_act(z, TESS_ZA_HELP, 0);
         return true;
     }
