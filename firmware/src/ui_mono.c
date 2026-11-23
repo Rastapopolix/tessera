@@ -3725,7 +3725,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
             mo_ascii(a, browser_list_name(i), sizeof a);
             mo_cut(b, a, 7);
             if (i == m)
-                mo_fill(0, y - 1, 44, 9, MO_INK);
+                mo_fill(0, y - 1, 44, 9, MO_HOT);               /* (the row picked: as every list's, MOSAIC white) */
             mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT || i >= LM_ENG ? MO_INK : MO_DIM);
         }
         mo_vl(46, 11, 96, MO_DIM);
@@ -3744,17 +3744,22 @@ static void mo_browser(uint32_t cur, uint32_t total)
             }
             src = preset_at(at, &k);                    /* the card */
             entry_label(src, k, tag, nm);
-            mo_box(48, 39, 68, 23, out ? MO_DIM : MO_INK);
+            mo_box(48, 39, 68, 23, out ? MO_DIM : MO_HOT);
             mo_ascii(a, nm[0] ? nm : tag, sizeof a);
             mo_cut(b, a, 10);
-            mo_text(b, 51, 42, out ? MO_DIM : MO_INK);
-            mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
-            mo_cut(b, a, 4);
-            mo_text(b, 51, 52, MO_DIM);
-            fmt_int(b, (int32_t)at + 1);
+            mo_text(b, 51, 42, out ? MO_DIM : MO_HOT);
+            fmt_int(b, (int32_t)at + 1);                /* (its place first: the engine's name takes the room left,
+                                                         * "165/177" beside "PHASE" overlapped) */
             str_cpy(b + str_len(b), "/", 2);
             fmt_int(b + str_len(b), (int32_t)total);
             mo_textr(b, 113, 52, MO_DIM);
+            {
+                char e[8];
+                int32_t room = (113 - mo_tw(b) - 4 - 51) / 6;
+                mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
+                mo_cut(e, a, (uint32_t)(room < 0 ? 0 : room > 4 ? 4 : room));
+                mo_text(e, 51, 52, MO_DIM);
+            }
             mo_vl(119, 11, 96, MO_DIM);                 /* the scroll bar: the place */
             mo_fill(118, 11 + (total > 1u ? (int32_t)at * 86 / (int32_t)(total - 1u) : 0), 2, 10,
                     out ? MO_DIM : MO_INK);

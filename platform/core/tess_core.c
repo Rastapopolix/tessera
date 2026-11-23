@@ -277,9 +277,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         zq_turn(z->role, -n);
         return;
     }
-    if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_SCROLL) {   /* (a text: wheel up, up it) */
-        action = TESS_ZA_TURN;
-        n = -n;
+    if (action == TESS_ZA_WHEEL && (z->kind == TESS_ZONE_SCROLL || z->group == UZ_G_SIDES ||
+                                    (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_BROWSE))) {
+        action = TESS_ZA_TURN;                        /* (a text, the browser's and SCALES' two lists: wheel up, up */
+        n = -n;                                       /* them, as every list) */
     } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn) */
         action = TESS_ZA_TURN;
     }
