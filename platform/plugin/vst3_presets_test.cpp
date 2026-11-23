@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     mkdir(user.c_str(), 0755);
     copy_file(argv[2], user + "/mine.tsp");
 
-    std::string so = std::string(argv[1]) + "/Contents/x86_64-linux/Tessera.so";
+    std::string so = std::string(argv[1]) + "/Contents/x86_64-linux/Smalti.so";
     void *lib = dlopen(so.c_str(), RTLD_NOW | RTLD_LOCAL);
     CHECK(lib, "dlopen %s: %s", so.c_str(), dlerror());
     if (!lib) return 1;
