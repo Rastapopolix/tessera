@@ -139,6 +139,8 @@ class GuiWin32 : public Gui
             else if (wp == VK_DOWN) code = Panel::KEY_DOWN;
             else if (wp == VK_LEFT) code = Panel::KEY_LEFT;
             else if (wp == VK_RIGHT) code = Panel::KEY_RIGHT;
+            else if (wp == VK_PRIOR && (lp >> 24 & 1)) code = Panel::KEY_PGUP;   // (not the keypad's 9 / 3)
+            else if (wp == VK_NEXT && (lp >> 24 & 1)) code = Panel::KEY_PGDN;
             else if (lp >> 24 & 1) break;   // (another extended key: not a panel key)
             if (g->panel.key(code, msg == WM_KEYDOWN))
             {

@@ -27,6 +27,10 @@ typedef struct {
 } uz_t;
 static uz_t uz[UZ_MAX];
 static uint32_t uz_n, uz_gen;
+/* 1: the front end has its own BACK, OK and SHIFT buttons and its own octave buttons (tess_core_key_words: Smalti's
+ * shell): the screen names BACK / OK / SHIFT for OCT- / OCT+ (ui_mono.c mo_kw), and OCT- / OCT+ no longer step the
+ * octave on Stage or NOTES (ui_input.c; the octave buttons do) */
+static uint8_t uz_key_words;
 /* the list shown: the knob that moves its cursor (one detent a row), its value knob, where the cursor is, and whether
  * OCT+ does a row (a double-click: there, then OCT+). sel follows the moves asked for until the list is drawn again */
 static struct { int8_t role, vrole, ok; int16_t sel, first; } uz_list = {-1, -1, 0, 0, 0};

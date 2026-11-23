@@ -40,8 +40,16 @@ uint32_t tess_core_frames(void);
 /* ---- events in */
 /* keys held, bit k = key k (F3 .. G5; 7 = C4) */
 void tess_core_keys(uint32_t mask);
-/* buttons held, bit b = label b (B_FX .. B_OCTUP: FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+) */
+/* buttons held, bit b = label b (B_FX .. B_OCTUP: FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+); and, in
+ * a build with TESS_HAS_POINTER (the plugin), a front end's own buttons beyond the FM-1's: SHIFT (OCT-'s held layer,
+ * never its BACK), OCTAVE DOWN / UP (the keys' octave a step, on any page; both: back to 0). With these, OCT- and OCT+
+ * are BACK and OK alone: tess_core_key_words */
+enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18 };
 void tess_core_buttons(uint32_t mask);
+/* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
+ * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
+ * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways */
+void tess_core_key_words(int on);
 /* an encoder (knob) turned n detents: role 0 SELECT, 1 ALGORITHM, 2 PRESETS, 3..6 KNOB 1..4 */
 void tess_core_enc(uint32_t role, int32_t n);
 /* MASTER 0..1023 (the FM-1's pot, squared) */

@@ -295,7 +295,8 @@ class GuiX11 : public Gui
                     }
                 }
                 int code = ks == XK_Up ? Panel::KEY_UP : ks == XK_Down ? Panel::KEY_DOWN : ks == XK_Left ? Panel::KEY_LEFT
-                         : ks == XK_Right ? Panel::KEY_RIGHT : (int)e.xkey.keycode - 8;
+                         : ks == XK_Right ? Panel::KEY_RIGHT : ks == XK_Prior ? Panel::KEY_PGUP : ks == XK_Next ? Panel::KEY_PGDN
+                         : (int)e.xkey.keycode - 8;
                 changed |= panel.key(code, e.type == KeyPress);
                 break;
             }

@@ -25,6 +25,7 @@ struct PanelInput
     struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
     std::vector<ZoneAct> zones, tzones;
     std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
+    bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
     bool changed = false;
 };
 
@@ -74,9 +75,10 @@ class Panel
     uint32_t latched_buttons() const { return latch_buttons; }
     /* the computer keyboard, as the web simulator maps it (by where a key is, not what it prints): code a PC scan code
      * (set 1: Z 0x2C, Q 0x10, 1 0x02 ..; what Windows reports, and X11's keycode - 8) or KEY_UP .. KEY_RIGHT. Z..' and
-     * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (each held while its key is),
-     * up / down SELECT, left / right ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
-    enum { KEY_UP = 0x148, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150 };
+     * Q..O the keys (F3..G5), 1..= the twelve buttons in the panel's order, [ ] OCT- OCT+ (TESSERA's shell: BACK, OK;
+     * Shift its SHIFT, Page Up / Page Down its OCT+ / OCT-; each held while its key is), up / down SELECT, left / right
+     * ALGORITHM. true if the input changed. release_keys: every key up (focus lost) */
+    enum { KEY_UP = 0x148, KEY_PGUP = 0x149, KEY_LEFT = 0x14B, KEY_RIGHT = 0x14D, KEY_DOWN = 0x150, KEY_PGDN = 0x151 };
     bool key(int code, bool down);
     // a character typed on the computer keyboard (the window's, as the layout gives it; TESS_TEXT_* for Backspace,
     // Enter, Esc, the arrows, Delete): while NAME is open it goes to the name (true: the panel's, not a key)
@@ -177,6 +179,7 @@ class Panel
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     bool native() const { return shell_ == 0; }
     void layout();
+    void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
     bool typing_ = false;   // the view's: NAME open
@@ -198,7 +201,7 @@ class Panel
     int fm1_req = -1;
     int fm1_seg_at(int x) const;       // TESSERA's menu: 0 OFF, 1 ON, -1 neither
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
-    struct Button { int x, y, w, h, bit; const char *face, *sub; };
+    struct Button { int x, y, w, h, bit; const char *face, *sub; const char *tip = nullptr; };   // tip: its hover card
     struct Key { int cx, cy, k; };
     struct FileButton { int x, y, w, h, action; const char *face; };
     std::vector<FileButton> files;

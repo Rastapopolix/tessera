@@ -304,6 +304,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 #endif
 }
 
+void tess_core_key_words(int on)
+{
+#if TESS_HAS_POINTER
+    if ((uint8_t)(on != 0) != uz_key_words) {
+        uz_key_words = (uint8_t)(on != 0);
+        ui.force = 1;                                 /* (the hints again, in the other words) */
+    }
+#else
+    (void)on;
+#endif
+}
 void tess_core_text(uint32_t ch)
 {
 #if TESS_HAS_POINTER
@@ -495,6 +506,9 @@ void tess_core_block(int32_t *out)
 uint32_t tess_core_frames(void) { return ring_r; }
 
 /* ---- events in: by the printed labels (panel.c maps them to the matrix), as the device's scan would see them */
+#if TESS_HAS_POINTER
+static uint32_t host_extra;                           /* SHIFT, OCTAVE DOWN / UP held (labels' TESS_BTN_* bits) */
+#endif
 void tess_core_buttons(uint32_t labels)
 {
     uint32_t m = 0, b;
@@ -503,6 +517,25 @@ void tess_core_buttons(uint32_t labels)
             m |= 1u << panel.btn[b];
     host_pressed |= m & ~fm1_in.buttons;
 #if TESS_HAS_POINTER
+    {   /* Smalti's own buttons: SHIFT holds OCT- with no press (no edge: never BACK, never an octave; its release no
+         * tap), the knobs' second layer; OCTAVE DOWN / UP step the keys' octave, on any page, as OCT- / OCT+ do on
+         * Stage (both: back to 0) */
+        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP), go = ex & ~host_extra;
+        if (ex & TESS_BTN_SHIFT)
+            m |= 1u << panel.btn[B_OCTDN];
+        if ((ex ^ host_extra) & TESS_BTN_SHIFT)
+            ui.force = 1;
+        if (go & (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP)) {
+            if ((ex & (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP)) == (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP))
+                song.octave = 0;
+            else if (go & TESS_BTN_OCT_DOWN)
+                song.octave -= song.octave > -3 ? 1 : 0;
+            else
+                song.octave += song.octave < 3 ? 1 : 0;
+            ui.force = 1;
+        }
+        host_extra = ex;
+    }
     host_btn = m;
     fm1_in.buttons = m | zone_btn;                /* (a key a zone's click holds a moment: tess_core_zone_do) */
 #else
@@ -646,6 +679,15 @@ void tess_core_view(tess_view_t *v)
     v->dim_keys = led_keys(led_dim_plane());
     v->breath_buttons = led_buttons(fm1_led_dim[2]);
     v->breath_keys = led_keys(fm1_led_dim[2]);
+#if TESS_HAS_POINTER
+    if (uz_key_words && !oct_nav()) {             /* Stage, NOTES: the OCT LEDs show the octave: on the front end's
+                                                   * own OCTAVE DOWN / UP, its BACK and OK dark there */
+        uint32_t oct = 3u << 12;
+        v->lit_buttons = (v->lit_buttons & ~oct) | ((v->lit_buttons >> 12) & 3u) << 17;
+        v->dim_buttons &= ~oct;
+        v->breath_buttons &= ~oct;
+    }
+#endif
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;
     v->master = tess_core_master_get();

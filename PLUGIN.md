@@ -123,7 +123,9 @@ presses those keys for you, so a page behaves the same either way.
 
 - **Z** to **'** and **Q** to **O**: the keys.
 - **1** to **=**: the twelve buttons, in the panel's order.
-- **[** and **]**: OCT- and OCT+.
+- **[** and **]**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **Shift** (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).
+- **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
 **Naming** a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and `- . _ / # +` go
@@ -151,8 +153,17 @@ click it, or press **Esc** to let go.
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
 
-In Tessera's look, OCT- and OCT+ are labelled by what they mostly do: **BACK** (and **SHIFT** while held: the
-knobs' second layer) and **OK**, with OCT- and OCT+ under them. They work exactly as on the FM-1.
+In Tessera's look, the FM-1's two OCT buttons are split into what they do, each a button of its own:
+
+- **SHIFT**, **BACK** and **OK**, under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
+  opens the page's sheet). **SHIFT** is OCT- held: click it for the knobs' second set on the pages that have one (it
+  stays on, lit, till you click it again, so the mouse is free for the knob); it never goes back. The screen's hints say BACK, OK and SHIFT where the FM-1 says OCT-
+  and OCT+.
+- **OCT+** over **OCT-**, at the left of the keys: the keys an octave up or down (three each way), on any page; both
+  together back to 0. They light while the keys are shifted. BACK and OK no longer change the octave on HOME.
+
+Hover over any of these five for what it does. The FM-1 shells keep the FM-1's two OCT buttons, and so does an FM-1
+on USB playing the plugin.
 
 Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
 the first) and the row labelled INK, between the buttons and the keys, picks the ink.

@@ -138,12 +138,67 @@ static int32_t mo_sin(int32_t a)
 }
 static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 
-static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
+#if TESS_HAS_POINTER
+/* Smalti's own BACK, OK and SHIFT buttons (tess_core_key_words, uz_key_words): what the screen says of OCT- and OCT+
+ * names them, as drawn (the pages' strings stay the FM-1's). OCT- held (or "Hold OCT-") is SHIFT, "OCT- BACK" and
+ * "BACK (OCT-)" BACK once, any other OCT- BACK, OCT+ OK. mo_tw measures what mo_text_s draws */
+static int mo_kw_at(const char *s, const char *t)   /* s begins with t */
+{
+    while (*t)
+        if (*s++ != *t++)
+            return 0;
+    return 1;
+}
+static const char *mo_kw(const char *s)
+{
+    static char b[200];
+    uint32_t i = 0, o = 0, n;
+    if (!uz_key_words || !s)
+        return s;
+    for (n = 0; s[n] && !(s[n] == 'O' && s[n + 1] == 'C' && s[n + 2] == 'T'); n++) {}
+    if (!s[n] || str_len(s) >= sizeof b)
+        return s;
+    while (s[i] && o + 6u < sizeof b) {
+        const char *w = 0;
+        uint32_t skip = 0;
+        if (s[i] == 'O' && s[i + 1] == 'C' && s[i + 2] == 'T' && (s[i + 3] == '-' || s[i + 3] == '+')) {
+            skip = 4;
+            if (s[i + 3] == '+') {
+                w = "OK";
+            } else if (mo_kw_at(s + i + 4, " held") || mo_kw_at(s + i + 4, " HELD")) {
+                w = "SHIFT", skip = 9;
+            } else if (i >= 5 && (mo_kw_at(s + i - 5, "Hold ") || mo_kw_at(s + i - 5, "hold ") ||
+                                  mo_kw_at(s + i - 5, "HOLD "))) {
+                w = "SHIFT";
+            } else if (mo_kw_at(s + i + 4, " BACK") || mo_kw_at(s + i + 4, " back")) {
+                w = "BACK", skip = 9;
+            } else if (i >= 6 && mo_kw_at(s + i - 6, "BACK (") && s[i + 4] == ')') {
+                o = o >= 6u ? o - 6u : 0u, w = "BACK", skip = 5;   /* ("BACK (OCT-)": the BACK already written) */
+            } else {
+                w = "BACK";
+            }
+        }
+        if (!w) {
+            b[o++] = s[i++];
+            continue;
+        }
+        while (*w && o + 1u < sizeof b)
+            b[o++] = *w++;
+        i += skip;
+    }
+    b[o] = 0;
+    return b;
+}
+#else
+#define mo_kw(s) (s)
+#endif
+static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(mo_kw(s)); return n ? n * 6 - 1 : 0; }
 /* sc: cells a font pixel. MENU > TEXT BOLD: at sc 1 each lit cell 3 px wide, a pixel into its right neighbour (a
  * glyph has no 1-cell gap to close; between letters the gap is 1 px) */
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
 {
     int32_t w = sc * 2 + (sc == 1 && TEXT_IDLE(TEXT_IDLE_BOLD));
+    s = mo_kw(s);
     MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
