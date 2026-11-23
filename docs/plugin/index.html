@@ -156,10 +156,10 @@ in a DAW.</p>
 <p>Until beta 4 the plugin was called Tessera, like the firmware; Audio Damage makes a plugin called Tessera, so the plugin
 has a name of its own. Songs saved with the old name open in Cosmati (delete the old Tessera.clap, .vst3, .component and
 app when you install it, so your DAW doesn't list it twice).</p>
-<p><a href="../media/plugin/plugin-expanded.png?v=0.1-beta7"><img src="../media/plugin/plugin-expanded.png?v=0.1-beta7" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
+<p><a href="../media/plugin/plugin-expanded.png?v=0.1-beta8"><img src="../media/plugin/plugin-expanded.png?v=0.1-beta8" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
 <p><em>EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).</em></p>
 <h2 id="download">Download</h2>
-<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta7/Cosmati-0.1-beta7-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta7, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
+<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta8/Cosmati-0.1-beta8-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta8/Cosmati-0.1-beta8-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta8/Cosmati-0.1-beta8-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta8, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
 <ul>
 <li><a href="#install">Install</a></li>
 <li><a href="#first-sound">First sound</a></li>
@@ -256,7 +256,7 @@ the slot's sheet.</li>
 click where the copy goes.</li>
 <li><strong>SONG:</strong> click a section's letter to pick it; click a block to pick its section and its track.</li>
 <li><strong>MIXER:</strong> drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
-under a strip to mute it, double-click it to solo.</li>
+under a strip to mute it, right-click it (or double-click) to solo.</li>
 <li><strong>The tempo</strong> in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
 double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.</li>
 <li><strong>The footer's page tabs and its arrows:</strong> click a tab for that page, an arrow for the page just past it.</li>
@@ -264,9 +264,17 @@ double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.</li>
 <li><strong>OK, BACK, YES and NO</strong> on the screen: click them.</li>
 <li><strong>The sound browser and SCALES:</strong> the wheel over the left side turns KNOB 1 (the list, the scale family), over the
 right side KNOB 2 (the sound, the scale).</li>
-<li><strong>HOME:</strong> click a track's column to select it.</li>
+<li><strong>HOME:</strong> click a track's column to select it; double-click it to open its sounds (the sound browser).</li>
+<li><strong>The sound browser:</strong> click a list name (ALL, FAVES, a category, an engine) or a sound to go to it; double-click a
+sound to keep it (OK). BACK and OK at the foot: click them.</li>
+<li><strong>MODS:</strong> the wheel scrolls the 16 mods; click a mod's row to pick it, drag up or down on it to change its amount,
+double-click it for its type (+-, +, GATE, HOLD, as OK). Click a mod's source or destination for its list: it stays
+open until you click one (the wheel scrolls it), or click away.</li>
+<li><strong>MATRIX:</strong> click a cell to open its mod in MODS.</li>
 <li><strong>TRACKS</strong> (EXPANDED): click a row to select that track; double-click it to open its EDIT page.</li>
 </ul>
+<p><strong>HOVER HELP</strong> (Cosmati's menu, OFF to start): rest the mouse on a value, a list's row or a mod for half a second and
+the box under the screen also shows its help text, the same text as its help card.</p>
 <p><strong>Click away to close:</strong> with a list, a sheet or a help card open over the page, click anywhere with nothing to
 use (the panel's body, the screen beside it) to close it, as BACK would. A YES / NO question waits for its answer.</p>
 <p>The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
