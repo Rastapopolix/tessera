@@ -713,12 +713,24 @@ static void mo_foot(void)
                   mo_title(&PAGES[idx[i]])));   /* (zones: a tab, its page; row the pages from here) */
         x += mo_tw(t) + 5;
     }
-    if (first > 0u)                                     /* pages before: an arrow left, a 3 x 5 wedge */
+    if (first > 0u) {                                   /* pages before: an arrow left, a 3 x 5 wedge */
         for (i = 0; i < 3u; i++)
             mo_vl((int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
-    if (last < n)                                       /* .. after: right */
+#if TESS_HAS_POINTER
+        mo_tab_name(t, idx, first - 1u);                /* (zones: an arrow, the page past it) */
+        uz_add(UZ_G_TABS, UZ_TAB, 0, 110, 5, 10, -1, -1, (int32_t)first - 1 - (int32_t)cur, t,
+               mo_title(&PAGES[idx[first - 1u]]));
+#endif
+    }
+    if (last < n) {                                     /* .. after: right */
         for (i = 0; i < 3u; i++)
             mo_vl(119 - (int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
+#if TESS_HAS_POINTER
+        mo_tab_name(t, idx, last);
+        uz_add(UZ_G_TABS, UZ_TAB, 116, 110, 4, 10, -1, -1, (int32_t)last - (int32_t)cur, t,
+               mo_title(&PAGES[idx[last]]));
+#endif
+    }
 }
 
 /* ---- the pictures ---- */
@@ -3599,11 +3611,12 @@ static void mo_help(const char *name, const char *val, const char *text)
     else if (help.top) hint = "CCW: UP";
     else hint = "ARP + KNOB: HELP";
 #if TESS_HAS_POINTER
-    if (uz_help_pin && !help.top && n <= rows)
-        hint = "CLICK: CLOSE";                          /* (a card the mouse opened, tess_core.c core_help) */
+    if (uz_help_pin)                                    /* (a card the mouse opened, tess_core.c core_help: the wheel
+                                                         * scrolls it, a click closes it) */
+        hint = n > rows && help.top + rows < n ? "SCROLL DOWN: MORE" : "CLICK: CLOSE";
     uz_begin(UZ_G_LIST);                                /* (zones: the card, over the page: its text under the wheel,
                                                          * the knob it is about's) */
-    if (n > rows)
+    if (n > rows || uz_help_pin)              /* (pinned: the card a zone, its click closes it) */
         uz_add(UZ_G_LIST, UZ_SCROLL, HELP_X / 2, HELP_Y / 2, w, h, EN_K1 + (int32_t)help.knob, -1, 0, name ? name : "HELP",
                "");
 #endif
