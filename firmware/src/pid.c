@@ -738,10 +738,6 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                    "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
                                    "AUTO: CHORD or chords harmony, ATLAS, drums or NOISE rhythm, the lowest track (a fifth "
                                    "below the rest, or below C3) bass, else melody. "
-#if TESSERA_TRACKS > 4
-                                   "TURNS (tracks 5 to 8): the track takes turns with the one four below, one of the "
-                                   "two heard, which one drawn each section. "
-#endif
                                    "GLO > ENTRIES with OCT- held, or OCT- held on FORM, KNOB 4."),
     XP_(TX_PL_LENGTH, "PIECE LENGTH", "FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is "
                                       "planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how "

@@ -4423,9 +4423,9 @@ static void gen_alternates(void)
 /* ------------------------------------------------------------ GENERATE: MAITREYA --- */
 /* After the loop players (Theo 2026-11-23: "Buddha Machine type compositions"; the name his): four short loops of a
  * few notes, each a length of its own (TURING locked, PROB 0: 3, 4, 5, 7 .. steps), so they drift against each other
- * and never quite come round together; slow (56..72 BPM), a pentatonic or Japanese scale, soft pads and bells from
- * PHASE and MACRO (TRIO where neither is built), long notes and releases, the reverb deep, the echo faint; ENTRIES,
- * the arc and EVOLVE off: it just hangs there */
+ * and never quite come round together; unhurried (66..82 BPM), light (Theo, after the first listen: no bells, nothing
+ * doom-laden): major pentatonic or YO mostly, no low drone, soft pads and plucks (gen_mt_sound; TRIO where neither
+ * engine is built), notes that overlap, a reverb, a faint echo; ENTRIES, the arc and EVOLVE off: it just hangs there */
 static uint32_t gen_scale_named(const char *nm)
 {
     uint32_t i;
@@ -4433,12 +4433,31 @@ static uint32_t gen_scale_named(const char *nm)
         if (gen_same(N_SCALE[i], nm)) return i;
     return 5u;                                      /* (PEN) */
 }
+/* MAITREYA's own few sounds, soft and light (Theo 2026-11-23: no bells, nothing doom-laden): -> 1 loaded */
+static int gen_mt_sound(uint32_t tr, int pad)
+{
+    static const struct { uint8_t e; const char *name; } PAD[] = {{GE_PHASE, "GLASS PAD"}, {GE_PHASE, "ENSEMBLE"},
+                                                                  {GE_MACRO, "VA PAD"}},
+                                                     PLK[] = {{GE_PHASE, "PLUCK"}, {GE_PHASE, "HARP"}, {GE_MACRO, "PLUCK"}};
+    uint32_t n = pad ? NELEM(PAD) : NELEM(PLK), k = rnd_next() % n, j, i, e;
+    for (j = 0; j < n; j++) {                       /* (the drawn one, else the next this build has) */
+        uint32_t m = (k + j) % n;
+        e = gen_engi(pad ? PAD[m].e : PLK[m].e);
+        if (!eng_ok(e)) continue;
+        for (i = 0; i < ENGINES[e]->npresets; i++)
+            if (gen_same(eng_preset(ENGINES[e], i)->name, pad ? PAD[m].name : PLK[m].name)) {
+                engine_load_of(&trk[tr], e, i);
+                return 1;
+            }
+    }
+    return 0;
+}
 static void rnd_maitreya(void)
 {
-    static const char *const SCL[] = {"PEN", "MPEN", "YO", "MINYO"};
-    static const uint8_t SW[] = {4, 3, 3, 2};
+    static const char *const SCL[] = {"PEN", "YO", "MPEN"};   /* (bright first: lighter, Theo) */
+    static const uint8_t SW[] = {5, 3, 1};
     static const uint8_t LENS[] = {3, 4, 5, 6, 7, 9};
-    static const int8_t TRN[RND_NT] = {-12, 0, 0, 12};
+    static const int8_t TRN[RND_NT] = {0, 0, 12, 12};   /* (no low drone: light) */
     uint8_t lens[NELEM(LENS)], code[NELEM(SCL)];
     uint32_t tr, k, root, scale;
     rnd_state = rnd_seed ? rnd_seed : 0x2545F491u;
@@ -4456,15 +4475,16 @@ static void rnd_maitreya(void)
     for (tr = 0; tr < RND_NT; tr++) {
         uint32_t cls = tr == 0u ? GC_PAD : tr == RND_NT - 1u ? (rnd_pct(50) ? GC_PAD : GC_PLUCK) : GC_PLUCK;
         rnd_role_of[tr] = (uint8_t)(tr == 0u ? RND_ROLE_DRONE : RND_ROLE_MELODY);
-        if (!gen_colour(tr, GE_PHASE | GE_MACRO, cls, 1)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
+        if (!gen_mt_sound(tr, cls == GC_PAD)) engine_load_of(&trk[tr], 6u, 0);   /* (TRIO) */
         rnd_tp(tr, P_SCALE, (int32_t)scale);
         rnd_tp(tr, P_ROOT, (int32_t)root);
         rnd_tp(tr, P_QUANT, Q_WHITE);
-        rnd_tp(tr, P_TRANS, TRN[tr] + (tr == 2u && rnd_pct(40) ? 12 : 0));
+        rnd_tp(tr, P_TRANS, TRN[tr] + (tr == 3u && rnd_pct(30) ? 12 : 0));
         rnd_tp(tr, P_SDIV, tr == 0u ? 7 : rnd_pct(70) ? 0 : 6);   /* (the drone a bar a note; the loops 1/4 or 1/2) */
-        rnd_tp(tr, P_ATK, cls == GC_PAD ? rnd_rr(20, 50) : rnd_rr(0, 10));
-        rnd_tp(tr, P_REL, rnd_rr(90, 120));
-        rnd_tp(tr, P_FXSEND, rnd_rr(70, 110));
+        rnd_tp(tr, P_VOICE, 0);                     /* (POLY: a note never cuts the last one off, no clicks) */
+        rnd_tp(tr, P_ATK, cls == GC_PAD ? rnd_rr(30, 60) : rnd_rr(8, 14));   /* (never sharp: no clicks) */
+        rnd_tp(tr, P_REL, cls == GC_PAD ? rnd_rr(80, 105) : rnd_rr(60, 90));
+        rnd_tp(tr, P_FXSEND, rnd_rr(50, 80));
         rnd_tx(tr, TX_MODE, TESS_ENG_TURING);
         rnd_tx(tr, TX_TUR_LEN, tr == 0u ? rnd_rr(2, 3) : lens[tr]);
         rnd_tx(tr, TX_TUR_PROB, 0);                 /* (locked: the loop as it is) */
@@ -4477,23 +4497,22 @@ static void rnd_maitreya(void)
         rnd_tx(tr, TX_TW_FOLLOW, 0);
         rnd_tx(tr, TX_SUB_RATCH, 0);
         rnd_tx(tr, TX_NL_MODE, 1);                  /* (long notes, overlapping) */
-        rnd_tx(tr, TX_NL_LEN, rnd_rr(4, 5));
+        rnd_tx(tr, TX_NL_LEN, cls == GC_PAD ? rnd_rr(3, 4) : rnd_rr(2, 3));
     }
     undo_depth--;
     scale_share(&trk[0]);
     pid_set(PID_GLOBAL(G_FXMODE), 0, 1);            /* the sends: a deep reverb, a faint echo */
     pid_set(PID_GLOBAL(G_MFXTYPE), 0, MELODEE_FX_LEAN ? FX_ECHO : FX_REVERB);
-    pid_set(PID_GLOBAL(G_MFXTYPE + 1u), 0, rnd_rr(100, 120));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 2u), 0, rnd_rr(80, 120));
-    pid_set(PID_GLOBAL(G_MFXTYPE + 3u), 0, rnd_rr(90, 120));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 1u), 0, rnd_rr(70, 95));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 2u), 0, rnd_rr(60, 90));
+    pid_set(PID_GLOBAL(G_MFXTYPE + 3u), 0, rnd_rr(60, 90));
     pid_set(PID_GLOBAL(G_MFXTYPE + 4u), 0, FX_ECHO);
     pid_set(PID_GLOBAL(G_MFXTYPE + 5u), 0, rnd_rr(60, 90));
     pid_set(PID_GLOBAL(G_MFXTYPE + 6u), 0, rnd_rr(20, 50));
     pid_set(PID_GLOBAL(G_MFXTYPE + 7u), 0, rnd_rr(20, 50));
     pid_set(PID_GLOBAL(G_MFXTYPE + 8u), 0, FX_OFF);
-    pid_set(PID_GLOBAL(G_FXRETURN), 0, rnd_rr(80, 100));
-    rnd_tp(0, P_LEVEL, clamp(trk[0].p[P_LEVEL] + 6, 0, 127));   /* (the bed under the loops) */
-    pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(56, 72));
+    pid_set(PID_GLOBAL(G_FXRETURN), 0, rnd_rr(65, 85));
+    pid_set(PID_GLOBAL(G_BPM), 0, rnd_rr(66, 82));
 }
 
 /* ------------------------------------------------------------ GENERATE: before / after --- */
