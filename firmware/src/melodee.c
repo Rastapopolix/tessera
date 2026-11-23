@@ -108,6 +108,9 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "pid.c"                 /* the central parameter ids (pid.h) */
 #include "cord.c"                /* cords: the signal bus (cord.h) */
 #include "mscope.c"              /* MOD SCOPE: the picked mod sampled for MODS */
+#if MELODEE_SMF
+#include "smf.c"                 /* a .mid of the notes played: never on the FM-1 (no files), off */
+#endif
 #include "audio.c"
 
 /* -------------------------------------------------------------- UI --- */

@@ -55,6 +55,9 @@ static void TESSERA_NOTE_HOOK(track_t *t, uint32_t note, uint32_t vel);
 #include "pid.c"
 #include "cord.c"
 #include "mscope.c"
+#if MELODEE_SMF
+#include "smf.c"                                     /* a .mid of the notes played (Andamento) */
+#endif
 #ifdef TESSERA_NOTE_HOOK
 #undef trk_note_on
 #endif

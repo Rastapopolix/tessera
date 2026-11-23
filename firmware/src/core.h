@@ -98,6 +98,10 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (macro_glue.cc, third_party/mi); never on the
                                   * FM-1, on in the plugin and the Daisy (Andamento CORE_MIGRATION step 5) */
 #endif
+#ifndef MELODEE_SMF
+#define MELODEE_SMF 0            /* a Standard MIDI File writer (smf.c, tess_core_smf): never on the FM-1 (no files there);
+                                  * on in the Daisy build for Andamento. The plugin includes smf.c itself (midifile.cpp) */
+#endif
 #ifndef MELODEE_PHASE
 #define MELODEE_PHASE 0          /* PHASE (eng_phase.c): the CZ-1's phase distortion, on the CZ-1's ID (15). Out of the FM-1
                                   * since 2026-10-22 (its tracks load FM6's INIT there); back 2026-11-21 for the plugin and

@@ -1084,6 +1084,22 @@ uint32_t tess_core_setup_load(const uint8_t *in, uint32_t len)
 }
 
 /* every note MIDI OUT still has on goes off (each track's, midi_out.c), as a STOP sends them */
+#if MELODEE_SMF
+_Static_assert(sizeof(tess_smf_ev) == sizeof(smf_ev), "tess_smf_ev is smf.c's smf_ev");
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap)
+{
+    return smf_write((const smf_ev *)ev, n, bpm, name, bars, out, cap);
+}
+#else
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap)
+{
+    (void)ev, (void)n, (void)bpm, (void)name, (void)bars, (void)out, (void)cap;
+    return 0;
+}
+#endif
+
 void tess_core_notes_off(void)
 {
     uint32_t k;

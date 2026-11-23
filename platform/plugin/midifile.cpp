@@ -4,109 +4,29 @@
 #include "midifile.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <map>
+
+// the writer, shared with the core (MELODEE_SMF): its functions static to this file
+#include "../../firmware/src/smf.c"
 
 namespace midifile
 {
-namespace
+std::vector<uint8_t> smf(const std::vector<Ev> &events, double bpm, const std::string &name, uint32_t bars)
 {
-const int PPQ = 480;
-
-void u32(std::vector<uint8_t> &b, uint32_t v)
-{
-    for (int s = 24; s >= 0; s -= 8) b.push_back((uint8_t)(v >> s));
-}
-void u16(std::vector<uint8_t> &b, uint32_t v)
-{
-    b.push_back((uint8_t)(v >> 8));
-    b.push_back((uint8_t)v);
-}
-void vlq(std::vector<uint8_t> &b, uint32_t v)
-{
-    uint8_t t[5];
-    int n = 0;
-    do t[n++] = (uint8_t)(v & 0x7F), v >>= 7; while (v);
-    while (n--) b.push_back((uint8_t)(t[n] | (n ? 0x80 : 0)));
-}
-void meta_text(std::vector<uint8_t> &b, uint8_t type, const std::string &t)
-{
-    b.push_back(0x00);
-    b.push_back(0xFF);
-    b.push_back(type);
-    vlq(b, (uint32_t)t.size());
-    b.insert(b.end(), t.begin(), t.end());
-}
-// a track chunk around body (its end-of-track added)
-void chunk(std::vector<uint8_t> &file, std::vector<uint8_t> body)
-{
-    body.insert(body.end(), {0x00, 0xFF, 0x2F, 0x00});
-    file.insert(file.end(), {'M', 'T', 'r', 'k'});
-    u32(file, (uint32_t)body.size());
-    file.insert(file.end(), body.begin(), body.end());
-}
-struct Tick { uint32_t t; uint8_t s, d1, d2; };
-}   // namespace
-
-std::vector<uint8_t> smf(const std::vector<Ev> &events, double bpm, const std::string &name)
-{
-    double first = -1, last = 0;
+    std::vector<smf_ev> ev;
+    ev.reserve(events.size());
     for (auto &e : events)
-        if ((e.status & 0xF0) == 0x90 && e.d2)
-        {
-            if (first < 0 || e.beat < first) first = e.beat;
-        }
-    if (first < 0)
-        return {};
-    double start = std::floor(first / 4.0) * 4.0;   // (the bar the first note is in)
-    std::map<int, std::vector<Tick>> per;            // channel -> its messages, in ticks from start
-    std::map<int, int> on;                           // (channel << 8 | key) -> notes on
-    for (auto &e : events)
-    {
-        if (e.beat < start) continue;                // (an off of a note from before the clip)
-        int ch = e.status & 15, key = e.d1, k = ch << 8 | key;
-        bool is_on = (e.status & 0xF0) == 0x90 && e.d2;
-        if (!is_on && !on[k]) continue;              // (its note began before the clip)
-        on[k] += is_on ? 1 : -1;
-        uint32_t t = (uint32_t)std::lround((e.beat - start) * PPQ);
-        per[ch].push_back({t, (uint8_t)(is_on ? 0x90 | ch : 0x80 | ch), (uint8_t)key, (uint8_t)(is_on ? e.d2 : 64)});
-        last = std::max(last, e.beat);
-    }
-    uint32_t end = (uint32_t)std::lround((last - start) * PPQ);
-    for (auto &kv : on)                              // (notes still on: off with the last message)
-        for (int n = 0; n < kv.second; n++)
-            per[kv.first >> 8].push_back({end, (uint8_t)(0x80 | (kv.first >> 8)), (uint8_t)(kv.first & 127), 64});
-
-    std::vector<uint8_t> file = {'M', 'T', 'h', 'd'};
-    u32(file, 6);
-    u16(file, 1);
-    u16(file, (uint32_t)per.size() + 1);
-    u16(file, PPQ);
-    std::vector<uint8_t> t0;
-    if (!name.empty()) meta_text(t0, 0x03, name);
-    uint32_t us = (uint32_t)std::lround(60e6 / (bpm > 1 ? bpm : 120));
-    t0.insert(t0.end(), {0x00, 0xFF, 0x51, 0x03, (uint8_t)(us >> 16), (uint8_t)(us >> 8), (uint8_t)us});
-    t0.insert(t0.end(), {0x00, 0xFF, 0x58, 0x04, 4, 2, 24, 8});   // (4/4)
-    chunk(file, t0);
-    for (auto &kv : per)
-    {
-        auto &v = kv.second;
-        std::stable_sort(v.begin(), v.end(), [](const Tick &a, const Tick &b) { return a.t < b.t; });
-        std::vector<uint8_t> body;
-        meta_text(body, 0x03, "T" + std::to_string(kv.first + 1));
-        uint32_t now = 0;
-        for (auto &m : v)
-        {
-            vlq(body, m.t - now);
-            now = m.t;
-            body.insert(body.end(), {m.s, m.d1, m.d2});
-        }
-        chunk(file, body);
-    }
-    return file;
+        ev.push_back({(uint32_t)(e.beat > 0 ? std::lround(e.beat * SMF_PPQ) : 0), e.status, e.d1, e.d2, 0});
+    std::stable_sort(ev.begin(), ev.end(), [](const smf_ev &a, const smf_ev &b) { return a.tick < b.tick; });
+    uint32_t b = (uint32_t)std::lround(bpm > 1 ? bpm : 120);
+    uint32_t len = smf_write(ev.data(), (uint32_t)ev.size(), b, name.c_str(), bars, nullptr, 0);
+    std::vector<uint8_t> f(len);
+    if (len) smf_write(ev.data(), (uint32_t)ev.size(), b, name.c_str(), bars, f.data(), len);
+    return f;
 }
 
 std::string folder()
@@ -159,6 +79,7 @@ bool read_back(const std::vector<uint8_t> &f, int &tracks, int &notes, double &q
             uint8_t c;
             do { c = f[p++]; d = d << 7 | (c & 0x7F); } while ((c & 0x80) && p < endp);
             now += d;
+            quarters = std::max(quarters, (double)now / ppq);   // (an end-of-track counts: a bars clip's length)
             uint8_t s = f[p];
             if (s == 0xFF)
             {
@@ -172,7 +93,6 @@ bool read_back(const std::vector<uint8_t> &f, int &tracks, int &notes, double &q
             uint8_t d1 = f[p++], d2 = f[p++];
             if ((run & 0xF0) == 0x90 && d2) notes++;
             (void)d1;
-            quarters = std::max(quarters, (double)now / ppq);
         }
         tracks++;
         at = endp;

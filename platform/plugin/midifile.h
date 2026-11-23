@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+struct tess_core_vt;   // (core_copies.h: a copy of the core)
+
 namespace midifile
 {
 struct Ev
@@ -47,15 +49,22 @@ class Recorder
     size_t head_ = 0, count_ = 0;
 };
 
-/* a Standard MIDI File (format 1, 480 ticks a quarter): the clip starts on the bar (4/4) the first note is in; a note
- * still on at the end ends with the last one. name: the first track's name ("" none). Empty if there are no notes */
-std::vector<uint8_t> smf(const std::vector<Ev> &events, double bpm, const std::string &name);
+/* a Standard MIDI File (format 1, 480 ticks a quarter; firmware/src/smf.c, the writer Andamento shares). bars 0: the
+ * clip starts on the bar (4/4) the first note is in, a note still on at the end ends with the last one; bars N: from
+ * the song's top for N bars exactly (a note still on ends there). name: the first track's name ("" none). Empty if
+ * there are no notes */
+std::vector<uint8_t> smf(const std::vector<Ev> &events, double bpm, const std::string &name, uint32_t bars = 0);
 /* the folder exported clips go in, made if need be (UTF-8; "" if there is none): Documents/Tessera/MIDI in the user's
  * home (%USERPROFILE% on Windows, $HOME elsewhere) */
 std::string folder();
 /* a clip's file name: the project's name (Tessera for none, the characters a file name cannot have left out) and
  * stamp ("2026-11-22 1635"), "UNDERTOW 2026-11-22 1635.mid" */
 std::string file_name(const std::string &project, const std::string &stamp);
-/* (tests) a file smf wrote, read back: its tracks, notes (note-ons with a velocity) and length in quarters */
+/* (midirender.cpp) the project tsp played on copy c (booted, held by the caller) from the top for bars bars, as fast as
+ * it renders: the notes its MIDI OUT sends, each at its beat from the top, into ev; its tempo into bpm. Its own clock
+ * (not a DAW's); a song that goes back to its top goes on after it. "" done, else why not */
+std::string render(const tess_core_vt *c, const std::vector<uint8_t> &tsp, uint32_t bars, std::vector<Ev> &ev, double &bpm);
+/* (tests) a file smf wrote, read back: its tracks, notes (note-ons with a velocity) and length in quarters (to the
+ * last end-of-track) */
 bool read_back(const std::vector<uint8_t> &file, int &tracks, int &notes, double &quarters);
 }   // namespace midifile

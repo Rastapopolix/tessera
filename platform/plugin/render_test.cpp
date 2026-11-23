@@ -11,6 +11,7 @@
  *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
  *     the host sizes it to 200 % (a dragged frame snapped to the nearest of 100, 150, 200 %) and back;
+ *     MIDI clicked: the notes since PLAY as a .mid; stopped, 16 bars rendered from the top;
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
  *     MODE EXPANDED in its menu makes it 1500 wide with TRACKS beside the screen, FM-1 1000 again;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
@@ -920,6 +921,26 @@ int main(int argc, char **argv)
                                     f.path().filename().c_str(), b.size(), tracks, notes, q);
                     }
                     CHECK(files == 1 && tracks >= 2 && notes > 0, "MIDI clicked: a clip with notes (%d files)", files);
+                    // stopped (the DAW's STOP), MIDI renders the project from the top for 16 bars on a spare copy: a clip of
+                    // 64 quarters exactly, while this instance's own copy stays stopped
+                    tr.flags = CLAP_TRANSPORT_HAS_TEMPO;
+                    ticks(10);
+                    fs::remove_all(home / "Documents" / "Tessera" / "MIDI", ec);
+                    click_at(550, 605);
+                    ticks(4);
+                    files = 0;
+                    for (auto &f : fs::directory_iterator(home / "Documents" / "Tessera" / "MIDI", ec))
+                    {
+                        std::ifstream in(f.path(), std::ios::binary);
+                        std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        files += midifile::read_back(b, tracks, notes, q);
+                        std::printf("midi stopped: %s, %zu bytes, %d tracks, %d notes, %.1f quarters\n",
+                                    f.path().filename().c_str(), b.size(), tracks, notes, q);
+                    }
+                    CHECK(files == 1 && notes > 0 && std::fabs(q - 64.0) < 1e-9,
+                          "MIDI clicked while stopped: 16 bars rendered (%d files, %.1f quarters)", files, q);
+                    tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+                    ticks(4);
                     // MODE EXPANDED in TESSERA's menu (the setting in this new HOME): the window 1500 wide, TRACKS beside
                     // the screen, drawn with the view; FM-1 again: 1000 wide
                     {
