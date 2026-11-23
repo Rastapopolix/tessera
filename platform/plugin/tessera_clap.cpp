@@ -1702,7 +1702,7 @@ const char *features[] = {CLAP_PLUGIN_FEATURE_INSTRUMENT, CLAP_PLUGIN_FEATURE_SY
 const clap_plugin_descriptor_t desc = {
     CLAP_VERSION_INIT,
     TESS_PLUGIN_ID,   // (the id stays tessera's: songs saved with the beta still find it)
-    "Smalti",         // (Tessera as a plugin; the firmware keeps its name)
+    "Cosmati",         // (Tessera as a plugin; the firmware keeps its name)
     "Rastapopolix",
     "https://github.com/Rastapopolix/tessera",
     "",

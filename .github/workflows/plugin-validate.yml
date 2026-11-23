@@ -66,20 +66,20 @@ jobs:
       - name: pluginval (VST3, strictness 10, with the editor)
         run: |
           xvfb-run -a -s "-screen 0 1280x800x24" ./pluginval --strictness-level 10 --validate-in-process \
-            --timeout-ms 300000 --validate build/plugin/out/Smalti.vst3 2>&1 | tee pluginval.log
+            --timeout-ms 300000 --validate build/plugin/out/Cosmati.vst3 2>&1 | tee pluginval.log
           grep -q '^SUCCESS' pluginval.log
       - name: clap-validator (CLAP)
         timeout-minutes: 10
         run: |
           x=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt platform/plugin/clap_validator_skip.txt | sed 's/.*/^&$/' | sed 's/^/-x /' | tr '\n' ' ')
-          xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $x build/plugin/out/Smalti.clap 2>&1 | tee cv.log
+          xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $x build/plugin/out/Cosmati.clap 2>&1 | tee cv.log
       - name: clap-validator, the known failures (reported, not failing)
         timeout-minutes: 10
         continue-on-error: true
         run: |
           t=$(sed '/^#/d; /^$/d' platform/plugin/clap_validator_known.txt | sed 's/.*/^&$/' | sed 's/^/-t /' | tr '\n' ' ')
           [ -n "$t" ] || { echo 'no known failures'; exit 0; }
-          xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $t build/plugin/out/Smalti.clap 2>&1 | tee cv_known.log
+          xvfb-run -a ~/.cargo-cv/bin/clap-validator validate --only-failed $t build/plugin/out/Cosmati.clap 2>&1 | tee cv_known.log
       - name: Summary
         if: always()
         run: |
@@ -129,9 +129,9 @@ jobs:
       - name: Find the outputs (Visual Studio puts them in a folder per configuration)
         run: |
           find build/plugin/out -maxdepth 3 | sort
-          vst3=$(find build/plugin/out -maxdepth 3 -name Smalti.vst3 | head -1)
-          clap=$(find build/plugin/out -maxdepth 3 -name Smalti.clap | head -1)
-          [ -n "$vst3" ] && [ -n "$clap" ] || { echo "no Smalti.vst3 / Smalti.clap under build/plugin/out"; exit 1; }
+          vst3=$(find build/plugin/out -maxdepth 3 -name Cosmati.vst3 | head -1)
+          clap=$(find build/plugin/out -maxdepth 3 -name Cosmati.clap | head -1)
+          [ -n "$vst3" ] && [ -n "$clap" ] || { echo "no Cosmati.vst3 / Cosmati.clap under build/plugin/out"; exit 1; }
           echo "VST3=$(cygpath -w "$(pwd)/$vst3")" >> "$GITHUB_ENV"
           echo "CLAP=$clap" >> "$GITHUB_ENV"
       - name: pluginval (VST3, strictness 10, with the editor)

@@ -278,7 +278,7 @@ class GuiWin32 : public Gui
             wc.lpszClassName = CLASS_NAME;
             RegisterClassExW(&wc);
         }
-        wnd = CreateWindowExW(0, CLASS_NAME, L"Smalti", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, pw * pct / 100,
+        wnd = CreateWindowExW(0, CLASS_NAME, L"Cosmati", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, pw * pct / 100,
                               Panel::H * pct / 100,
                               static_cast<HWND>(w->win32), nullptr, inst, nullptr);
         if (!wnd)

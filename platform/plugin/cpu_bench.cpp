@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* What Tessera costs per instance: a minimal CLAP host (POSIX) over the built Smalti.clap runs 1, 4 and 8 instances,
+/* What Tessera costs per instance: a minimal CLAP host (POSIX) over the built Cosmati.clap runs 1, 4 and 8 instances,
  * each playing STILL TIDE (demos/still-tide.tsp, loaded as the host's state: a new instance starts empty) with the
  * host's transport, and prints for each count:
  *   - one thread: the time per instance as a share of real time (a DAW running every instance on one core);
  *   - a thread per instance: the time for all of them at once, as a share of real time;
  *   - the slowest block of one instance on one thread, against the block's real time (what a DAW's buffer holds).
  * It measures; it passes or fails nothing (the machine sets the numbers).
- * usage: tessera-cpu-bench path/to/Smalti.clap [seconds] [rate] [block]   (from the repository's top: demos/) */
+ * usage: tessera-cpu-bench path/to/Cosmati.clap [seconds] [rate] [block]   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <dlfcn.h>
 
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        std::printf("usage: %s Smalti.clap [seconds] [rate] [block]\n", argv[0]);
+        std::printf("usage: %s Cosmati.clap [seconds] [rate] [block]\n", argv[0]);
         return 2;
     }
     double seconds = argc > 2 ? std::atof(argv[2]) : 10.0;

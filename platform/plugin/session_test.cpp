@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin's session test: a DAW saves a session with three Tessera instances and opens it again, as a minimal
- * CLAP host (POSIX) over the built Smalti.clap:
+ * CLAP host (POSIX) over the built Cosmati.clap:
  *   - three instances, each with STILL TIDE loaded (demos/still-tide.tsp, as a state: a new one starts from a new
  *     project), each changed its own way (a track's level, a MACRO, a generator setting, MASTER, notes
  *     played), each played for a while with the host's transport;
@@ -10,7 +10,7 @@
  *     host is asked to rescan the values, and saving again gives the same bytes;
  *   - the instances stay apart: what one instance changed is not in the others;
  *   - opened twice from the same state and played from the DAW's zero, two instances play the same audio.
- * usage: tessera-session-test path/to/Smalti.clap   (from the repository's top: demos/) */
+ * usage: tessera-session-test path/to/Cosmati.clap   (from the repository's top: demos/) */
 #include <clap/clap.h>
 #include <dlfcn.h>
 #include <string>
@@ -241,14 +241,14 @@ static int differ(const std::map<clap_id, double> &a, const std::map<clap_id, do
     return n + (int)(b.size() > a.size() ? b.size() - a.size() : 0);
 }
 
-// the library inside a plugin path: on macOS Smalti.clap is a bundle, its code in Contents/MacOS/Tessera
+// the library inside a plugin path: on macOS Cosmati.clap is a bundle, its code in Contents/MacOS/Tessera
 static std::string clap_library(const char *path)
 {
 #ifdef __APPLE__
     std::string p(path);
     while (p.size() > 1 && p.back() == '/') p.pop_back();
     std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
-    std::string stem = base.substr(0, base.rfind('.'));   // (Smalti.clap: Tessera)
+    std::string stem = base.substr(0, base.rfind('.'));   // (Cosmati.clap: Tessera)
     std::string inner = p + "/Contents/MacOS/" + stem;
     if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
 #endif
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        std::printf("usage: %s Smalti.clap\n", argv[0]);
+        std::printf("usage: %s Cosmati.clap\n", argv[0]);
         return 2;
     }
     void *lib = dlopen(clap_library(argv[1]).c_str(), RTLD_NOW | RTLD_LOCAL);
