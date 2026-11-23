@@ -1010,6 +1010,12 @@ bool p_init(const clap_plugin_t *p)
         projfile::setting_put("ink", "");
         projfile::setting_put("shell_v", "2");
     }
+    if (projfile::setting_get("shell_v") == "2")   // (TESSERA's shell was YELLOW until 0.1-beta5: that ink, remembered
+    {                                             // as the last shown, gives way to its MOSAIC once; another ink stays)
+        if (projfile::setting_get("ink") == "YELLOW")
+            projfile::setting_put("ink", "");
+        projfile::setting_put("shell_v", "3");
+    }
     int sh = Panel::shell_by_id(projfile::setting_get("shell"));   // (the shell last picked, and its ink)
     if (sh >= 0)
     {

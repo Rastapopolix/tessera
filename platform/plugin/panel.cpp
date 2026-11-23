@@ -46,8 +46,9 @@ struct Shell
     uint32_t body, tray, btn, edge, btn_ink, slit, label, lit_ink, lit, rec;
 };
 const Shell SHELLS[] = {
-    // TESSERA's own (draw_native; these colours only make its swatch among the FM-1's)
-    {"tessera", "TESSERA", "YELLOW", 0xFF111111, 0xFF111111, 0xFFFFD020, 0xFF3B3007, 0xFFFFD020, 0xFF3B3007, 0xFFB9B2A0,
+    // TESSERA's own (draw_native; these colours only make its swatch among the FM-1's); its screen in MOSAIC, a colour
+    // a track, T1 the yellow (Theo, 2026-11-24: Cosmati's inlaid stones)
+    {"tessera", "TESSERA", "MOSAIC", 0xFF111111, 0xFF111111, 0xFFFFD020, 0xFF3B3007, 0xFFFFD020, 0xFF3B3007, 0xFFB9B2A0,
      0xFF000000, 0xFFFFD020, 0xFFFFD020},
     {"black", "BLACK", "YELLOW", 0xFF1B1B1D, 0xFF29292C, 0xFF3B3B40, 0xFF505056, 0xFFE4E4E6, 0xFF121214, 0xFFD6D6D8,
      0xFF1B1B1D, 0, 0},
