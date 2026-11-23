@@ -56,7 +56,8 @@ def link(url, here):
     for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/"),
                      ("assets/plugin/", "media/plugin/")):
         if path.startswith(src):
-            return "../" + dst + path[len(src):]
+            v = plugin_release()[0] if src == "assets/plugin/" else None   # (the plugin's pictures: redrawn each release
+            return "../" + dst + path[len(src):] + (f"?v={v}" if v else "")   # under one name, so a browser re-fetches)
     return REPO + path + (f"#{frag}" if frag else "")
 
 
