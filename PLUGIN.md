@@ -155,7 +155,8 @@ click it, or press **Esc** to let go.
 
 **Shells:** the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:
 
-- **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.
+- **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink: Tessera's look
+  starts in MOSAIC, a colour for each track (track 1 yellow, 2 blue, 3 pink, 4 green; 5-8 lighter).
 - **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
   which colour each track). Hover over a swatch to see its name.
 - **MODE:** FM-1 (the FM-1's panel) or EXPANDED (a wider window with every track on screen at once: see
