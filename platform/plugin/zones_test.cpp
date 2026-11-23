@@ -485,6 +485,23 @@ static void mosaic(const char *ppm)
     CHECK(row_ink(0) == row_ink(4), "one ink: tracks 5..8 the same ink as 1..4 (%04x, %04x)", row_ink(0), row_ink(4));
 }
 
+static void tabs()   // the footer's tabs: a click goes to that page
+{
+    tap(B_GLO);   // (MIXER, GLO's first page: its tabs in the footer)
+    int n = count(TESS_ZONE_TAB), far = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row >= 2) { far = i; break; }
+    CHECK(n >= 3 && far >= 0, "GLO's footer: a zone a tab (%d)", n);
+    if (far < 0) { dump("tabs"); tap(B_HOME); return; }
+    std::string want = v.zones[far].value;
+    act(far, TESS_ZA_CLICK, 0, 40);
+    int here = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) here = i;
+    CHECK(here >= 0 && want == v.zones[here].value, "a click on %s's tab: that page (now %s)", want.c_str(),
+          here >= 0 ? v.zones[here].value : "?");
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -493,6 +510,7 @@ int main(int argc, char **argv)
 
     // ---- HOME: the tracks
     CHECK(count(TESS_ZONE_TRACK) == 4, "HOME: a zone a track (%d)", count(TESS_ZONE_TRACK));
+    tabs();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
