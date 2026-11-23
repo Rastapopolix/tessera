@@ -760,6 +760,14 @@ bool Panel::down(int x, int y)
             if (dbl) zone_act(z, TESS_ZA_DOUBLE, 0);
             return dbl;
         }
+        if (z.kind == TESS_ZONE_ROW && z.vrole >= 0)   // (a row with a value, a sheet's or MENU's: click there,
+        {                                             // then held and dragged up or down, its value turns)
+            zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
+            drag = ZONE;
+            drag_zone = z;
+            acc = 0;
+            return true;
+        }
         drag = NONE;
         if (dbl && z.kind != TESS_ZONE_ROW && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
             return false;   // (OK, YES, a track: once, however often clicked; MIXER's MUTE word: double-click SOLO)
