@@ -141,6 +141,11 @@ Keys go by where they sit, not what they print, so any keyboard layout works (ty
 DAW. Keys reach Smalti only while its window has focus; click back in the DAW and its own shortcuts work as usual.
 To leave every key to the DAW, set **KEYS** to OFF in Smalti's menu (it applies to every Smalti window).
 
+**Help:** right-click a knob's column or a list's row on the screen for its help card (what it does; hovering gives
+its name and value). The card stays until you click: turn another knob meanwhile for that one's card, and the wheel
+over a long card scrolls it. The **?** button beside OK opens KNOB 1's card the same way (turn a knob for its own);
+press it again to close. On the FM-1, hold ARP and turn a knob.
+
 **Button combos with the mouse:** right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
 as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,
 click it, or press **Esc** to let go.
@@ -160,7 +165,7 @@ click it, or press **Esc** to let go.
 
 In Tessera's look, the FM-1's two OCT buttons are split into what they do, each a button of its own:
 
-- **SHIFT**, **BACK** and **OK**, under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
+- **SHIFT**, **BACK** and **OK** (and **?**, the help: see below), under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
   opens the page's sheet). **SHIFT** is OCT- held: hold it for the knobs' second set on the pages that have one (a
   right-click latches it); it never goes back. The screen's hints say BACK, OK and SHIFT where the FM-1 says OCT-
   and OCT+.

@@ -44,7 +44,8 @@ void tess_core_keys(uint32_t mask);
  * a build with TESS_HAS_POINTER (the plugin), a front end's own buttons beyond the FM-1's: SHIFT (OCT-'s held layer,
  * never its BACK), OCTAVE DOWN / UP (the keys' octave a step, on any page; both: back to 0). With these, OCT- and OCT+
  * are BACK and OK alone: tess_core_key_words */
-enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18 };
+enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18,
+       TESS_BTN_HELP = 1u << 19 };   /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
 void tess_core_buttons(uint32_t mask);
 /* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
@@ -106,7 +107,10 @@ typedef struct {
     int16_t row;                     /* (the core's: a row's place, a key's button label, a track, a cell's turns) */
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
-enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL };
+enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP };
+/* HELP (a right-click): a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
+ * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
+ * on any zone, or a button pressed, closes it (that click does nothing more) */
 /* do what the mouse did on zone z: TURN n detents (+ clockwise / up: a drag), CLICK, DOUBLE, WHEEL n notches (+ up). A
  * zone no longer on the screen
  * is let go. Its steps run a millisecond each as the device plays (a row three away: three detents) */

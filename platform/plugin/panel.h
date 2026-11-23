@@ -69,7 +69,8 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
-    /* a right-click (or Ctrl-click on a Mac): a button or key latched, held until it is right-clicked or clicked again
+    /* a right-click (or Ctrl-click on a Mac): on the screen, a value's column or a list's row: its help card (TESS_ZA_HELP);
+     * else a button or key latched, held until it is right-clicked or clicked again
      * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
     bool latch(int x, int y);
     uint32_t latched_buttons() const { return latch_buttons; }

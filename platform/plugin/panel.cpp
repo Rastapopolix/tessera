@@ -199,7 +199,7 @@ const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
 // TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
-const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18;
+const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18, BIT_HELP = 19;
 }   // namespace
 
 Panel::Panel()
@@ -240,9 +240,10 @@ void Panel::layout()
     const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
     if (n)   // TESSERA's shell: SHIFT, BACK and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
     {        // and a third row of the grid, the octave a step down and up (the FM-1's OCT- / OCT+ on Stage)
-        buttons.push_back({50, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});   // (Theo:
-        buttons.push_back({127, 258, 66, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});        // SHIFT, BACK, OK)
-        buttons.push_back({204, 258, 66, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
+        buttons.push_back({50, 258, 62, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});   // (Theo:
+        buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});        // SHIFT, BACK, OK)
+        buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
+        buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)"});
         for (int i = 0; i < 6; i++)
         {
             buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
@@ -944,6 +945,14 @@ bool Panel::latch(int x, int y)
 {
     if (native() && menu_open)
         return false;
+    int zi = zone_at(x, y);
+    if (zi >= 0)   // the screen: a value's column or a list's row, its help card (tess_core_zone_do TESS_ZA_HELP)
+    {
+        const tess_zone_t &z = zones[zi];
+        if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0)) return false;
+        zone_act(z, TESS_ZA_HELP, 0);
+        return true;
+    }
     int i;
     if ((i = button_at(x, y)) >= 0)
         latch_buttons ^= 1u << buttons[i].bit;
@@ -1151,7 +1160,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         if (held) border = fill = T_HELD, ink = T_BLACK;
         else if (lit) border = fill = T_YEL, ink = T_BLACK;
         else if (v.breath_buttons & bit) border = T_YEL, fill = mix(T_BLACK, T_YEL, 0.35 * breath), ink = T_YEL;
-        else if ((v.dim_buttons & bit) || b.bit == BIT_OCT_DOWN || b.bit == BIT_OCT_UP)   // (the octave: always there)
+        else if ((v.dim_buttons & bit) || b.bit == BIT_OCT_DOWN || b.bit == BIT_OCT_UP || b.bit == BIT_HELP)   // (there)
             border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);

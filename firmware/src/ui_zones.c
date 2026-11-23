@@ -110,6 +110,11 @@ static void uz_list_rows(int32_t x, int32_t y, int32_t w, int32_t h, int32_t dy,
                names ? names[i] : 0, values ? values[i] : 0);
 }
 #define UZ(...) (__VA_ARGS__)
+/* 1: a help card the mouse opened (tess_core_zone_do TESS_ZA_HELP, Smalti's ?): it stays without ARP held, its knobs
+ * as ARP's (another knob's card, a turn scrolls), till a click closes it (ui_help.c help_knob, ui_input.c) */
+static uint8_t uz_help_pin;
+#define UZ_HELP_PIN uz_help_pin
 #else
 #define UZ(...) ((void)0)
+#define UZ_HELP_PIN 0
 #endif
