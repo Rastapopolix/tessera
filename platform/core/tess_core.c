@@ -88,7 +88,7 @@ void tess_core_boot(void)
  * detents as the hand's (a quick wheel speeds up as a quick knob does) */
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT };
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -156,6 +156,24 @@ static void zq_run(void)
                                                        * stays, as EDIT pressed again would go on) */
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && (ui.home || !in_fam(ui.page, FAM_EDIT)))
             open_family(FAM_EDIT);
+        ui.force = 1;
+        break;
+    case ZQ_PICK:                                     /* MODS' SOURCE / DESTINATION clicked: its picker, kept */
+        pick_touch(arg);
+        if (pop.on == POP_PICK)
+            uz_pick_pin = 1;
+        ui.force = 1;
+        break;
+    case ZQ_PICK_DONE:                                /* a row of that picker clicked: taken, the picker goes */
+        if (pop.on == POP_PICK && uz_pick_pin)
+            pop_close();
+        break;
+    case ZQ_SOUNDS:                                   /* HOME's track double-clicked: its sounds (SAVE > PRESETS) */
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && page_titled("PRESETS") < NPAGES) {
+            ui.page = (uint8_t)page_titled("PRESETS");
+            ui.home = 0;
+            page_entered();
+        }
         ui.force = 1;
         break;
     case ZQ_HELP:                                     /* KNOB arg+1's help card, kept till a click (a list's row:
@@ -231,6 +249,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     int32_t d, k;
     if (z && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && help_unpin())
         return;                                       /* a pinned help card: any click closes it, and does no more */
+    if (z && action == TESS_ZA_DOUBLE && z->kind == TESS_ZONE_CELL && z->group == UZ_G_PIC && z->role == EN_K2 &&
+        !ui.home && cur_page()->graph == GR_BROWSE) {
+        zq_key(B_OCTUP);                              /* the browser: a sound double-clicked (its first click went there;
+                                                       * its zone moved with it): kept, OK */
+        return;
+    }
     if (!z || !zone_live(z))
         return;
     if (action == TESS_ZA_HELP) {                     /* a value's column or a list's row: what it does */
@@ -241,6 +265,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             help_unpin();
             tess_core_zone_do(z, TESS_ZA_CLICK, 0);   /* (the cursor on the row) */
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
+            help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
+            core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
+            ui.force = 1;
         }
         return;
     }
@@ -253,9 +281,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         zq_turn(z->role, -n);
         return;
     }
-    if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_SCROLL) {   /* (a text: wheel up, up it) */
-        action = TESS_ZA_TURN;
-        n = -n;
+    if (action == TESS_ZA_WHEEL && (z->kind == TESS_ZONE_SCROLL || z->group == UZ_G_SIDES ||
+                                    (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_BROWSE))) {
+        action = TESS_ZA_TURN;                        /* (a text, the browser's and SCALES' two lists: wheel up, up */
+        n = -n;                                       /* them, as every list) */
     } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn) */
         action = TESS_ZA_TURN;
     }
@@ -285,6 +314,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_turn(z->vrole, n);                     /* then its value */
         else if (action == TESS_ZA_DOUBLE && uz_list.ok)
             zq_key(B_OCTUP);                          /* then OCT+: done, or its whole list */
+        else if (action == TESS_ZA_CLICK && pop.on == POP_PICK && uz_pick_pin)
+            zq_put(ZQ_PICK_DONE, 0, 1);               /* (a picker the mouse opened: the row taken, it goes) */
         break;
     case TESS_ZONE_KEY:
         if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NB)
@@ -293,6 +324,21 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_TRACK:
         if (action != TESS_ZA_TURN)
             tess_core_track_select((uint32_t)z->row);
+        if (action == TESS_ZA_DOUBLE)
+            zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
+        break;
+    case TESS_ZONE_PICK:                              /* MODS' SOURCE / DESTINATION: the mod's row first (KNOB 2), */
+        d = z->row - uz_list.sel;                     /* then its knob: a click its picker, kept; a turn its value */
+        for (k = 0; k < (d < 0 ? -d : d) && k < 64; k++)
+            zq_put(ZQ_STEP, (uint32_t)z->vrole, d);
+        if (d) {
+            uz_list.sel = z->row;
+            uz_list_sel_pending = 1;
+        }
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->role, n);
+        else if (z->role >= EN_K1 && z->role <= EN_K4)
+            zq_put(ZQ_PICK, (uint32_t)(z->role - EN_K1), 1);
         break;
     case TESS_ZONE_MUTE:                              /* MIXER's strips: as TRACKS' M, S */
     case TESS_ZONE_SOLO:
@@ -358,11 +404,54 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
                     zq_put(ZQ_STEP, (uint32_t)role[j], d);
             uz_begin(z->group);                       /* (its grid's cells go until it is drawn again: a second click
                                                        * counts from there, not from the turns already on their way) */
+            if (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_MATRIX)
+                zq_key(B_OCTUP);                      /* (MATRIX: and OPEN, the cell's mod in MODS) */
+
         }
         break;
     }
 #else
     (void)z, (void)action, (void)n;
+#endif
+}
+
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+static tess_zone_t hover_z;
+static char hover_txt[384];
+/* z's help text into hover_txt, as its knob's card (help_find) would have it, the card's own state left as it was; a
+ * list's row: its own help, the list's cursor put there for the asking and back. Nothing while a card shows (its text
+ * may live in the same buffer, pid.c) */
+static void hover_find(const tess_zone_t *z)
+{
+    int32_t k = z->kind == TESS_ZONE_KNOB ? z->role : z->kind == TESS_ZONE_ROW ? z->vrole : -1;
+    hover_txt[0] = 0;
+    if (help.on || k < EN_K1 || k > EN_K4 || ui.menu || ui.confirm)
+        return;
+    {
+        uint8_t was_help[sizeof help], row = lst.row;
+        uint32_t tr = help_tr;
+        memcpy(was_help, &help, sizeof help);
+        if (z->kind == TESS_ZONE_ROW && list_on() && z->row >= 0)
+            lst.row = (uint8_t)z->row;
+        help_find((uint32_t)(k - EN_K1));
+        str_cpy(hover_txt, help_text(), sizeof hover_txt);
+        lst.row = row;
+        help_tr = tr;
+        memcpy(&help, was_help, sizeof help);
+    }
+}
+#endif
+void tess_core_hover(const tess_zone_t *z)
+{
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+    memset(&hover_z, 0, sizeof hover_z);
+    hover_txt[0] = 0;
+    if (z && zone_live(z)) {
+        hover_z = *z;
+        hover_find(z);
+    }
+#else
+    (void)z;
 #endif
 }
 
@@ -882,13 +971,20 @@ void tess_core_view(tess_view_t *v)
     v->zone_count = 0;
     v->typing = 0;
     v->closable = 0;
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+    v->hover = hover_z;
+    str_cpy(v->hover_help, hover_txt, sizeof v->hover_help);
+#else
+    memset(&v->hover, 0, sizeof v->hover);
+    v->hover_help[0] = 0;
+#endif
     v->zone_gen = 0;
 #if TESS_HAS_POINTER
     {                                             /* the zones, in the order a hit is looked for: a list over the
                                                    * page, a dialog's or a screen's keys, the page's columns,
                                                    * MIXER's strips, a screen's two lists, HOME's tracks */
-        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS, UZ_G_TABS,
-                                        UZ_G_HEAD};
+        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_PIC, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS,
+                                        UZ_G_TABS, UZ_G_HEAD};
         _Static_assert(sizeof ORDER == UZ_GROUPS, "every zone group in ORDER, once");
         uint32_t g, n = 0;
         for (g = 0; g < UZ_GROUPS; g++)

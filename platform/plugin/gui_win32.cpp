@@ -32,6 +32,7 @@ class GuiWin32 : public Gui
     {
         panel.set_shell(l->shell());
         panel.set_keys(l->keys_on());
+        panel.set_hover_help(l->hover_help_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
@@ -197,6 +198,9 @@ class GuiWin32 : public Gui
         int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
         if (kr >= 0)
             link->keys_set(kr == 1);
+        int hr = panel.take_hover_request();   // (HOVER HELP ON or OFF: every window's)
+        if (hr >= 0)
+            link->hover_help_set(hr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);

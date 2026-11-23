@@ -108,9 +108,10 @@ void tess_core_screen(tess_screen_t *s);
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
-       TESS_ZONE_TAB, TESS_ZONE_TEMPO };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
+       TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
                                             * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
-                                            * transport keeps its own) */
+                                            * transport keeps its own. PICK: MODS' SOURCE or DESTINATION; click: that
+                                            * mod, and its list, kept till a row of it is clicked; turn: its value) */
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
 typedef struct {
     uint16_t x, y, w, h;
@@ -120,7 +121,7 @@ typedef struct {
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP };
-/* HELP (a right-click): a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
+/* HELP (a right-click): on MIXER's MUTE word, that track's solo (on, or off again); a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
  * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
  * on any zone, or a button pressed, closes it (that click does nothing more) */
 /* do what the mouse did on zone z: TURN n detents (+ clockwise / up: a drag), CLICK, DOUBLE, WHEEL n notches (+ up). A
@@ -137,6 +138,9 @@ void tess_core_text(uint32_t ch);
 /* a click away from what tess_view_t.closable says is open (the panel's empty space, the screen where no zone is): a
  * pinned help card closes, else a picker or sheet as BACK closes it. Nothing when nothing is (or a YES / NO is) */
 void tess_core_away(void);
+/* the zone the mouse rests on (HOVER HELP: a front end's setting), or 0 for none: its help text, as its knob's help card
+ * has it, comes back in tess_view_t.hover_help (a value's column, a list's row with a value, a mod's row) */
+void tess_core_hover(const tess_zone_t *z);
 /* what the FM-1 panel shows */
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
@@ -152,6 +156,9 @@ typedef struct {
      * keys just play, empty): short, 1-3 characters for a label over the key ("M3", "P5", "ACC"); long, its meaning
      * ("T3 MUTE", "PATTERN 5", "PART 4: TOM") */
     char key_short[TESS_KEYS][4], key_long[TESS_KEYS][16];
+    tess_zone_t hover;               /* the zone tess_core_hover was given (kind 0: none), and its help text: what its
+                                      * knob's help card says ("" none; a build with TESS_HAS_POINTER and the cards) */
+    char hover_help[384];
     uint32_t closable;               /* 1: a picker, a sheet or a help card the mouse opened is over the page, which a
                                       * click away closes (tess_core_away); not a YES / NO question (a build with
                                       * TESS_HAS_POINTER; else 0) */

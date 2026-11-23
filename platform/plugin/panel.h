@@ -27,6 +27,8 @@ struct PanelInput
     std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
     bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
     bool away = false;                // a click on nothing while a picker, sheet or help card is open: tess_core_away
+    bool hover_changed = false;       // HOVER HELP: the zone the mouse rests on changed (kind 0: none): tess_core_hover
+    tess_zone_t hover = {};
     bool changed = false;
 };
 
@@ -95,6 +97,11 @@ class Panel
     /* KEYS (TESSERA's menu): the computer keyboard plays Tessera (on), or every key is left to the DAW (off). A click
      * asks (take_keys_request: 1 on, 0 off, -1 none); the window remembers it */
     void set_keys(bool on) { keys_on_ = on; if (!on) release_keys(); }
+    /* HOVER HELP (TESSERA's menu): the mouse resting half a second on a value, a list's row or a mod shows its help text
+     * under the screen (tess_view_t.hover_help). A click asks (take_hover_request: 1 on, 0 off, -1 none); remembered */
+    void set_hover_help(bool on) { hover_help_ = on; if (!on) hover_send(nullptr); }
+    bool hover_help() const { return hover_help_; }
+    int take_hover_request() { int r = hover_req; hover_req = -1; return r; }
     bool keys_on() const { return keys_on_; }
     int take_keys_request() { int r = keys_req; keys_req = -1; return r; }
     /* LISTEN (TESSERA's menu): the MIDI channel whose notes set the key and GENERATE (listen.h), 0 OFF, 1..16. < and >
@@ -249,6 +256,13 @@ class Panel
     bool zone_still = false;
     bool closable_ = false;
     bool standalone_ = false;
+    bool hover_help_ = false;
+    int hover_req = -1;
+    tess_zone_t hover_now = {};   // (the zone sent to the core, and since when; the view's help text for it)
+    double hover_t = 0;
+    tess_zone_t view_hover = {};
+    std::string view_help;
+    void hover_send(const tess_zone_t *z);
     int row2_last = -1;       // (TRACKS: the row clicked last, and when: a second click soon is a double-click)
     double row2_t = 0;   // (tess_view_t.closable: a click on nothing closes what is open)   // a value's or a text's zone pressed and not turned yet: its release is a click
     int master_now = 700;   // MASTER as the core has it (the view: the DAW may automate it)

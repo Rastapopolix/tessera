@@ -44,6 +44,7 @@ static void slot_save_sheet(void);
 
 static void pop_close(void)
 {
+    UZ(uz_pick_pin = 0);
     if (pop.on) {
         pop.on = POP_NONE;
         ui.force = 1;
@@ -673,7 +674,7 @@ static void pick_touch(uint32_t c)
 }
 static void pick_poll(void)                             /* ST_KNOB_MS after the last turn: gone */
 {
-    if (pop.on == POP_PICK && fm1_ms - pop.t > ST_KNOB_MS)
+    if (pop.on == POP_PICK && !UZ_PICK_PIN && fm1_ms - pop.t > ST_KNOB_MS)
         pop_close();
 }
 

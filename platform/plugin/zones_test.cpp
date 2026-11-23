@@ -35,7 +35,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12, B_OCTUP = 13 };
+enum { B_FX = 0, B_SEL = 1, B_LFO = 3, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12, B_OCTUP = 13 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -319,6 +319,11 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     act(find_strip(TESS_ZONE_MUTE, "T2", "SOLO"), TESS_ZA_CLICK, 0, 40);
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
           "a click on SOLO: T2 not soloed, not muted");
+    act(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO"), TESS_ZA_HELP, 0, 40);   // (a right-click)
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "SOLO") >= 0 && tess_core_param_get(mute, 1) == m0,
+          "a right-click on the word: T2 soloed, not muted");
+    act(find_strip(TESS_ZONE_MUTE, "T2", "SOLO"), TESS_ZA_HELP, 0, 40);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
 static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)
@@ -692,6 +697,102 @@ static void slot_tabs()   // a slot page (FM6's STORE): its family's tabs in the
     run(5);
     tap(B_HOME);
 }
+static int reach(int button, const char *name, uint32_t kind, int taps = 12)   // tap a button till a zone shows
+{
+    for (int i = 0; i < taps; i++)
+    {
+        tess_core_view(&v);
+        if (find(name, kind) >= 0) return find(name, kind);
+        tap(button);
+    }
+    tess_core_view(&v);
+    return find(name, kind);
+}
+static void mouse2()   // the mouse, round 2: MODS, MATRIX, HOME's double-click, the browser, HOVER HELP
+{
+    // MODS: a row a mod; its SOURCE a picker, kept till a row of it is clicked
+    tap(B_HOME);
+    int src = reach(B_LFO, "SOURCE", TESS_ZONE_PICK);
+    CHECK(src >= 0, "MODS: a SOURCE zone a mod");
+    if (src >= 0)
+    {
+        int rows = count(TESS_ZONE_ROW);
+        CHECK(rows >= 4, "MODS: a row a mod (%d)", rows);
+        tess_zone_t s2 = v.zones[src];
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_PICK && !std::strcmp(v.zones[i].name, "SOURCE") && v.zones[i].row == 1)
+                s2 = v.zones[i];
+        tess_core_zone_do(&s2, TESS_ZA_CLICK, 0);
+        run(400);   // (longer than a picker's own 1.5 s: kept)
+        tess_core_view(&v);
+        int pick_rows = 0;
+        for (int i = 0; i < (int)v.zone_count; i++)
+            pick_rows += v.zones[i].kind == TESS_ZONE_ROW && v.zones[i].role == 3;   // (EN_K1: the picker's list)
+        CHECK(pick_rows > 0 && v.closable, "MOD 2's SOURCE clicked: its list, still open after 1.5 s (%d rows)", pick_rows);
+        int r = -1;   // (the picker's last row shown: another source than now)
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_ROW && v.zones[i].role == 3) r = i;
+        if (r >= 0)
+        {
+            std::string want = v.zones[r].name;
+            act(r, TESS_ZA_CLICK, 0, 40);
+            CHECK(!v.closable, "a row of it clicked: the list goes");
+            int s = -1;
+            for (int i = 0; i < (int)v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_PICK && !std::strcmp(v.zones[i].name, "SOURCE") && v.zones[i].row == 1)
+                    s = i;
+            CHECK(s >= 0 && std::string(v.zones[s].value).size() > 0 && std::string(v.zones[s].value) != "--",
+                  "MOD 2's source is set (%s)", s >= 0 ? v.zones[s].value : "?");
+        }
+        else
+            CHECK(false, "the picker's rows");
+    }
+    // MATRIX: a cell clicked opens its mod in MODS
+    tap(B_HOME);
+    int cell = reach(B_LFO, "T1>T1", TESS_ZONE_CELL, 16);
+    CHECK(cell >= 0, "MATRIX: a cell a pair of tracks");
+    // HOME: a track double-clicked opens its sounds (TESSERA's shell: BACK / OK of its own, as the plugin has them)
+    tess_core_key_words(1);
+    tap(B_HOME);
+    int t2 = find("T2", TESS_ZONE_TRACK);
+    act(t2, TESS_ZA_CLICK, 0, 5);
+    t2 = find("T2", TESS_ZONE_TRACK);
+    act(t2, TESS_ZA_DOUBLE, 0, 40);
+    int snd = find("SOUND", TESS_ZONE_CELL), ok = find("OK", TESS_ZONE_KEY);
+    CHECK(tess_core_track() == 1 && snd >= 0 && ok >= 0, "HOME: T2 double-clicked: its sounds (the browser)");
+    if (snd >= 0 && ok >= 0)
+    {
+        int below = -1;
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].role == 4 && (int8_t)(v.zones[i].row & 0xFF) == 1) below = i;
+        std::string name = below >= 0 ? v.zones[below].value : "";
+        act(below, TESS_ZA_CLICK, 0, 80);
+        int card = -1;
+        for (int i = 0; i < (int)v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].role == 4 && (v.zones[i].row & 0xFF) == 0) card = i;
+        CHECK(card >= 0, "a sound clicked: the browser on it (%s)", name.c_str());
+        int back = find("BACK", TESS_ZONE_KEY);
+        CHECK(back >= 0, "a sound loaded: BACK there to take it back");
+        act(back, TESS_ZA_CLICK, 0, 60);   // (BACK: T2's sound from before, and the browser goes, as OK would)
+        CHECK(find("OK", TESS_ZONE_KEY) < 0 && find("SOUND", TESS_ZONE_CELL) < 0, "the browser's BACK clicked: it goes");
+    }
+    tess_core_key_words(0);
+    // HOVER HELP: a value's column has its help text
+    tap(B_FX);
+    tess_zone_t k1 = v.zones[0];
+    tess_core_hover(&k1);
+    run(2);
+    tess_core_view(&v);
+    CHECK(v.hover.kind == TESS_ZONE_KNOB && std::strlen(v.hover_help) > 20, "HOVER HELP: FX's KNOB 1 says what it does (%.40s)",
+          v.hover_help);
+    tess_core_hover(nullptr);
+    run(2);
+    tess_core_view(&v);
+    CHECK(!v.hover.kind && !v.hover_help[0], "no zone: no text");
+    tess_core_track_select(0);
+    run(5);
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -706,6 +807,7 @@ int main(int argc, char **argv)
     help_close();
     ux_round();
     slot_tabs();
+    mouse2();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
