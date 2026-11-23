@@ -1033,6 +1033,54 @@ int main(int argc, char **argv)
         CHECK(e.width() == Panel::W_EXPANDED, "TESSERA's shell again: EXPANDED (%d)", e.width());
     }
 
+    {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back
+        Panel b;
+        b.set_shell(0);
+        tess_core_track_select(0);
+        tess_core_view(&v);
+        b.draw(px.data(), v);
+        auto zone_xy = [&](const char *name, uint32_t kind, int *zx, int *zy) {
+            tess_core_view(&v);
+            b.draw(px.data(), v);
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (!std::strcmp(v.zones[i].name, name) && v.zones[i].kind == kind)
+                {
+                    *zx = 292 + 8 + v.zones[i].x + v.zones[i].w / 2, *zy = 44 + 8 + v.zones[i].y + v.zones[i].h / 2;
+                    return true;
+                }
+            return false;
+        };
+        int x, y;
+        for (int i = 0; i < 3 && !zone_xy("T1", TESS_ZONE_TRACK, &x, &y); i++)   // (HOME, from wherever the test was)
+        {
+            tess_core_buttons(1u << 6);
+            run(b, 0.1);
+            tess_core_buttons(0);
+            run(b, 0.3);
+        }
+        if (zone_xy("T1", TESS_ZONE_TRACK, &x, &y))
+        {
+            b.down(x, y), b.up(x, y), b.down(x, y), b.up(x, y);   // (a double-click: T1's sounds)
+            run(b, 0.3);
+        }
+        bool in = zone_xy("SOUND", TESS_ZONE_CELL, &x, &y);
+        CHECK(in, "the panel: HOME's T1 double-clicked opens the browser");
+        int sx = x, sy = y + 24;   // (a sound under the card)
+        b.down(sx, sy), b.up(sx, sy);
+        run(b, 1.0);
+        bool back = zone_xy("BACK", TESS_ZONE_KEY, &x, &y);
+        CHECK(back, "a sound loaded: BACK on the screen");
+        if (back)
+        {
+            b.down(x, y);
+            run(b, 0.1);
+            b.up(x, y);
+            run(b, 0.3);
+            CHECK(!zone_xy("SOUND", TESS_ZONE_CELL, &x, &y), "the panel: BACK clicked leaves the browser");
+        }
+        tess_core_view(&v);
+        b.draw(px.data(), v);
+    }
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }
