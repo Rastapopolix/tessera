@@ -157,7 +157,11 @@ static void piece_time(char *b, uint32_t s)
     *o++ = (char)('0' + s % 10u);
     *o = 0;
 }
-static const char *const ET_ROLE_NAME[ET_ROLES] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const ET_ROLE_NAME[ET_ROLES] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR",
+#if TESSERA_TRACKS > 4
+                                                   "TURNS",
+#endif
+};
 static const char *const ET_ORDER_NAME[ET_ORDERS] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 /* a TRANSPOSE as its knob and the MIDI OUT picture say it: "+12", "0", "-24" */
 static void midi_tr_text(char *b, int32_t v)
