@@ -1,9 +1,9 @@
 {
-  "tag": "plugin-v0.1-beta5",
-  "version": "0.1-beta5",
+  "tag": "plugin-v0.1-beta7",
+  "version": "0.1-beta7",
   "files": {
-    "windows": "Cosmati-0.1-beta5-windows.zip",
-    "macos": "Cosmati-0.1-beta5-macos.zip",
-    "linux": "Cosmati-0.1-beta5-linux.tar.gz"
+    "windows": "Cosmati-0.1-beta7-windows.zip",
+    "macos": "Cosmati-0.1-beta7-macos.zip",
+    "linux": "Cosmati-0.1-beta7-linux.tar.gz"
   }
 }

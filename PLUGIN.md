@@ -84,9 +84,8 @@ the FM-1 (the [manual](MANUAL.md) shows how).
 
 **To hear what it can do,** load a demo: all eight demos are in the DAW's list of Cosmati's presets (the preset
 browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
-Reaper, Cubase or Logic); **STILL TIDE** also waits in slot A and **KOTO GARDEN** in slot B (SAVE > PROJECT, then
-LOAD); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**. The **standalone app** has no DAW
-to send it notes, so it opens with STILL TIDE loaded and plays it at once.
+Reaper, Cubase or Logic); and every demo is a `.tsp` file in the [demos folder](demos/) for **OPEN**, which is how
+the **standalone app** loads one. The project slots (SAVE > PROJECT) start empty, for your own songs.
 
 ## The window
 
@@ -108,13 +107,20 @@ and value shown large in a box under the screen:
 - **PATTERNS:** click a cell to queue that pattern on its track; click a track's number to select it. In Copy to,
   click where the copy goes.
 - **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
-- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the left
-  half of its MUTE / SOLO box to mute, the right half to solo.
+- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the word
+  under a strip to mute it, double-click it to solo.
+- **The tempo** in a screen's header (HOME, MIXER, the lists): drag it or turn the wheel over it, a BPM a step;
+  double-click for 120. While a DAW plays Cosmati, the DAW sets the tempo.
+- **The footer's page tabs and its arrows:** click a tab for that page, an arrow for the page just past it.
 - **ABOUT and a HELP card longer than the card:** the wheel scrolls the text (drag it as you would push a page).
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
 - **HOME:** click a track's column to select it.
+- **TRACKS** (EXPANDED): click a row to select that track; double-click it to open its EDIT page.
+
+**Click away to close:** with a list, a sheet or a help card open over the page, click anywhere with nothing to
+use (the panel's body, the screen beside it) to close it, as BACK would. A YES / NO question waits for its answer.
 
 The panel's own knobs and buttons still do everything they did. The mouse on the screen only turns those knobs and
 presses those keys for you, so a page behaves the same either way.
@@ -123,11 +129,15 @@ presses those keys for you, so a page behaves the same either way.
 
 - **Z** to **'** and **Q** to **O**: the keys.
 - **1** to **=**: the twelve buttons, in the panel's order.
-- **[** and **]**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **[** and **]**, or **Esc** and **Enter**: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).
+- **Space** (the standalone app): PLAY / STOP. **Ctrl+O** and **Ctrl+S** (**Cmd** on a Mac): OPEN and SAVE. In a
+  DAW these stay the DAW's.
 - **Shift** (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).
 - **Page Up / Page Down** (Tessera's look): OCT+ and OCT-.
 - **F1** (Tessera's look): **?**, the help card of the knob or row under the cursor.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
+
+Hover over a button for the key that does the same.
 
 **Key labels:** where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
 hovering over the key says it in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M4 mute on the black keys, S1..S4 solo
@@ -155,7 +165,8 @@ click it, or press **Esc** to let go.
 
 **Shells:** the window opens in Tessera's own look. Click the Tessera mark at the top left for its menu:
 
-- **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink.
+- **SHELL:** Tessera's look, or one of the eight FM-1 colours. Each shell sets its own screen ink: Tessera's look
+  starts in MOSAIC, a colour for each track (track 1 yellow, 2 blue, 3 pink, 4 green; 5-8 lighter).
 - **INK:** the screen's ink, the same 13 choices as MENU > COLOR (nine inks, then MOSAIC, SUNSET, OCEAN and NEON,
   which colour each track). Hover over a swatch to see its name.
 - **MODE:** FM-1 (the FM-1's panel) or EXPANDED (a wider window with every track on screen at once: see
