@@ -1,9 +1,9 @@
 {
-  "tag": "plugin-v0.1-beta4",
-  "version": "0.1-beta4",
+  "tag": "plugin-v0.1-beta5",
+  "version": "0.1-beta5",
   "files": {
-    "windows": "Tessera-plugin-0.1-beta4-windows.zip",
-    "macos": "Tessera-plugin-0.1-beta4-macos.zip",
-    "linux": "Tessera-plugin-0.1-beta4-linux.tar.gz"
+    "windows": "Cosmati-0.1-beta5-windows.zip",
+    "macos": "Cosmati-0.1-beta5-macos.zip",
+    "linux": "Cosmati-0.1-beta5-linux.tar.gz"
   }
 }

@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tessera as a plugin</title>
+<title>Cosmati: Tessera as a plugin</title>
 <link rel="icon" href="../media/brand/logo.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
@@ -145,18 +145,21 @@ main .downloads p { color: var(--mid); }
   <input id="search-q" type="search" placeholder="Search the plugin's guide" aria-label="Search the plugin's guide" autocomplete="off">
   <p class="sr" id="found" aria-live="polite"></p>
   <ol class="results" id="results" hidden></ol>
-  <ol class="toc"><li><a href="#download">Download</a></li><li><a href="#install">Install</a></li><li><a href="#first-sound">First sound</a></li><li><a href="#the-window">The window</a></li><li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li><li><a href="#playing-with-the-daw">Playing with the DAW</a><ol><li><a href="#sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li><li><a href="#expanded-all-eight-tracks-at-once">EXPANDED: all eight tracks at once</a></li><li><a href="#automation-the-parameters">Automation: the parameters</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li><li><a href="#playing-with-an-mpe-controller">Playing with an MPE controller</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li><li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li><li><a href="#not-there-yet">Not there yet</a></li></ol>
+  <ol class="toc"><li><a href="#download">Download</a></li><li><a href="#install">Install</a></li><li><a href="#first-sound">First sound</a></li><li><a href="#the-window">The window</a></li><li><a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a></li><li><a href="#playing-with-the-daw">Playing with the DAW</a><ol><li><a href="#sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#tracks-1-to-4-and-5-to-8">Tracks 1 to 4, and 5 to 8</a></li><li><a href="#expanded-all-eight-tracks-at-once">EXPANDED: all eight tracks at once</a></li><li><a href="#automation-the-parameters">Automation: the parameters</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-cosmati-in-one-song">Several Cosmati in one song</a></li><li><a href="#playing-with-an-mpe-controller">Playing with an MPE controller</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li><li><a href="#how-much-cpu-it-takes">How much CPU it takes</a></li><li><a href="#not-there-yet">Not there yet</a></li></ol>
 </nav>
 <main id="main" tabindex="-1">
-<h1 id="tessera-as-a-plugin">Tessera as a plugin</h1>
-<p>Tessera also runs inside a DAW. The same firmware the FM-1 plays is built as a <strong>CLAP</strong> instrument, a <strong>VST3</strong>
+<h1 id="cosmati-tessera-as-a-plugin">Cosmati: Tessera as a plugin</h1>
+<p><strong>Cosmati</strong> is Tessera inside a DAW. The same firmware the FM-1 plays is built as a <strong>CLAP</strong> instrument, a <strong>VST3</strong>
 instrument, an <strong>Audio Unit</strong> on macOS and a <strong>standalone app</strong>. Its window is the FM-1's panel: the same screen, buttons,
 knobs and keys, so everything in the <a href="../manual/">manual</a> works the same way here. This page covers only what is different
 in a DAW.</p>
-<p><a href="../media/plugin/plugin-expanded.png"><img src="../media/plugin/plugin-expanded.png" alt="Tessera in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
+<p>Until beta 4 the plugin was called Tessera, like the firmware; Audio Damage makes a plugin called Tessera, so the plugin
+has a name of its own. Songs saved with the old name open in Cosmati (delete the old Tessera.clap, .vst3, .component and
+app when you install it, so your DAW doesn't list it twice).</p>
+<p><a href="../media/plugin/plugin-expanded.png"><img src="../media/plugin/plugin-expanded.png" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
 <p><em>EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).</em></p>
 <h2 id="download">Download</h2>
-<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta4/Tessera-plugin-0.1-beta4-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta4/Tessera-plugin-0.1-beta4-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta4/Tessera-plugin-0.1-beta4-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta4, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
+<div class="downloads"><ul><li><b>Windows</b><span>CLAP, VST3 and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-windows.zip" download>DOWNLOAD</a></li><li><b>macOS</b><span>CLAP, VST3, Audio Unit and the standalone app</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-macos.zip" download>DOWNLOAD</a></li><li><b>Linux</b><span>CLAP and VST3</span><a class="get" href="https://github.com/Rastapopolix/tessera/releases/download/plugin-v0.1-beta5/Cosmati-0.1-beta5-linux.tar.gz" download>DOWNLOAD</a></li></ul><p><b>0.1-beta5, public beta:</b> it still has some rough edges, so please <a href="https://github.com/Rastapopolix/tessera/issues">report what you find</a>. Its notes and every version are under the <a href="https://github.com/Rastapopolix/tessera/releases">releases</a> (marked <i>Pre-release</i>). Free and open source, GPL-3.0. How to install: see <a href="#install">Install</a>.</p></div>
 <ul>
 <li><a href="#install">Install</a></li>
 <li><a href="#first-sound">First sound</a></li>
@@ -168,7 +171,7 @@ in a DAW.</p>
 <li><a href="#expanded-all-eight-tracks-at-once">EXPANDED: all eight tracks at once</a></li>
 <li><a href="#automation-the-parameters">Automation: the parameters</a></li>
 <li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li>
-<li><a href="#several-tesseras-in-one-song">Several Tesseras in one song</a></li>
+<li><a href="#several-cosmati-in-one-song">Several Cosmati in one song</a></li>
 <li><a href="#playing-with-an-mpe-controller">Playing with an MPE controller</a></li>
 <li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li>
 <li><a href="#echoes-on-the-beat">Echoes on the beat</a></li>
@@ -185,9 +188,9 @@ INSTALL text with these steps and the beta's notes.</p>
 <thead>
 <tr>
 <th></th>
-<th>CLAP (<code>Tessera.clap</code>)</th>
-<th>VST3 (<code>Tessera.vst3</code>)</th>
-<th>Audio Unit (<code>Tessera.component</code>)</th>
+<th>CLAP (<code>Cosmati.clap</code>)</th>
+<th>VST3 (<code>Cosmati.vst3</code>)</th>
+<th>Audio Unit (<code>Cosmati.component</code>)</th>
 </tr>
 </thead>
 <tbody>
@@ -211,25 +214,26 @@ INSTALL text with these steps and the beta's notes.</p>
 </tr>
 </tbody>
 </table>
-<p>Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Tessera's own format, and VST3 and the Audio
+<p>Use CLAP if your DAW has it (Bitwig, Reaper, FL Studio and others): it is Cosmati's own format, and VST3 and the Audio
 Unit are wrappers around it. Logic and GarageBand use the Audio Unit. The standalone app (Windows and macOS) needs no
 DAW: start it, pick an audio output, and it plays at once.</p>
+<p>In the DAW's list Cosmati is an instrument from <strong>Rastapopolix</strong> (in Logic: AU Instruments &gt; Rastapopolix &gt; Cosmati).</p>
 <p><strong>macOS:</strong> the beta isn't signed with an Apple Developer ID yet, so macOS calls it &quot;damaged&quot; or says it &quot;can't be
 verified&quot;. After copying, clear the download's quarantine once, in Terminal:</p>
-<pre><code>xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Library/Audio/Plug-Ins/VST3/Tessera.vst3 ~/Library/Audio/Plug-Ins/Components/Tessera.component
+<pre><code>xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Cosmati.clap ~/Library/Audio/Plug-Ins/VST3/Cosmati.vst3 ~/Library/Audio/Plug-Ins/Components/Cosmati.component
 </code></pre>
-<p>(and the same for <code>Tessera.app</code> where you put it). <strong>Windows:</strong> SmartScreen may warn about the unsigned <code>Tessera.exe</code>
+<p>(and the same for <code>Cosmati.app</code> where you put it). <strong>Windows:</strong> SmartScreen may warn about the unsigned <code>Cosmati.exe</code>
 the first time: click <em>More info</em>, then <em>Run anyway</em>.</p>
 <p>Signing takes these steps away, and costs about USD 99 a year with Apple, plus a code-signing certificate for Windows.
-If you'd like to help get Tessera signed: <a href="https://ko-fi.com/Rastapopolix">ko-fi.com/Rastapopolix</a>.</p>
+If you'd like to help get Cosmati signed: <a href="https://ko-fi.com/Rastapopolix">ko-fi.com/Rastapopolix</a>.</p>
 <h2 id="first-sound">First sound</h2>
-<p>A new Tessera opens on a <strong>new project</strong>, as an FM-1 with nothing saved does: each track has its power-on sound, every
+<p>A new Cosmati opens on a <strong>new project</strong>, as an FM-1 with nothing saved does: each track has its power-on sound, every
 pattern is empty and no generator runs, so pressing PLAY in the DAW plays nothing yet. Play notes from a MIDI track or
-a keyboard routed to Tessera: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO &gt; SYSTEM
+a keyboard routed to Cosmati: they go to the selected track, as the FM-1's keys do, on any MIDI channel (GLO &gt; SYSTEM
 ROUT starts at SEL in the plugin). To play each track from its own DAW track instead, set ROUT to a channel range
 (CH1-8: channel 1 plays track 1, channel 2 track 2, and so on). To make it play on its own, pick a MODE on SEQ, as on
 the FM-1 (the <a href="../manual/">manual</a> shows how).</p>
-<p><strong>To hear what it can do,</strong> load a demo: all eight demos are in the DAW's list of Tessera's presets (the preset
+<p><strong>To hear what it can do,</strong> load a demo: all eight demos are in the DAW's list of Cosmati's presets (the preset
 browser for the CLAP plugin, as in Bitwig; the programs or factory presets menu for the VST3 and the Audio Unit, as in
 Reaper, Cubase or Logic); <strong>STILL TIDE</strong> also waits in slot A and <strong>KOTO GARDEN</strong> in slot B (SAVE &gt; PROJECT, then
 LOAD); and every demo is a <code>.tsp</code> file in the <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/demos/">demos folder</a> for <strong>OPEN</strong>. The <strong>standalone app</strong> has no DAW
@@ -266,15 +270,28 @@ presses those keys for you, so a page behaves the same either way.</p>
 <ul>
 <li><strong>Z</strong> to <strong>'</strong> and <strong>Q</strong> to <strong>O</strong>: the keys.</li>
 <li><strong>1</strong> to <strong>=</strong>: the twelve buttons, in the panel's order.</li>
-<li><strong>[</strong> and <strong>]</strong>: OCT- and OCT+.</li>
+<li><strong>[</strong> and <strong>]</strong>: the FM-1's OCT- and OCT+ (in Tessera's look, BACK and OK).</li>
+<li><strong>Shift</strong> (Tessera's look): SHIFT, held while you hold the key (a click on SHIFT latches it instead).</li>
+<li><strong>Page Up / Page Down</strong> (Tessera's look): OCT+ and OCT-.</li>
+<li><strong>F1</strong> (Tessera's look): <strong>?</strong>, the help card of the knob or row under the cursor.</li>
 <li><strong>Up / Down</strong>: turn SELECT. <strong>Left / Right</strong>: turn ALGORITHM.</li>
 </ul>
+<p><strong>Key labels:</strong> where a page gives the keys a job of their own, each key shows it in a tiny label just over it, and
+hovering over the key says it in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M4 mute on the black keys, S1..S4 solo
+while held on the white, then ALL, HOLD, FILL, TAP), SEL held (the key sets the ROOT), SEQ held (PATTERN 1..8), the
+DRUM grid (steps, lanes, ACC, the pages), AWAKE's steps, CHORD USER and ATLAS's PART 4 with SHIFT held, a USER scale
+(each note IN or out) and NAME (the letters, cursor, space, delete). Where the keys just play notes there are none.
+The FM-1 shells show them smaller and dimmer.</p>
 <p><strong>Naming</strong> a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and <code>- . _ / # +</code> go
 in at the cursor; Backspace and Delete remove, Left / Right move the cursor, <strong>Enter</strong> is OK and <strong>Esc</strong> cancels. While
 NAME is open the computer keyboard types instead of playing.</p>
 <p>Keys go by where they sit, not what they print, so any keyboard layout works (typing a name follows your layout). With Ctrl or Alt held, keys go to the
-DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
-To leave every key to the DAW, set <strong>KEYS</strong> to OFF in Tessera's menu (it applies to every Tessera window).</p>
+DAW. Keys reach Cosmati only while its window has focus; click back in the DAW and its own shortcuts work as usual.
+To leave every key to the DAW, set <strong>KEYS</strong> to OFF in Cosmati's menu (it applies to every Cosmati window).</p>
+<p><strong>Help:</strong> right-click a knob's column or a list's row on the screen for its help card (what it does; hovering gives
+its name and value). The card stays until you click: turn another knob meanwhile for that one's card, and the wheel
+over a long card scrolls it. The <strong>?</strong> button beside OK opens KNOB 1's card the same way (turn a knob for its own);
+press it again to close (<strong>F1</strong> does the same). On the FM-1, hold ARP and turn a knob.</p>
 <p><strong>Button combos with the mouse:</strong> right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held, drawn
 as held, while you click the second one, so GLO + a button or SEL + a key work with one mouse. Right-click it again,
 click it, or press <strong>Esc</strong> to let go.</p>
@@ -291,18 +308,27 @@ which colour each track). Hover over a swatch to see its name.</li>
 <a href="#playing-it-from-your-fm-1">Playing it from your FM-1</a>); the line under it says what the FM-1 is doing.</li>
 <li><strong>ABOUT:</strong> the plugin's version.</li>
 </ul>
-<p>In Tessera's look, OCT- and OCT+ are labelled by what they mostly do: <strong>BACK</strong> (and <strong>SHIFT</strong> while held: the
-knobs' second layer) and <strong>OK</strong>, with OCT- and OCT+ under them. They work exactly as on the FM-1.</p>
+<p>In Tessera's look, the FM-1's two OCT buttons are split into what they do, each a button of its own:</p>
+<ul>
+<li><strong>SHIFT</strong>, <strong>BACK</strong> and <strong>OK</strong> (and <strong>?</strong>, the help: see below), under the left knobs. BACK and OK are the FM-1's OCT- and OCT+ tapped (OK held
+opens the page's sheet). <strong>SHIFT</strong> is OCT- held: click it for the knobs' second set on the pages that have one (it
+stays on, lit, till you click it again, so the mouse is free for the knob); it never goes back. The screen's hints say BACK, OK and SHIFT where the FM-1 says OCT-
+and OCT+.</li>
+<li><strong>OCT+</strong> over <strong>OCT-</strong>, at the left of the keys: the keys an octave up or down (three each way), on any page; both
+together back to 0. They light while the keys are shifted. BACK and OK no longer change the octave on HOME.</li>
+</ul>
+<p>Hover over any of these five for what it does. The FM-1 shells keep the FM-1's two OCT buttons, and so does an FM-1
+on USB playing the plugin.</p>
 <p>Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
 the first) and the row labelled INK, between the buttons and the keys, picks the ink.</p>
 <p>Picking a shell sets that shell's ink; an ink you pick afterwards, there or in MENU &gt; COLOR, stays until you pick a
 shell again. The <strong>MIDI</strong> lamp beside the mark lights when notes come in from the DAW.</p>
-<p>Tessera remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
+<p>Cosmati remembers the last shell, ink, MODE and SIZE for every new window, in any DAW. They are your settings, not the
 project's: a project opens in your shell and ink.</p>
 <p>The window moves only while the DAW is processing audio. If it looks frozen, check that the DAW's audio engine is on.</p>
 <h2 id="playing-it-from-your-fm-1">Playing it from your FM-1</h2>
 <p>An FM-1 running Tessera 3.5.1 or later can play the plugin from its own knobs, buttons and keys, as it can play the
-<a href="https://rastapopolix.github.io/tessera/webapp/sim/">web simulator</a>. Connect it by USB and turn on <strong>FM-1 USB</strong> (Tessera's
+<a href="https://rastapopolix.github.io/tessera/webapp/sim/">web simulator</a>. Connect it by USB and turn on <strong>FM-1 USB</strong> (Cosmati's
 menu, or the <strong>FM-1 USB</strong> button under the keys in an FM-1 shell). When the FM-1 answers, the menu says
 <strong>FM-1 CONNECTED</strong>.</p>
 <ul>
@@ -312,26 +338,26 @@ sounds as well. FX and GLO pressed together turn SIM CONTROL off again.</li>
 settings, and close the editor if it's open in a browser. Otherwise the menu says <strong>PORT IN USE</strong>.</li>
 <li><strong>macOS:</strong> the DAW can keep the FM-1 on, but then its keys also reach whatever track the DAW sends them to. Turning
 it off in the DAW is simplest.</li>
-<li><strong>Several Tesseras:</strong> the FM-1 plays one of them at a time. Turning FM-1 USB on in a Tessera's window takes the FM-1
+<li><strong>Several Cosmati:</strong> the FM-1 plays one of them at a time. Turning FM-1 USB on in a Cosmati's window takes the FM-1
 for that one; the others say <strong>IN ANOTHER TESSERA</strong>. Turning it off turns it off for all of them.</li>
 <li><strong>Other messages:</strong> <strong>NO FM-1 FOUND</strong> means no FM-1 is plugged in, or its port has another name. <strong>UPDATE THE FM-1</strong>
 means it doesn't answer: it runs Tessera 3.5 or older, or other firmware.</li>
 </ul>
-<p>Tessera remembers FM-1 USB for every new Tessera, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
+<p>Cosmati remembers FM-1 USB for every new Cosmati, like the shell and the ink. The FM-1 has no 1-4 / 5-8 switch: use
 the window's to reach tracks 5 to 8.</p>
 <h2 id="playing-with-the-daw">Playing with the DAW</h2>
-<p>Tessera follows the DAW's transport:</p>
+<p>Cosmati follows the DAW's transport:</p>
 <ul>
 <li><strong>PLAY</strong> starts every track where it would be if the song had played from the DAW's zero. Starting at bar 9 sounds
 like the song has been playing for eight bars.</li>
-<li><strong>The DAW's tempo</strong> drives Tessera's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
+<li><strong>The DAW's tempo</strong> drives Cosmati's clock, tempo changes included. The BPM on the screen is the DAW's, rounded. A
 TEMPO mod has no effect while the DAW plays.</li>
-<li><strong>A loop or a jump</strong> in the DAW moves Tessera to that point. <strong>STOP</strong> stops it.</li>
-<li><strong>CLK</strong> stays INT in the plugin and <strong>CLOCK OUT</strong> stays off: the DAW keeps time, so Tessera neither follows nor sends
+<li><strong>A loop or a jump</strong> in the DAW moves Cosmati to that point. <strong>STOP</strong> stops it.</li>
+<li><strong>CLK</strong> stays INT in the plugin and <strong>CLOCK OUT</strong> stays off: the DAW keeps time, so Cosmati neither follows nor sends
 a MIDI clock.</li>
 </ul>
 <h3 id="sections-and-banks-from-the-daw-program-change">Sections and banks from the DAW (Program Change)</h3>
-<p>A Program Change from a MIDI clip, on any channel, steers Tessera. It works the other way round from SECTION PC on
+<p>A Program Change from a MIDI clip, on any channel, steers Cosmati. It works the other way round from SECTION PC on
 MIDI OUT's sheet:</p>
 <table>
 <thead>
@@ -354,17 +380,17 @@ MIDI OUT's sheet:</p>
 <p>Other numbers do nothing. Nothing is saved: put the changes in a clip and the DAW sends them again each time it plays.
 To land on a phrase line, send the change during the phrase before it.</p>
 <h2 id="saving-and-project-files">Saving, and project files</h2>
-<p><strong>The DAW saves Tessera with your song.</strong> The saved state is the Tessera project, the same bytes SAVE &gt; PROJECT
-writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Tessera
+<p><strong>The DAW saves Cosmati with your song.</strong> The saved state is the Tessera project, the same bytes SAVE &gt; PROJECT
+writes on the FM-1, plus the MASTER volume. Open the song again and every setting comes back as it was, each Cosmati
 with its own project.</p>
 <p><strong>OPEN</strong> and <strong>SAVE</strong>, under the keys, work with files:</p>
 <ul>
-<li><strong>OPEN</strong> loads a <code>.tsp</code> project (from the editor, from the <code>demos/</code> folder, or saved by another Tessera) or an
+<li><strong>OPEN</strong> loads a <code>.tsp</code> project (from the editor, from the <code>demos/</code> folder, or saved by another Cosmati) or an
 <strong>FM-1 backup</strong> (the <code>.json</code> from the backup page or the Hub). A backup's slots A to D go into the plugin's slots,
 then the music it was playing loads. On Windows and macOS you can also drop a file on the window.</li>
-<li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Tessera. It offers
+<li><strong>SAVE</strong> writes the project as a <code>.tsp</code> under its name, ready for the FM-1's editor or another Cosmati. It offers
 <strong>Documents/Tessera/Presets</strong>: what you save there shows in the DAW's list of presets beside the demos (the VST3 and
-the Audio Unit read the folder once, when the DAW first loads Tessera, so there a new file shows after the DAW
+the Audio Unit read the folder once, when the DAW first loads Cosmati, so there a new file shows after the DAW
 starts again).</li>
 </ul>
 <p>A <code>.tsp</code> from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds play a stand-in there (see
@@ -384,7 +410,7 @@ eight.</p>
 <p>All eight tracks are saved: with the DAW song, and in a <code>.tsp</code> from SAVE (tracks 5 to 8 in a part of their own an
 FM-1 skips, so the FM-1 still opens the file as its four tracks).</p>
 <h2 id="expanded-all-eight-tracks-at-once">EXPANDED: all eight tracks at once</h2>
-<p>A new Tessera opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
+<p>A new Cosmati opens in EXPANDED when your screen has room for it (about 1600 pixels across, more on a scaled
 Windows screen), and in FM-1 mode on a smaller screen such as a 13&quot; laptop's. Once you pick a MODE yourself, every
 new window opens in that one. In EXPANDED the window is wider (1500 x 624 at 100%) and a second screen,
 <strong>TRACKS</strong>, sits beside the FM-1's. The FM-1's screen and all its pages stay exactly as they are; the knobs and
@@ -412,25 +438,25 @@ and <em>Track 1/Generator</em>, and so on.</li>
 </ul>
 <p>Values read as the FM-1 shows them (&quot;SAW&quot;, &quot;1/16&quot;, &quot;-6dB&quot;), and you can type them that way. ENGINE 1 to 8 mean what
 the track's engine makes of them, as on the FM-1, so their names change when the engine does.</p>
-<p>When a setting changes on the panel, by loading a project or by Tessera itself (a scale shared by every track, a
+<p>When a setting changes on the panel, by loading a project or by Cosmati itself (a scale shared by every track, a
 generator moving), the DAW hears about it: MASTER and the MACROs at once, the rest within a fraction of a second.</p>
 <p>Not parameters: the device's own settings (A4, the MIDI routing), and the MOD cords. Make those on the panel; the
 DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's channel, NOTES OUT and TUNE beside it
 (they stay out of the <code>.tsp</code>, as on the FM-1, where they belong to the device and not to a project).</p>
 <h2 id="track-outputs-and-midi-out">Track outputs and MIDI out</h2>
 <ul>
-<li><strong>Track outputs:</strong> besides the main stereo mix, Tessera has eight more outputs, TRACK 1 to TRACK 8, each track on
+<li><strong>Track outputs:</strong> besides the main stereo mix, Cosmati has eight more outputs, TRACK 1 to TRACK 8, each track on
 its own, as the FM-1's USB stems are: after the track's level, before pan and the bus effects. Route them to their
 own mixer channels in the DAW to process each track apart.</li>
 <li><strong>MIDI out:</strong> every track's notes, each on its own channel (GLO &gt; MIDI OUT; by default channels 1 to 8, whatever
 ROUT is set to, so the DAW's routing holds), so Tessera's generators can play other instruments. NOTES OUT starts
 at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. Only notes go out (no clock).
-When the DAW stops, bypasses or restarts Tessera, every note it left on gets its note-off. Not every DAW takes MIDI
+When the DAW stops, bypasses or restarts Cosmati, every note it left on gets its note-off. Not every DAW takes MIDI
 from an instrument: Bitwig and Reaper do, Ableton Live does not.</li>
 </ul>
-<h2 id="several-tesseras-in-one-song">Several Tesseras in one song</h2>
-<p>You can use up to <strong>8 Tesseras</strong> in one DAW song. Each is wholly its own: its project, its transport, its window and
-its parameters. A ninth won't open. Each new Tessera starts from a new project.</p>
+<h2 id="several-cosmati-in-one-song">Several Cosmati in one song</h2>
+<p>You can use up to <strong>8 Cosmati</strong> in one DAW song. Each is wholly its own: its project, its transport, its window and
+its parameters. A ninth won't open. Each new Cosmati starts from a new project.</p>
 <h2 id="playing-with-an-mpe-controller">Playing with an MPE controller</h2>
 <p>Each note you play keeps its own <strong>pressure</strong> and <strong>slide</strong>. With a Seaboard, a LinnStrument, an Osmose or any MPE
 controller, or with a DAW's per-note expression (Bitwig's PRESSURE and TIMBRE, or a CLAP host's note expressions),
@@ -465,9 +491,9 @@ a SID kit plays the 909, so a project still opens and plays there.</p>
 <p>FX's <strong>SYNC ECHO</strong> repeats on a note value (1/32 to 1/1, triplets and dotted) at the DAW's tempo. The plugin's echo
 holds about 3 s, so a 1/2 or a 1/1 rings as set; on the FM-1 it holds 371 ms and a longer value halves until it fits.</p>
 <h2 id="how-much-cpu-it-takes">How much CPU it takes</h2>
-<p>On average, one Tessera playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
+<p>On average, one Cosmati playing a project takes about 2 % of one core of a 2.1 GHz desktop processor, at 48 kHz.
 Eight of them on one core take about 20 %, and less when the DAW spreads them over several cores. Very small audio
-buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Tesseras, raise
+buffers (64 samples) leave less room for the occasional slower block. If you hear clicks with several Cosmati, raise
 the buffer to 256.</p>
 <p>There's no shared voice budget as on the FM-1, where all the tracks share 16 points and a busy project steals notes:
 every track plays as many voices as its engine has (FM6 16, most engines 8). All eight tracks of 16 FM6 voices
