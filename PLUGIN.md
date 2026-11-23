@@ -5,9 +5,9 @@ instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is t
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
 
-[![Tessera 0.1-beta2 in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
+[![Tessera in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
 
-*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (0.1-beta2 playing STILL TIDE).*
+*EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).*
 
 <!-- downloads: the site's plugin page shows its download block here (web/make_manual.py) -->
 
@@ -64,6 +64,9 @@ xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap ~/Libr
 (and the same for `Tessera.app` where you put it). **Windows:** SmartScreen may warn about the unsigned `Tessera.exe`
 the first time: click *More info*, then *Run anyway*.
 
+Signing takes these steps away, and costs about USD 99 a year with Apple, plus a code-signing certificate for Windows.
+If you'd like to help get Tessera signed: [ko-fi.com/Rastapopolix](https://ko-fi.com/Rastapopolix).
+
 ## First sound
 
 A new Tessera opens on a **new project**, as an FM-1 with nothing saved does: each track has its power-on sound, every
@@ -94,6 +97,14 @@ and value shown large in a box under the screen:
   notch. Click a row to move there; drag up or down on it to change that row's value (on SCL's Scale row, through the
   scales); double-click to move there and press OK (Scale opens SCALES; a whole list takes the row you double-clicked).
 - **MENU > COLOR's inks:** click one to pick it; the wheel steps through them.
+- **PROJECT, SAVE > USER and FM6 STORE:** click a slot to pick it; the wheel moves through them; double-click opens
+  the slot's sheet.
+- **PATTERNS:** click a cell to queue that pattern on its track; click a track's number to select it. In Copy to,
+  click where the copy goes.
+- **SONG:** click a section's letter to pick it; click a block to pick its section and its track.
+- **MIXER:** drag or turn the wheel on a strip's level or pan (double-click: its default, centre); click the left
+  half of its MUTE / SOLO box to mute, the right half to solo.
+- **ABOUT and a HELP card longer than the card:** the wheel scrolls the text (drag it as you would push a page).
 - **OK, BACK, YES and NO** on the screen: click them.
 - **The sound browser and SCALES:** the wheel over the left side turns KNOB 1 (the list, the scale family), over the
   right side KNOB 2 (the sound, the scale).
@@ -109,7 +120,11 @@ presses those keys for you, so a page behaves the same either way.
 - **[** and **]**: OCT- and OCT+.
 - **Up / Down**: turn SELECT. **Left / Right**: turn ALGORITHM.
 
-Keys go by where they sit, not what they print, so any keyboard layout works. With Ctrl or Alt held, keys go to the
+**Naming** a project or user preset (NAME, from SAVE or EDIT): just type. Letters, digits, space and `- . _ / # +` go
+in at the cursor; Backspace and Delete remove, Left / Right move the cursor, **Enter** is OK and **Esc** cancels. While
+NAME is open the computer keyboard types instead of playing.
+
+Keys go by where they sit, not what they print, so any keyboard layout works (typing a name follows your layout). With Ctrl or Alt held, keys go to the
 DAW. Keys reach Tessera only while its window has focus; click back in the DAW and its own shortcuts work as usual.
 To leave every key to the DAW, set **KEYS** to OFF in Tessera's menu (it applies to every Tessera window).
 
@@ -129,6 +144,9 @@ click it, or press **Esc** to let go.
 - **FM-1 USB:** OFF or ON. With it on, an FM-1 on USB plays the plugin (see
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
 - **ABOUT:** the plugin's version.
+
+In Tessera's look, OCT- and OCT+ are labelled by what they mostly do: **BACK** (and **SHIFT** while held: the
+knobs' second layer) and **OK**, with OCT- and OCT+ under them. They work exactly as on the FM-1.
 
 Esc, or a click outside, closes the menu. In an FM-1 shell, the swatches under the keys pick the shell (Tessera's is
 the first) and the row labelled INK, between the buttons and the keys, picks the ink.
@@ -208,6 +226,10 @@ A `.tsp` from the plugin opens on the FM-1 too. Tracks on the plugin-only sounds
 
 On Linux the file dialogs need `zenity` or `kdialog`.
 
+**MENU (HOME held)** is the FM-1's, less the rows for the device itself: KNOBS (the values are always dials, which
+the mouse turns), LARGE VALUE (on its default, AUTO), SCREEN OFF (the screen stays on), PANEL GAMMA, CLOCK OUT (no
+clock goes to the DAW), the USB rows (the DAW has the audio), SIM CONTROL and CALIBRATION.
+
 ## Tracks 1 to 4, and 5 to 8
 
 (In EXPANDED mode all eight are on screen at once: see the next section.)
@@ -216,6 +238,9 @@ The plugin has eight tracks; the panel works on four at a time, as the FM-1's do
 SAVE picks the bank: 1-4 selects T1, 5-8 selects T5 (**Tab** on the computer keyboard swaps them). The lit half is the
 bank of the track selected now, so it follows SELECT too. While a track of 5 to 8 is selected the screen's top line
 shows **5-8**, inverted, before the track dots.
+
+TWEAK's FOLLOW and HOLD and TWEAK 2's TO and WITH, which name another track, reach all
+eight.
 
 All eight tracks are saved: with the DAW song, and in a `.tsp` from SAVE (tracks 5 to 8 in a part of their own an
 FM-1 skips, so the FM-1 still opens the file as its four tracks).
