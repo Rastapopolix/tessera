@@ -564,8 +564,17 @@ int main(int argc, char **argv)
         q.up(310, ky);
         CHECK(q.keys_on() && q.take_keys_request() == 1, "KEYS ON asks for on");
         CHECK(q.key(0x2C, true) && (q.input.keys & 1u) && q.key(0x2C, false), "KEYS ON: Z plays again");
+        // HOVER HELP: OFF to start; ON asks once
+        int hy = ky + 36;   // (row_y(ROW_HOVER)'s middle)
+        CHECK(!q.hover_help() && q.take_hover_request() == -1, "HOVER HELP off to start, nothing asked");
+        q.down(310, hy);   // ON
+        q.up(310, hy);
+        CHECK(q.hover_help() && q.take_hover_request() == 1 && q.take_hover_request() == -1, "HOVER HELP ON asks once");
+        q.down(254, hy);   // OFF
+        q.up(254, hy);
+        CHECK(!q.hover_help() && q.take_hover_request() == 0, "HOVER HELP OFF asks for off");
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
-        int ly = 46 + 10 + 6 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
+        int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
         CHECK(q.listen() == 0 && q.take_listen_request() == -1, "LISTEN OFF to start, nothing asked");
         CHECK(lclick(198) == -1, "< at OFF: nothing");

@@ -381,6 +381,8 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
     }
     typing_ = v.typing != 0;
     closable_ = v.closable != 0;
+    view_hover = v.hover;
+    view_help.assign(v.hover_help, strnlen(v.hover_help, sizeof v.hover_help));
     track_now = (int)v.track;
     if (native())
     {
@@ -841,8 +843,10 @@ bool Panel::down(int x, int y)
             return true;
         }
         drag = NONE;
-        if (dbl && z.kind != TESS_ZONE_ROW && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
-            return false;   // (OK, YES, a track: once, however often clicked; MIXER's MUTE word: double-click SOLO)
+        if (dbl && z.kind != TESS_ZONE_ROW && z.kind != TESS_ZONE_TRACK && z.kind != TESS_ZONE_CELL &&
+            !(z.kind == TESS_ZONE_MUTE && z.role == 1))
+            return false;   // (OK, YES: once, however often clicked; MIXER's MUTE word: double-click SOLO; HOME's track:
+                            // double-click its sounds; a cell: the browser's sound kept)
         zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
         return true;
     }
@@ -950,6 +954,14 @@ bool Panel::move(int x, int y)
     shell_hover = drag == NONE ? swatch_at(x, y) : -1;
     ink_hover = drag == NONE ? ink_at(x, y) : -1;
     hover_in = true, hover_x = x, hover_y = y;
+    bool hover_moved = false;
+    if (hover_help_ && drag == NONE)   // HOVER HELP: the zone under the mouse, to the core when it changes
+    {
+        int hz = zone_at(x, y);
+        tess_zone_t was = hover_now;
+        hover_send(hz >= 0 ? &zones[hz] : nullptr);
+        hover_moved = std::memcmp(&was, &hover_now, sizeof was) != 0;
+    }
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
@@ -983,7 +995,21 @@ bool Panel::move(int x, int y)
             return true;
         }
     }
-    return false;
+    return hover_moved;
+}
+
+// HOVER HELP: z (null: none) the zone the mouse rests on now; the core is told when it changes
+void Panel::hover_send(const tess_zone_t *z)
+{
+    tess_zone_t n = z ? *z : tess_zone_t{};
+    if (!z) n.kind = 0;
+    if (!std::memcmp(&n, &hover_now, sizeof n))
+        return;
+    hover_now = n;
+    hover_t = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    input.hover = n;
+    input.hover_changed = true;
+    input.changed = true;
 }
 
 // a right-click: the button or key under it latched (held), or let go if it was
@@ -1063,10 +1089,10 @@ namespace
 {
 const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
                T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 9, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 10, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
 // SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT; ABOUT (a dotted line between each group)
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_LISTEN, ROW_SPLIT, ROW_ABOUT };
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
@@ -1266,8 +1292,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
 
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
-    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "LISTEN", "SPLIT",
-                                                "ABOUT"};
+    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
+                                                "LISTEN", "SPLIT", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -1324,6 +1350,11 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         {
             seg("ON", keys_on_, true);
             seg("OFF", !keys_on_, true);
+        }
+        else if (r == ROW_HOVER)   // the help text on hover (OFF: the name and value only)
+        {
+            seg("ON", hover_help_, true);
+            seg("OFF", !hover_help_, true);
         }
         else if (r == ROW_LISTEN || r == ROW_SPLIT)   // < OFF > / < CH 16 >, < 48 >: fixed widths (LISTEN_SEG)
         {
@@ -1565,6 +1596,18 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
+    if (r == ROW_HOVER)   // OFF or ON (elsewhere on the row: the other one)
+    {
+        int sg = fm1_seg_at(x);
+        bool on = sg >= 0 ? sg == 1 : !hover_help_;
+        if (on != hover_help_)
+        {
+            set_hover_help(on);
+            hover_req = on;
+        }
+        menu_sub = 0;
+        return false;
+    }
     if (r == ROW_LISTEN)   // < and > step the channel, the value turns it OFF or on again
     {
         int sg = listen_seg_at(x), ch = listen_ch;
@@ -1799,4 +1842,35 @@ void Panel::draw_hover(uint32_t *px)
     c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
     c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
     if (vw) c.ptext(x + 10 + nw + 14, y + 7, value.c_str(), 3, YEL);
+    // HOVER HELP: resting half a second, the zone's help text in a box under the card (over the keys, never the screen)
+    double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if (!hover_help_ || z2 >= 0 || drag != NONE || view_help.empty() || now - hover_t < 0.5 ||
+        view_hover.kind != z.kind || view_hover.role != z.role || view_hover.vrole != z.vrole || view_hover.row != z.row)
+        return;
+    const int cw = Canvas::ptext_w("M", 2) + 1, hw = 480, per = (hw - 24) / (cw > 0 ? cw : 12), lh = 20;
+    std::vector<std::string> lines;   // the text in words, wrapped to the box, eight lines at most
+    {
+        std::string word, line;
+        auto put = [&](const std::string &w) {
+            if (!line.empty() && (int)(line.size() + 1 + w.size()) > per) { lines.push_back(line); line.clear(); }
+            line += (line.empty() ? "" : " ") + w;
+        };
+        for (char ch : view_help + " ")
+        {
+            char u = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+            if (u == ' ' || u == '\n') { if (!word.empty()) put(word); word.clear(); if (u == '\n' && !line.empty()) { lines.push_back(line); line.clear(); } }
+            else word += u;
+        }
+        if (!line.empty()) lines.push_back(line);
+        if (lines.size() > 8) { lines.resize(8); lines.back() += " ..."; }
+    }
+    int bh = 16 + (int)lines.size() * lh, bx = x + w / 2 - hw / 2, by = y + h + 4;
+    if (bx < 8) bx = 8;
+    if (bx + hw > width() - 8) bx = width() - 8 - hw;
+    if (by + bh > H - 4) by = H - 4 - bh;
+    c.box(bx, by, hw, bh, BLACK);
+    c.box(bx, by, hw, 2, YEL), c.box(bx, by + bh - 2, hw, 2, YEL);
+    c.box(bx, by, 2, bh, YEL), c.box(bx + hw - 2, by, 2, bh, YEL);
+    for (size_t i = 0; i < lines.size(); i++)
+        c.ptext(bx + 12, by + 9 + (int)i * lh, lines[i].c_str(), 2, WORD);
 }
