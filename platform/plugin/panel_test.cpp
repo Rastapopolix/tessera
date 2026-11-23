@@ -611,8 +611,11 @@ int main(int argc, char **argv)
             for (int xx = 20; xx < 400; xx++) tip += px[yy * Panel::W + xx] == 0xFFFFD020u;
         CHECK(tip > 100, "SHIFT's card over it (%d yellow pixels)", tip);
         q.down(50 + 33, 258 + 17);
-        CHECK(q.input.buttons == 1u << 16, "SHIFT held (%#x)", q.input.buttons);
         q.up(0, 0);
+        CHECK(q.input.buttons == 1u << 16, "SHIFT clicked: latched (%#x)", q.input.buttons);
+        q.down(50 + 33, 258 + 17);
+        q.up(0, 0);
+        CHECK(q.input.buttons == 0, "SHIFT clicked again: let go (%#x)", q.input.buttons);
         q.down(36 + 30, 332 + 128 + 5 + 23);   // (OCT-: under OCT+, at the keys' left)
         CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
         q.up(0, 0);
