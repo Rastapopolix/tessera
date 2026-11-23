@@ -196,8 +196,8 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 // twelve buttons right of it
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
 const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
-// TESSERA's shell: the grid's three rows (the third: OCT- OCT+), a little shorter than the FM-1's two
-const int NB_Y = 160, NB_H = 46, NB_STEP = 56;
+// TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
+const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
 const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18;
 }   // namespace
@@ -223,7 +223,8 @@ void Panel::layout()
         knobs[i].x = x ? XK_X + (i - 4) * XK_PITCH : 610 + (i - 4) * 104;
     // the keys: the FM-1's 27 across the keybed (EXPANDED: wider, the pitch with it)
     kb_w = x ? width() - 2 * KEYBED[0] : KEYBED[2];
-    const int x0 = KEYBED[0], y0 = KEYBED[1], h = KEYBED[3];
+    const int x0 = KEYBED[0] + (n ? OCT_COL : 0), y0 = KEYBED[1], h = KEYBED[3];   // (TESSERA's: OCT+ / OCT- at their left)
+    if (n) kb_w -= OCT_COL;
     pitch = (kb_w - 24) / 16;
     kw = (int)(pitch * 0.78);
     kh = (int)(h * 0.425);
@@ -237,18 +238,19 @@ void Panel::layout()
     const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
     const char *F1[6] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO"}, *F2[6] = {"HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"};
     const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
-    if (n)   // TESSERA's shell: BACK, SHIFT and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
+    if (n)   // TESSERA's shell: SHIFT, BACK and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
     {        // and a third row of the grid, the octave a step down and up (the FM-1's OCT- / OCT+ on Stage)
-        buttons.push_back({50, 258, 66, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});
-        buttons.push_back({127, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});
+        buttons.push_back({50, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});   // (Theo:
+        buttons.push_back({127, 258, 66, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});        // SHIFT, BACK, OK)
         buttons.push_back({204, 258, 66, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
         for (int i = 0; i < 6; i++)
         {
-            buttons.push_back({bx + i * step, NB_Y, bw, NB_H, R1[i], F1[i], nullptr});
-            buttons.push_back({bx + i * step, NB_Y + NB_STEP, bw, NB_H, R2[i], F2[i], nullptr});
+            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
+            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], nullptr});
         }
-        buttons.push_back({bx, NB_Y + 2 * NB_STEP, bw, NB_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN"});
-        buttons.push_back({bx + step, NB_Y + 2 * NB_STEP, bw, NB_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP"});
+        const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
+        buttons.push_back({KEYBED[0], oy - 5 - OCT_H, OCT_W, OCT_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP"});
+        buttons.push_back({KEYBED[0], oy + 5, OCT_W, OCT_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN"});
     }
     else
     {
@@ -1158,7 +1160,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
 
     // the keys: naturals a dim outline, sharps dim and solid; held warm white; lit, an LED on the key (Theo
     // 2026-11-23: the whole key yellow was too much while they blink): its outline yellow and a bar across its top
-    dotted(c, KEYBED[0], KEYBED[0] + kb_w, KEYBED[1], T_DIM);
+    dotted(c, KEYBED[0], KEYBED[0] + OCT_COL + kb_w, KEYBED[1], T_DIM);
     for (size_t i = 0; i < keys.size(); i++)
     {
         const Key &k = keys[i];
