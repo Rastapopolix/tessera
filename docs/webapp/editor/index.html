@@ -3053,11 +3053,6 @@ const TEXT = {
     fm6Exported: "バンクを書き出しました",
     motion: "モーション", motionOn: "再生", motionClear: "モーションを消去", motionConfirm: "選択トラックのモーションを消しますか？", chance: "確率 %", motionStep: "ステップ", motionParam: "パラメーター", motionValue: "値",
     backupTitle: "全体バックアップ", backupExport: "バックアップ保存", backupImport: "バックアップ復元", backupHelp: "現在の曲・A〜D・音色バンク・ユーザーサンプル・設定を、このパソコンへ保存。", backupOld: "全体バックアップには対応版への更新が必要です。", backupConfirm: "全体バックアップを復元しますか？ 現在の曲、保存データとサンプルを置き換えます。USBを抜かないでください。", backupWorking: "バックアップ処理中 ", backupDone: "バックアップを保存しました", backupRestored: "全体バックアップを復元しました",
-    demosChecks: "テスト用プロジェクト（実機チェック用、demos/checks/README.md）：",
-    chkChain: "CHAIN ABAC、4 小節フレーズ：全トラックが一緒にセクションを替える", chkEntries: "その CHAIN に ENTRIES 50：トラックがフェードで出入り",
-    chkPiece: "PIECE：2 分、ARCH、そして停止", chkMods: "モッドのモッド、GATE モッド、FILL へのモッド",
-    chkTempo: "TEMPO へのゆっくりしたモッド", chkMidi: "SOUND OFF トラック：MIDI のみ（TRANSPOSE -24）とモッド用レーン",
-    chkCpu: "ORACLE 4 トラック：設定 > 動作状態 を見る",
     demosTitle: "デモ・プロジェクト", demosHelp: "Tessera のデモ曲を選んだスロットへ書き込みます。そのスロットのプロジェクトは置き換わり、ほかは変わりません。残したい場合は先にバックアップを保存してください。", demosPut: "FM-1 に書き込む", demosNone: "スロットを選んでください", demosTwice: "同じスロットは一度だけ選べます", demosSkip: "書き込まない",
     mrTitle: "MIDI 録音", mrHelp: "FM-1 の演奏を DAW 用の MIDI ファイルとして録音します。FM-1 の各トラックは別々のトラックに、ジェネレーターや確率ステップは聞こえたとおりに入ります。FM-1 で MENU > NOTES OUT を ALL に、クリップを小節頭から始めるには CLOCK OUT を ON にします。録音を押してから FM-1 の PLAY を押します。ミュートしたトラックは送られません。", mrLen: "長さ", mrUntil: "STOP まで", mrBars: "{n} 小節", mrRec: "録音", mrStop: "止めて保存", mrArmed: "待機中：FM-1 の PLAY を押してください", mrRecording: "録音中、ノート数: ", mrSaved: "保存しました: ", mrNone: "ノートが届きませんでした。NOTES OUT は ALL ですか？",
     pfTitle: "プロジェクト・ファイル", pfHelp: "スロットのプロジェクトを .tsp ファイルとして保存、または .tsp ファイルをスロットへ。Webシミュレーターと同じファイルです。書き込んだら SAVE > PROJECT から読み込みます。読み書きの間、再生は止まります。", pfSave: "ファイルに保存", pfLoad: "ファイルを読み込む", pfEmpty: "このスロットは空です", pfSaved: "保存しました: ", pfNotTsp: "Tessera のプロジェクト・ファイル（.tsp）ではありません: ", pfReplace: "スロット {s} の {old} を {new} に置き換えますか？", pfWorking: "プロジェクトを書き込み中 ", pfDone: "スロット {s} に書き込みました。SAVE > PROJECT から読み込めます: ",
@@ -3182,11 +3177,6 @@ const TEXT = {
     fm6Exported: "Bank exported",
     motion: "Motion", motionOn: "Play motion", motionClear: "Clear motion", motionConfirm: "Clear this track's motion?", chance: "Chance %", motionStep: "Step", motionParam: "Parameter", motionValue: "Value",
     backupTitle: "Complete backup", backupExport: "Save backup", backupImport: "Restore backup", backupHelp: "Save the current music, A–D, sound banks and settings to this computer.", backupOld: "Complete backups need firmware with archive support.", backupConfirm: "Restore this complete backup? Current music, saved data and samples will be replaced. Keep USB connected.", backupWorking: "Backing up / restoring ", backupDone: "Backup saved", backupRestored: "Complete backup restored",
-    demosChecks: "Test projects, for the device checks (demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, 4-bar phrases: all tracks change section together", chkEntries: "ENTRIES 50 on that CHAIN: tracks fade out and back in",
-    chkPiece: "PIECE: 2 minutes, ARCH, then it stops", chkMods: "A mod of a mod, a GATE mod, a mod onto FILL",
-    chkTempo: "A slow mod onto TEMPO", chkMidi: "SOUND OFF tracks: MIDI only (TRANSPOSE -24) and a mod lane",
-    chkCpu: "Four ORACLE tracks: watch Settings > Health",
     demosTitle: "Demo projects", demosHelp: "Put Tessera's demo songs into the slots you choose. Each chosen slot's project is replaced; nothing else on the FM-1 changes. Save a backup first if you want to keep what is there.", demosPut: "Put on the FM-1", demosNone: "Choose a slot for at least one demo", demosTwice: "Choose each slot only once", demosSkip: "Leave out",
     mrTitle: "Record MIDI", mrHelp: "Record what the FM-1 plays as a MIDI file for a DAW: each FM-1 track on its own track, generators and chance steps as they were heard. On the FM-1 set MENU > NOTES OUT to ALL, and CLOCK OUT to ON so the clip starts on the bar. Press Record, then PLAY on the FM-1. Muted tracks are not sent.", mrLen: "Length", mrUntil: "Until STOP", mrBars: "{n} bars", mrRec: "Record", mrStop: "Stop and save", mrArmed: "Waiting: press PLAY on the FM-1", mrRecording: "Recording, notes: ", mrSaved: "Saved: ", mrNone: "No notes came in. Is NOTES OUT set to ALL?",
     pfTitle: "Project files", pfHelp: "Save a slot's project as a .tsp file, or put a .tsp file into a slot: the same file the web simulator saves and loads. Load it on the FM-1 from SAVE > PROJECT. Playback stops while the slot is read or written.", pfSave: "Save as file", pfLoad: "Load a file", pfEmpty: "This slot is empty", pfSaved: "Saved: ", pfNotTsp: "Not a Tessera project file (.tsp): ", pfReplace: "Replace slot {s} ({old}) with {new}?", pfWorking: "Putting the project on the FM-1 ", pfDone: "Written to slot {s}. Load it from SAVE > PROJECT: ",
@@ -3342,14 +3332,6 @@ const TEXT = {
     backupWorking: "Haciendo copia / restaurando ",
     backupDone: "Copia guardada",
     backupRestored: "Copia completa restaurada",
-    demosChecks: "Proyectos de prueba, para las comprobaciones en el aparato (demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, frases de 4 compases: todas las pistas cambian de sección a la vez",
-    chkEntries: "ENTRIES 50 sobre esa CHAIN: las pistas se desvanecen y vuelven a entrar",
-    chkPiece: "PIECE: 2 minutos, ARCH, y luego se detiene",
-    chkMods: "Un mod de un mod, un mod de GATE, un mod sobre FILL",
-    chkTempo: "Un mod lento sobre TEMPO",
-    chkMidi: "Pistas con SOUND OFF: solo MIDI (TRANSPOSE -24) y un carril de mod",
-    chkCpu: "Cuatro pistas ORACLE: observa Ajustes > Salud",
     demosTitle: "Proyectos de demostración",
     demosHelp: "Pon las canciones de demostración de Tessera en las ranuras que elijas. Se sustituye el proyecto de cada ranura elegida; nada más cambia en el FM-1. Guarda antes una copia si quieres conservar lo que hay.",
     demosPut: "Poner en el FM-1",
@@ -3678,14 +3660,6 @@ const TEXT = {
     backupWorking: "Backup / ripristino in corso ",
     backupDone: "Backup salvato",
     backupRestored: "Backup completo ripristinato",
-    demosChecks: "Progetti di prova, per i controlli sul dispositivo (demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, frasi di 4 battute: tutte le tracce cambiano sezione insieme",
-    chkEntries: "ENTRIES 50 su quella CHAIN: le tracce svaniscono e rientrano",
-    chkPiece: "PIECE: 2 minuti, ARCH, poi si ferma",
-    chkMods: "Un mod di un mod, un mod di GATE, un mod su FILL",
-    chkTempo: "Un mod lento su TEMPO",
-    chkMidi: "Tracce SOUND OFF: solo MIDI (TRANSPOSE -24) e una corsia di mod",
-    chkCpu: "Quattro tracce ORACLE: osserva Impostazioni > Salute",
     demosTitle: "Progetti dimostrativi",
     demosHelp: "Metti i brani dimostrativi di Tessera negli slot che scegli. Il progetto di ogni slot scelto viene sostituito; nient'altro cambia sull'FM-1. Salva prima un backup se vuoi conservare ciò che c'è.",
     demosPut: "Metti sull'FM-1",
@@ -4014,14 +3988,6 @@ const TEXT = {
     backupWorking: "Sichern / Wiederherstellen ",
     backupDone: "Backup gesichert",
     backupRestored: "Vollständiges Backup wiederhergestellt",
-    demosChecks: "Testprojekte für die Geräteprüfungen (demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, 4-taktige Phrasen: alle Spuren wechseln gemeinsam den Abschnitt",
-    chkEntries: "ENTRIES 50 auf dieser CHAIN: Spuren blenden aus und wieder ein",
-    chkPiece: "PIECE: 2 Minuten, ARCH, dann stoppt es",
-    chkMods: "Ein Mod eines Mods, ein GATE-Mod, ein Mod auf FILL",
-    chkTempo: "Ein langsamer Mod auf TEMPO",
-    chkMidi: "SOUND-OFF-Spuren: nur MIDI (TRANSPOSE -24) und eine Mod-Spur",
-    chkCpu: "Vier ORACLE-Spuren: Einstellungen > Zustand beobachten",
     demosTitle: "Demo-Projekte",
     demosHelp: "Lege die Demo-Songs von Tessera in die Slots deiner Wahl. Das Projekt jedes gewählten Slots wird ersetzt; sonst ändert sich nichts auf dem FM-1. Sichere vorher ein Backup, wenn du behalten willst, was dort ist.",
     demosPut: "Auf den FM-1 legen",
@@ -4350,14 +4316,6 @@ const TEXT = {
     backupWorking: "Sauvegarde / restauration ",
     backupDone: "Sauvegarde enregistrée",
     backupRestored: "Sauvegarde complète restaurée",
-    demosChecks: "Projets de test, pour les vérifications sur l'appareil (demos/checks/README.md) :",
-    chkChain: "CHAIN ABAC, phrases de 4 mesures : toutes les pistes changent de section ensemble",
-    chkEntries: "ENTRIES 50 sur cette CHAIN : les pistes disparaissent puis reviennent",
-    chkPiece: "PIECE : 2 minutes, ARCH, puis il s'arrête",
-    chkMods: "Un mod d'un mod, un mod de GATE, un mod sur FILL",
-    chkTempo: "Un mod lent sur TEMPO",
-    chkMidi: "Pistes SOUND OFF : MIDI seul (TRANSPOSE -24) et une ligne de mod",
-    chkCpu: "Quatre pistes ORACLE : surveillez Réglages > État",
     demosTitle: "Projets de démonstration",
     demosHelp: "Placez les morceaux de démonstration de Tessera dans les emplacements de votre choix. Le projet de chaque emplacement choisi est remplacé ; rien d'autre ne change sur le FM-1. Enregistrez d'abord une sauvegarde si vous voulez garder ce qui s'y trouve.",
     demosPut: "Placer sur le FM-1",
@@ -4686,14 +4644,6 @@ const TEXT = {
     backupWorking: "Fazendo backup / restaurando ",
     backupDone: "Backup salvo",
     backupRestored: "Backup completo restaurado",
-    demosChecks: "Projetos de teste, para as verificações no aparelho (demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, frases de 4 compassos: todas as faixas mudam de seção juntas",
-    chkEntries: "ENTRIES 50 nessa CHAIN: as faixas somem e voltam",
-    chkPiece: "PIECE: 2 minutos, ARCH, depois para",
-    chkMods: "Um mod de um mod, um mod de GATE, um mod no FILL",
-    chkTempo: "Um mod lento no TEMPO",
-    chkMidi: "Faixas SOUND OFF: só MIDI (TRANSPOSE -24) e uma linha de mod",
-    chkCpu: "Quatro faixas ORACLE: observe Ajustes > Saúde",
     demosTitle: "Projetos de demonstração",
     demosHelp: "Coloque as músicas de demonstração do Tessera nos slots que você escolher. O projeto de cada slot escolhido é substituído; nada mais muda no FM-1. Salve um backup antes se quiser guardar o que está lá.",
     demosPut: "Colocar no FM-1",
@@ -5022,14 +4972,6 @@ const TEXT = {
     backupWorking: "백업 / 복원 중 ",
     backupDone: "백업 저장됨",
     backupRestored: "전체 백업 복원됨",
-    demosChecks: "기기 점검용 테스트 프로젝트(demos/checks/README.md):",
-    chkChain: "CHAIN ABAC, 4마디 프레이즈: 모든 트랙이 함께 섹션을 바꿈",
-    chkEntries: "그 CHAIN에 ENTRIES 50: 트랙이 사라졌다가 다시 들어옴",
-    chkPiece: "PIECE: 2분, ARCH, 그다음 멈춤",
-    chkMods: "모드의 모드, GATE 모드, FILL에 거는 모드",
-    chkTempo: "TEMPO에 거는 느린 모드",
-    chkMidi: "SOUND OFF 트랙: MIDI만(TRANSPOSE -24)과 모드 레인",
-    chkCpu: "ORACLE 트랙 네 개: 설정 > 상태를 지켜보세요",
     demosTitle: "데모 프로젝트",
     demosHelp: "Tessera 데모 곡을 원하는 슬롯에 넣으세요. 고른 슬롯의 프로젝트만 바뀌고 FM-1의 다른 것은 그대로입니다. 지금 있는 것을 남기려면 먼저 백업을 저장하세요.",
     demosPut: "FM-1에 넣기",
@@ -6284,20 +6226,13 @@ const DEMOS = [{ file: "still-tide.tsp", name: "STILL TIDE", about: "demoStill",
                { file: "undertow.tsp", name: "UNDERTOW", about: "demoUndertow", slot: -1 },
                { file: "ember-field.tsp", name: "EMBER FIELD", about: "demoEmber", slot: -1 },
                { file: "paper-kites.tsp", name: "PAPER KITES", about: "demoKites", slot: -1 }];
-/* the test projects (demos/checks/*.tsp, demos/checks/README.md): short, one feature each, for the device checks */
-const CHECKS = ["chain", "entries", "piece", "mods", "tempo", "midi", "cpu"].map((k) =>
-  ({ file: `checks/chk-${k}.tsp`, name: `CHK ${k.toUpperCase()}`, about: "chk" + k[0].toUpperCase() + k.slice(1), slot: -1 }));
 function renderDemos() {
   const caps = dev?.info?.backupCaps || 0, box = $("demorows");
   $("demos-put").disabled = (caps & 3) !== 3;
   renderProjectFiles(caps);
   if (box.contains(document.activeElement)) return;
   box.replaceChildren();
-  for (const d of [...DEMOS, null, ...CHECKS]) {
-    if (!d) {                                    /* (the test projects under their own heading) */
-      box.append(el("span", { class: "dim", text: t("demosChecks"), style: "grid-column:1 / -1; margin-top:8px" }));
-      continue;
-    }
+  for (const d of DEMOS) {
     const sel = el("select", { "aria-label": d.name });
     sel.append(el("option", { value: -1, text: t("demosSkip") }));
     for (let k = 0; k < 4; k++) sel.append(el("option", { value: k, text: `${t("slot")} ${String.fromCharCode(65 + k)}${dev?.slotName?.[k] ? ` · ${dev.slotName[k]}` : ""}` }));
@@ -6393,7 +6328,7 @@ $("backup-file").addEventListener("change", () => {
 });
 
 $("demos-put").addEventListener("click", () => op(async () => {
-  const d = dev, picks = [...DEMOS, ...CHECKS].filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
+  const d = dev, picks = DEMOS.filter(x => x.slot >= 0), say = (k, a) => { $("demos-status").textContent = t(k) + a; sayK(k, a); };
   if ((d?.info?.backupCaps & 3) !== 3) return;
   if (!picks.length) throw new Error(t("demosNone"));
   if (new Set(picks.map(x => x.slot)).size !== picks.length) throw new Error(t("demosTwice"));
