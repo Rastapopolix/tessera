@@ -25,6 +25,7 @@ struct PanelInput
     struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
     std::vector<ZoneAct> zones, tzones;
     std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
+    bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
     bool changed = false;
 };
 
@@ -177,6 +178,7 @@ class Panel
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     bool native() const { return shell_ == 0; }
     void layout();
+    void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
     bool typing_ = false;   // the view's: NAME open
@@ -198,7 +200,7 @@ class Panel
     int fm1_req = -1;
     int fm1_seg_at(int x) const;       // TESSERA's menu: 0 OFF, 1 ON, -1 neither
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
-    struct Button { int x, y, w, h, bit; const char *face, *sub; };
+    struct Button { int x, y, w, h, bit; const char *face, *sub; const char *tip = nullptr; };   // tip: its hover card
     struct Key { int cx, cy, k; };
     struct FileButton { int x, y, w, h, action; const char *face; };
     std::vector<FileButton> files;

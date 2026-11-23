@@ -42,6 +42,7 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
     PanelInput &in = p.input;
     if (in.changed)
     {
+        tess_core_key_words(in.key_words ? 1 : 0);
         tess_core_buttons(in.buttons);
         tess_core_keys(in.keys);
         if (in.master >= 0) tess_core_master((uint32_t)in.master);
@@ -593,6 +594,98 @@ int main(int argc, char **argv)
         f.down(480, fy);
         f.up(480, fy);
         CHECK(f.take_fm1_request() == 0, "lit, it asks for off");
+
+        // TESSERA's own BACK, SHIFT, OK and OCT- / OCT+: the screen names them (key words), an FM-1 shell or an FM-1
+        // on USB keeps OCT- / OCT+; SHIFT holds OCT-'s layer and is never BACK; OCT- / OCT+ step the octave anywhere,
+        // BACK / OK on Stage no longer do
+        CHECK(q.input.key_words && !f.input.key_words, "key words: TESSERA's shell on, an FM-1 shell off");
+        q.set_fm1(true, true, true, "FM-1 CONNECTED");
+        CHECK(!q.input.key_words, "an FM-1 on USB playing it: OCT- / OCT+ as ever");
+        q.set_fm1(false, false, false, "");
+        CHECK(q.input.key_words, "and back to BACK / OK / SHIFT");
+        q.move(127 + 33, 258 + 17);   // the mouse over SHIFT: what it does, in a card over it
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10b_tessera_shift_tip.ppm", px);
+        int tip = 0;
+        for (int yy = 258 - 40; yy < 258; yy++)
+            for (int xx = 20; xx < 400; xx++) tip += px[yy * Panel::W + xx] == 0xFFFFD020u;
+        CHECK(tip > 100, "SHIFT's card over it (%d yellow pixels)", tip);
+        q.down(127 + 33, 258 + 17);
+        CHECK(q.input.buttons == 1u << 16, "SHIFT held (%#x)", q.input.buttons);
+        q.up(0, 0);
+        q.down(574 + 30, 160 + 2 * 56 + 20);
+        CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
+        q.up(0, 0);
+        q.down(50 + 33, 258 + 17);
+        CHECK(q.input.buttons == 1u << 12, "BACK is the FM-1's OCT- (%#x)", q.input.buttons);
+        q.up(0, 0);
+        q.down(204 + 33, 258 + 17);
+        CHECK(q.input.buttons == 1u << 13, "OK is the FM-1's OCT+ (%#x)", q.input.buttons);
+        q.up(0, 0);
+        int shot_n = 0;
+        auto shot = [&](double t) {
+            run(q, t);
+            tess_core_view(&v);
+            if (getenv("SHOTS"))
+            {
+                std::vector<uint32_t> sp(TESS_SCREEN * Panel::H, 0xFF000000u);
+                for (int i = 0; i < TESS_SCREEN * TESS_SCREEN; i++)
+                {
+                    uint16_t c5 = v.screen[i];
+                    sp[i] = 0xFF000000u | (c5 >> 11 & 31) * 255 / 31 << 16 | (c5 >> 5 & 63) * 255 / 63 << 8 | (c5 & 31) * 255 / 31;
+                }
+                ppm(std::string(getenv("SHOTS")) + "/s" + std::to_string(shot_n++) + ".ppm", sp, TESS_SCREEN);
+            }
+            return std::vector<uint16_t>(v.screen, v.screen + TESS_SCREEN * TESS_SCREEN);
+        };
+        auto press = [&](uint32_t b, double t) {
+            tess_core_buttons(b);
+            run(q, t);
+            tess_core_buttons(0);
+        };
+        run(q, 0.05);           // (the clicks' input taken first: run hands it in once)
+        tess_core_key_words(1);
+        press(1u << 6, 0.05);   // HOME
+        std::vector<uint16_t> home = shot(0.4);
+        const uint32_t octs = 3u << 12 | 3u << 17;   // (Stage: the OCT LEDs show the octave; here OCT- / OCT+'s)
+        CHECK(!(v.lit_buttons & octs), "Stage at octave 0: no OCT LED (%#x)", v.lit_buttons);
+        press(1u << 13, 0.05);   // OK on Stage: nothing (the FM-1: an octave up)
+        CHECK(shot(0.4) == home && !(v.lit_buttons & octs), "OK tapped on Stage: no octave (%#x)", v.lit_buttons);
+        press(1u << 18, 0.05);   // OCT+: an octave up, its LED lit
+        shot(0.4);
+        CHECK((v.lit_buttons & octs) == 1u << 18, "OCT+ on Stage: an octave up, OCT+ lit (%#x)", v.lit_buttons);
+        press(1u << 17, 0.05);
+        shot(0.4);
+        CHECK(!(v.lit_buttons & octs), "OCT- on Stage: back to 0 (%#x)", v.lit_buttons);
+        press(1u << 0, 0.05);   // FX
+        std::vector<uint16_t> fx = shot(0.4);
+        press(1u << 16, 0.05);  // SHIFT tapped: never BACK
+        CHECK(shot(0.4) == fx, "SHIFT tapped on FX: still FX");
+        std::vector<uint16_t> mixer;   // (a page with an OCT- layer: GLO's pages, SELECT on till OCT- held shows one)
+        press(1u << 5, 0.05);   // GLO
+        for (int pg = 0; pg < 12; pg++)
+        {
+            mixer = shot(1.0);
+            tess_core_buttons(1u << 12);
+            std::vector<uint16_t> layer = shot(0.4);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            if (layer != mixer) break;
+            tess_core_enc(0, 1);
+        }
+        press(1u << 16, 0.05);  // SHIFT tapped: never BACK
+        CHECK(shot(0.4) == mixer, "SHIFT tapped on a page: still there");
+        tess_core_buttons(1u << 16);
+        std::vector<uint16_t> shifted = shot(0.4);
+        tess_core_buttons(0);
+        run(q, 0.2);
+        tess_core_buttons(1u << 12);
+        std::vector<uint16_t> held = shot(0.4);
+        tess_core_buttons(0);
+        CHECK(shifted == held && shifted != mixer, "SHIFT held shows what OCT- held shows (the page's second layer)");
+        CHECK(shot(0.4) == mixer, "OCT- let go after a hold: still the page");
+        tess_core_key_words(0);
+        run(q, 0.2);
     }
 
     // ---- the screen's zones: FX's MIX column under the mouse

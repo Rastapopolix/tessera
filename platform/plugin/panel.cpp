@@ -196,6 +196,10 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 // twelve buttons right of it
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
 const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
+// TESSERA's shell: the grid's three rows (the third: OCT- OCT+), a little shorter than the FM-1's two
+const int NB_Y = 160, NB_H = 46, NB_STEP = 56;
+// its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
+const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18;
 }   // namespace
 
 Panel::Panel()
@@ -230,16 +234,33 @@ void Panel::layout()
     for (int j = 0; j < 11; j++)
         keys.push_back({x0 + 12 + (BLACK_AFTER[j] + 1) * pitch, y0 + h / 4, BLACK_K[j]});
     buttons.clear();
-    buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
-    buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
     const int R1[6] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO}, R2[6] = {B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
     const char *F1[6] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO"}, *F2[6] = {"HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"};
     const int bx = x ? XB_X : n ? 574 : 582, step = x ? XB_STEP : n ? 66 : 63, bw = x ? XB_W : n ? 60 : 54;
-    for (int i = 0; i < 6; i++)
-    {
-        buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
-        buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], R2[i] == B_PLAY ? "STOP" : nullptr});
+    if (n)   // TESSERA's shell: BACK, SHIFT and OK of their own under the left knobs (OCT-, OCT- held, OCT+ on the FM-1),
+    {        // and a third row of the grid, the octave a step down and up (the FM-1's OCT- / OCT+ on Stage)
+        buttons.push_back({50, 258, 66, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)"});
+        buttons.push_back({127, 258, 66, 34, BIT_SHIFT, "SHIFT", nullptr, "HOLD: THE KNOBS' SECOND SET"});
+        buttons.push_back({204, 258, 66, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET"});
+        for (int i = 0; i < 6; i++)
+        {
+            buttons.push_back({bx + i * step, NB_Y, bw, NB_H, R1[i], F1[i], nullptr});
+            buttons.push_back({bx + i * step, NB_Y + NB_STEP, bw, NB_H, R2[i], F2[i], nullptr});
+        }
+        buttons.push_back({bx, NB_Y + 2 * NB_STEP, bw, NB_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN"});
+        buttons.push_back({bx + step, NB_Y + 2 * NB_STEP, bw, NB_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP"});
     }
+    else
+    {
+        buttons.push_back({60, 258, 90, 34, B_OCTDN, "OCT-", nullptr});
+        buttons.push_back({170, 258, 90, 34, B_OCTUP, "OCT+", nullptr});
+        for (int i = 0; i < 6; i++)
+        {
+            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr});
+            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], R2[i] == B_PLAY ? "STOP" : nullptr});
+        }
+    }
+    key_words();
     files.clear();
     const int fy = KEYBED[1] + KEYBED[3] + 5;
     if (!n)
@@ -261,6 +282,18 @@ void Panel::layout()
     banks[1] = {fx + 308, fy - 1, 52, 26, 4, "5-8"};
 }
 
+// TESSERA's shell shows BACK, OK and SHIFT of its own: the screen says so too (tess_core_key_words); not while an FM-1
+// on USB plays the instance (its OCT- / OCT+ as ever)
+void Panel::key_words()
+{
+    const bool words = native() && !(fm1_on && fm1_mine);
+    if (words != input.key_words)
+    {
+        input.key_words = words;
+        input.changed = true;
+    }
+}
+
 void Panel::set_midi(uint32_t count)
 {
     if (midi_known && count != midi_count)
@@ -277,6 +310,7 @@ void Panel::set_fm1(bool on, bool mine, bool live, const std::string &text)
     fm1_mine = mine;
     fm1_live = live;
     fm1_text = text;
+    key_words();   // (an FM-1 playing it keeps its OCT- / OCT+)
     if (fm1_known && (on ? text != before : was))
         note(on ? text : "FM-1 USB OFF");
     else if (!fm1_known && on)
@@ -1108,17 +1142,10 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         if (held) border = fill = T_HELD, ink = T_BLACK;
         else if (lit) border = fill = T_YEL, ink = T_BLACK;
         else if (v.breath_buttons & bit) border = T_YEL, fill = mix(T_BLACK, T_YEL, 0.35 * breath), ink = T_YEL;
-        else if (v.dim_buttons & bit) border = T_YEL, ink = T_YEL;
+        else if ((v.dim_buttons & bit) || b.bit == BIT_OCT_DOWN || b.bit == BIT_OCT_UP)   // (the octave: always there)
+            border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
-        if (b.bit == B_OCTDN || b.bit == B_OCTUP)   // what they mostly do, large; the octave small under it
-        {                                           // (OCT- held: the knobs' second layer, SHIFT)
-            const char *does = b.bit == B_OCTUP ? "OK" : held ? "SHIFT" : "BACK";
-            int mid = (y + 2 + y + h - bottom) / 2;
-            c.ptext_c(b.x + b.w / 2, mid - 11, does, 2, ink);
-            c.ptext_c(b.x + b.w / 2, mid + 5, b.face, 1, ink);
-            continue;
-        }
         c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
     }
 
@@ -1638,6 +1665,20 @@ void Panel::draw_hover(uint32_t *px)
 {
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
     int z2 = zi < 0 && hover_in && drag == NONE ? zone2_at(hover_x, hover_y) : -1;   // (TRACKS, EXPANDED)
+    int bi = zi < 0 && z2 < 0 && hover_in && drag == NONE && !(native() && menu_open) ? button_at(hover_x, hover_y) : -1;
+    if (bi >= 0 && buttons[bi].tip)   // a button of TESSERA's own: what it does, in a card over it
+    {
+        Canvas c{px, width()};
+        const Button &b = buttons[bi];
+        int w = Canvas::ptext_w(b.tip, 2) + 20, h = 30, x = b.x + b.w / 2 - w / 2, y = b.y - h - 6;
+        if (x < 8) x = 8;
+        if (x + w > width() - 8) x = width() - 8 - w;
+        c.box(x, y, w, h, 0xFF000000);
+        c.box(x, y, w, 2, 0xFFFFD020), c.box(x, y + h - 2, w, 2, 0xFFFFD020);
+        c.box(x, y, 2, h, 0xFFFFD020), c.box(x + w - 2, y, 2, h, 0xFFFFD020);
+        c.ptext(x + 10, y + 8, b.tip, 2, 0xFFB9B2A0);
+        return;
+    }
     if (zi < 0 && z2 < 0) return;
     const tess_zone_t &z = z2 >= 0 ? zones2[z2] : zones[zi];
     Canvas c{px, width()};
@@ -1652,6 +1693,8 @@ void Panel::draw_hover(uint32_t *px)
     // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large
     std::string name = z.name, value = z.value;
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    if (input.key_words && z.kind == TESS_ZONE_KEY)   // (BACK / OK of its own: named as the screen names them)
+        value = value == "OCT+" ? "OK" : value == "OCT-" ? "BACK" : value;
     int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
     int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
     int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;

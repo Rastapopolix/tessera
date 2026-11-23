@@ -1144,6 +1144,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         {
             t->win_buttons = pi.buttons;
             t->win_keys = pi.keys;
+            t->core->key_words(pi.key_words ? 1 : 0);   // (TESSERA's shell: BACK / OK / SHIFT of its own)
             t->core->buttons(t->win_buttons | t->fm1_buttons);
             t->core->keys(t->win_keys | t->fm1_keys);
             bool master_turned = pi.master >= 0;
