@@ -363,6 +363,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if (z->row & 0x100) {                         /* (PIECE's SHAPE USER: point row & 7's level, up and down) */
+            if (action == TESS_ZA_TURN_Y)
+                tessera_piece_knob((uint32_t)z->row & 3u, n, 1 + (((uint32_t)z->row >> 2) & 1u));
+            ui.force = 1;
+            break;
+        }
         if (action == TESS_ZA_DOUBLE) {
             zone_reset(z->role);
             zone_reset(z->vrole);
