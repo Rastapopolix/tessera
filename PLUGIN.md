@@ -119,6 +119,10 @@ and value shown large in a box under the screen:
 - **HOME:** click a track's column to select it; double-click it to open its sounds (the sound browser).
 - **The sound browser:** click a list name (ALL, FAVES, a category, an engine) or a sound to go to it; double-click a
   sound to keep it (OK). BACK and OK at the foot: click them.
+- **NOTES** (a STEP track's steps): click a step to put a note there at the pitch under the mouse (in key when the
+  track quantises); click the same step at another height for a chord (up to 4 notes). Drag a note up or down to
+  change its pitch (it steps over its chord's other notes); hold SHIFT (or Shift) while dragging to move the whole
+  chord. Right-click a note to remove it (a chord's tick: that note). The wheel on a note moves it too.
 - **MODS:** the wheel scrolls the 16 mods; click a mod's row to pick it, drag up or down on it to change its amount,
   double-click it for its type (+-, +, GATE, HOLD, as OK). Click a mod's source or destination for its list: it stays
   open until you click one (the wheel scrolls it), or click away.
