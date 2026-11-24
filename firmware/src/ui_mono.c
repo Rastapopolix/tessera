@@ -989,6 +989,14 @@ static void mo_pic_notes(const track_t *t)
     c0 = lo / 12 * 12;
     span = hi - c0 <= 12 ? 12 : hi - c0 <= 24 ? 24 : 36;
     if (lo == hi) c0 = 0, span = 127;
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (a zone over the steps: a click there a note, ui_roll.c) */
+        uz_roll.first = (int16_t)(pg * 16u), uz_roll.len = (int16_t)len, uz_roll.c0 = (int16_t)c0;
+        uz_roll.span = (int16_t)span, uz_roll.lo = (int16_t)lo, uz_roll.hi = (int16_t)hi;
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_ROLL, 1, base - 26, 118, 33, -1, -1, (int32_t)(pg * 16u), "NOTES", "");
+    }
+#endif
     for (i = 0; i < 16u; i++) {
         uint32_t si = pg * 16u + i;
         const step_t *st = &seq_steps(t)[si < NSTEP ? si : 0u];

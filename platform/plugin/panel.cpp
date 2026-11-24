@@ -836,6 +836,15 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
+        if (z.kind == TESS_ZONE_ROLL)   // NOTES' steps: the note there grabbed; dragged up or down, its pitch; let go
+        {                               // unmoved, a click (a note there)
+            drag = ZONE;
+            drag_zone = zone_here(zi, x, y);
+            zone_still = true;
+            acc = 0;
+            zone_act(drag_zone, TESS_ZA_GRAB, 0);
+            return true;
+        }
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
             z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT)   // (a value, a text,
                                                                                                    // the tempo, a marker)
@@ -994,7 +1003,19 @@ bool Panel::move(int x, int y)
         if (nx || ny) { zone_still = click_known = false; return true; }
         return false;
     }
-    if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_ROLL)   // a note: a row every 6 px up or down; with SHIFT (held,
+    {                                                      // latched or the Shift key) its whole chord
+        acc += dy;
+        int n = acc / 6;
+        if (n)
+        {
+            acc -= n * 6;
+            zone_still = click_known = false;
+            zone_act(drag_zone, input.buttons >> BIT_SHIFT & 1u ? (uint32_t)TESS_ZA_TURN_CHORD : (uint32_t)TESS_ZA_TURN, n);
+            return true;
+        }
+    }
+    else if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
         int n = acc / 8;
@@ -1050,6 +1071,11 @@ bool Panel::latch(int x, int y)
     if (zi >= 0)   // the screen: a value's column or a list's row, its help card (tess_core_zone_do TESS_ZA_HELP)
     {
         const tess_zone_t &z = zones[zi];
+        if (z.kind == TESS_ZONE_ROLL)   // NOTES' steps: the note there removed
+        {
+            zone_act(zone_here(zi, x, y), TESS_ZA_HELP, 0);
+            return true;
+        }
         if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0) &&
             !(z.kind == TESS_ZONE_MUTE && z.role == 1) && !(z.kind == TESS_ZONE_POINT && (z.row & 0x200)))
             return false;   // (MIXER's MUTE word: its solo; BOUNCE's picture: a ball less)
@@ -1102,7 +1128,7 @@ bool Panel::wheel(int x, int y, int notches)
     int zi = zone_at(x, y);
     if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
-        zone_act(zones[zi], TESS_ZA_WHEEL, notches);
+        zone_act(zone_here(zi, x, y), TESS_ZA_WHEEL, notches);   // (NOTES' steps: the note under the mouse)
         return true;
     }
     int i = knob_at(x, y);
@@ -1803,6 +1829,16 @@ int Panel::zone_like(const tess_zone_t &z) const
         if (zones[i].kind == z.kind && zones[i].role == z.role && zones[i].vrole == z.vrole && zones[i].row == z.row)
             return (int)i;
     return -1;
+}
+
+// NOTES' roll (TESS_ZONE_ROLL): the core reads the step and the pitch from the place, so it goes in the zone's x, y (in
+// screen pixels); any other zone as it is
+tess_zone_t Panel::zone_here(int zi, int x, int y) const
+{
+    tess_zone_t z = zones[zi];
+    if (z.kind == TESS_ZONE_ROLL)
+        z.x = (uint16_t)(x - (SCREEN_X + SCREEN_S / 32)), z.y = (uint16_t)(y - (SCREEN_Y + SCREEN_S / 32));
+    return z;
 }
 
 void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)

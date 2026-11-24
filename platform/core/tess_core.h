@@ -113,6 +113,13 @@ enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_Z
                                             * transport keeps its own. PICK: MODS' SOURCE or DESTINATION; click: that
                                             * mod, and its list, kept till a row of it is clicked; turn: its value) */
                                      /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
+/* ROLL: NOTES' steps, a piano roll (a step a column, a note's height its pitch): the front end hands it back with x and
+ * y set to the mouse's place on the screen (where a drag began), w and h as they were. CLICK: a note on that step at
+ * that pitch (a step with notes: one more, a chord of up to 4; on one of them: that one picked); HELP (a right-click):
+ * the note there removed; GRAB (the button pressed there), then TURN n (dragged: n rows up, - down): that note's
+ * pitch, in key when the track quantises, over its chord's other notes; TURN_CHORD n: the whole chord, its shape kept;
+ * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records */
+enum { TESS_ZONE_ROLL = 15 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -121,6 +128,7 @@ typedef struct {
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
+enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */

@@ -88,6 +88,7 @@ void tess_core_boot(void)
  * detents as the hand's (a quick wheel speeds up as a quick knob does) */
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
+_Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
 enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
@@ -289,6 +290,13 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     }
     if (!z || !zone_live(z))
         return;
+    if (z->kind == TESS_ZONE_ROLL) {                  /* NOTES' steps: the note at the mouse's place (ui_roll.c) */
+        if (action == TESS_ZA_WHEEL) roll_do(ROLL_GRAB, z->x, z->y, 0);
+        roll_do(action == TESS_ZA_CLICK ? ROLL_ADD : action == TESS_ZA_HELP ? ROLL_DEL : action == TESS_ZA_GRAB ?
+                ROLL_GRAB : action == TESS_ZA_TURN || action == TESS_ZA_WHEEL ? ROLL_MOVE : action ==
+                TESS_ZA_TURN_CHORD ? ROLL_MOVE_ALL : 0u, z->x, z->y, n);
+        return;
+    }
     if (action == TESS_ZA_HELP) {                     /* a value's column or a list's row: what it does */
         if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
             help_unpin();

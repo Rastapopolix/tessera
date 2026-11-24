@@ -14,6 +14,7 @@
  * ui_draw.c */
 #if TESS_HAS_POINTER
 enum { UZ_KNOB = 1, UZ_ROW, UZ_KEY, UZ_TRACK, UZ_MUTE, UZ_SOLO, UZ_LEVEL, UZ_CELL, UZ_PAN, UZ_SCROLL, UZ_TAB, UZ_TEMPO, UZ_PICK, UZ_POINT };   /* (tess_core.h's TESS_ZONE_*) */
+enum { UZ_ROLL = 15 };                                 /* NOTES' steps (tess_core.h's TESS_ZONE_ROLL; ui_roll.c) */
 enum { UZ_G_COLS, UZ_G_LIST, UZ_G_KEYS, UZ_G_TRACKS, UZ_G_SIDES, UZ_G_STRIPS, UZ_G_TABS, UZ_G_HEAD, UZ_G_PIC, UZ_GROUPS };
 #define UZ_MAX 48
 typedef struct {
@@ -109,6 +110,10 @@ static void uz_list_rows(int32_t x, int32_t y, int32_t w, int32_t h, int32_t dy,
         uz_add(UZ_G_LIST, UZ_ROW, x, y + i * dy, w, h, uz_list.role, uz_list.vrole, uz_list.first + i,
                names ? names[i] : 0, values ? values[i] : 0);
 }
+/* NOTES' roll as mo_pic_notes drew it: the page's first step, LEN, the pitch under its lowest bar (c0) and the span
+ * the bars' heights cover (mo_note_h), the page's lowest and highest note (lo > hi: none); ui_roll.c reads a click
+ * back from them */
+static struct { int16_t first, len, c0, span, lo, hi; } uz_roll;
 #define UZ(...) (__VA_ARGS__)
 /* 1: a help card the mouse opened (tess_core_zone_do TESS_ZA_HELP, Smalti's ?): it stays without ARP held, its knobs
  * as ARP's (another knob's card, a turn scrolls), till a click closes it (ui_help.c help_knob, ui_input.c) */

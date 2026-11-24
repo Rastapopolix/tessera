@@ -125,6 +125,7 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "ui_input.c"
 #include "ui_layer.c"              /* the quick layers (GLO SCL held) */
 #include "ui_tracks.c"              /* the TRACKS page (TESS_SCR_COUNT > 1: not the FM-1; nothing here) */
+#include "ui_roll.c"                /* NOTES' steps under a mouse (TESS_HAS_POINTER 0: nothing here) */
 #ifdef ANN_VER
 #include "ui_speak.c"              /* the screen reader: what changed on the screen (MELODEE_ACCESS) */
 #endif

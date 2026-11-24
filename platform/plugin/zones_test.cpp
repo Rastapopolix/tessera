@@ -793,6 +793,100 @@ static void mouse2()   // the mouse, round 2: MODS, MATRIX, HOME's double-click,
     run(5);
     tap(B_HOME);
 }
+static void rdo(int step, int cy, uint32_t a, int n = 0)   // NOTES' roll: the mouse at step (0..15), row cy (cells)
+{
+    int i = find("NOTES", TESS_ZONE_ROLL);
+    if (i < 0) return;
+    tess_zone_t z = v.zones[i];
+    z.x = (uint16_t)(2 * (3 + step * 7 + step / 4 * 2 + 2)), z.y = (uint16_t)(2 * cy);
+    tess_core_zone_do(&z, a, n);
+    run(30);
+}
+static std::string kval(const char *name)
+{
+    int i = find(name, TESS_ZONE_KNOB);
+    return i < 0 ? "?" : v.zones[i].value;
+}
+static int midi_of(const std::string &s)   // "C#4" -> 61 (C4 = 60), -1 not a note
+{
+    static const int PC[7] = {9, 11, 0, 2, 4, 5, 7};
+    if (s.empty() || s[0] < 'A' || s[0] > 'G') return -1;
+    size_t k = 1;
+    int n = PC[s[0] - 'A'];
+    if (k < s.size() && s[k] == '#') n++, k++;
+    if (k < s.size() && s[k] == 'b') n--, k++;
+    return k < s.size() ? n + 12 * (std::atoi(s.c_str() + k) + 1) : -1;
+}
+static bool lit(int cx, int cy)   // a Mono cell drawn in (its top-left pixel)
+{
+    return v.screen[(2 * cy) * TESS_SCREEN + 2 * cx] != v.screen[0];
+}
+static void roll()   // NOTES as a piano roll (batch 4): a click a note, a chord, a drag its pitch, a right-click gone
+{
+    tess_core_project_new();
+    run(50);
+    int i = reach(B_SEQ, "NOTES", TESS_ZONE_ROLL);
+    CHECK(i >= 0, "NOTES (a new project's T1): a ROLL zone over the steps");
+    if (i < 0) { dump("no NOTES"); return; }
+    const tess_zone_t &z = v.zones[i];
+    CHECK(z.x <= 8 && z.x + z.w >= 236 && z.y <= 132 && z.y + z.h >= 194, "the roll covers the 16 steps (%u,%u %ux%u)", z.x,
+          z.y, z.w, z.h);
+    CHECK(kval("LENGTH") == "--", "step 1 starts empty (LENGTH %s)", kval("LENGTH").c_str());
+
+    rdo(0, 78, TESS_ZA_CLICK);   // an empty page: a note on step 1, about the last note entered
+    int p1 = midi_of(kval("PITCH"));
+    CHECK(kval("STEP").rfind("1/", 0) == 0 && kval("LENGTH") != "--" && p1 > 0, "a click on step 1: a note there (%s %s)",
+          kval("STEP").c_str(), kval("PITCH").c_str());
+    rdo(2, 66, TESS_ZA_CLICK);   // higher up, step 3: a higher note
+    int p3 = midi_of(kval("PITCH"));
+    CHECK(kval("STEP").rfind("3/", 0) == 0 && p3 > p1, "a click higher on step 3: a higher note there (%d, then %d)", p1, p3);
+    rdo(2, 82, TESS_ZA_CLICK);   // step 3 again, lower: a chord, its second note picked
+    int p3b = midi_of(kval("PITCH"));
+    int x3 = 3 + 2 * 7;
+    CHECK(p3b > 0 && p3b != p3 && kval("STEP").rfind("3/", 0) == 0, "a second click on step 3: a second note (%d, %d)", p3,
+          p3b);
+    {
+        int top = 0;
+        for (int cy = 66; cy < 92 && !top; cy++) if (lit(x3, cy)) top = cy;   // step 3's bar (its left edge: no tick)
+        CHECK(top > 0 && lit(x3 + 1, top - 2), "the chord's tick over step 3's bar (bar top row %d)", top);
+        rdo(2, top - 2, TESS_ZA_HELP);   // a right-click on the tick: that note gone
+        CHECK(top > 0 && !lit(x3 + 1, top - 2), "a right-click on the tick removes that note");
+        rdo(2, top - 2, TESS_ZA_CLICK);   // (a click there again: the step 3's notes: one more)
+    }
+
+    rdo(0, 90, TESS_ZA_GRAB);   // drag step 1's note up two rows
+    rdo(0, 90, TESS_ZA_TURN, 2);
+    int p1b = midi_of(kval("PITCH"));
+    CHECK(kval("STEP").rfind("1/", 0) == 0 && p1b > p1 && p1b <= p1 + 4, "step 1 dragged up two rows (%d, then %d)", p1,
+          p1b);
+    rdo(0, 90, TESS_ZA_GRAB);
+    rdo(0, 90, TESS_ZA_TURN, -2);
+    CHECK(midi_of(kval("PITCH")) == p1, "and down two: back (%d, %s)", p1, kval("PITCH").c_str());
+    rdo(0, 90, TESS_ZA_WHEEL, 1);
+    CHECK(midi_of(kval("PITCH")) > p1, "the wheel on it: up a row (%s)", kval("PITCH").c_str());
+
+    rdo(2, 90, TESS_ZA_GRAB);   // step 3's chord whole, up a row
+    rdo(2, 90, TESS_ZA_TURN_CHORD, 1);
+    CHECK(kval("STEP").rfind("3/", 0) == 0 && midi_of(kval("PITCH")) > p3, "SHIFT + drag: step 3's chord up (%d, then %s)",
+          p3, kval("PITCH").c_str());
+
+    for (int k = 0; k < 6; k++) rdo(5, 64 + 4 * k, TESS_ZA_CLICK);   // six pitches on step 6: four notes, no more
+    int dels = 0;
+    while (dels < 8 && kval("LENGTH") != "--") rdo(5, 90, TESS_ZA_HELP), dels++;
+    CHECK(dels == 4 && kval("STEP").rfind("6/", 0) == 0, "six clicks on step 6 made a chord of 4: four right-clicks empty it "
+          "(%d)", dels);
+    rdo(0, 90, TESS_ZA_HELP);   // step 1's note gone
+    CHECK(kval("LENGTH") == "--" || kval("STEP").rfind("1/", 0) != 0, "a right-click on step 1's note: gone (%s %s)",
+          kval("STEP").c_str(), kval("LENGTH").c_str());
+
+    tess_core_transport(1);   // playing is fine; recording is not tested here
+    run(20);
+    rdo(8, 80, TESS_ZA_CLICK);
+    CHECK(kval("STEP").rfind("9/", 0) == 0, "while playing: a click still places a note (%s)", kval("STEP").c_str());
+    tess_core_transport(0);
+    run(20);
+}
+
 static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
 {
     tap(B_HOME);
@@ -920,6 +1014,7 @@ int main(int argc, char **argv)
     typing();
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
+    roll();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;
