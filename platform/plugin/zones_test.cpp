@@ -914,6 +914,14 @@ static void points()   // a picture's markers dragged: ENV's corners turn ATK, D
     CHECK(col(4) != dec, "dragged right: DEC longer (%s, then %s)", dec.c_str(), col(4).c_str());
     tap(B_HOME);
 }
+static void tweak_marks()   // TWEAK's pictures: SHIFT's slider and FOLLOW's tracks (found by their columns' labels)
+{
+    tap(B_HOME);
+    int sh = reach(B_ARP, "SHIFT", TESS_ZONE_POINT, 12);
+    CHECK(sh >= 0, "TWEAK: SHIFT's slider, a marker");
+    CHECK(find("T2", TESS_ZONE_CELL) >= 0, "TWEAK: FOLLOW's tracks, a cell each");
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -930,6 +938,7 @@ int main(int argc, char **argv)
     slot_tabs();
     mouse2();
     points();
+    tweak_marks();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
