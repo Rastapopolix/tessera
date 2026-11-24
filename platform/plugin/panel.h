@@ -251,8 +251,8 @@ class Panel
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag
-    enum { NONE, KNOB, BUTTON, KEY, ZONE, GEN_BUTTON, GEN_VAR } drag = NONE;
-    int drag_i = -1, last_x = 0, last_y = 0, acc = 0;
+    enum { NONE, KNOB, BUTTON, KEY, ZONE, ZONE2, GEN_BUTTON, GEN_VAR } drag = NONE;
+    int drag_i = -1, last_x = 0, last_y = 0, acc = 0, acc_y = 0;
     bool zone_still = false;
     bool closable_ = false;
     bool standalone_ = false;

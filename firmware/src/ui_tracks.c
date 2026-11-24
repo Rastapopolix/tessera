@@ -14,7 +14,7 @@
 #if TESS_SCR_COUNT > 1 && MELODEE_LOOK
 #define T2_W_MAX 480
 #define T2_H_MAX 240
-#define T2_ZONES 32
+#define T2_ZONES 33                                     /* (8 rows of four, and the tempo) */
 static uint16_t t2_px[T2_W_MAX * T2_H_MAX];             /* RGB565 (ui_mono.c's inks as they are) */
 static int32_t t2_w, t2_h, t2_sc;                       /* the size drawn, the pixels a cell */
 static uz_t t2_z[T2_ZONES];
@@ -173,6 +173,7 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
     }
     fmt_int(b, song.g[G_BPM]);
     t2_text(b, 108, 2, MO_DIM);
+    t2_zone(UZ_TEMPO, 98, 0, 30, 11, 0, "TEMPO", b);    /* (dragged, the wheel: the BPM, as the FM-1 screen's) */
     if (song.playing) {
         char n[12];
         str_cpy(b, "BAR ", sizeof b);

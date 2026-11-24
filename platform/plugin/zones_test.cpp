@@ -35,7 +35,7 @@ static int fails = 0;
 
 static float L[1024], R[1024];
 static tess_view_t v;
-enum { B_FX = 0, B_SEL = 1, B_LFO = 3, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12, B_OCTUP = 13 };
+enum { B_FX = 0, B_SEL = 1, B_ENV = 2, B_LFO = 3, B_EDIT = 4, B_GLO = 5, B_HOME = 6, B_SAVE = 7, B_ARP = 8, B_SEQ = 9, B_OCTDN = 12, B_OCTUP = 13 };
 
 static void run(int blocks)   // 10 ms blocks
 {
@@ -887,6 +887,33 @@ static void roll()   // NOTES as a piano roll (batch 4): a click a note, a chord
     run(20);
 }
 
+static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
+{
+    tap(B_HOME);
+    int dz = -1;
+    for (int i = 0; i < 6 && dz < 0; i++) { tap(B_ENV); dz = find("DECAY / SUS", TESS_ZONE_POINT); }
+    CHECK(dz >= 0, "ENV: its corners, markers to drag");
+    if (dz < 0) { tap(B_HOME); return; }
+    auto col = [&](int role) {   // (a page's column by its knob: KNOB 1 is role 3)
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_KNOB && v.zones[i].role == role) return std::string(v.zones[i].value);
+        return std::string("?");
+    };
+    std::string sus = col(5), dec = col(4);
+    tess_zone_t z = v.zones[dz];
+    tess_core_zone_do(&z, TESS_ZA_TURN_Y, -4);   // (dragged down)
+    run(40);
+    tess_core_view(&v);
+    CHECK(col(5) != sus && col(4) == dec, "the decay corner dragged down: SUS lower (%s, then %s), DEC as it was",
+          sus.c_str(), col(5).c_str());
+    dz = find("DECAY / SUS", TESS_ZONE_POINT);
+    z = v.zones[dz];
+    tess_core_zone_do(&z, TESS_ZA_TURN, 3);   // (dragged right)
+    run(40);
+    tess_core_view(&v);
+    CHECK(col(4) != dec, "dragged right: DEC longer (%s, then %s)", dec.c_str(), col(4).c_str());
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -902,6 +929,7 @@ int main(int argc, char **argv)
     ux_round();
     slot_tabs();
     mouse2();
+    points();
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 

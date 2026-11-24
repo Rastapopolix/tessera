@@ -818,6 +818,24 @@ static void mo_pic_turing(const gen_turing_t *g)
         else mo_box(x, 104 - h, 6, h, MO_INK);
     }
 }
+#if TESS_HAS_POINTER
+#define UZ_ROLE(r) (r)
+/* the knob of this page whose column is named n ("X", "SHIFT"): its role (EN_K1 ..), -1 none: a picture's marker
+ * turns it (zones) */
+static int32_t mo_knob_named(const char *n)
+{
+    int16_t *vp;
+    uint32_t c;
+    for (c = 0; c < 4u; c++) {
+        const param_desc_t *d = page_desc(cur_page(), c, &vp);
+        if (d && vp && str_eq(d->label, n))
+            return (int32_t)(EN_K1 + c);
+    }
+    return -1;
+}
+#else
+#define UZ_ROLE(r) (-1)
+#endif
 static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
 {
     static const char *const LN[3] = {"BD", "SD", "HH"};
@@ -830,6 +848,12 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
     }
     mo_vl(px, 55, 38, MO_INK);
     mo_hl(3, py, 38, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under && (mo_knob_named("X") >= 0 || mo_knob_named("Y") >= 0)) {   /* (zones: the cross-hair: X, Y) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");
+    }
+#endif
     mo_disc(px, py, 2, MO_INK);
     for (p = 0; p < 3u; p++) {                          /* the three parts: 16 steps as two rows of eight */
         int32_t y = 56 + (int32_t)p * 17;
@@ -1123,6 +1147,13 @@ static void mo_pic_bounce(const gen_bounce_t *b)
 {
     static const uint8_t LEAF[3][2] = {{1, 2}, {0, 4}, {1, 2}};   /* (a row's first cell and length) */
     uint32_t w = b->hit, n = b->balls >= 1u && b->balls <= GEN_BOUNCE_MAX ? b->balls : 1u, k;
+#if TESS_HAS_POINTER
+    if (!cv_under && mo_knob_named("BALLS") >= 0) {     /* (zones: the picture: a click a ball more, a right-click
+                                                         * one less, the wheel either way) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, 1, 52, 118, 55, -1, mo_knob_named("BALLS"), 0x200, "BALLS", "");
+    }
+#endif
     if (b->balls == GEN_BOUNCE_FALL) {
         mo_fill(2, w ? 105 : 106, 116, w ? 2 : 1, w ? MO_INK : MO_DIM);
         if (b->gust)
@@ -1258,6 +1289,13 @@ static void mo_pic_quad(uint32_t tr)
         int32_t y = 59 + (int32_t)r * 10;
         uint16_t c = on ? MO_TRK(r) : mo_tdim(r);
         char lb[3] = {'T', (char)('1' + r), 0};
+#if TESS_HAS_POINTER
+        if (!cv_under) {                                /* (zones: a row, its track picked) */
+            if (!r)
+                uz_begin(UZ_G_PIC);
+            uz_add(UZ_G_PIC, UZ_TRACK, 0, y - 1, 120, 10, -1, -1, (int32_t)r, lb, "");
+        }
+#endif
         if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
         switch (q->dir) {
@@ -1631,11 +1669,20 @@ static void mo_pic_evolve(const track_t *t)
 #define MO_TRK_DY 13
 #define MO_TRK_Y0 0
 #endif
-static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on)
+static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on, int32_t role)
 {
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
         int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + MO_TRK_Y0 + (int32_t)(i / 2u) * MO_TRK_DY, ty = cy + (MO_TRK_CH - 7) / 2;
         char n[2] = {(char)('1' + i), 0};
+#if TESS_HAS_POINTER
+        if (role >= 0 && !cv_under) {                   /* (zones: a click picks the track, the one picked: none) */
+            char nm[4] = {'T', (char)('1' + i), 0, 0};
+            uz_cell(UZ_G_PIC, cx, cy, 11, MO_TRK_CH, role, picked == i + 1u ? -(int32_t)picked : (int32_t)(i + 1u) -
+                    (int32_t)picked, -1, 0, nm, picked == i + 1u ? "ON" : "");
+        }
+#else
+        (void)role;
+#endif
         if (picked == i + 1u) mo_fill(cx, cy, 11, MO_TRK_CH, MO_TRK(i)), mo_text(n, cx + 3, ty, MO_BG);
         else mo_box(cx, cy, 11, MO_TRK_CH, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, ty, i == tr ? MO_TRK(i) : mo_tdim(i));
     }
@@ -1650,10 +1697,19 @@ static void mo_pic_tweak(const track_t *t)
     uint32_t tr = trk_index(t), i;
     const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
     int32_t sh = ev->shift, nd = ((int32_t)ev->drop * 8 + 50) / 100, hu = ev->human, y;
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);                             /* (zones: SHIFT's slider, FOLLOW's tracks) */
+#endif
     mo_dash(3, 80, 25, MO_DIM);                         /* SHIFT: +-24 over +-22 cells */
     y = 80 - sh * 22 / 24;
     if (sh) mo_vl(15, y < 80 ? y + 2 : 81, y < 80 ? 78 - y : y - 81, MO_DIM);
     mo_fill(5, y - 1, 20, 3, sh ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under && mo_knob_named("SHIFT") >= 0) {     /* (zones: SHIFT's slider, up and down) */
+        uz_add(UZ_G_PIC, UZ_POINT, 4, y - 4, 22, 9, -1, mo_knob_named("SHIFT"), 0, "SHIFT", "");
+    }
+#endif
     for (i = 0; i < 8u; i++) {                          /* DROP */
         int32_t hx = 32 + (int32_t)(i % 4u) * 7, hy = 62 + (int32_t)(i / 4u) * 16, gone = 0, k;
         for (k = 0; k < nd; k++)
@@ -1665,7 +1721,7 @@ static void mo_pic_tweak(const track_t *t)
         int32_t w = 26 - 26 * (HUM_LEN[i] + 5) * hu / 1000, h = 3 + HUM_VEL[i] * hu / 200;
         mo_fill(62, 60 + (int32_t)i * 9 + (4 - h) / 2, w, h < 1 ? 1 : h, hu ? MO_INK : MO_DIM);
     }
-    mo_trk_cells(92, 64, ev->follow, tr, ev->follow != 0u);   /* FOLLOW */
+    mo_trk_cells(92, 64, ev->follow, tr, ev->follow != 0u, UZ_ROLE(mo_knob_named("FOLLOW")));   /* FOLLOW */
 }
 /* TWEAK 2. BRANCH: a stem forking, the branch to TO solid as far as its chance (COIN: both, the likelier solid); TO:
  * the tracks, the one hits go to solid; LOGIC: 8 steps of this track, of WITH's and what plays; COND: 8 bars, those a
@@ -1683,7 +1739,7 @@ static void mo_pic_tweak2(const track_t *t)
     mo_line(14, 82, 23, 66, right ? MO_INK : MO_DIM);
     if (coin && right) mo_box(2, 61, 6, 6, MO_DIM); else mo_fill(2, 61, 6, 6, MO_INK);
     if (right) mo_fill(20, 61, 6, 6, MO_INK); else mo_box(20, 61, 6, 6, MO_DIM);
-    mo_trk_cells(32, 64, on ? ev->br_to : 0u, tr, on);  /* TO */
+    mo_trk_cells(32, 64, on ? ev->br_to : 0u, tr, on, UZ_ROLE(mo_knob_named("TO")));  /* TO */
     if (lg) res = ev->logic == TESS_LG_AND ? ME & OTHER : ev->logic == TESS_LG_OR ? ME | OTHER :
                   ev->logic == TESS_LG_XOR ? ME ^ OTHER : ME & ~OTHER & 0xFFu;
     for (i = 0; i < 8u; i++) {                          /* LOGIC */
@@ -1879,9 +1935,19 @@ static void mo_pic_piece(void)
         if (i) mo_line(1 + i, py, 2 + i, y, set ? MO_INK : MO_DIM);
         py = y;
     }
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);
+#endif
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
+#if TESS_HAS_POINTER
+            if (!cv_under) {                            /* (zones: a point, up and down: its level) */
+                char nm[8] = {'P', 'O', 'I', 'N', 'T', ' ', (char)('1' + i), 0};
+                uz_add(UZ_G_PIC, UZ_POINT, x - 3, y - 3, 7, 7, -1, -1, 0x100 | i, nm, "");
+            }
+#endif
             mo_disc(x, y, lay && i == (int32_t)(pl_pt & 7u) ? 3 : 2, MO_INK);
         }
     if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
@@ -2104,6 +2170,14 @@ static void mo_pic_env(const track_t *t)
         py = y;
     }
     mo_hl(x0, bot, x4 - x0 + 1, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: the corners, dragged: ATK; DEC and SUS; REL and SUS) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, x1 - 3, top - 3, 7, 7, EN_K1, -1, 0, "ATTACK", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x2 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 1, EN_K1 + 2, 0, "DECAY / SUS", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x3 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 3, EN_K1 + 2, 1, "RELEASE / SUS", "");
+    }
+#endif
     {
         const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, MOY(sus), MOY(sus), bot};
         for (i = 0; i < 4; i++) {
