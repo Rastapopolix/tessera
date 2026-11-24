@@ -212,6 +212,38 @@ static void zone_reset(int32_t role)
     if (d && vp && d->max > d->min && *vp != d->def)
         edit_param(c, (int32_t)d->def - *vp);
 }
+/* KNOB c+1's value one of two (FREE / NOTE, BI / UNI, ON / OFF): the turn to the other, +1 or -1; 0 when it has more */
+static int32_t zone_two(int32_t role)
+{
+    int16_t *vp = 0;
+    const param_desc_t *d;
+    if (role < EN_K1 || role > EN_K4 || ui.home || ui.menu || ui.confirm || pop.on || ui.layer)
+        return 0;
+    d = page_desc(cur_page(), (uint32_t)(role - EN_K1), &vp);
+    if (!d || !vp || d->max - d->min != 1)
+        return 0;
+    return *vp > d->min ? -1 : 1;
+}
+/* the tempo dragged or double-clicked (a screen's header, TRACKS'): a BPM a detent, 120; not while a DAW or EXT clock
+ * sets it */
+static void core_tempo(uint32_t action, int32_t n)
+{
+    int32_t k;
+    if (action == TESS_ZA_WHEEL)
+        action = TESS_ZA_TURN;
+    if (action != TESS_ZA_TURN && action != TESS_ZA_DOUBLE)
+        return;
+    if (song.g[G_CLOCK]) {
+        ui_message("CLOCK IS EXT");
+    } else if (tess_host_clock) {
+        ui_message("DAW SETS TEMPO");
+    } else {
+        k = action == TESS_ZA_DOUBLE ? GP[G_BPM].def : song.g[G_BPM] + n;
+        song.g[G_BPM] = (int16_t)clamp(k, GP[G_BPM].min, GP[G_BPM].max);
+        ui.bpm_t = 40;
+    }
+    ui.force = 1;
+}
 static int zone_live(const tess_zone_t *z)          /* the zone is still on the screen */
 {
     uint32_t i;
@@ -290,10 +322,13 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     }
     switch (z->kind) {
     case TESS_ZONE_KNOB:
-        if (action == TESS_ZA_TURN)
+        if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
-        else if (action == TESS_ZA_DOUBLE)
+        } else if ((d = zone_two(z->role)) != 0) {
+            zq_turn(z->role, d);                      /* (two values, FREE / NOTE, BI / UNI: each click the other) */
+        } else if (action == TESS_ZA_DOUBLE) {
             zone_reset(z->role);
+        }
         break;
     case TESS_ZONE_ROW:
         if (action == TESS_ZA_TURN && z->vrole < 0) {   /* a list that is its value (a picker, a whole list): it
@@ -375,18 +410,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             for (k = 0; k < (z->row < 0 ? -z->row : z->row) && k < 16; k++) zq_put(ZQ_PAGE, 0, z->row);
         break;
     case TESS_ZONE_TEMPO:                             /* the header's BPM: as SELECT on HOME, a step a detent */
-        if (ui.menu || ui.confirm || pop.on || (action != TESS_ZA_TURN && action != TESS_ZA_DOUBLE))
-            break;
-        if (song.g[G_CLOCK]) {
-            ui_message("CLOCK IS EXT");
-        } else if (tess_host_clock) {
-            ui_message("DAW SETS TEMPO");
-        } else {
-            k = action == TESS_ZA_DOUBLE ? GP[G_BPM].def : song.g[G_BPM] + n;
-            song.g[G_BPM] = (int16_t)clamp(k, GP[G_BPM].min, GP[G_BPM].max);
-            ui.bpm_t = 40;
-        }
-        ui.force = 1;
+        if (!ui.menu && !ui.confirm && !pop.on)
+            core_tempo(action, n);
         break;
     case TESS_ZONE_SCROLL:                            /* a text to read: its knob, the wheel the other way round */
         if (action == TESS_ZA_TURN)
@@ -1064,6 +1089,10 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_SCR_COUNT > 1 && MELODEE_LOOK
     uint32_t tr = z ? (uint32_t)z->row : NTRK, click = action != TESS_ZA_TURN;
+    if (z && z->kind == TESS_ZONE_TEMPO) {            /* (the header's tempo: dragged, the wheel, double-click) */
+        core_tempo(action, n);
+        return;
+    }
     if (tr >= NTRK)
         return;
     if (z->kind == TESS_ZONE_TRACK && click) {

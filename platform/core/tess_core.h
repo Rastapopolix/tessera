@@ -176,7 +176,7 @@ void tess_core_track_select(uint32_t t);
  * w and h 0 and nothing drawn). Every track at once, a row each (number, role, engine, pattern, the 16 steps of the bar
  * playing with the playhead, level, M, S), the selected one boxed; drawn when asked, at the size asked: 480 x 240 (2 px
  * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen) */
-enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 32 };
+enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 33 };
 /* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO and _LEVEL (row: the
  * track), then TESS_ZONE_TRACK, the rows */
 enum { TESS_ZONE_MUTE = 5, TESS_ZONE_SOLO, TESS_ZONE_LEVEL };
