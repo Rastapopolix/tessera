@@ -822,15 +822,16 @@ static void mo_pic_turing(const gen_turing_t *g)
 #define UZ_ROLE(r) (r)
 /* the knob of this page whose column is named n ("X", "SHIFT"): its role (EN_K1 ..), -1 none: a picture's marker
  * turns it (zones) */
+static int mo_fit(char *d, const char *s);
 static int32_t mo_knob_named(const char *n)
 {
-    int16_t *vp;
+    char f[16];
     uint32_t c;
-    for (c = 0; c < 4u; c++) {
-        const param_desc_t *d = page_desc(cur_page(), c, &vp);
-        if (d && vp && str_eq(d->label, n))
+    (void)mo_fit(f, n);                                 /* (the column as drawn: SHIFT is SHFT, FOLLOW FLLW) */
+    for (c = 0; c < 4u; c++)                            /* (draw_columns' capture: generator pages too, which
+                                                         * page_desc has no descriptor for) */
+        if (mo_col[c].used && (str_eq(mo_col[c].label, n) || str_eq(mo_col[c].label, f)))
             return (int32_t)(EN_K1 + c);
-    }
     return -1;
 }
 #else
