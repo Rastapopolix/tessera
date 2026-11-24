@@ -881,6 +881,45 @@ int main(int argc, char **argv)
         }
     }
 
+    // ---- NOTES' roll (TESS_ZONE_ROLL): the mouse's place goes with each action; a press grabs, a drag turns, a still
+    // release clicks, a right-click removes, the wheel turns the note under it; with Shift, the chord
+    {
+        Panel r;
+        r.set_shell(1);
+        tess_view_t fake = v;
+        fake.zone_count = 1;
+        fake.zones[0] = tess_zone_t{};
+        fake.zones[0].x = 2, fake.zones[0].y = 132, fake.zones[0].w = 236, fake.zones[0].h = 66;
+        fake.zones[0].kind = TESS_ZONE_ROLL, fake.zones[0].role = fake.zones[0].vrole = -1;
+        r.draw(px.data(), fake);
+        const int ox = 292 + 256 / 32, oy = 44 + 256 / 32, mx = ox + 50, my = oy + 170;
+        r.input.zones.clear();
+        r.down(mx, my), r.up(mx, my);
+        CHECK(r.input.zones.size() == 2 && r.input.zones[0].action == TESS_ZA_GRAB && r.input.zones[1].action == TESS_ZA_CLICK &&
+                  r.input.zones[1].z.x == 50 && r.input.zones[1].z.y == 170,
+              "the roll: a press grabs, a still release clicks, at the place (%zu actions)", r.input.zones.size());
+        r.input.zones.clear();
+        r.down(mx, my);
+        for (int i = 1; i <= 3; i++) r.move(mx + 1, my - 4 * i);
+        r.up(mx + 1, my - 12);
+        int turned = 0, clicks = 0;
+        for (auto &a : r.input.zones) turned += a.action == TESS_ZA_TURN ? a.n : 0, clicks += a.action == TESS_ZA_CLICK;
+        CHECK(turned == 2 && !clicks && r.input.zones.back().z.y == 170,
+              "a drag up 12 px: two rows, from where it began, no click (%d, %d)", turned, clicks);
+        r.input.zones.clear();
+        r.input.buttons |= 1u << 16;   // (SHIFT held: panel.cpp BIT_SHIFT, latched or the Shift key)
+        r.down(mx, my), r.move(mx, my + 6), r.up(mx, my + 6);
+        r.input.buttons &= ~(1u << 16);
+        CHECK(!r.input.zones.empty() && r.input.zones.back().action == TESS_ZA_TURN_CHORD && r.input.zones.back().n == -1,
+              "Shift + a drag down: the chord a row down");
+        r.input.zones.clear();
+        CHECK(r.latch(mx, my) && r.input.zones.size() == 1 && r.input.zones[0].action == TESS_ZA_HELP &&
+                  r.input.zones[0].z.x == 50, "a right-click on the roll: HELP there (remove)");
+        r.input.zones.clear();
+        CHECK(r.wheel(mx, my, 1) && r.input.zones.size() == 1 && r.input.zones[0].action == TESS_ZA_WHEEL &&
+                  r.input.zones[0].z.y == 170, "the wheel on the roll: at the place");
+    }
+
     // GENERATE's strip (TESSERA's shell, a build with styles)
     {
         Panel g;
