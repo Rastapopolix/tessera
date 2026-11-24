@@ -755,7 +755,7 @@ bool Panel::down(int x, int y)
 {
     last_x = x;
     last_y = y;
-    acc = 0;
+    acc = acc_y = 0;
     if (native() && menu_open)   // (a click with the menu open is the menu's, inside or out)
     {
         drag = NONE;
@@ -826,7 +826,8 @@ bool Panel::down(int x, int y)
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
-            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO)   // (a value, a text, the tempo: dragged)
+            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT)   // (a value, a text,
+                                                                                                   // the tempo, a marker)
         {
             drag = ZONE;
             drag_zone = z;
@@ -965,6 +966,16 @@ bool Panel::move(int x, int y)
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
+    {                                                        // every 3 px (+ right, + up)
+        acc += dx;
+        acc_y += dy;
+        int nx = acc / 3, ny = acc_y / 3;
+        if (nx) { acc -= nx * 3; zone_act(drag_zone, TESS_ZA_TURN, nx); }
+        if (ny) { acc_y -= ny * 3; zone_act(drag_zone, TESS_ZA_TURN_Y, ny); }
+        if (nx || ny) { zone_still = click_known = false; return true; }
+        return false;
+    }
     if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;

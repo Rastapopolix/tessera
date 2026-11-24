@@ -285,8 +285,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
                                     (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_BROWSE))) {
         action = TESS_ZA_TURN;                        /* (a text, the browser's and SCALES' two lists: wheel up, up */
         n = -n;                                       /* them, as every list) */
-    } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn) */
-        action = TESS_ZA_TURN;
+    } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn; a marker: up-down) */
+        action = z->kind == TESS_ZONE_POINT ? TESS_ZA_TURN_Y : TESS_ZA_TURN;
     }
     switch (z->kind) {
     case TESS_ZONE_KNOB:
@@ -326,6 +326,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             tess_core_track_select((uint32_t)z->row);
         if (action == TESS_ZA_DOUBLE)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
+        break;
+    case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if (action == TESS_ZA_DOUBLE) {
+            zone_reset(z->role);
+            zone_reset(z->vrole);
+        } else if (action == TESS_ZA_TURN && z->role >= 0) {
+            zq_turn(z->role, (z->row & 1) ? -n : n);
+        } else if (action == TESS_ZA_TURN_Y || action == TESS_ZA_TURN) {
+            if (z->vrole >= 0) zq_turn(z->vrole, n);
+            else if (z->role >= 0) zq_turn(z->role, (z->row & 1) ? -n : n);
+        }
         break;
     case TESS_ZONE_PICK:                              /* MODS' SOURCE / DESTINATION: the mod's row first (KNOB 2), */
         d = z->row - uz_list.sel;                     /* then its knob: a click its picker, kept; a turn its value */

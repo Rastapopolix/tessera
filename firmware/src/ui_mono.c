@@ -2096,6 +2096,14 @@ static void mo_pic_env(const track_t *t)
         py = y;
     }
     mo_hl(x0, bot, x4 - x0 + 1, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: the corners, dragged: ATK; DEC and SUS; REL and SUS) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, x1 - 3, top - 3, 7, 7, EN_K1, -1, 0, "ATTACK", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x2 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 1, EN_K1 + 2, 0, "DECAY / SUS", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x3 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 3, EN_K1 + 2, 1, "RELEASE / SUS", "");
+    }
+#endif
     {
         const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, MOY(sus), MOY(sus), bot};
         for (i = 0; i < 4; i++) {
