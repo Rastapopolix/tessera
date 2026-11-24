@@ -1051,7 +1051,8 @@ bool Panel::latch(int x, int y)
     {
         const tess_zone_t &z = zones[zi];
         if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0) &&
-            !(z.kind == TESS_ZONE_MUTE && z.role == 1)) return false;   // (MIXER's MUTE word: its solo)
+            !(z.kind == TESS_ZONE_MUTE && z.role == 1) && !(z.kind == TESS_ZONE_POINT && (z.row & 0x200)))
+            return false;   // (MIXER's MUTE word: its solo; BOUNCE's picture: a ball less)
         zone_act(z, TESS_ZA_HELP, 0);
         return true;
     }

@@ -297,6 +297,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             help_unpin();
             tess_core_zone_do(z, TESS_ZA_CLICK, 0);   /* (the cursor on the row) */
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_POINT && (z->row & 0x200) && zone_live(z)) {
+            zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
             core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
@@ -359,10 +361,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_TRACK:
         if (action != TESS_ZA_TURN)
             tess_core_track_select((uint32_t)z->row);
-        if (action == TESS_ZA_DOUBLE)
+        if (action == TESS_ZA_DOUBLE && ui.home)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
+                                                       * a right-click one less, the wheel or a drag up and down) */
+            if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
+            else if (action == TESS_ZA_HELP) zq_turn(z->vrole, -1);
+            else if (action == TESS_ZA_TURN_Y) zq_turn(z->vrole, n);
+            break;
+        }
         if (z->row & 0x100) {                         /* (PIECE's SHAPE USER: point row & 7's level, up and down) */
             if (action == TESS_ZA_TURN_Y)
                 tessera_piece_knob((uint32_t)z->row & 3u, n, 1 + (((uint32_t)z->row >> 2) & 1u));
