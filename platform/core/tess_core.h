@@ -108,7 +108,7 @@ void tess_core_screen(tess_screen_t *s);
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
-       TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
+       TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK, TESS_ZONE_POINT };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
                                             * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
                                             * transport keeps its own. PICK: MODS' SOURCE or DESTINATION; click: that
                                             * mod, and its list, kept till a row of it is clicked; turn: its value) */
@@ -120,7 +120,10 @@ typedef struct {
     int16_t row;                     /* (the core's: a row's place, a key's button label, a track, a cell's turns) */
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
-enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP };
+enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
+/* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
+ * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up); either -1: none. The wheel:
+ * the up-down knob, else the other; double-click: both to their defaults */
 /* HELP (a right-click): on MIXER's MUTE word, that track's solo (on, or off again); a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
  * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
  * on any zone, or a button pressed, closes it (that click does nothing more) */
@@ -173,7 +176,7 @@ void tess_core_track_select(uint32_t t);
  * w and h 0 and nothing drawn). Every track at once, a row each (number, role, engine, pattern, the 16 steps of the bar
  * playing with the playhead, level, M, S), the selected one boxed; drawn when asked, at the size asked: 480 x 240 (2 px
  * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen) */
-enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 32 };
+enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 33 };
 /* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO and _LEVEL (row: the
  * track), then TESS_ZONE_TRACK, the rows */
 enum { TESS_ZONE_MUTE = 5, TESS_ZONE_SOLO, TESS_ZONE_LEVEL };

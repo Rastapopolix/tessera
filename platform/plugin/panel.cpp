@@ -755,7 +755,7 @@ bool Panel::down(int x, int y)
 {
     last_x = x;
     last_y = y;
-    acc = 0;
+    acc = acc_y = 0;
     if (native() && menu_open)   // (a click with the menu open is the menu's, inside or out)
     {
         drag = NONE;
@@ -807,6 +807,17 @@ bool Panel::down(int x, int y)
     {
         drag = NONE;
         if (zones2[z2].kind == TESS_ZONE_LEVEL) return false;
+        if (zones2[z2].kind == TESS_ZONE_TEMPO)   // (the tempo: dragged as a value, a double-click 120)
+        {
+            double t = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+            bool dbl = row2_last == -2 && t - row2_t < 0.4;
+            row2_last = dbl ? -1 : -2, row2_t = t;
+            if (dbl) { input.tzones.push_back({zones2[z2], TESS_ZA_DOUBLE, 0}); input.changed = true; return true; }
+            drag = ZONE2;
+            drag_zone = zones2[z2];
+            acc = 0;
+            return false;
+        }
         double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
         bool dbl = zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row == row2_last && now - row2_t < 0.4;   // (a row
         row2_last = dbl ? -1 : zones2[z2].kind == TESS_ZONE_TRACK ? zones2[z2].row : -1;   // twice: its EDIT page)
@@ -826,7 +837,8 @@ bool Panel::down(int x, int y)
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
-            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO)   // (a value, a text, the tempo: dragged)
+            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT)   // (a value, a text,
+                                                                                                   // the tempo, a marker)
         {
             drag = ZONE;
             drag_zone = z;
@@ -965,6 +977,23 @@ bool Panel::move(int x, int y)
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
+    if (drag == ZONE2)   // TRACKS' tempo: a detent every 8 px
+    {
+        acc += std::abs(dx) > std::abs(dy) ? dx : dy;
+        int n = acc / 8;
+        if (n) { acc -= n * 8; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
+        return false;
+    }
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
+    {                                                        // every 3 px (+ right, + up)
+        acc += dx;
+        acc_y += dy;
+        int nx = acc / 3, ny = acc_y / 3;
+        if (nx) { acc -= nx * 3; zone_act(drag_zone, TESS_ZA_TURN, nx); }
+        if (ny) { acc_y -= ny * 3; zone_act(drag_zone, TESS_ZA_TURN_Y, ny); }
+        if (nx || ny) { zone_still = click_known = false; return true; }
+        return false;
+    }
     if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
     {
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
@@ -1064,7 +1093,7 @@ bool Panel::wheel(int x, int y, int notches)
     int z2 = zone2_at(x, y);
     if (z2 >= 0 && notches)   // TRACKS: a level turned (elsewhere on a row: nothing)
     {
-        if (zones2[z2].kind != TESS_ZONE_LEVEL) return false;
+        if (zones2[z2].kind != TESS_ZONE_LEVEL && zones2[z2].kind != TESS_ZONE_TEMPO) return false;
         input.tzones.push_back({zones2[z2], TESS_ZA_TURN, notches});
         input.changed = true;
         return true;

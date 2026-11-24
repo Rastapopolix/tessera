@@ -818,6 +818,21 @@ static void mo_pic_turing(const gen_turing_t *g)
         else mo_box(x, 104 - h, 6, h, MO_INK);
     }
 }
+#if TESS_HAS_POINTER
+/* the knob of this page whose column is named n ("X", "SHIFT"): its role (EN_K1 ..), -1 none: a picture's marker
+ * turns it (zones) */
+static int32_t mo_knob_named(const char *n)
+{
+    int16_t *vp;
+    uint32_t c;
+    for (c = 0; c < 4u; c++) {
+        const param_desc_t *d = page_desc(cur_page(), c, &vp);
+        if (d && vp && str_eq(d->label, n))
+            return (int32_t)(EN_K1 + c);
+    }
+    return -1;
+}
+#endif
 static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
 {
     static const char *const LN[3] = {"BD", "SD", "HH"};
@@ -830,6 +845,12 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
     }
     mo_vl(px, 55, 38, MO_INK);
     mo_hl(3, py, 38, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under && (mo_knob_named("X") >= 0 || mo_knob_named("Y") >= 0)) {   /* (zones: the cross-hair: X, Y) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");
+    }
+#endif
     mo_disc(px, py, 2, MO_INK);
     for (p = 0; p < 3u; p++) {                          /* the three parts: 16 steps as two rows of eight */
         int32_t y = 56 + (int32_t)p * 17;
@@ -1646,6 +1667,12 @@ static void mo_pic_tweak(const track_t *t)
     y = 80 - sh * 22 / 24;
     if (sh) mo_vl(15, y < 80 ? y + 2 : 81, y < 80 ? 78 - y : y - 81, MO_DIM);
     mo_fill(5, y - 1, 20, 3, sh ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under && mo_knob_named("SHIFT") >= 0) {     /* (zones: SHIFT's slider, up and down) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, 4, y - 4, 22, 9, -1, mo_knob_named("SHIFT"), 0, "SHIFT", "");
+    }
+#endif
     for (i = 0; i < 8u; i++) {                          /* DROP */
         int32_t hx = 32 + (int32_t)(i % 4u) * 7, hy = 62 + (int32_t)(i / 4u) * 16, gone = 0, k;
         for (k = 0; k < nd; k++)
@@ -1871,9 +1898,19 @@ static void mo_pic_piece(void)
         if (i) mo_line(1 + i, py, 2 + i, y, set ? MO_INK : MO_DIM);
         py = y;
     }
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);
+#endif
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
+#if TESS_HAS_POINTER
+            if (!cv_under) {                            /* (zones: a point, up and down: its level) */
+                char nm[8] = {'P', 'O', 'I', 'N', 'T', ' ', (char)('1' + i), 0};
+                uz_add(UZ_G_PIC, UZ_POINT, x - 3, y - 3, 7, 7, -1, -1, 0x100 | i, nm, "");
+            }
+#endif
             mo_disc(x, y, lay && i == (int32_t)(pl_pt & 7u) ? 3 : 2, MO_INK);
         }
     if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
@@ -2096,6 +2133,14 @@ static void mo_pic_env(const track_t *t)
         py = y;
     }
     mo_hl(x0, bot, x4 - x0 + 1, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: the corners, dragged: ATK; DEC and SUS; REL and SUS) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, x1 - 3, top - 3, 7, 7, EN_K1, -1, 0, "ATTACK", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x2 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 1, EN_K1 + 2, 0, "DECAY / SUS", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x3 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 3, EN_K1 + 2, 1, "RELEASE / SUS", "");
+    }
+#endif
     {
         const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, MOY(sus), MOY(sus), bot};
         for (i = 0; i < 4; i++) {
