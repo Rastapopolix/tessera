@@ -129,11 +129,15 @@ class Panel
      * and asks for its ink (take_shell_request: the shell's index, -1 none); each shell's id (stored) and Mono ink
      * (MENU > COLOR's name) */
     static int shell_count();
+    static bool shell_native(int i);   // TESSERA's shell, NIGHT (0) or DAY (the last)
     static const char *shell_id(int i);
     static const char *shell_ink(int i);
     static int shell_by_id(const std::string &id);   // -1 if none
     void set_shell(int i);
     int shell() const { return shell_; }
+    bool native() const { return shell_native(shell_); }
+    bool day() const { return shell_ == shell_count() - 1; }   // TESSERA's shell's DAY skin (the last shell)
+    int skin_switch_x() const { return skin_x; }               // the header's sun / moon (its left edge)
     int take_shell_request() { int r = shell_req; shell_req = -1; return r; }
     /* the screen's inks (MENU > COLOR's choices, tess_core_ink_at): a row of swatches under the buttons, the one the
      * view has (tess_view_t.ink) ringed, its name while the mouse is on one. A click asks for that ink
@@ -191,7 +195,6 @@ class Panel
     void gen_var_step(int n);
     void draw_gen(uint32_t *px);
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
-    bool native() const { return shell_ == 0; }
     void layout();
     void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
@@ -229,6 +232,7 @@ class Panel
     static constexpr int SWATCH_R = 9;
     static constexpr int SHELL_GAP = 14;   // (TESSERA's swatch apart from the FM-1's)
     int shell_ = 0, shell_req = -1, shell_hover = -1;
+    int skin_x = 0;                    // the sun / moon's left edge in the header (TESSERA's shell; 0 not drawn yet)
     void swatch_xy(int i, int &x, int &y) const;
     int swatch_at(int x, int y) const;
     static constexpr int INK_R = 7;

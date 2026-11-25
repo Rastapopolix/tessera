@@ -239,7 +239,7 @@ int main(int argc, char **argv)
     CHECK(differ > 100, "the note is drawn beside the buttons (%d pixels)", differ);
 
     // the shells: a swatch under the keys shows that shell at once and asks for its ink; the ink changes the screen
-    CHECK(Panel::shell_count() == 9 && p.shell() == 1, "nine shells: TESSERA, then black (%d)", Panel::shell_count());
+    CHECK(Panel::shell_count() == 10 && p.shell() == 1, "ten shells: TESSERA, the FM-1's, its DAY (%d)", Panel::shell_count());
     CHECK(p.take_shell_request() == -1, "no shell asked for yet");
     CHECK(Panel::shell_by_id("orange") == 4 && Panel::shell_by_id("nope") == -1, "shells by id");
     const int sx = 36 + 928 - 9 - 2 - 4 * (2 * 9 + 10), sy = 332 + 256 + 5 + 12;   // (swatch 4, ORANGE)
@@ -412,19 +412,20 @@ int main(int argc, char **argv)
         CHECK(q.menu_shown(), "the mark opens the menu");
         q.down(80, 46 + 10 + 18);   // SHELL
         q.up(80, 46 + 10 + 18);
-        q.move(400, 46 + 10 + 30 * 4 + 15);
+        q.move(400, 46 + 10 + 30 + 15);
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/11_tessera_shells.ppm", px);
         CHECK(q.take_shell_request() == -1, "no shell asked for yet");
-        q.down(400, 46 + 10 + 30 * 4 + 15);   // ORANGE (the fifth)
-        q.up(400, 46 + 10 + 30 * 4 + 15);
-        CHECK(q.shell() == 4 && q.take_shell_request() == 4 && !q.menu_shown(), "a shell picked from the menu (%d)", q.shell());
+        q.down(400, 46 + 10 + 30 + 15);   // DAY (the second of NIGHT, DAY)
+        q.up(400, 46 + 10 + 30 + 15);
+        CHECK(q.day() && q.native() && q.take_shell_request() == Panel::shell_count() - 1 && !q.menu_shown(),
+              "SKIN: DAY picked from the menu (%d)", q.shell());
         q.draw(px.data(), v);
-        CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the FM-1's orange shell drawn");
-        const int tx = 36 + 928 - 9 - 2 - 8 * (2 * 9 + 10) - 14, ty = 332 + 256 + 5 + 12;   // (swatch 0, TESSERA, set 14 apart)
-        q.down(tx, ty);
-        q.up(tx, ty);
-        CHECK(q.shell() == 0 && q.take_shell_request() == 0, "TESSERA again from the FM-1's swatches");
+        if (!out.empty()) ppm(out + "/11_tessera_day.ppm", px);
+        CHECK(px[320 * Panel::W + 12] == 0xFFEDE8DAu, "the DAY skin's paper body (%08X)", px[320 * Panel::W + 12]);
+        q.down(q.skin_switch_x() + 8, 24);   // the moon, left of the version
+        q.up(q.skin_switch_x() + 8, 24);
+        CHECK(!q.day() && q.shell() == 0 && q.take_shell_request() == 0, "the moon: NIGHT again");
         // INK: the swatches; one picked asks once and shuts the menu
         q.down(100, 25);
         q.up(100, 25);
