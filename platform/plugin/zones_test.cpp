@@ -405,6 +405,43 @@ static void smap()   // EDIT's sections map (EDIT again on an engine's page, T3'
     tess_core_track_select(0);
     run(20);
 }
+static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns its root, "+" adds one, a right-click takes it
+{
+    uint32_t mode = pid_named("GENERATOR MODE"), prog = pid_named("CHORD PROG");
+    int32_t was_mode = tess_core_param_get(mode, 3), was_prog = tess_core_param_get(prog, 3);
+    tess_core_track_select(3);
+    tess_core_param_set(mode, 3, 12);   // (CHORD)
+    tess_core_param_set(prog, 3, 7);    // (USER)
+    run(20);
+    tap(B_HOME);
+    int i = -1;
+    for (int k = 0; k < 6 && (i = find("CHORD 1", TESS_ZONE_CHORD)) < 0; k++) tap(B_SEQ);
+    CHECK(i >= 0, "GEN on a CHORD USER track: a zone a card (MODE %d PROG %d)", tess_core_param_get(mode, 3),
+          tess_core_param_get(prog, 3));
+    if (i >= 0)
+    {
+        int n0 = count(TESS_ZONE_CHORD);
+        std::string c1 = v.zones[i].value;
+        act(i, TESS_ZA_WHEEL, 1);
+        i = find("CHORD 1", TESS_ZONE_CHORD);
+        CHECK(i >= 0 && c1 != v.zones[i].value, "the wheel turns the first chord's root (%s -> %s)", c1.c_str(),
+              i >= 0 ? v.zones[i].value : "?");
+        act(find("+", TESS_ZONE_CHORD), TESS_ZA_CLICK);
+        CHECK(count(TESS_ZONE_CHORD) == n0 + 1 || (n0 == 8 && count(TESS_ZONE_CHORD) == 8), "+ adds a chord (%d -> %d)",
+              n0, count(TESS_ZONE_CHORD));
+        int n1 = count(TESS_ZONE_CHORD);
+        act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_HELP);
+        CHECK(count(TESS_ZONE_CHORD) == n1 - 1 || n1 - 1 == 8, "a right-click takes a chord (%d -> %d)", n1,
+              count(TESS_ZONE_CHORD));
+    }
+    else
+        dump("chord user");
+    tess_core_param_set(mode, 3, was_mode);
+    tess_core_param_set(prog, 3, was_prog);
+    tap(B_HOME);
+    tess_core_track_select(0);
+    run(20);
+}
 static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel scrolls (down, then back up)
 {
     tap(B_HOME);
@@ -1126,6 +1163,7 @@ int main(int argc, char **argv)
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
     smap();
+    chord_user();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;

@@ -277,6 +277,34 @@ static void core_mute_solo(uint32_t kind, uint32_t tr)
     ui.force = 1;
 }
 #endif
+/* CHORD USER's progression edited a card at a time (TESS_ZONE_CHORD): the selected track's, when its generator is
+ * CHORD on PROG USER */
+static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
+{
+    gen_chord_t *g;
+    uint32_t len, i;
+    if (song.sel >= TESSERA_TRACKS || tessera.mode[song.sel] != TESS_ENG_CHORD || slot < 0)
+        return;
+    g = &tessera.chord[song.sel];
+    if (g->prog != GEN_CH_USER)
+        return;
+    len = g->ulen ? g->ulen : 1u;
+    TESS_IRQ_OFF();
+    if (!g->ulen)                                       /* (none yet: the one, the tonic) */
+        g->user[0] = 0, g->ulen = 1;
+    if ((action == TESS_ZA_TURN || action == TESS_ZA_WHEEL) && (uint32_t)slot < len && n)
+        g->user[slot] = (uint8_t)(((int32_t)g->user[slot] + n % 7 + 7) % 7);
+    else if (action == TESS_ZA_CLICK && (uint32_t)slot == len && len < GEN_CH_USER_N)
+        g->user[len] = (uint8_t)((g->user[len - 1u] + 3u) % 7u), g->ulen = (uint8_t)(len + 1u);
+    else if (action == TESS_ZA_HELP && (uint32_t)slot < len && len > 1u) {
+        for (i = (uint32_t)slot; i + 1u < len; i++)
+            g->user[i] = g->user[i + 1u];
+        g->ulen = (uint8_t)(len - 1u);
+    }
+    TESS_IRQ_ON();
+    ui.force = 1;
+}
+
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
@@ -308,6 +336,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
         } else if (z->kind == TESS_ZONE_POINT && (z->row & 0x200) && zone_live(z)) {
             zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
+        } else if (z->kind == TESS_ZONE_CHORD) {
+            core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
             core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
@@ -428,6 +458,9 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             break;
         }
         core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_CHORD:                             /* CHORD USER's cards: a root turned, a chord added or taken */
+        core_chord_user(z->row, action, n);
         break;
     case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
         if (smap.on && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && z->row >= 0) {

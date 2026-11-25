@@ -1456,6 +1456,17 @@ static void mo_pic_chord(uint32_t tr)
     uint32_t i, k;
     int32_t cw = 116 / (int32_t)(n ? n : 1u);
     char b[12];
+#if TESS_HAS_POINTER
+    int user = g->prog == GEN_CH_USER;                  /* (USER: a zone a card, and a "+" card while there is room) */
+    if (user && n < GEN_CH_USER_N) {
+        cw = 116 / (int32_t)(n + 1u);
+        mo_box(2 + (int32_t)n * cw, 53, cw - 1, 18, MO_DIM);
+        mo_textc("+", 2 + (int32_t)n * cw + cw / 2, 59, MO_DIM);
+    }
+    uz_begin(UZ_G_PIC);
+    if (user && n < GEN_CH_USER_N)
+        uz_add(UZ_G_PIC, UZ_CHORD, 2 + (int32_t)n * cw, 53, cw - 1, 18, -1, -1, (int32_t)n, "+", "ADD A CHORD");
+#endif
     for (i = 0; i < n; i++) {
         int32_t x = 2 + (int32_t)i * cw;
         uint32_t at = tessera_chord_at(tr, i, b), on = i == cur;
@@ -1467,6 +1478,13 @@ static void mo_pic_chord(uint32_t tr)
             }
         if (on) pcs = at, mo_fill(x, 53, cw - 1, 18, MO_INK);
         else mo_box(x, 53, cw - 1, 18, MO_DIM);
+#if TESS_HAS_POINTER
+        if (user) {
+            char nm[16] = "CHORD ";
+            fmt_int(nm + 6, (int32_t)i + 1);
+            uz_add(UZ_G_PIC, UZ_CHORD, x, 53, cw - 1, 18, -1, -1, (int32_t)i, nm, b);
+        }
+#endif
         mo_chord_card(b, x, cw - 1, 55, on ? MO_BG : MO_INK);
         if (on && song.playing && g->n)
             mo_hl(x, 73, (cw - 1) * (int32_t)((g->n - 1u) % len + 1u) / (int32_t)len, MO_INK);
