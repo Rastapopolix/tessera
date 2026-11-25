@@ -1,0 +1,8 @@
+{
+  "version": "3.2.1-rc2usb",
+  "product": "FM-1_83773021",
+  "pkg": {
+    "dual": "../../firmware/tessera-3.2.1-rc2usb.fwsc",
+    "single": "../../firmware/tessera-3.2.1-rc2usb-1core.fwsc"
+  }
+}

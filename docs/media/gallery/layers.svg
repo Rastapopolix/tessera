@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <title>Tessera's long-form layers: who moves what</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ffd020"/>
+    </marker>
+    <marker id="d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#c7a219"/>
+    </marker>
+  </defs>
+  <rect width="800" height="600" fill="#000000"/>
+  <style>
+    .box{fill:#000000;stroke:#ffd020;stroke-width:2}
+    .dash{fill:#000000;stroke:#c7a219;stroke-width:2;stroke-dasharray:6 5}
+    .h{fill:#ffd020;font-size:17px;font-weight:700}
+    .t{fill:#ffd020;font-size:12.5px}
+    .s{fill:#c7a219;font-size:11.5px}
+    .l{fill:#ffd020;font-size:11.5px}
+    .ld{fill:#c7a219;font-size:11.5px}
+    .ar{stroke:#ffd020;stroke-width:2;fill:none;marker-end:url(#a)}
+    .ad{stroke:#c7a219;stroke-width:2;fill:none;stroke-dasharray:5 4;marker-end:url(#d)}
+  </style>
+
+  <text x="24" y="30" class="s">SLOWEST AT THE TOP</text>
+
+  <!-- PIECE -->
+  <rect class="box" x="275" y="44" width="250" height="68" rx="6"/>
+  <text x="400" y="68" class="h" text-anchor="middle">PIECE</text>
+  <text x="400" y="87" class="t" text-anchor="middle">a length and a shape</text>
+  <text x="400" y="103" class="s" text-anchor="middle">1 minute to 4 hours, or FREE</text>
+
+  <!-- arrows from PIECE -->
+  <path class="ar" d="M300 112 L160 176"/>
+  <path class="ar" d="M400 112 L400 176"/>
+  <path class="ar" d="M500 112 L640 176"/>
+  <text x="200" y="134" class="l" text-anchor="end">bolder sections near</text>
+  <text x="200" y="148" class="l" text-anchor="end">the top, A at the end</text>
+  <text x="408" y="146" class="l">how many</text>
+  <text x="408" y="160" class="l">tracks out</text>
+  <text x="592" y="134" class="l">the tide follows</text>
+  <text x="592" y="148" class="l">the shape</text>
+
+
+  <!-- CHAIN -->
+  <rect class="box" x="30" y="180" width="230" height="96" rx="6"/>
+  <text x="145" y="204" class="h" text-anchor="middle">CHAIN</text>
+  <text x="145" y="224" class="t" text-anchor="middle">one FORM for all tracks</text>
+  <text x="145" y="241" class="t" text-anchor="middle">A, B, C on phrase lines</text>
+  <text x="145" y="262" class="s" text-anchor="middle">4, 8 or 16 bars a phrase</text>
+
+  <!-- ENTRIES -->
+  <rect class="box" x="285" y="180" width="230" height="96" rx="6"/>
+  <text x="400" y="204" class="h" text-anchor="middle">ENTRIES</text>
+  <text x="400" y="224" class="t" text-anchor="middle">which tracks play</text>
+  <text x="400" y="241" class="t" text-anchor="middle">out and in on phrase lines</text>
+  <text x="400" y="262" class="s" text-anchor="middle">melody out first, bass in first</text>
+
+  <!-- ENERGY -->
+  <rect class="box" x="540" y="180" width="230" height="96" rx="6"/>
+  <text x="655" y="204" class="h" text-anchor="middle">ENERGY</text>
+  <text x="655" y="224" class="t" text-anchor="middle">the mood: busier or</text>
+  <text x="655" y="241" class="t" text-anchor="middle">sparser, louder or softer</text>
+  <text x="655" y="262" class="s" text-anchor="middle">a 3-6 min tide, and rests</text>
+
+  <!-- CHAIN's phrase lines to ENTRIES -->
+  <path class="ad" d="M260 228 L283 228"/>
+  <text x="153" y="298" class="ld">its phrase lines are</text>
+  <text x="153" y="312" class="ld">ENTRIES' clock too</text>
+
+  <!-- arrows down to the tracks -->
+  <path class="ar" d="M145 276 L145 372"/>
+  <path class="ar" d="M400 276 L400 372"/>
+  <path class="ar" d="M655 276 L655 372"/>
+  <text x="153" y="338" class="l">FOLLOW: the track's</text>
+  <text x="153" y="352" class="l">own A, B, C; KEY B, C</text>
+  <text x="408" y="330" class="l">in or out</text>
+  <text x="408" y="344" class="l">(ROLE; ANCHOR stays)</text>
+  <text x="663" y="316" class="l">fewer hits,</text>
+  <text x="663" y="330" class="l">softer, less</text>
+  <text x="663" y="344" class="l">EVOLVE</text>
+  <text x="663" y="358" class="l">(DEPTH 0: none)</text>
+
+  <text x="48" y="394" class="s">EACH TRACK (T1-T4)</text>
+
+  <!-- Tracks band -->
+  <rect class="box" x="30" y="376" width="740" height="110" rx="6"/>
+  <text x="48" y="394" class="s">EACH TRACK (T1-T4)</text>
+  <rect class="box" x="48" y="402" width="220" height="68" rx="5"/>
+  <text x="158" y="424" class="h" text-anchor="middle">FORM</text>
+  <text x="158" y="443" class="t" text-anchor="middle">the track's own A B C</text>
+  <text x="158" y="460" class="s" text-anchor="middle">OWN, or no CHAIN</text>
+  <rect class="box" x="290" y="402" width="220" height="68" rx="5"/>
+  <text x="400" y="424" class="h" text-anchor="middle">THE NOTES</text>
+  <text x="400" y="443" class="t" text-anchor="middle">a generator, or STEP</text>
+  <text x="400" y="460" class="s" text-anchor="middle">EVOLVE, TWEAK, TIMING ...</text>
+  <rect class="box" x="532" y="402" width="220" height="68" rx="5"/>
+  <text x="642" y="424" class="h" text-anchor="middle">ROLE, DEPTH</text>
+  <text x="642" y="443" class="t" text-anchor="middle">how the track takes</text>
+  <text x="642" y="460" class="s" text-anchor="middle">ENTRIES and ENERGY</text>
+  <path class="ar" d="M268 436 L288 436"/>
+
+  <!-- SONG -->
+  <rect class="dash" x="30" y="512" width="430" height="70" rx="6"/>
+  <text x="48" y="536" class="h" fill="#c7a219" style="fill:#c7a219">SONG</text>
+  <text x="112" y="536" class="t">the written patterns, row by row</text>
+  <text x="48" y="556" class="s">runs beside the layers above, not linked to them:</text>
+  <text x="48" y="571" class="s">it counts pattern repeats, not phrases</text>
+  <path class="ad" d="M300 512 L360 488"/>
+
+  <text x="480" y="536" class="s">Every layer starts OFF.</text>
+  <text x="480" y="554" class="s">PLAY plays the same piece again</text>
+  <text x="480" y="570" class="s">(the tracks' SEEDs); ROLL a new one.</text>
+</svg>
