@@ -290,10 +290,17 @@ struct Tessera : GuiLink
     void ink_picked(int i) override;
     void ink_seen(int i) override;
     int tracks() override { return (int)core->tracks(); }
-    // SIZE (gui.h): the one picked in any window (the setting `size`: 100, 125, 150, 200), else the host's scale (a
-    // HiDPI screen: set_scale), each to the nearest the mode has (EXPANDED: 100, 125)
+    // SIZE (gui.h): the one picked or dragged to in any window (the setting `size`, in %), else the host's scale (a
+    // HiDPI screen: set_scale) no larger than the screen has room for (size_room), each held to the mode's range
+    // (Panel::size_fit)
     int size_user = 0, size_host = 100;   // %; size_user 0: none picked
-    int size_pct() override { return Panel::size_fit(size_user ? size_user : size_host, win_expanded()); }
+    int size_pct() override
+    {
+        int pct = size_user ? size_user : size_host;
+        if (!size_user && size_room > 0 && pct > size_room * 100 / win_w()) pct = size_room * 100 / win_w();
+        return Panel::size_fit(pct, win_expanded());
+    }
+    int size_room = 0;                  // the screen's width less EXPANDED_ROOM (Gui::screen_width; 0 unknown)
     void size_pick(int pct) override;
     bool size_set(int pct);             // the window at that size (the host's set_size, a pick)
     // MODE (gui.h): EXPANDED picked in any window (the setting `mode`); the window is EXPANDED in TESSERA's shell
@@ -666,7 +673,7 @@ void Tessera::size_pick(int pct)
     resize_window();
 }
 
-// MODE picked in the menu: remembered for every window (EXPANDED: SIZE 150 or 200 shows at 125), the window that wide
+// MODE picked in the menu: remembered for every window (EXPANDED: a SIZE over 150 shows at 150), the window that wide
 void Tessera::mode_pick(bool on)
 {
     if (on == mode_expanded.load())
@@ -678,7 +685,7 @@ void Tessera::mode_pick(bool on)
 
 bool Tessera::size_set(int pct)
 {
-    if (pct != Panel::size_fit(pct, win_expanded()))
+    if (pct != Panel::size_fit(pct, win_expanded()))   // (outside the mode's range)
         return false;
     if (pct != size_pct())   // (the host's own resize, a drag on its frame: kept as the pick)
     {
@@ -1099,7 +1106,7 @@ bool p_init(const clap_plugin_t *p)
     t->master_set(700);   // (MASTER's default)
     {   // SIZE: the one last picked in any window (none: the host's scale)
         std::string sz = projfile::setting_get("size");
-        if (!sz.empty()) t->size_user = std::atoi(sz.c_str()) >= 100 ? std::atoi(sz.c_str()) : 100;
+        if (!sz.empty()) t->size_user = Panel::size_fit(std::atoi(sz.c_str()), false);
     }
     t->mode_expanded.store(projfile::setting_get("mode") == "expanded");   // MODE: the one last picked (none: gui_create)
     t->tracks_on.store(t->win_expanded());
@@ -1666,20 +1673,22 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     auto *t = self(p);
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
+    int sw = Gui::screen_width();
+    t->size_room = sw > 0 ? sw - Tessera::EXPANDED_ROOM : 0;
     if (projfile::setting_get("mode").empty())   // no MODE picked yet: EXPANDED if the screen has room for it
-        t->mode_default(Gui::screen_width());
+        t->mode_default(sw);
     t->gui = Gui::make(t->host, t);
     if (t->gui)
         t->gui->set_scale(t->size_pct());
     return t->gui != nullptr;
 }
 void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
-// the window's size: the panel at 100, 150 or 200 % (gui.h SIZE). A host's scale (Windows, X11: the screen's DPI) picks
-// the nearest until SIZE is picked; a host that lets its frame be dragged gets the nearest of the three
+// the window's size: the panel at SIZE % (gui.h). A host's scale (Windows, X11: the screen's DPI) is the size until
+// SIZE is picked; a host that lets its frame be dragged gets any size in the mode's range, at the panel's aspect
 bool gui_set_scale(const clap_plugin_t *p, double scale)
 {
     auto *t = self(p);
-    int pct = scale >= 1.75 ? 200 : scale >= 1.25 ? 150 : 100;
+    int pct = scale > 0 ? (int)(scale * 100 + 0.5) : 100;
     bool was = t->size_pct() == Panel::size_fit(pct, t->win_expanded());
     t->size_host = pct;
     if (projfile::setting_get("mode").empty())   // (no MODE picked: EXPANDED only if it still fits at this scale)
@@ -1710,16 +1719,10 @@ bool gui_get_resize_hints(const clap_plugin_t *p, clap_gui_resize_hints_t *h)
     h->aspect_ratio_height = Panel::H;
     return true;
 }
-// the SIZE (of the mode's: 100, 150, 200; EXPANDED 100, 125) whose width is nearest w
+// the SIZE (whole %, in the mode's range) whose width is nearest w
 int size_nearest(const Tessera *t, uint32_t w)
 {
-    static const int ALL[4] = {100, 125, 150, 200};
-    int best = 100;
-    for (int pct : ALL)
-        if (pct == Panel::size_fit(pct, t->win_expanded()) &&
-            std::abs((int)w - t->win_w() * pct / 100) < std::abs((int)w - t->win_w() * best / 100))
-            best = pct;
-    return best;
+    return Panel::size_fit(((int)w * 100 + t->win_w() / 2) / t->win_w(), t->win_expanded());
 }
 bool gui_adjust_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
 {

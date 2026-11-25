@@ -69,7 +69,7 @@ class GuiX11 : public Gui
     Panel panel;
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
     std::vector<uint32_t> out;   // the window's pixels at SIZE (Panel::scale)
-    int pct = 100;               // SIZE: 100, 125, 150, 200 %
+    int pct = 100;               // SIZE in % (75 to 200)
     int pw = Panel::W;           // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
     std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
@@ -136,7 +136,7 @@ class GuiX11 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n < 100 || n > 200)
+        if (n < Panel::PCT_MIN || n > Panel::PCT_MAX)
             return;
         pct = n;
         resize();

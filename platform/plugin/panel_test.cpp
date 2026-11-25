@@ -501,11 +501,39 @@ int main(int argc, char **argv)
         q.down(100, 25), q.up(100, 25);
         q.down(300, 200), q.up(300, 200);
         CHECK(q.take_size_request() == -1, "SIZE 200 again: nothing to ask (it is 200 already)");
+        {   // a frame dragged to 117 %: the row shows 117 lit, left of the presets; 75 picked from it
+            q.set_size_pct(117);
+            q.down(100, 25), q.up(100, 25);
+            int x75 = -1, x117 = -1;
+            for (int x = 300; x > 40 && (x75 < 0 || x117 < 0); x--)
+            {
+                int pct = q.size_seg_at(x);
+                if (pct == 75 && x75 < 0) x75 = x;
+                if (pct == 117 && x117 < 0) x117 = x;
+            }
+            CHECK(x75 > 0 && x117 > 0 && x117 < x75, "SIZE's row: 75 and, left of it, 117 (%d, %d)", x75, x117);
+            q.down(x117, 200), q.up(x117, 200);
+            CHECK(q.take_size_request() == -1 && !q.menu_shown(), "117 (the size now): nothing to ask");
+            q.down(100, 25), q.up(100, 25);
+            q.down(x75, 200), q.up(x75, 200);
+            CHECK(q.take_size_request() == 75, "SIZE 75 picked from the menu");
+            q.set_size_pct(200);
+        }
         q.key(0x01, true);
         q.draw(px.data(), v);
         std::vector<uint32_t> big((size_t)Panel::W * Panel::H * 4), mid((size_t)Panel::W * Panel::H * 9 / 4);
         Panel::scale(px.data(), big.data(), Panel::W, 200);
         Panel::scale(px.data(), mid.data(), Panel::W, 150);
+        {   // 75 % and 117 %: every window pixel a 1:1 pixel or a mean of them (no stray colour from past the edge)
+            std::vector<uint32_t> small((size_t)(Panel::W * 3 / 4) * (Panel::H * 3 / 4), 0x12345678u);
+            std::vector<uint32_t> odd((size_t)(Panel::W * 117 / 100) * (Panel::H * 117 / 100), 0x12345678u);
+            Panel::scale(px.data(), small.data(), Panel::W, 75);
+            Panel::scale(px.data(), odd.data(), Panel::W, 117);
+            int bad = 0;
+            for (uint32_t c : small) bad += c >> 24 != 0xFFu;
+            for (uint32_t c : odd) bad += c >> 24 != 0xFFu;
+            CHECK(bad == 0, "75 %% and 117 %%: every pixel drawn (%d not)", bad);
+        }
         int same = 0, even = 0;
         for (int y = 0; y < Panel::H; y += 7)
             for (int x = 0; x < Panel::W; x += 7)
@@ -1031,11 +1059,13 @@ int main(int argc, char **argv)
         CHECK(e.take_mode_request() == 1 && e.expanded() && e.width() == Panel::W_EXPANDED,
               "MODE EXPANDED picked: the panel 1500 wide (%d)", e.width());
         CHECK(!e.menu_shown(), "the menu shuts on a pick");
-        e.down(100, 25), e.up(100, 25);   // SIZE: 125 and 100 only
+        e.set_size_pct(100);
+        e.down(100, 25), e.up(100, 25);   // SIZE: 150 at most
         e.down(300, 200), e.up(300, 200);
-        CHECK(e.take_size_request() == 125, "EXPANDED's SIZE: 125 at the right");
-        CHECK(Panel::size_fit(150, true) == 125 && Panel::size_fit(200, true) == 125 && Panel::size_fit(125, false) == 150,
-              "SIZE 150 / 200 show at 125 in EXPANDED, 125 at 150 in FM-1 mode");
+        CHECK(e.take_size_request() == 150, "EXPANDED's SIZE: 150 at the right");
+        CHECK(Panel::size_fit(200, true) == 150 && Panel::size_fit(125, true) == 125 && Panel::size_fit(117, false) == 117 &&
+                  Panel::size_fit(40, false) == Panel::PCT_MIN && Panel::size_fit(250, false) == 200,
+              "SIZE: any whole %% from 75, to 150 in EXPANDED and 200 in FM-1 mode");
         e.set_size_pct(125);
         tess_core_view(&v);
         tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);

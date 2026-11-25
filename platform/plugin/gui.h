@@ -45,7 +45,7 @@ struct GuiLink
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
-    /* SIZE (TESSERA's menu): the window's size now in % (100, 150, 200; EXPANDED 100, 125: Panel::size_fit), and a
+    /* SIZE (TESSERA's menu): the window's size now in % (75 to 200; EXPANDED to 150: Panel::size_fit), and a
      * pick: the instance remembers it for every window and asks the host for the new size */
     virtual int size_pct() { return 100; }
     virtual void size_pick(int pct) { (void)pct; }
