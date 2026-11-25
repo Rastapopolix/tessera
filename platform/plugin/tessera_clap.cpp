@@ -13,16 +13,20 @@
  *   - the host's transport drives the song: PLAY starts every track where it would be from the DAW's zero, the DAW's
  *     beat position drives Tessera's clock (CLK INT), a loop or a locate seeks, STOP stops; with no transport (the
  *     standalone app) it plays at once on its own clock;
+ *   - a new instance starts from a new project, as an FM-1 with nothing saved does (the power-on sounds, every
+ *     pattern empty, no generator, every slot empty): it plays nothing until it gets notes. The demos are in the DAW's
+ *     preset browser and under OPEN; the standalone app starts empty too;
  *   - parameters (automatable): MASTER and PERF's MACRO 1..4 (ids 0..4, as since phase 2), then every project setting
  *     by its central ID (pid.h), each track's and the song's, with the FM-1's names and values; changed on the panel
  *     or by the core, they are sent back to the host;
  *   - the plugin's state is the project as a .tsp record, the same bytes SAVE > PROJECT writes on the FM-1; OPEN and
- *     SAVE under the keys open a .tsp or an FM-1 backup (its slots A..D and its music) and save a .tsp;
+ *     SAVE under the keys open a .tsp or an FM-1 backup (its slots A..D and its music) and save a .tsp; MIDI
+ *     writes the notes played since PLAY as a MIDI clip (midifile.h) to drag into the DAW;
  *   - the window (gui.h, Windows, Linux and macOS) shows the FM-1: its screen, buttons, keys and knobs. The audio thread owns
  *     the core: the window's input goes to it through a small queue, and it hands back a view ~30 times a second.
  * Several instances: each takes one of the plugin's private copies of the core (core_copies.h; TESS_PLUGIN_COPIES of
  * them, 8), so each Tessera is wholly its own; past that a new one is refused. A copy given back is used again by the
- * next instance, which starts from the copy's power-on project (STILL TIDE) unless the host loads its state. */
+ * next instance, which starts from a new project unless the host loads its state. */
 #include <clap/clap.h>
 
 #include <atomic>
@@ -31,6 +35,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <filesystem>
 #include <mutex>
 #include <random>
 #include <string>
@@ -38,10 +44,15 @@
 
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
+#include <clap/ext/draft/undo.h>
 
 #include "core_copies.h"
 #include "gui.h"
+#include "midifile.h"
+#include "listen.h"
+#include "presets.h"
 #include "projfile.h"
+#include "resample.h"
 
 namespace
 {
@@ -50,6 +61,7 @@ std::mutex copies_lock;
 bool copy_used[16], copy_booted[16];
 uint8_t copy_setup[16][64];   // each copy's MIDI setup at its power-on (tess_core_setup_save), for the next instance
 uint32_t copy_setup_n[16];
+constexpr uint32_t MIDI_BARS = 16;   // (MIDI while stopped: the bars rendered from the top)
 
 // the parameters: MASTER (0..1023) and MACRO 1..4 (0..100) first, with the ids they had (0..4); then the core's by
 // central ID: id PARAM_PID + slot * 0x1000 + pid, slot 0..3 tracks 1..4, 4 the song's, 5..8 tracks 5..8 (added with
@@ -92,21 +104,24 @@ struct Tessera : GuiLink
     std::mutex input_lock, view_lock;
     PanelInput pending;                   // input_lock: buttons, keys and MASTER as now, the detents summed
     tess_view_t shared_view{};            // view_lock: the latest view
+    std::unique_ptr<tess_tracks_t> shared_tracks{new tess_tracks_t()};   // view_lock: TRACKS, drawn while EXPANDED
+    std::atomic<bool> tracks_on{false};   // the window is EXPANDED: the audio thread draws TRACKS with the view
     double rate = 48000.0;
-    double step = 44100.0 / 48000.0;      // core frames per host frame
-    double pos = 0.0;                     // between prev and cur, 0..1
-    float prev[NCH] = {}, cur[NCH] = {};
+    Resampler<NCH> rs;                    // the core's 44.1 kHz to the host's rate (resample.h)
     float buf[NCH][64];
     uint32_t buf_n = 0, buf_i = 0;
-    uint32_t cur_frame = 0;               // the core frame in cur (tess_core_frames' count)
+    uint32_t cur_frame = 0;               // the newest core frame the resampler has (tess_core_frames' count)
     bool stems = false;                   // a track output is active: the core makes the stems
     bool transport_known = false, was_playing = false, free_started = false;
     std::atomic<bool> notes_due{false};   // stopped processing: the notes MIDI OUT left on go off in the next block
     uint32_t view_due = 0;               // host frames until the next view
     std::vector<std::pair<uint32_t, uint32_t>> midi_wait;   // MIDI OUT packets (packet, core frame) not yet due
+    midifile::Recorder clip;              // core_lock: the notes MIDI OUT sent since PLAY (or a jump back), for MIDI
+    bool clip_playing = false;
+    double clip_beat = 0;                 // the song's position at the last block
     std::unique_ptr<Gui> gui;
 
-    void next_core_frame()
+    void next_core_frame(float *f)
     {
         if (buf_i >= buf_n)
         {
@@ -119,10 +134,7 @@ struct Tessera : GuiLink
             buf_i = 0;
         }
         for (uint32_t c = 0; c < NCH; c++)
-        {
-            prev[c] = cur[c];
-            cur[c] = buf[c][buf_i];
-        }
+            f[c] = buf[c][buf_i];
         cur_frame = core->frames() - buf_n + buf_i;
         buf_i++;
     }
@@ -131,17 +143,7 @@ struct Tessera : GuiLink
     void render(float *const *out, uint32_t at, uint32_t n)
     {
         for (uint32_t k = at; k < at + n; k++)
-        {
-            while (pos >= 1.0)
-            {
-                next_core_frame();
-                pos -= 1.0;
-            }
-            float f = (float)pos;
-            for (uint32_t c = 0; c < NCH; c++)
-                if (out[c]) out[c][k] = prev[c] + (cur[c] - prev[c]) * f;
-            pos += step;
-        }
+            rs.frame(out, k, [this](float *f) { next_core_frame(f); });
     }
 
     // MIDI OUT for a block of n host frames that ended with cur_frame: each packet at the host frame its core frame plays
@@ -150,11 +152,19 @@ struct Tessera : GuiLink
         uint32_t pkt, frame;
         while (core->midi_out(&pkt, &frame))
             midi_wait.emplace_back(pkt, frame);
+        // the clip: begun again when PLAY starts or the song jumps back (a loop, a locate); each note at its beat
+        bool playing = core->playing() != 0;
+        double pos = core->position(), bpm = core->bpm(), now = core->frames(), crate = core->rate();
+        if (playing && (!clip_playing || pos < clip_beat - 0.5))
+            clip.clear();
+        clip_playing = playing;
+        clip_beat = pos;
         size_t keep = 0;
         for (auto &m : midi_wait)
         {
-            // host frames after this block's last one that core frame m.second plays at (cur_frame: the last)
-            double ahead = (double)(int32_t)(m.second - cur_frame) / step;
+            // host frames after this block's last one that core frame m.second plays at (the resampler plays
+            // delay_core frames behind cur_frame, the newest it has)
+            double ahead = (double)(int32_t)(m.second - (cur_frame - rs.delay_core())) / rs.step();
             if (ahead > 0.5)
             {
                 midi_wait[keep++] = m;   // (not yet: the next block)
@@ -162,6 +172,9 @@ struct Tessera : GuiLink
             }
             if ((m.first >> 8 & 0xF0u) == 0xF0u)
                 continue;   // (system messages, a clock: the DAW keeps time; only the tracks' notes go out)
+            if (playing)
+                clip.add(pos - (now - m.second) / crate * bpm / 60.0, (uint8_t)(m.first >> 8),
+                         (uint8_t)(m.first >> 16 & 127), (uint8_t)(m.first >> 24 & 127));
             int64_t t = (int64_t)n - 1 + (int64_t)std::lround(ahead);
             if (t > (int64_t)n - 1) t = (int64_t)n - 1;
             if (out)
@@ -179,6 +192,19 @@ struct Tessera : GuiLink
     }
 
     void midi_in(const clap_event_header_t *h);
+    // LISTEN (listen.h): the MIDI channel whose notes set the key and GENERATE (0 off) and SPLIT (the first key
+    // note), the window's to pick, saved in the DAW's state ("TLSN"); the audio thread's copy and what it held, and
+    // a piece for the main thread (the seed, the style + 1 above it: 0 the strip's)
+    std::atomic<int> listen_ch{0}, listen_split{Listen::SPLIT};
+    Listen listen;
+    bool listen_params = false;           // a key set: every parameter to the host in this block
+    std::atomic<uint64_t> listen_gen{0};
+    bool listen_note(uint32_t ch, int key, int vel);
+    int listen_channel() override { return listen_ch.load(); }
+    void listen_pick(int ch) override;
+    int listen_split_note() override { return listen_split.load(); }
+    void listen_split_pick(int note) override;
+    void listen_generate(uint32_t seed);
     void params_make();
     int param_index(clap_id id) const;
     int32_t param_core(int i);
@@ -186,6 +212,18 @@ struct Tessera : GuiLink
     void params_refresh();
     void param_in(const clap_event_param_value_t *e);
     void params_out(const clap_output_events_t *out, uint32_t at, bool all = false);
+    // the host's undo (DAWs record a parameter's change as one undo step between a gesture's begin and end): a knob
+    // turned in the window or on an FM-1 opens a gesture for each parameter it moves (param_event), ended once the
+    // knobs have been still GESTURE_MS (the list compared round in ~20 blocks: the changes are all seen by then)
+    static constexpr double GESTURE_MS = 500;
+    uint32_t gesture_left = 0;           // host frames until the open gestures end (0: none open, none to open)
+    std::vector<uint8_t> gesture_open;   // per parameter: a gesture open
+    std::vector<int> gesture_list;       // the ones open, in order
+    void gesture(const clap_output_events_t *out, uint32_t at, int i, bool begin);
+    void gestures_tick(const clap_output_events_t *out, uint32_t n);
+    // a whole project changed by the window (OPEN, GENERATE, a preset): the host's undo told, if it has the CLAP undo
+    // extension (it then keeps the state from before as the step)
+    void host_undo(const char *what);
     void param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v);
     uint32_t param_look_of(int i);
 
@@ -200,6 +238,15 @@ struct Tessera : GuiLink
         std::lock_guard<std::mutex> g(input_lock);
         pending.buttons = in.buttons;
         pending.keys = in.keys;
+        pending.key_words = in.key_words;
+        pending.away = pending.away || in.away;
+        in.away = false;
+        if (in.hover_changed)
+        {
+            pending.hover = in.hover;
+            pending.hover_changed = true;
+            in.hover_changed = false;
+        }
         if (in.master >= 0)
             pending.master = in.master;
         in.master = -1;
@@ -213,15 +260,21 @@ struct Tessera : GuiLink
         }
         pending.zones.insert(pending.zones.end(), in.zones.begin(), in.zones.end());
         in.zones.clear();
+        pending.tzones.insert(pending.tzones.end(), in.tzones.begin(), in.tzones.end());
+        in.tzones.clear();
+        pending.text.insert(pending.text.end(), in.text.begin(), in.text.end());
+        in.text.clear();
         pending.changed = true;
         in.changed = false;
     }
 
     // gui.h: the project files (the host's main thread)
+    bool standalone() override { return free_started && !transport_known; }
     std::string open_file(const std::string &path) override;
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
-    void changed_by_file();
+    std::string export_midi() override;
+    void changed_by_file(const char *what = "OPEN PROJECT");   // (what: the host's undo step's name)
     // the shell (gui.h): the last one picked in any window, from the plugin's settings
     int shell_i = 0;
     int shell() override { return shell_i; }
@@ -231,6 +284,35 @@ struct Tessera : GuiLink
     void ink_picked(int i) override;
     void ink_seen(int i) override;
     int tracks() override { return (int)core->tracks(); }
+    // SIZE (gui.h): the one picked in any window (the setting `size`: 100, 125, 150, 200), else the host's scale (a
+    // HiDPI screen: set_scale), each to the nearest the mode has (EXPANDED: 100, 125)
+    int size_user = 0, size_host = 100;   // %; size_user 0: none picked
+    int size_pct() override { return Panel::size_fit(size_user ? size_user : size_host, win_expanded()); }
+    void size_pick(int pct) override;
+    bool size_set(int pct);             // the window at that size (the host's set_size, a pick)
+    // MODE (gui.h): EXPANDED picked in any window (the setting `mode`); the window is EXPANDED in TESSERA's shell
+    std::atomic<bool> mode_expanded{false};
+    bool expanded() override { return mode_expanded.load(); }
+    bool win_expanded() const { return mode_expanded.load() && shell_i == 0; }
+    int win_w() const { return Panel::width_of(win_expanded()); }
+    void mode_pick(bool on) override;
+    // no MODE picked yet: EXPANDED if a screen of width w (Gui::screen_width; 0 unknown: FM-1) has room for its window
+    // at the SIZE it would have, with EXPANDED_ROOM to spare for the DAW's frame; not remembered (a pick is)
+    static constexpr int EXPANDED_ROOM = 100;
+    void mode_default(int w)
+    {
+        int pct = Panel::size_fit(size_user ? size_user : size_host, true);
+        mode_expanded.store(w > 0 && w >= Panel::W_EXPANDED * pct / 100 + EXPANDED_ROOM);
+        tracks_on.store(win_expanded());
+    }
+    void resize_window();               // the window and the host to the mode's width at SIZE
+    bool tracks_view(tess_tracks_t &t) override
+    {
+        std::lock_guard<std::mutex> g(view_lock);
+        if (!shared_tracks->w) return false;
+        t = *shared_tracks;
+        return true;
+    }
     std::atomic<uint32_t> midi_seen{0};   // MIDI in so far (the window's MIDI lamp)
     uint32_t midi_count() override { return midi_seen.load(std::memory_order_relaxed); }
     // an FM-1 on USB plays this Tessera (fm1_link.h): asked for from the first activate when the setting is on
@@ -253,6 +335,7 @@ struct Tessera : GuiLink
     void gen_pick(int style, int variation) override;
     Panel::GenState gen_state() override;
     std::string gen_make(const Piece &pc);
+    std::string gen_seed(uint32_t seed, int style = -1);
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -327,6 +410,77 @@ std::string Tessera::save_file(const std::string &path)
     return "SAVED " + (name.empty() ? std::string("THE PROJECT") : name);
 }
 
+// the project (a .tsp record) played from the top for bars bars on a spare copy of the core (midifile::render), as
+// fast as it renders. The instance's own copy plays on untouched. "" done, else why not
+std::string render_bars(const std::vector<uint8_t> &tsp, uint32_t bars, std::vector<midifile::Ev> &ev, double &bpm)
+{
+    uint32_t copy = 0;
+    bool again;
+    {
+        std::lock_guard<std::mutex> c(copies_lock);   // a copy no instance holds, held while it plays
+        while (copy < tess_copy_count() && copy_used[copy])
+            copy++;
+        if (copy >= tess_copy_count())
+            return "NO SPARE CORE: CLOSE AN INSTANCE";
+        copy_used[copy] = true;
+        again = copy_booted[copy];
+        copy_booted[copy] = true;
+    }
+    const tess_core_vt *c = tess_copy(copy);
+    c->boot();
+    if (again)   // (as p_init: a new project and the power-on MIDI setup, NOTES OUT ALL)
+    {
+        c->project_new();
+        c->setup_load(copy_setup[copy], copy_setup_n[copy]);
+    }
+    else
+        copy_setup_n[copy] = c->setup_save(copy_setup[copy], sizeof copy_setup[0]);
+    std::string err = midifile::render(c, tsp, bars, ev, bpm);
+    std::lock_guard<std::mutex> g(copies_lock);
+    copy_used[copy] = false;
+    return err;
+}
+
+// MIDI under the keys: a clip as a .mid in Documents/Tessera/MIDI, named after the project and the time. Playing: the
+// notes played since PLAY; stopped: the project rendered from the top for MIDI_BARS bars (render_bars)
+std::string Tessera::export_midi()
+{
+    std::string name;
+    std::vector<uint8_t> tsp = record_of(this);
+    projfile::tsp_name(tsp, name);
+    std::vector<midifile::Ev> ev;
+    double bpm;
+    bool playing;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        playing = core->playing() != 0;
+        if (playing)
+            ev = clip.take();
+        bpm = core->bpm();
+    }
+    uint32_t bars = 0;
+    if (!playing)
+    {
+        bars = MIDI_BARS;
+        std::string err = render_bars(tsp, bars, ev, bpm);
+        if (!err.empty())
+            return err;
+    }
+    std::vector<uint8_t> f = midifile::smf(ev, bpm, name, bars);
+    if (f.empty())
+        return playing ? "NO NOTES YET: PLAY, THEN MIDI" : "NO NOTES IN THE FIRST BARS";
+    std::string dir = midifile::folder();
+    if (dir.empty())
+        return "NO DOCUMENTS FOLDER FOR THE CLIP";
+    char stamp[32];
+    std::time_t tt = std::time(nullptr);
+    std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H%M%S", std::localtime(&tt));
+    std::string file = midifile::file_name(name, stamp);
+    if (!projfile::write_file((std::filesystem::u8path(dir) / std::filesystem::u8path(file)).u8string(), f))
+        return "CANNOT WRITE THE CLIP";
+    return "CLIP SAVED IN DOCUMENTS/TESSERA/MIDI";
+}
+
 std::string Tessera::file_name()
 {
     std::string name;
@@ -371,7 +525,7 @@ std::string Tessera::gen_make(const Piece &pc)
     if (r)
         return "COULD NOT GENERATE";
     gen_before = false;
-    changed_by_file();
+    changed_by_file("GENERATE");
     return "";
 }
 
@@ -379,11 +533,22 @@ std::string Tessera::generate(int style, int variation)
 {
     gen_pick(style, variation);
     static std::mt19937 rng{std::random_device{}() ^ (uint32_t)std::chrono::steady_clock::now().time_since_epoch().count()};
-    Piece pc{gen_style, gen_variation, 0};
-    while (!pc.seed) pc.seed = rng();
+    uint32_t seed = 0;
+    while (!seed) seed = rng();
+    return gen_seed(seed);
+}
+
+// a piece of the style (-1, or one past the last: the strip's) and the strip's VARIATION from seed, kept in the
+// seed's wheel (GENERATE, LISTEN); the strip shows its style after (not kept as the window's setting, as the wheel)
+std::string Tessera::gen_seed(uint32_t seed, int style)
+{
+    if (style < 0 || style >= (int)core->gen_styles())
+        style = gen_style;
+    Piece pc{style, gen_variation, seed};
     std::string said = gen_make(pc);
     if (!said.empty())
         return said;
+    gen_style = style;
     gen_made.push_back(pc);   // (made after going back: the newer ones stay, this one after them)
     if (gen_made.size() > GEN_KEEP) gen_made.erase(gen_made.begin());
     gen_at = (int)gen_made.size() - 1;
@@ -400,7 +565,7 @@ std::string Tessera::gen_swap()
     if (r)
         return "NOTHING GENERATED YET";
     gen_before = !gen_before;
-    changed_by_file();
+    changed_by_file(gen_before ? "GENERATE: BEFORE" : "GENERATE: AFTER");
     return gen_before ? "BEFORE THE PIECE" : "THE PIECE AGAIN";
 }
 
@@ -431,7 +596,14 @@ Panel::GenState Tessera::gen_state()
 }
 
 // a project came in from a file: the DAW's saved state and the MACROs it shows are out of date
-void Tessera::changed_by_file()
+void Tessera::host_undo(const char *what)
+{
+    auto *hu = static_cast<const clap_host_undo_t *>(host->get_extension(host, CLAP_EXT_UNDO));
+    if (hu && hu->change_made)
+        hu->change_made(host, what, nullptr, 0, false);   // (no delta: the host keeps the state from before)
+}
+
+void Tessera::changed_by_file(const char *what)
 {
     {
         std::lock_guard<std::mutex> g(core_lock);
@@ -443,6 +615,73 @@ void Tessera::changed_by_file()
     auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);   // (the texts: params_refresh asked for them)
+    host_undo(what);
+}
+
+// LISTEN picked in the menu (0 off, 1..16): this instance's, saved in the DAW's state
+void Tessera::listen_pick(int ch)
+{
+    if (ch < 0 || ch > 16 || ch == listen_ch.load())
+        return;
+    listen_ch.store(ch);
+    auto *hs = static_cast<const clap_host_state_t *>(host->get_extension(host, CLAP_EXT_STATE));
+    if (hs && hs->mark_dirty)
+        hs->mark_dirty(host);
+}
+
+// LISTEN's SPLIT picked in the menu (a C, 12..108): this instance's, saved in the DAW's state
+void Tessera::listen_split_pick(int note)
+{
+    if (!Listen::split_ok(note) || note == listen_split.load())
+        return;
+    listen_split.store(note);
+    auto *hs = static_cast<const clap_host_state_t *>(host->get_extension(host, CLAP_EXT_STATE));
+    if (hs && hs->mark_dirty)
+        hs->mark_dirty(host);
+}
+
+// the window at the mode's width and SIZE, and the host asked to make room
+void Tessera::resize_window()
+{
+    int pct = size_pct();
+    tracks_on.store(win_expanded());
+    if (gui)
+        gui->set_scale(pct);
+    auto *hg = static_cast<const clap_host_gui_t *>(host->get_extension(host, CLAP_EXT_GUI));
+    if (hg && hg->request_resize)
+        hg->request_resize(host, (uint32_t)(win_w() * pct / 100), (uint32_t)(Panel::H * pct / 100));
+}
+
+// SIZE picked in the menu: remembered for every window, the window that size
+void Tessera::size_pick(int pct)
+{
+    size_user = Panel::size_fit(pct, win_expanded());
+    projfile::setting_put("size", std::to_string(size_user));
+    resize_window();
+}
+
+// MODE picked in the menu: remembered for every window (EXPANDED: SIZE 150 or 200 shows at 125), the window that wide
+void Tessera::mode_pick(bool on)
+{
+    if (on == mode_expanded.load())
+        return;
+    mode_expanded.store(on);
+    projfile::setting_put("mode", on ? "expanded" : "fm1");
+    resize_window();
+}
+
+bool Tessera::size_set(int pct)
+{
+    if (pct != Panel::size_fit(pct, win_expanded()))
+        return false;
+    if (pct != size_pct())   // (the host's own resize, a drag on its frame: kept as the pick)
+    {
+        size_user = pct;
+        projfile::setting_put("size", std::to_string(pct));
+    }
+    if (gui)
+        gui->set_scale(pct);
+    return true;
 }
 
 // a shell picked under the keys: its ink on this Tessera's screen (as MENU > COLOR; after, that still changes it), and
@@ -451,12 +690,15 @@ void Tessera::shell_picked(int i)
 {
     if (i < 0 || i >= Panel::shell_count())
         return;
+    bool wide = win_expanded();
     shell_i = i;
     {
         std::lock_guard<std::mutex> g(core_lock);
         core->ink(Panel::shell_ink(i));
     }
     projfile::setting_put("shell", Panel::shell_id(i));
+    if (wide != win_expanded())   // (EXPANDED is TESSERA's shell's: an FM-1 shell is FM-1 mode, and back)
+        resize_window();
 }
 
 std::vector<Panel::Ink> Tessera::inks()
@@ -529,6 +771,8 @@ void Tessera::midi_in(const clap_event_header_t *h)
             return;
         uint32_t ch = e->channel < 0 ? 0u : (uint32_t)e->channel & 15u;
         uint32_t vel = (uint32_t)(e->velocity * 127.0 + 0.5);
+        if (listen_note(ch, e->key, h->type == CLAP_EVENT_NOTE_ON ? (vel ? (int)vel : 1) : 0))
+            break;
         if (h->type == CLAP_EVENT_NOTE_ON)
             core->midi(0x90u | ch, (uint32_t)e->key, vel ? vel : 1u);
         else
@@ -538,12 +782,58 @@ void Tessera::midi_in(const clap_event_header_t *h)
     case CLAP_EVENT_MIDI:
     {
         auto *e = reinterpret_cast<const clap_event_midi_t *>(h);
+        uint8_t kind = e->data[0] & 0xF0;
+        if ((kind == 0x90 || kind == 0x80) &&
+            listen_note(e->data[0] & 15u, e->data[1] & 127, kind == 0x90 ? e->data[2] & 127 : 0))
+            break;
         core->midi(e->data[0], e->data[1], e->data[2]);
+        break;
+    }
+    case CLAP_EVENT_NOTE_EXPRESSION:   // (per note: PRESSURE, BRIGHTNESS (MPE's slide), TUNING; the rest not yet)
+    {
+        auto *e = reinterpret_cast<const clap_event_note_expression_t *>(h);
+        if (e->expression_id == CLAP_NOTE_EXPRESSION_TUNING)   // (semitones, -120..120)
+        {
+            if (e->key > 127 || e->channel > 15)
+                break;
+            double c = e->value * 100.0;
+            c = c < -12000.0 ? -12000.0 : c > 12000.0 ? 12000.0 : c;
+            core->note_tune(e->channel < 0 ? -1 : e->channel, e->key < 0 ? -1 : e->key, (int32_t)(c < 0 ? c - 0.5 : c + 0.5));
+            break;
+        }
+        uint32_t kind = e->expression_id == CLAP_NOTE_EXPRESSION_PRESSURE     ? TESS_EXPR_PRESSURE
+                        : e->expression_id == CLAP_NOTE_EXPRESSION_BRIGHTNESS ? TESS_EXPR_SLIDE
+                                                                               : 99u;
+        if (kind == 99u || e->key > 127 || e->channel > 15 || (e->channel >= 0 && listen.mine(e->channel)))
+            break;   // (LISTEN's channel steers: its notes play nothing to shape)
+        double v = e->value < 0 ? 0 : e->value > 1 ? 1 : e->value;
+        core->note_expr(kind, e->channel < 0 ? -1 : e->channel, e->key < 0 ? -1 : e->key, (uint32_t)(v * 127.0 + 0.5));
         break;
     }
     default:
         break;
     }
+}
+
+// LISTEN (the audio thread, the core locked): a note on the LISTEN channel (vel 0: off) steers instead of playing;
+// true if it was one
+bool Tessera::listen_note(uint32_t ch, int key, int vel)
+{
+    int lc = listen_ch.load(std::memory_order_relaxed), ls = listen_split.load(std::memory_order_relaxed);
+    if (lc != listen.channel || ls != listen.split)
+        listen.channel = lc, listen.split = ls, listen.clear();
+    if (!listen.mine((int)ch))
+        return false;
+    Listen::Ask a = listen.note(key, vel);
+    if (a.what == Listen::KEY && core->key((uint32_t)a.root, a.minor))
+        listen_params = true;
+    else if (a.what == Listen::GENERATE)
+    {
+        listen_gen.store(a.seed | (uint64_t)(a.style + 1) << 32);   // (GENERATE takes a while: the main thread)
+        if (host->request_callback)
+            host->request_callback(host);   // (p_on_main_thread)
+    }
+    return true;
 }
 
 // ---- parameters (audio thread: the core is locked)
@@ -589,6 +879,9 @@ void Tessera::params_make()
         }
     param_now.reset(new std::atomic<int32_t>[params.size()]);
     param_look.reset(new uint32_t[params.size()]);
+    gesture_open.assign(params.size(), 0);
+    gesture_list.clear();
+    gesture_list.reserve(params.size());   // (the audio thread pushes, never grows it)
     for (size_t i = 0; i < params.size(); i++)
     {
         param_now[i] = param_core((int)i);
@@ -665,10 +958,40 @@ void Tessera::param_in(const clap_event_param_value_t *e)
     if (i >= 0)
         param_set(i, (int32_t)std::lround(e->value));
 }
+void Tessera::gesture(const clap_output_events_t *out, uint32_t at, int i, bool begin)
+{
+    clap_event_param_gesture_t e = {};
+    e.header = {sizeof e, at, CLAP_CORE_EVENT_SPACE_ID,
+                (uint16_t)(begin ? CLAP_EVENT_PARAM_GESTURE_BEGIN : CLAP_EVENT_PARAM_GESTURE_END), 0};
+    e.param_id = params[i].id;
+    out->try_push(out, &e.header);
+}
+// a block's end: the gestures still open end once the knobs have been still long enough
+void Tessera::gestures_tick(const clap_output_events_t *out, uint32_t n)
+{
+    if (!gesture_left)
+        return;
+    gesture_left = gesture_left > n ? gesture_left - n : 0;
+    if (gesture_left)
+        return;
+    for (int i : gesture_list)
+    {
+        if (out) gesture(out, n ? n - 1 : 0, i, false);
+        gesture_open[i] = 0;
+    }
+    gesture_list.clear();
+}
+
 void Tessera::param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v)
 {
     if (!out)
         return;
+    if (gesture_left && !gesture_open[i])   // (a knob turned: this parameter's undo step begins)
+    {
+        gesture(out, at, i, true);
+        gesture_open[i] = 1;
+        gesture_list.push_back(i);
+    }
     clap_event_param_value_t e = {};
     e.header = {sizeof e, at, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
     e.param_id = params[i].id;
@@ -727,9 +1050,9 @@ bool p_init(const clap_plugin_t *p)
         copy_booted[t->copy] = true;
     }
     t->core->boot();
-    if (again)                 // (a copy an instance gave back: its power-on project again, STILL TIDE in slot A, and
-    {                          // its power-on MIDI setup, not the last instance's ROUT, NOTES OUT ..)
-        t->core->slot_load(0);
+    if (again)                 // (a copy an instance gave back: a new project, as a fresh copy starts with, and its
+    {                          // power-on MIDI setup, not the last instance's ROUT, NOTES OUT ..)
+        t->core->project_new();
         t->core->setup_load(copy_setup[t->copy], copy_setup_n[t->copy]);
     }
     else
@@ -742,6 +1065,12 @@ bool p_init(const clap_plugin_t *p)
         projfile::setting_put("ink", "");
         projfile::setting_put("shell_v", "2");
     }
+    if (projfile::setting_get("shell_v") == "2")   // (TESSERA's shell was YELLOW until 0.1-beta5: that ink, remembered
+    {                                             // as the last shown, gives way to its MOSAIC once; another ink stays)
+        if (projfile::setting_get("ink") == "YELLOW")
+            projfile::setting_put("ink", "");
+        projfile::setting_put("shell_v", "3");
+    }
     int sh = Panel::shell_by_id(projfile::setting_get("shell"));   // (the shell last picked, and its ink)
     if (sh >= 0)
     {
@@ -752,8 +1081,15 @@ bool p_init(const clap_plugin_t *p)
     if (!ink.empty())
         t->core->ink(ink.c_str());
     t->master_set(700);   // (MASTER's default)
+    {   // SIZE: the one last picked in any window (none: the host's scale)
+        std::string sz = projfile::setting_get("size");
+        if (!sz.empty()) t->size_user = std::atoi(sz.c_str()) >= 100 ? std::atoi(sz.c_str()) : 100;
+    }
+    t->mode_expanded.store(projfile::setting_get("mode") == "expanded");   // MODE: the one last picked (none: gui_create)
+    t->tracks_on.store(t->win_expanded());
     {   // GENERATE: the style (by name) and VARIATION last picked in any window
         std::string st = projfile::setting_get("gen_style"), var = projfile::setting_get("gen_variation");
+        if (st == "RND") st = "WILD";   // (RND's name before it was WILD)
         for (uint32_t i = 0, n = t->core->gen_styles(); i < n; i++)
             if (st == t->core->gen_style(i)) t->gen_style = (int)i;
         if (!var.empty()) t->gen_variation = std::atoi(var.c_str()) < 0 ? 0 : std::atoi(var.c_str()) > 100 ? 100 : std::atoi(var.c_str());
@@ -777,8 +1113,7 @@ bool p_activate(const clap_plugin_t *p, double rate, uint32_t, uint32_t)
 {
     auto *t = self(p);
     t->rate = rate;
-    t->step = (double)t->core->rate() / rate;
-    t->pos = 1.0;
+    t->rs.setup((double)t->core->rate(), rate);
     t->buf_n = t->buf_i = 0;
     t->transport_known = t->free_started = false;
     t->view_due = 0;
@@ -801,7 +1136,7 @@ bool p_start_processing(const clap_plugin_t *) { return true; }
 void p_stop_processing(const clap_plugin_t *p) { self(p)->notes_due = true; }
 void p_reset(const clap_plugin_t *p)
 {
-    self(p)->pos = 1.0;
+    self(p)->rs.reset();
     self(p)->notes_due = true;
 }
 
@@ -852,8 +1187,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->transport_known = true;
         t->was_playing = playing;
     }
-    else if (!t->free_started)   // a free-running host (the standalone app): play at once
-    {
+    else if (!t->free_started)   // a free-running host (the standalone app): its clock runs at once (a new project:
+    {                            // silent till notes, a demo from OPEN or a song)
         t->core->transport(1);
         t->free_started = true;
     }
@@ -865,23 +1200,41 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         {
             t->win_buttons = pi.buttons;
             t->win_keys = pi.keys;
+            t->core->key_words(pi.key_words ? 1 : 0);   // (TESSERA's shell: BACK / OK / SHIFT of its own)
             t->core->buttons(t->win_buttons | t->fm1_buttons);
             t->core->keys(t->win_keys | t->fm1_keys);
+            bool master_turned = pi.master >= 0;
             if (pi.master >= 0)
                 t->master_set(pi.master);
             pi.master = -1;
             if (pi.track >= 0)
                 t->core->track_select((uint32_t)pi.track);
             pi.track = -1;
+            bool turned = master_turned || !pi.zones.empty();   // (a knob: the settings it moves are one undo step)
             for (int r = 0; r < TESS_NE; r++)
                 if (pi.enc[r])
                 {
                     t->core->enc((uint32_t)r, pi.enc[r]);
                     pi.enc[r] = 0;
+                    turned = true;
                 }
+            if (turned)
+                t->gesture_left = (uint32_t)(t->rate * Tessera::GESTURE_MS / 1000);
             for (auto &a : pi.zones)   // the screen's zones: what the mouse did there, in order
                 t->core->zone_do(&a.z, a.action, a.n);
             pi.zones.clear();          // (keeps its room: no allocation on this thread)
+            for (auto &a : pi.tzones)  // TRACKS' (EXPANDED)
+                t->core->tracks_do(&a.z, a.action, a.n);
+            pi.tzones.clear();
+            for (uint32_t ch : pi.text)   // typed into NAME
+                t->core->text(ch);
+            pi.text.clear();
+            if (pi.away)               // a click away: a picker, a sheet or a pinned help card closed
+                t->core->away();
+            pi.away = false;
+            if (pi.hover_changed)      // HOVER HELP: the zone the mouse rests on
+                t->core->hover(pi.hover.kind ? &pi.hover : nullptr);
+            pi.hover_changed = false;
             pi.changed = false;
         }
     }
@@ -898,9 +1251,15 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             }
             if (fi.master >= 0)
                 t->master_set(fi.master);
+            bool turned = fi.master >= 0;
             for (int r = 0; r < TESS_NE; r++)
                 if (fi.enc[r])
+                {
                     t->core->enc((uint32_t)r, fi.enc[r]);
+                    turned = true;
+                }
+            if (turned)
+                t->gesture_left = (uint32_t)(t->rate * Tessera::GESTURE_MS / 1000);
         }
     }
 
@@ -933,7 +1292,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
-    t->params_out(proc->out_events, n ? n - 1 : 0, set);   // (a setting changed on the panel, by a project or a cord's source)
+    t->params_out(proc->out_events, n ? n - 1 : 0, set || t->listen_params);   // (a setting changed on the panel, by a
+    t->listen_params = false;                                               // project, a cord's source or LISTEN)
+    t->gestures_tick(proc->out_events, n);
 
     if (t->view_due <= n)   // the view for the window, ~30 times a second
     {
@@ -941,6 +1302,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         if (v.owns_lock())
         {
             t->core->view(&t->shared_view);
+            if (t->tracks_on.load(std::memory_order_relaxed))   // (EXPANDED: TRACKS too)
+                t->core->tracks_view(t->shared_tracks.get(), TESS_TRACKS_W, TESS_TRACKS_H);
             t->view_due = (uint32_t)(t->rate / 30);
         }
     }
@@ -977,7 +1340,8 @@ bool np_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_note_port
     if (index != 0)
         return false;
     info->id = is_input ? 0 : 1;
-    info->supported_dialects = is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI : CLAP_NOTE_DIALECT_MIDI;
+    info->supported_dialects =
+        is_input ? CLAP_NOTE_DIALECT_CLAP | CLAP_NOTE_DIALECT_MIDI | CLAP_NOTE_DIALECT_MIDI_MPE : CLAP_NOTE_DIALECT_MIDI;
     info->preferred_dialect = CLAP_NOTE_DIALECT_MIDI;
     std::strncpy(info->name, is_input ? "MIDI in" : "MIDI out", sizeof(info->name));
     return true;
@@ -987,8 +1351,8 @@ const clap_plugin_note_ports_t note_ports = {np_count, np_get};
 // ---- state: the project as a .tsp record (tracks 1..4 in the parts an FM-1 reads, tracks 5..8 in its XTRK part,
 // project_tsp.c), then the device's MIDI setup (ROUT, DRUM's channel, NOTES OUT, TUNE: tess_core_setup_save, never
 // in the .tsp) as its bytes, their count and "TGLO", then MASTER (the device's, not the project's) as "TMST" and 2
-// bytes. A state of a plugin build
-// before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
+// bytes, then while LISTEN is on or its SPLIT moved "TLSN", its channel and SPLIT (1 byte each; a plugin build before
+// LISTEN cannot open such a state, one with LISTEN off at SPLIT 48 is as before). A state of a plugin build before XTRK may also hold "TX58" (tracks 5..8's settings by central ID: the count and the tag), read as before; none
 // is written now (XTRK holds them, with the steps, voices and generators).
 
 constexpr uint32_t TX58_ENTRY = 7;   // track, pid (2 bytes), value (4 bytes), little-endian
@@ -1037,6 +1401,13 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
             const uint8_t tail[6] = {'T', 'M', 'S', 'T', (uint8_t)m, (uint8_t)(m >> 8)};
             b.insert(b.begin() + len, tail, tail + 6);
             len += 6;
+            int lc = t->listen_ch.load(), lsp = t->listen_split.load();
+            if (lc || lsp != Listen::SPLIT)   // (LISTEN on or SPLIT moved: last; else the state is as before LISTEN)
+            {
+                const uint8_t ls[6] = {'T', 'L', 'S', 'N', (uint8_t)lc, (uint8_t)lsp};
+                b.insert(b.begin() + len, ls, ls + 6);
+                len += 6;
+            }
         }
     }
     if (!len)
@@ -1054,7 +1425,7 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
     uint32_t len = 0;
     for (;;)
     {
@@ -1070,6 +1441,11 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     bool ok;
     {
         std::lock_guard<std::mutex> g(t->core_lock);
+        int lc = 0, lsp = Listen::SPLIT;
+        if (len >= 6 && !std::memcmp(&b[len - 6], "TLSN", 4) && b[len - 2] <= 16 && Listen::split_ok(b[len - 1]))
+            lc = b[len - 2], lsp = b[len - 1], len -= 6;
+        t->listen_ch.store(lc);
+        t->listen_split.store(lsp);
         if (len >= 6 && !std::memcmp(&b[len - 6], "TMST", 4))
         {
             len -= 6;
@@ -1112,6 +1488,40 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     return ok;
 }
 const clap_plugin_state_t state = {st_save, st_load};
+
+// ---- preset-load: a preset picked in the DAW's browser (presets.cpp: a demo, or a .tsp of the user's), loaded as OPEN
+// loads a project; the host told it loaded (its browser shows it), or why not
+bool pl_from_location(const clap_plugin_t *p, uint32_t kind, const char *location, const char *load_key)
+{
+    auto *t = self(p);
+    auto *hpl = static_cast<const clap_host_preset_load_t *>(t->host->get_extension(t->host, CLAP_EXT_PRESET_LOAD));
+    if (!hpl) hpl = static_cast<const clap_host_preset_load_t *>(t->host->get_extension(t->host, CLAP_EXT_PRESET_LOAD_COMPAT));
+    std::vector<uint8_t> rec;
+    std::string err;
+    uint32_t r = 1;
+    if (presets::record(kind, location, load_key, rec, err))
+    {
+        {
+            std::lock_guard<std::mutex> g(t->core_lock);
+            r = t->core->load(rec.data(), (uint32_t)rec.size());
+        }
+        if (r) err = "A PROJECT THIS VERSION CANNOT READ";
+    }
+    if (r)
+    {
+        if (hpl && hpl->on_error) hpl->on_error(t->host, kind, location, load_key, 0, err.c_str());
+        return false;
+    }
+    t->gen_before = false;
+    t->changed_by_file("PRESET");   // (the DAW's undo: the preset loaded as one step)
+    if (hpl && hpl->loaded) hpl->loaded(t->host, kind, location, load_key);
+    return true;
+}
+const clap_plugin_preset_load_t preset_load_ext = {pl_from_location};
+
+// ---- latency: the resampler plays half its kernel behind (resample.h: 32 core frames, ~0.7 ms; none at 44.1 kHz)
+uint32_t lat_get(const clap_plugin_t *p) { return self(p)->rs.delay_host(); }
+const clap_plugin_latency_t latency_ext = {lat_get};
 
 // ---- the parameters' extension
 
@@ -1214,26 +1624,77 @@ bool gui_create(const clap_plugin_t *p, const char *api, bool is_floating)
     auto *t = self(p);
     if (!gui_is_api_supported(p, api, is_floating) || t->gui)
         return false;
+    if (projfile::setting_get("mode").empty())   // no MODE picked yet: EXPANDED if the screen has room for it
+        t->mode_default(Gui::screen_width());
     t->gui = Gui::make(t->host, t);
+    if (t->gui)
+        t->gui->set_scale(t->size_pct());
     return t->gui != nullptr;
 }
 void gui_destroy(const clap_plugin_t *p) { self(p)->gui.reset(); }
-bool gui_set_scale(const clap_plugin_t *, double) { return false; }   // (fixed size, 1:1)
-bool gui_get_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+// the window's size: the panel at 100, 150 or 200 % (gui.h SIZE). A host's scale (Windows, X11: the screen's DPI) picks
+// the nearest until SIZE is picked; a host that lets its frame be dragged gets the nearest of the three
+bool gui_set_scale(const clap_plugin_t *p, double scale)
 {
-    *w = Panel::W;
-    *h = Panel::H;
+    auto *t = self(p);
+    int pct = scale >= 1.75 ? 200 : scale >= 1.25 ? 150 : 100;
+    bool was = t->size_pct() == Panel::size_fit(pct, t->win_expanded());
+    t->size_host = pct;
+    if (projfile::setting_get("mode").empty())   // (no MODE picked: EXPANDED only if it still fits at this scale)
+    {
+        bool wide = t->win_expanded();
+        t->mode_default(Gui::screen_width());
+        if (wide != t->win_expanded() && t->gui)
+            t->resize_window();
+    }
+    if (!was && t->gui && !t->size_user)
+        t->gui->set_scale(t->size_pct());
     return true;
 }
-bool gui_can_resize(const clap_plugin_t *) { return false; }
-bool gui_get_resize_hints(const clap_plugin_t *, clap_gui_resize_hints_t *) { return false; }
-bool gui_adjust_size(const clap_plugin_t *, uint32_t *w, uint32_t *h)
+bool gui_get_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
 {
-    *w = Panel::W;
-    *h = Panel::H;
+    auto *t = self(p);
+    int pct = t->size_pct();
+    *w = (uint32_t)(t->win_w() * pct / 100);
+    *h = (uint32_t)(Panel::H * pct / 100);
     return true;
 }
-bool gui_set_size(const clap_plugin_t *, uint32_t w, uint32_t h) { return w == Panel::W && h == Panel::H; }
+bool gui_can_resize(const clap_plugin_t *) { return true; }
+bool gui_get_resize_hints(const clap_plugin_t *p, clap_gui_resize_hints_t *h)
+{
+    h->can_resize_horizontally = h->can_resize_vertically = true;
+    h->preserve_aspect_ratio = true;
+    h->aspect_ratio_width = (uint32_t)self(p)->win_w();
+    h->aspect_ratio_height = Panel::H;
+    return true;
+}
+// the SIZE (of the mode's: 100, 150, 200; EXPANDED 100, 125) whose width is nearest w
+int size_nearest(const Tessera *t, uint32_t w)
+{
+    static const int ALL[4] = {100, 125, 150, 200};
+    int best = 100;
+    for (int pct : ALL)
+        if (pct == Panel::size_fit(pct, t->win_expanded()) &&
+            std::abs((int)w - t->win_w() * pct / 100) < std::abs((int)w - t->win_w() * best / 100))
+            best = pct;
+    return best;
+}
+bool gui_adjust_size(const clap_plugin_t *p, uint32_t *w, uint32_t *h)
+{
+    auto *t = self(p);
+    int pct = size_nearest(t, *w);
+    *w = (uint32_t)(t->win_w() * pct / 100);
+    *h = (uint32_t)(Panel::H * pct / 100);
+    return true;
+}
+bool gui_set_size(const clap_plugin_t *p, uint32_t w, uint32_t h)
+{
+    auto *t = self(p);
+    int pct = size_nearest(t, w);
+    if (w == (uint32_t)(t->win_w() * pct / 100) && h == (uint32_t)(Panel::H * pct / 100))
+        return t->size_set(pct);
+    return false;
+}
 bool gui_set_parent(const clap_plugin_t *p, const clap_window_t *w)
 {
     auto *t = self(p);
@@ -1272,6 +1733,8 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
+    if (!std::strcmp(id, CLAP_EXT_PRESET_LOAD) || !std::strcmp(id, CLAP_EXT_PRESET_LOAD_COMPAT)) return &preset_load_ext;
+    if (!std::strcmp(id, CLAP_EXT_LATENCY)) return &latency_ext;
     return nullptr;
 }
 
@@ -1280,6 +1743,8 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
 void p_on_main_thread(const clap_plugin_t *p)
 {
     auto *t = self(p);
+    if (uint64_t g = t->listen_gen.exchange(0))   // (a note under SPLIT on the LISTEN channel: GENERATE)
+        t->gen_seed((uint32_t)g, (int)(g >> 32) - 1);
     if (!t->text_stale.exchange(false))
         return;
     auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));
@@ -1296,14 +1761,14 @@ const char *features[] = {CLAP_PLUGIN_FEATURE_INSTRUMENT, CLAP_PLUGIN_FEATURE_SY
 #endif
 const clap_plugin_descriptor_t desc = {
     CLAP_VERSION_INIT,
-    "io.github.rastapopolix.tessera",
-    "Tessera",
-    "Tessera",
+    TESS_PLUGIN_ID,   // (the id stays tessera's: songs saved with the beta still find it)
+    "Cosmati",         // (Tessera as a plugin; the firmware keeps its name)
+    "Rastapopolix",
     "https://github.com/Rastapopolix/tessera",
     "",
     "https://github.com/Rastapopolix/tessera",
     TESS_VERSION_STR,
-    "A pocket rabbit hole: Tessera's generative sequencer and voices",
+    "Tessera's generative sequencer and voices as a plugin",
     features,
 };
 
@@ -1347,6 +1812,10 @@ bool tessera_entry_init(const char *) { return true; }
 void tessera_entry_deinit(void) {}
 const void *tessera_entry_get_factory(const char *id)
 {
-    return !std::strcmp(id, CLAP_PLUGIN_FACTORY_ID) ? &factory : nullptr;
+    if (!std::strcmp(id, CLAP_PLUGIN_FACTORY_ID))
+        return &factory;
+    if (!std::strcmp(id, CLAP_PRESET_DISCOVERY_FACTORY_ID) || !std::strcmp(id, CLAP_PRESET_DISCOVERY_FACTORY_ID_COMPAT))
+        return presets::factory();   // (the DAW's preset browser: presets.cpp)
+    return nullptr;
 }
 

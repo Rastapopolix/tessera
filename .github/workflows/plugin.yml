@@ -56,16 +56,27 @@ jobs:
         run: build/plugin/tessera-projfile-test
       - name: FM-1 on USB test (the decoder and the link, no hardware)
         run: build/plugin/tessera-fm1-test
+      - name: Resample test (the core's 44.1 kHz to the host's rate)
+        run: build/plugin/tessera-resample-test
+      - name: "MIDI clip test (MIDI under the keys: the .mid written)"
+        run: build/plugin/tessera-midifile-test
+      - name: LISTEN test (the notes that set the key and GENERATE)
+        run: build/plugin/tessera-listen-test
       - name: Render test (with the window, on a virtual display)
-        run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+        run: xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Cosmati.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)
-        run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+        run: build/plugin/tessera-session-test build/plugin/out/Cosmati.clap
+      - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
+        run: build/plugin/tessera-presets-test build/plugin/out/Cosmati.clap
+      - name: "Presets test, VST3 (the wrapper's program list: listed and loaded)"
+        timeout-minutes: 5
+        run: build/plugin/tessera-vst3-presets-test build/plugin/out/Cosmati.vst3 demos/koto-garden.tsp
       - uses: actions/upload-artifact@v4
         with:
           name: tessera-plugin-linux
           path: |
-            build/plugin/out/Tessera.clap
-            build/plugin/out/Tessera.vst3
+            build/plugin/out/Cosmati.clap
+            build/plugin/out/Cosmati.vst3
             build/plugin/still-tide-48k.wav
             build/plugin/window.ppm
       - uses: actions/upload-artifact@v4   # (the Windows job builds from these: its Pillow has no Raqm)
@@ -95,6 +106,9 @@ jobs:
           build/plugin/Release/tessera-copies-test.exe
           build/plugin/Release/tessera-projfile-test.exe
           build/plugin/Release/tessera-fm1-test.exe
+          build/plugin/Release/tessera-resample-test.exe
+          build/plugin/Release/tessera-midifile-test.exe
+          build/plugin/Release/tessera-listen-test.exe
       - name: List the outputs
         shell: bash
         run: find build/plugin/out -maxdepth 3 | sort
@@ -127,21 +141,34 @@ jobs:
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
           build/plugin/tessera-fm1-test
+          build/plugin/tessera-resample-test
+          build/plugin/tessera-midifile-test
+          build/plugin/tessera-listen-test
       - name: Render test (with the window)
-        run: build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+        run: build/plugin/tessera-render-test build/plugin/out/Cosmati.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
       - name: Session test (three instances saved, closed and opened again)
-        run: build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+        run: build/plugin/tessera-session-test build/plugin/out/Cosmati.clap
+      - name: "Presets test (the DAW's preset browser: the demos, the user's folder, loading)"
+        run: build/plugin/tessera-presets-test build/plugin/out/Cosmati.clap
+      - name: "Presets test, Audio Unit (the wrapper's factory presets: listed and loaded)"
+        timeout-minutes: 5
+        run: |
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R build/plugin/out/Cosmati.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          auval -a | grep -i tess || true
+          build/plugin/tessera-au-presets-test
       - name: List the outputs (both architectures in each)
         run: |
           find build/plugin/out -maxdepth 4 | sort
-          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+          for b in Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app; do
             f=$(find "build/plugin/out/$b" -path '*/Contents/MacOS/*' -type f | head -1)
             [ -n "$f" ] || { echo "missing: $b"; exit 1; }
             lipo -info "$f"
             lipo "$f" -verify_arch arm64 x86_64
           done
       - name: Pack the bundles in a tar
-        run: tar -C build/plugin/out -czf build/plugin/tessera-plugin-macos.tar.gz Tessera.clap Tessera.vst3 Tessera.component Tessera.app
+        run: tar -C build/plugin/out -czf build/plugin/tessera-plugin-macos.tar.gz Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app
       - uses: actions/upload-artifact@v4
         with:
           name: tessera-plugin-macos

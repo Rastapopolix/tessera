@@ -36,7 +36,9 @@ Melodee (Tess).
 *Tessera* (plural *tesserae*) is the Latin word for the small tile of stone or glass in a mosaic. Each generator
 makes a short phrase; EVOLVE and FORM set mutated phrases side by side into sections, so a piece is built from small
 tiles arranged into a larger pattern. The word also meant a die, which suits the chance-driven generators.
-Tessera for FM-1 is not related to the Tessera plugins for VCV Rack.
+*Cosmati*, the name of Tessera as a plugin, is after the Cosmati, the Roman craftsmen whose inlaid floors set small
+cut tiles into geometric patterns. Tessera for FM-1 is not
+related to the Tessera plugins for VCV Rack, nor to Audio Damage's Tessera.
 
 ## New in 3.7
 

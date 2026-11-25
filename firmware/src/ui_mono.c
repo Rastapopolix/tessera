@@ -138,12 +138,67 @@ static int32_t mo_sin(int32_t a)
 }
 static int32_t mo_cos(int32_t a) { return mo_sin(a + 64); }
 
-static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(s); return n ? n * 6 - 1 : 0; }
+#if TESS_HAS_POINTER
+/* Smalti's own BACK, OK and SHIFT buttons (tess_core_key_words, uz_key_words): what the screen says of OCT- and OCT+
+ * names them, as drawn (the pages' strings stay the FM-1's). OCT- held (or "Hold OCT-") is SHIFT, "OCT- BACK" and
+ * "BACK (OCT-)" BACK once, any other OCT- BACK, OCT+ OK. mo_tw measures what mo_text_s draws */
+static int mo_kw_at(const char *s, const char *t)   /* s begins with t */
+{
+    while (*t)
+        if (*s++ != *t++)
+            return 0;
+    return 1;
+}
+static const char *mo_kw(const char *s)
+{
+    static char b[200];
+    uint32_t i = 0, o = 0, n;
+    if (!uz_key_words || !s)
+        return s;
+    for (n = 0; s[n] && !(s[n] == 'O' && s[n + 1] == 'C' && s[n + 2] == 'T'); n++) {}
+    if (!s[n] || str_len(s) >= sizeof b)
+        return s;
+    while (s[i] && o + 6u < sizeof b) {
+        const char *w = 0;
+        uint32_t skip = 0;
+        if (s[i] == 'O' && s[i + 1] == 'C' && s[i + 2] == 'T' && (s[i + 3] == '-' || s[i + 3] == '+')) {
+            skip = 4;
+            if (s[i + 3] == '+') {
+                w = "OK";
+            } else if (mo_kw_at(s + i + 4, " held") || mo_kw_at(s + i + 4, " HELD")) {
+                w = "SHIFT", skip = 9;
+            } else if (i >= 5 && (mo_kw_at(s + i - 5, "Hold ") || mo_kw_at(s + i - 5, "hold ") ||
+                                  mo_kw_at(s + i - 5, "HOLD "))) {
+                w = "SHIFT";
+            } else if (mo_kw_at(s + i + 4, " BACK") || mo_kw_at(s + i + 4, " back")) {
+                w = "BACK", skip = 9;
+            } else if (i >= 6 && mo_kw_at(s + i - 6, "BACK (") && s[i + 4] == ')') {
+                o = o >= 6u ? o - 6u : 0u, w = "BACK", skip = 5;   /* ("BACK (OCT-)": the BACK already written) */
+            } else {
+                w = "BACK";
+            }
+        }
+        if (!w) {
+            b[o++] = s[i++];
+            continue;
+        }
+        while (*w && o + 1u < sizeof b)
+            b[o++] = *w++;
+        i += skip;
+    }
+    b[o] = 0;
+    return b;
+}
+#else
+#define mo_kw(s) (s)
+#endif
+static int32_t mo_tw(const char *s) { int32_t n = (int32_t)str_len(mo_kw(s)); return n ? n * 6 - 1 : 0; }
 /* sc: cells a font pixel. MENU > TEXT BOLD: at sc 1 each lit cell 3 px wide, a pixel into its right neighbour (a
  * glyph has no 1-cell gap to close; between letters the gap is 1 px) */
 static int32_t mo_text_s(const char *s, int32_t x, int32_t y, int32_t sc, uint16_t c)
 {
     int32_t w = sc * 2 + (sc == 1 && TEXT_IDLE(TEXT_IDLE_BOLD));
+    s = mo_kw(s);
     MO_HOOK_TEXT(s, x, y);
     for (; *s; s++, x += 6 * sc) {
         uint32_t ch = mono_ch((uint8_t)*s), r, b;
@@ -639,6 +694,7 @@ static void mo_foot(void)
     int32_t x0 = fit ? 1 : 5, x1 = fit ? 119 : 113, x;   /* (a tab's block reaches x1 + 1) */
     char t[8];
     mo_hl(0, 109, 120, MO_INK);                         /* (row 110 clear: the selected tab's block below it) */
+    UZ(uz_begin(UZ_G_TABS));
     for (;; first++) {                                  /* the first tab: the shown one fits after it */
         for (x = x0, i = first; i <= cur; i++) {
             mo_tab_name(t, idx, i);
@@ -653,14 +709,26 @@ static void mo_foot(void)
             break;
         if (i == cur) mo_inv(t, x + 1, 112);
         else mo_text(t, x + 1, 112, MO_DIM);
+        UZ(uz_add(UZ_G_TABS, UZ_TAB, x, 110, mo_tw(t) + 3, 10, -1, -1, (int32_t)i - (int32_t)cur, t,
+                  mo_title(&PAGES[idx[i]])));   /* (zones: a tab, its page; row the pages from here) */
         x += mo_tw(t) + 5;
     }
-    if (first > 0u)                                     /* pages before: an arrow left, a 3 x 5 wedge */
+    if (first > 0u) {                                   /* pages before: an arrow left, a 3 x 5 wedge */
         for (i = 0; i < 3u; i++)
             mo_vl((int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
-    if (last < n)                                       /* .. after: right */
+#if TESS_HAS_POINTER
+        mo_tab_name(t, idx, cur - 1u);                  /* (zones: an arrow, the page next to this one) */
+        uz_add(UZ_G_TABS, UZ_TAB, 0, 110, 5, 10, -1, -1, -1, t, mo_title(&PAGES[idx[cur - 1u]]));
+#endif
+    }
+    if (last < n) {                                     /* .. after: right */
         for (i = 0; i < 3u; i++)
             mo_vl(119 - (int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
+#if TESS_HAS_POINTER
+        mo_tab_name(t, idx, cur + 1u);
+        uz_add(UZ_G_TABS, UZ_TAB, 116, 110, 4, 10, -1, -1, 1, t, mo_title(&PAGES[idx[cur + 1u]]));
+#endif
+    }
 }
 
 /* ---- the pictures ---- */
@@ -748,6 +816,25 @@ static void mo_pic_turing(const gen_turing_t *g)
         else mo_box(x, 104 - h, 6, h, MO_INK);
     }
 }
+#if TESS_HAS_POINTER
+#define UZ_ROLE(r) (r)
+/* the knob of this page whose column is named n ("X", "SHIFT"): its role (EN_K1 ..), -1 none: a picture's marker
+ * turns it (zones) */
+static int mo_fit(char *d, const char *s);
+static int32_t mo_knob_named(const char *n)
+{
+    char f[16];
+    uint32_t c;
+    (void)mo_fit(f, n);                                 /* (the column as drawn: SHIFT is SHFT, FOLLOW FLLW) */
+    for (c = 0; c < 4u; c++)                            /* (draw_columns' capture: generator pages too, which
+                                                         * page_desc has no descriptor for) */
+        if (mo_col[c].used && (str_eq(mo_col[c].label, n) || str_eq(mo_col[c].label, f)))
+            return (int32_t)(EN_K1 + c);
+    return -1;
+}
+#else
+#define UZ_ROLE(r) (-1)
+#endif
 static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
 {
     static const char *const LN[3] = {"BD", "SD", "HH"};
@@ -760,6 +847,12 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
     }
     mo_vl(px, 55, 38, MO_INK);
     mo_hl(3, py, 38, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under && (mo_knob_named("X") >= 0 || mo_knob_named("Y") >= 0)) {   /* (zones: the cross-hair: X, Y) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");
+    }
+#endif
     mo_disc(px, py, 2, MO_INK);
     for (p = 0; p < 3u; p++) {                          /* the three parts: 16 steps as two rows of eight */
         int32_t y = 56 + (int32_t)p * 17;
@@ -895,6 +988,14 @@ static void mo_pic_notes(const track_t *t)
     c0 = lo / 12 * 12;
     span = hi - c0 <= 12 ? 12 : hi - c0 <= 24 ? 24 : 36;
     if (lo == hi) c0 = 0, span = 127;
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (a zone over the steps: a click there a note, ui_roll.c) */
+        uz_roll.first = (int16_t)(pg * 16u), uz_roll.len = (int16_t)len, uz_roll.c0 = (int16_t)c0;
+        uz_roll.span = (int16_t)span, uz_roll.lo = (int16_t)lo, uz_roll.hi = (int16_t)hi;
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_ROLL, 1, base - 26, 118, 33, -1, -1, (int32_t)(pg * 16u), "NOTES", "");
+    }
+#endif
     for (i = 0; i < 16u; i++) {
         uint32_t si = pg * 16u + i;
         const step_t *st = &seq_steps(t)[si < NSTEP ? si : 0u];
@@ -947,6 +1048,10 @@ static void mo_pic_matrix(void)
     uint32_t r, k, rb = UI_BANK(mx_from), cb = UI_BANK(mx_to);   /* (8 tracks: the four rows of the picked cell's
                                                                  * FROM and the four columns of its TO) */
     mo_text("FR>TO", 1, 53, MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);                             /* (zones: a cell, FROM and TO turned to it, then OPEN) */
+#endif
 #if CORE_TRACKS > 4
     for (k = 0; k < UI_NT; k++) {
         char n[2] = {(char)('1' + cb + k), 0};
@@ -967,6 +1072,13 @@ static void mo_pic_matrix(void)
             uint32_t lv = mx_level(r, k);
             if (r == mx_from && k == mx_to)
                 mo_box(x - 1, y - 1, 22, 11, MO_HOT);
+#if TESS_HAS_POINTER
+            {
+                char nm[8] = {'T', (char)('1' + r), '>', 'T', (char)('1' + k), 0};
+                uz_cell(UZ_G_PIC, x - 1, y - 1, 22, 11, EN_K1, (int32_t)r - (int32_t)mx_from, EN_K2,
+                        (int32_t)k - (int32_t)mx_to, nm, lv ? "OPEN" : "--");
+            }
+#endif
             mo_box(x, y, 20, 9, lv ? MO_TRK(r) : mo_tdim(r));
             if (lv)
                 mo_fill(x + 1, y + 1, 1 + (int32_t)lv * 17 / 8, 7, MO_TRK(r));
@@ -1034,6 +1146,13 @@ static void mo_pic_bounce(const gen_bounce_t *b)
 {
     static const uint8_t LEAF[3][2] = {{1, 2}, {0, 4}, {1, 2}};   /* (a row's first cell and length) */
     uint32_t w = b->hit, n = b->balls >= 1u && b->balls <= GEN_BOUNCE_MAX ? b->balls : 1u, k;
+#if TESS_HAS_POINTER
+    if (!cv_under && mo_knob_named("BALLS") >= 0) {     /* (zones: the picture: a click a ball more, a right-click
+                                                         * one less, the wheel either way) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, 1, 52, 118, 55, -1, mo_knob_named("BALLS"), 0x200, "BALLS", "");
+    }
+#endif
     if (b->balls == GEN_BOUNCE_FALL) {
         mo_fill(2, w ? 105 : 106, 116, w ? 2 : 1, w ? MO_INK : MO_DIM);
         if (b->gust)
@@ -1169,6 +1288,13 @@ static void mo_pic_quad(uint32_t tr)
         int32_t y = 59 + (int32_t)r * 10;
         uint16_t c = on ? MO_TRK(r) : mo_tdim(r);
         char lb[3] = {'T', (char)('1' + r), 0};
+#if TESS_HAS_POINTER
+        if (!cv_under) {                                /* (zones: a row, its track picked) */
+            if (!r)
+                uz_begin(UZ_G_PIC);
+            uz_add(UZ_G_PIC, UZ_TRACK, 0, y - 1, 120, 10, -1, -1, (int32_t)r, lb, "");
+        }
+#endif
         if (r == tr) mo_invc(lb, 2, y, MO_TRK(r));
         else mo_text(lb, 2, y, c);
         switch (q->dir) {
@@ -1531,14 +1657,33 @@ static void mo_pic_evolve(const track_t *t)
         if (ch) mo_fill(87, 102, (int32_t)(ch * 30u / len) ? (int32_t)(ch * 30u / len) : 1, 5, MO_INK);
     }
 }
-/* the four tracks as numbered cells in two rows from (x, y), the one picked solid, this track outlined, the rest dim */
-static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on)
+/* the four tracks as numbered cells in two rows from (x, y), the one picked solid, this track outlined, the rest dim.
+ * Eight tracks: four rows of cells 9 high, 10 apart, from 3 higher, so they end above the tabs as the four did */
+#if CORE_TRACKS > 4
+#define MO_TRK_CH 9
+#define MO_TRK_DY 10
+#define MO_TRK_Y0 (-3)
+#else
+#define MO_TRK_CH 11
+#define MO_TRK_DY 13
+#define MO_TRK_Y0 0
+#endif
+static void mo_trk_cells(int32_t x, int32_t y, uint32_t picked, uint32_t tr, int on, int32_t role)
 {
     for (uint32_t i = 0; i < TESSERA_TRACKS; i++) {
-        int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + (int32_t)(i / 2u) * 13;
+        int32_t cx = x + (int32_t)(i % 2u) * 13, cy = y + MO_TRK_Y0 + (int32_t)(i / 2u) * MO_TRK_DY, ty = cy + (MO_TRK_CH - 7) / 2;
         char n[2] = {(char)('1' + i), 0};
-        if (picked == i + 1u) mo_fill(cx, cy, 11, 11, MO_TRK(i)), mo_text(n, cx + 3, cy + 2, MO_BG);
-        else mo_box(cx, cy, 11, 11, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, cy + 2, i == tr ? MO_TRK(i) : mo_tdim(i));
+#if TESS_HAS_POINTER
+        if (role >= 0 && !cv_under) {                   /* (zones: a click picks the track, the one picked: none) */
+            char nm[4] = {'T', (char)('1' + i), 0, 0};
+            uz_cell(UZ_G_PIC, cx, cy, 11, MO_TRK_CH, role, picked == i + 1u ? -(int32_t)picked : (int32_t)(i + 1u) -
+                    (int32_t)picked, -1, 0, nm, picked == i + 1u ? "ON" : "");
+        }
+#else
+        (void)role;
+#endif
+        if (picked == i + 1u) mo_fill(cx, cy, 11, MO_TRK_CH, MO_TRK(i)), mo_text(n, cx + 3, ty, MO_BG);
+        else mo_box(cx, cy, 11, MO_TRK_CH, i == tr && on ? MO_TRK(i) : mo_tdim(i)), mo_text(n, cx + 3, ty, i == tr ? MO_TRK(i) : mo_tdim(i));
     }
 }
 /* TWEAK: under each dial its picture. SHIFT: the note off its written pitch (the dashed line); DROP: 8 hits, the ones it
@@ -1551,10 +1696,19 @@ static void mo_pic_tweak(const track_t *t)
     uint32_t tr = trk_index(t), i;
     const tessera_evolve_t *ev = &tessera.evolve[tr < TESSERA_TRACKS ? tr : 0u];
     int32_t sh = ev->shift, nd = ((int32_t)ev->drop * 8 + 50) / 100, hu = ev->human, y;
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);                             /* (zones: SHIFT's slider, FOLLOW's tracks) */
+#endif
     mo_dash(3, 80, 25, MO_DIM);                         /* SHIFT: +-24 over +-22 cells */
     y = 80 - sh * 22 / 24;
     if (sh) mo_vl(15, y < 80 ? y + 2 : 81, y < 80 ? 78 - y : y - 81, MO_DIM);
     mo_fill(5, y - 1, 20, 3, sh ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under && mo_knob_named("SHIFT") >= 0) {     /* (zones: SHIFT's slider, up and down) */
+        uz_add(UZ_G_PIC, UZ_POINT, 4, y - 4, 22, 9, -1, mo_knob_named("SHIFT"), 0, "SHIFT", "");
+    }
+#endif
     for (i = 0; i < 8u; i++) {                          /* DROP */
         int32_t hx = 32 + (int32_t)(i % 4u) * 7, hy = 62 + (int32_t)(i / 4u) * 16, gone = 0, k;
         for (k = 0; k < nd; k++)
@@ -1566,7 +1720,7 @@ static void mo_pic_tweak(const track_t *t)
         int32_t w = 26 - 26 * (HUM_LEN[i] + 5) * hu / 1000, h = 3 + HUM_VEL[i] * hu / 200;
         mo_fill(62, 60 + (int32_t)i * 9 + (4 - h) / 2, w, h < 1 ? 1 : h, hu ? MO_INK : MO_DIM);
     }
-    mo_trk_cells(92, 64, ev->follow, tr, ev->follow != 0u);   /* FOLLOW */
+    mo_trk_cells(92, 64, ev->follow, tr, ev->follow != 0u, UZ_ROLE(mo_knob_named("FOLLOW")));   /* FOLLOW */
 }
 /* TWEAK 2. BRANCH: a stem forking, the branch to TO solid as far as its chance (COIN: both, the likelier solid); TO:
  * the tracks, the one hits go to solid; LOGIC: 8 steps of this track, of WITH's and what plays; COND: 8 bars, those a
@@ -1584,7 +1738,7 @@ static void mo_pic_tweak2(const track_t *t)
     mo_line(14, 82, 23, 66, right ? MO_INK : MO_DIM);
     if (coin && right) mo_box(2, 61, 6, 6, MO_DIM); else mo_fill(2, 61, 6, 6, MO_INK);
     if (right) mo_fill(20, 61, 6, 6, MO_INK); else mo_box(20, 61, 6, 6, MO_DIM);
-    mo_trk_cells(32, 64, on ? ev->br_to : 0u, tr, on);  /* TO */
+    mo_trk_cells(32, 64, on ? ev->br_to : 0u, tr, on, UZ_ROLE(mo_knob_named("TO")));  /* TO */
     if (lg) res = ev->logic == TESS_LG_AND ? ME & OTHER : ev->logic == TESS_LG_OR ? ME | OTHER :
                   ev->logic == TESS_LG_XOR ? ME ^ OTHER : ME & ~OTHER & 0xFFu;
     for (i = 0; i < 8u; i++) {                          /* LOGIC */
@@ -1780,9 +1934,19 @@ static void mo_pic_piece(void)
         if (i) mo_line(1 + i, py, 2 + i, y, set ? MO_INK : MO_DIM);
         py = y;
     }
+#if TESS_HAS_POINTER
+    if (!cv_under)
+        uz_begin(UZ_G_PIC);
+#endif
     if (tessera.pl_shape == PL_USER)
         for (i = 0; i < 8; i++) {
             int32_t x = 2 + i * 115 / 7, y = 86 - (int32_t)tessera.pl_user[i] * 32 / 100;
+#if TESS_HAS_POINTER
+            if (!cv_under) {                            /* (zones: a point, up and down: its level) */
+                char nm[8] = {'P', 'O', 'I', 'N', 'T', ' ', (char)('1' + i), 0};
+                uz_add(UZ_G_PIC, UZ_POINT, x - 3, y - 3, 7, 7, -1, -1, 0x100 | i, nm, "");
+            }
+#endif
             mo_disc(x, y, lay && i == (int32_t)(pl_pt & 7u) ? 3 : 2, MO_INK);
         }
     if (on && song.playing) mo_vl(2 + (int32_t)(at * 115u >> 16), 52, 36, MO_INK);
@@ -2005,6 +2169,14 @@ static void mo_pic_env(const track_t *t)
         py = y;
     }
     mo_hl(x0, bot, x4 - x0 + 1, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: the corners, dragged: ATK; DEC and SUS; REL and SUS) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, x1 - 3, top - 3, 7, 7, EN_K1, -1, 0, "ATTACK", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x2 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 1, EN_K1 + 2, 0, "DECAY / SUS", "");
+        uz_add(UZ_G_PIC, UZ_POINT, x3 - 3, MOY(sus) - 3, 7, 7, EN_K1 + 3, EN_K1 + 2, 1, "RELEASE / SUS", "");
+    }
+#endif
     {
         const int32_t hx[4] = {x1, x2, x3, x4}, hy[4] = {top, MOY(sus), MOY(sus), bot};
         for (i = 0; i < 4; i++) {
@@ -2772,6 +2944,10 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
     fmt_int(b, song.g[G_BPM]);
     x = 119 - mo_tw(b);
     mo_text(b, x, 1, ui.bpm_t ? MO_HOT : MO_DIM);
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_HEAD);                                /* (zones: the tempo; turn, wheel, double-click) */
+    uz_add(UZ_G_HEAD, UZ_TEMPO, x - 1, 0, mo_tw(b) + 2, 9, -1, -1, 0, "TEMPO", b);
+#endif
     if (!msg || (int32_t)str_len(msg) * 6 <= x - 7 - (song.rec ? 7 : 0) - 6) {   /* (a message too long: in its place) */
         x -= 7;
         if (chain.running || song.playing) {            /* PLAY: a triangle, hollow off the beat (mo_beat); STOP: a square */
@@ -2885,27 +3061,36 @@ static void mo_scale_pic(int32_t y, int32_t h)
 }
 /* the sound's strip at the bottom (pv_sound; 20 px): the page tabs where the page has them, else the track, its
  * engine and its sound's name */
+static void mo_sound_strip(int32_t y, const char *en, const char *nm);
 static void mo_sound(const char *en, const char *nm)
+{
+    if (!foot_tabs_on()) {
+        mo_sound_strip(PV_SOUND_Y, en, nm);
+        return;
+    }
+    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
+    cv_oy = -PV_SOUND_Y;
+    mo_foot();
+    cv_oy = 0;
+    cv_blit(0, PV_SOUND_Y);
+}
+/* the sound strip at y: "T5" inverted, the engine, the sound's name dim; at the foot (y PV_SOUND_Y) its line over it */
+static void mo_sound_strip(int32_t y, const char *en, const char *nm)
 {
     char a[24], b[24];
     int32_t x;
-    cv_begin(240, 240 - PV_SOUND_Y, MO_BG);
-    if (foot_tabs_on()) {
-        cv_oy = -PV_SOUND_Y;
-        mo_foot();
-        cv_oy = 0;
-    } else {
+    cv_begin(240, 20, MO_BG);
+    if (y == PV_SOUND_Y)
         mo_hl(0, 0, 120, MO_INK);
-        b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
-        mo_inv(b, 1, 2);
-        mo_ascii(a, en, sizeof a);
-        mo_cut(b, a, 8);
-        x = mo_text(b, 16, 2, MO_INK) + 6;
-        mo_ascii(a, nm, sizeof a);
-        mo_cut(b, a, (uint32_t)(119 - x) / 6u);
-        mo_text(b, x, 2, MO_DIM);
-    }
-    cv_blit(0, PV_SOUND_Y);
+    b[0] = 'T', b[1] = (char)('1' + song.sel % 10u), b[2] = 0;
+    mo_inv(b, 1, 2);
+    mo_ascii(a, en, sizeof a);
+    mo_cut(b, a, 8);
+    x = mo_text(b, 16, 2, MO_INK) + 6;
+    mo_ascii(a, nm, sizeof a);
+    mo_cut(b, a, (uint32_t)(119 - x) / 6u);
+    mo_text(b, x, 2, MO_DIM);
+    cv_blit(0, (uint32_t)y);
 }
 /* a confirm dialog (draw_confirm): a frame, a warning sign, the question, the name it is about, NO (OCT-) outlined and
  * YES (OCT+) filled */
@@ -3073,6 +3258,10 @@ static void mo_stage_head(void)
         fmt_int(b, song.g[G_BPM]);
         mo_text(b, 9, 1, ui.bpm_t ? MO_HOT : MO_DIM);
         if (ui.bpm_t) mo_hl(9, 8, mo_tw(b), MO_HOT);
+#if TESS_HAS_POINTER
+        uz_begin(UZ_G_HEAD);                            /* (zones: the tempo, with the PLAY mark before it) */
+        uz_add(UZ_G_HEAD, UZ_TEMPO, 0, 0, mo_tw(b) + 10, 9, -1, -1, 0, "TEMPO", b);
+#endif
     }
     if (!msg && !lit) {                                 /* (a message: in the engine's place too; overload: the dots) */
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
@@ -3259,6 +3448,17 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     uint16_t ink = quiet ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
     char a[8], b[8];
     int32_t h;
+#if TESS_HAS_POINTER
+    {                                                   /* (zones: LEVEL its knob's, PAN, the word under them: MUTE,
+                                                         * double-click SOLO; soloed, SOLO off (role 1: tess_core.c)) */
+        int32_t zx = (CARD_X(k - UI_BASE) - 2) / 2, zy = PV_STRIP_TOP / 2;
+        char tn[4] = {'T', (char)('1' + k), 0, 0};
+        uz_begin_row(UZ_G_STRIPS, (int32_t)k);
+        uz_add(UZ_G_STRIPS, UZ_LEVEL, zx, zy, CARD_W / 2 + 2, 46, -1, -1, (int32_t)k, tn, "LEVEL");
+        uz_add(UZ_G_STRIPS, UZ_PAN, zx, zy + 46, CARD_W / 2 + 2, 21, -1, -1, (int32_t)k, tn, "PAN");
+        uz_add(UZ_G_STRIPS, UZ_MUTE, zx + 2, zy + 68, 25, 11, 1, -1, (int32_t)k, tn, solo ? "SOLO" : "MUTE/SOLO");
+    }
+#endif
     cv_begin(CARD_W + 4, MO_STRIP_H * 2, MO_BG);
     if (sel)
         mo_box(0, 0, CARD_W / 2 + 2, MO_STRIP_H, MO_TRK(k));
@@ -3519,6 +3719,16 @@ static void mo_help(const char *name, const char *val, const char *text)
     if (n > rows && help.top + rows < n) hint = "CW: MORE  CCW: UP";
     else if (help.top) hint = "CCW: UP";
     else hint = "ARP + KNOB: HELP";
+#if TESS_HAS_POINTER
+    if (uz_help_pin)                                    /* (a card the mouse opened, tess_core.c core_help: the wheel
+                                                         * scrolls it, a click closes it) */
+        hint = n > rows && help.top + rows < n ? "SCROLL DOWN: MORE" : "CLICK: CLOSE";
+    uz_begin(UZ_G_LIST);                                /* (zones: the card, over the page: its text under the wheel,
+                                                         * the knob it is about's) */
+    if (n > rows || uz_help_pin)              /* (pinned: the card a zone, its click closes it) */
+        uz_add(UZ_G_LIST, UZ_SCROLL, HELP_X / 2, HELP_Y / 2, w, h, EN_K1 + (int32_t)help.knob, -1, 0, name ? name : "HELP",
+               "");
+#endif
     for (top = 0; top < h * 2; top += 120) {
         int32_t sh = h * 2 - top < 120 ? h * 2 - top : 120, y = HELP_T0 / 2;
         cv_begin((uint32_t)w * 2u, (uint32_t)sh, MO_BG);
@@ -3605,7 +3815,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
             mo_ascii(a, browser_list_name(i), sizeof a);
             mo_cut(b, a, 7);
             if (i == m)
-                mo_fill(0, y - 1, 44, 9, MO_INK);
+                mo_fill(0, y - 1, 44, 9, MO_HOT);               /* (the row picked: as every list's, MOSAIC white) */
             mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT || i >= LM_ENG ? MO_INK : MO_DIM);
         }
         mo_vl(46, 11, 96, MO_DIM);
@@ -3624,17 +3834,22 @@ static void mo_browser(uint32_t cur, uint32_t total)
             }
             src = preset_at(at, &k);                    /* the card */
             entry_label(src, k, tag, nm);
-            mo_box(48, 39, 68, 23, out ? MO_DIM : MO_INK);
+            mo_box(48, 39, 68, 23, out ? MO_DIM : MO_HOT);
             mo_ascii(a, nm[0] ? nm : tag, sizeof a);
             mo_cut(b, a, 10);
-            mo_text(b, 51, 42, out ? MO_DIM : MO_INK);
-            mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
-            mo_cut(b, a, 4);
-            mo_text(b, 51, 52, MO_DIM);
-            fmt_int(b, (int32_t)at + 1);
+            mo_text(b, 51, 42, out ? MO_DIM : MO_HOT);
+            fmt_int(b, (int32_t)at + 1);                /* (its place first: the engine's name takes the room left,
+                                                         * "165/177" beside "PHASE" overlapped) */
             str_cpy(b + str_len(b), "/", 2);
             fmt_int(b + str_len(b), (int32_t)total);
             mo_textr(b, 113, 52, MO_DIM);
+            {
+                char e[8];
+                int32_t room = (113 - mo_tw(b) - 4 - 51) / 6;
+                mo_ascii(a, ENGINES[eng_idx(src_engine(src, k))]->name, sizeof a);
+                mo_cut(e, a, (uint32_t)(room < 0 ? 0 : room > 4 ? 4 : room));
+                mo_text(e, 51, 52, MO_DIM);
+            }
             mo_vl(119, 11, 96, MO_DIM);                 /* the scroll bar: the place */
             mo_fill(118, 11 + (total > 1u ? (int32_t)at * 86 / (int32_t)(total - 1u) : 0), 2, 10,
                     out ? MO_DIM : MO_INK);
@@ -3655,6 +3870,25 @@ static void mo_browser(uint32_t cur, uint32_t total)
         if (!s) {                                       /* (zones: the two lists' knobs, BACK and OK) */
             UZ(uz_begin(UZ_G_SIDES));
             UZ(uz_begin(UZ_G_KEYS));
+#if TESS_HAS_POINTER
+            uz_begin(UZ_G_PIC);                         /* (a LIST name or a sound: a click turns its knob to it; a
+                                                         * sound's double-click also OK, tess_core.c) */
+            for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++)
+                if (first + (uint32_t)r != m)
+                    uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
+                            "LIST", browser_list_name(first + (uint32_t)r));
+            for (r = -2; total && r <= 3; r++) {
+                int32_t n = (int32_t)at + r;
+                if (n < 0 || n >= (int32_t)total)
+                    continue;
+                if (r) {
+                    src = preset_at((uint32_t)n, &k);
+                    entry_label(src, k, tag, nm);
+                }
+                uz_cell(UZ_G_PIC, 47, r ? (r < 0 ? 39 + r * 12 : 53 + r * 12) : 38, 70, r ? 10 : 25, EN_K2, r, -1, 0,
+                        "SOUND", r ? (nm[0] ? nm : tag) : "");
+            }
+#endif
             UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 97, EN_K1, -1, 0, "LIST", ""));
             UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 97, EN_K2, -1, 0, "SOUND", ""));
             if (back)
@@ -3704,6 +3938,33 @@ static void mo_patterns(void)
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_LIST);                                /* (zones: a track's number selects it; a cell queues that
+                                                         * pattern on its track, KNOB k turned to it; Copy to: the
+                                                         * place, on the track copied from) */
+    uz_begin(UZ_G_TRACKS);
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
+        const track_t *t = &trk[k];
+        int32_t y = 20 + (int32_t)(k - UI_BASE) * 19;
+        uint32_t from = t->pattern_next < NPAT ? t->pattern_next : t->pattern;
+        char tn[4] = {'T', (char)('1' + k), 0, 0}, pn[16];
+        uz_add(UZ_G_TRACKS, UZ_TRACK, 0, y + 2, 11, 11, -1, -1, (int32_t)k, tn, "");
+        for (b = 0; b < NPAT; b++) {
+            int32_t d = (int32_t)b - (int32_t)from;
+            if (ptc_on()) {                             /* (Copy to: Knob turns from the place, past the source) */
+                int32_t at = ui.ptc_dst, step = b > (uint32_t)at ? 1 : -1, guard;
+                if (k != ui.ptc_trk || b == ui.ptc_src)
+                    continue;
+                for (d = 0, guard = 0; at != (int32_t)b && guard < (int32_t)NPAT; d += step, guard++)
+                    at = (int32_t)ptc_next((uint32_t)at, step);
+            }
+            pn[0] = 'P', pn[1] = (char)('1' + b), pn[2] = 0;
+            str_cpy(pn + 2, b == t->pattern ? " PLAYING" : b == t->pattern_next ? " NEXT" : pattern_used(k, b) ? "" : " EMPTY",
+                    sizeof pn - 2);
+            uz_cell(UZ_G_LIST, 14 + 13 * (int32_t)b, y - 1, 13, 18, EN_K1 + (int32_t)(k - UI_BASE), d, -1, 0, tn, pn);
+        }
+    }
+#endif
     for (s = 0; s < 2u; s++) {                          /* rows 9 .. 59, then 60 .. 119 */
         cv_begin(240, s ? 120u : 102u, MO_BG);
         cv_oy = s ? -120 : -18;
@@ -3799,6 +4060,27 @@ static void mo_song(void)
     if (!ui.force && sig == mo_pt_sig)
         return;
     mo_pt_sig = sig;
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_LIST);                                /* (zones: a section's letter picks it, KNOB 1 turned to it;
+                                                         * a block picks its section and its track, KNOBs 1 and 2) */
+    for (j = 0; j < SG_COLS && sg.first + j < sg.ncols; j++) {
+        uint32_t r = sg.first + j;
+        int32_t dr = (int32_t)r - (int32_t)sg.sel;
+        char sl[8] = {'+', 0}, tn[8];
+        if (r < n)
+            sl[0] = row_letter((const uint8_t (*)[NTRK])chain_patterns, r);
+        uz_cell(UZ_G_LIST, 4 + 28 * (int32_t)j, 10, 27, 11, EN_K1, dr, -1, 0, r < n ? "SECTION" : "ADD", sl);
+        for (k = UI_BASE; k < UI_BASE + UI_NT && r < n; k++) {
+            uint32_t p = chain_patterns[r][k];
+            tn[0] = 'T', tn[1] = (char)('1' + k), tn[2] = ' ', tn[3] = sl[0], tn[4] = 0;
+            str_cpy(sl + 1, " P", 3);
+            sl[3] = (char)('1' + p % NPAT), sl[4] = 0;
+            uz_cell(UZ_G_LIST, 5 + 28 * (int32_t)j, 22 + (int32_t)(k - UI_BASE) * 18, 26, 17, EN_K1, dr, EN_K2,
+                    (int32_t)k - (int32_t)song.sel, tn, pattern_used(k, p) ? sl + 2 : "EMPTY");
+            sl[1] = 0;
+        }
+    }
+#endif
     for (s = 0; s < 2u; s++) {
         int32_t x, bat, right;
         cv_begin(240, 120, MO_BG);
@@ -3910,6 +4192,23 @@ static void mo_song(void)
 /* ---- PROJECT, USER, the STOREs (slot_draw): a strip a row ---- */
 /* the slot picked (46 px = 23 cells): framed, its tag inverted, its name, a line about it (dim), BOOT inverted at the
  * right on the one power-on loads */
+/* the track's sound under a slot page's rows (the foot has the page tabs now): "T5 FM6 KUGO HARP", as the foot had it
+ * (mo_sound's strip, its own line left out): what SAVE here would store */
+static int mo_page_chrome(void) { return !ui.home && (slot_kind() || list_on()); }
+static void mo_slot_sound(void)
+{
+    char nm[20];
+    sound_name(TSEL, nm);
+    mo_sound_strip(PV_SOUND_Y - 20, ENGINES[eng_idx(TSEL->eng_req)]->name, nm);
+}
+/* the line over the page tabs (mo_foot draws it on row 109, which a slot or list page's foot, from row 110, leaves
+ * out) */
+static void mo_foot_line(void)
+{
+    cv_begin(240, 2, MO_BG);
+    mo_hl(0, 0, 120, MO_INK);
+    cv_blit(0, PV_SOUND_Y - 2);
+}
 static void mo_slot_card(const char *tag, const char *nm, int used, const char *d, int boot, int32_t y)
 {
     char a[24], b[24];

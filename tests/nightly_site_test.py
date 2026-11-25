@@ -37,10 +37,10 @@ class NightlySite(unittest.TestCase):
             self.assertIn("Install 1.1.0", home)
             self.assertIn("firmware/tessera-1.1.0-1core.fwsc", home)
             self.assertNotRegex(home, r"@[A-Z0-9]+@")
-            src = Path(__file__).resolve().parent.parent / "demos"   # (the editor's Demo projects, and the CHK projects)
-            for sub in ("", "checks"):
-                self.assertEqual(sorted(f.name for f in (site / "webapp/editor/demos" / sub).glob("*.tsp")),
-                                 sorted(f.name for f in (src / sub).glob("*.tsp")))
+            src = Path(__file__).resolve().parent.parent / "demos"   # (the editor's Demo projects; not the CHK test ones)
+            self.assertEqual(sorted(f.name for f in (site / "webapp/editor/demos").glob("*.tsp")),
+                             sorted(f.name for f in src.glob("*.tsp")))
+            self.assertFalse((site / "webapp/editor/demos/checks").exists())
             editor = site / "webapp/editor/index.html"
             editor.write_text("existing published editor")
             # Exercise migration from the existing inline-only release metadata.
@@ -122,11 +122,11 @@ class NightlySite(unittest.TestCase):
             commit = "89abcde" * 5 + "89abc"
             publish_beta(site, str(beta), str(beta1), "3.3-beta1", commit, "2026-11-04T19:00:00Z")
             self.assertEqual(editor.read_text(), "existing published editor")
-            # The beta's own editor (this checkout's web/) sits beside it, with the demo and CHK test projects.
+            # The beta's own editor (this checkout's web/) sits beside it, with the demo projects (not the CHK test ones).
             beta_ed = site / "webapp/editor-beta"
-            self.assertIn("demosChecks", (beta_ed / "index.html").read_text())
+            self.assertNotIn("demosChecks", (beta_ed / "index.html").read_text())
             self.assertTrue((beta_ed / "fm1backup.js").exists())
-            self.assertTrue(any(beta_ed.glob("demos/*.tsp")) and any(beta_ed.glob("demos/checks/chk-*.tsp")))
+            self.assertTrue(any(beta_ed.glob("demos/*.tsp")) and not any(beta_ed.glob("demos/checks/*.tsp")))
             self.assertIn('"editor": "../editor-beta/"', installer.read_text())
             self.assertEqual((site / "firmware/tessera-3.2.2.fwsc").read_bytes(), dual.read_bytes())
             self.assertEqual((site / "firmware/tessera-3.3-beta1-1core.fwsc").read_bytes(), beta1.read_bytes())

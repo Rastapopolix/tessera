@@ -1594,7 +1594,9 @@ first.
 **GLO > LANDSCAPE** is a page to look at while the music plays: a night sea, drawn by the music. It has no settings,
 and the scene itself changes nothing.
 
-- **The keys** are MIXER's (mute, solo, FILL, tap).
+- **The keys** are MIXER's (mute, solo, FILL, tap), and their lights stay calm: nothing blinks, the playing tracks' black keys glow at the
+  menu's **LIGHTS** level (dark at OFF), and only what you switch on (a solo, FILL, HOLD) is bright. Hold **GLO** for
+  the usual blinking map.
 - **KNOB 1 to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the sea answer.
   A macro being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here), and
   the screen reader says it.
@@ -2521,7 +2523,7 @@ See the recipe [An LFO for another synth's filter](RECIPES.md#an-lfo-for-another
 - **SYNC ECHO** is ECHO on the beat: its TIME is a note value (1/32, 16T, 1/16, 8T, 16D, 1/8, 4T, 8D, 1/4, 2T, 4D,
   1/2, 2D, 1/1; T a triplet, D dotted), a knob step each, at the tempo playing (BPM, a MIDI clock, a TEMPO mod). It
   follows a tempo change by gliding, as ECHO's TIME does. On the FM-1 the echo holds up to 371 ms: a longer note value
-  halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin holds about 3 s. Older firmware, without
+  halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin (Cosmati) holds about 3 s. Older firmware, without
   SYNC ECHO, plays it as DRIVE.
 - **REVERB** changes SIZE a sample at a time.
 - The **send effects'** mods are the project's, not a track's, so [MATRIX](#matrix) leaves them out.

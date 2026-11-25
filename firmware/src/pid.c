@@ -57,7 +57,11 @@ static const char *const TX_N_DMAP[] = {"GM", "ROW"};
 static const char *const TX_N_PHRASE[] = {"4", "8", "16"};   /* (form_chain.c FC_PHRASE_BARS) */
 static const char *const TX_N_FCFOLLOW[] = {"FOLLOW", "OWN"};
 static const char *const TX_N_ETSTYLE[] = {"CUT", "FADE"};   /* (entries.c) */
-static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR"};
+static const char *const TX_N_ETROLE[] = {"AUTO", "BASS", "RHYTHM", "HARMONY", "MELODY", "ANCHOR",
+#if TESSERA_TRACKS > 4
+                                          "TURNS",   /* (tracks 5..8: turns with the track four below, entries.c) */
+#endif
+};
 static const char *const TX_N_ETORDER[] = {"AUTO", "1ST", "2ND", "3RD", "4TH"};
 static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND", "DRUNK"};   /* (SEQ_*) */
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
@@ -733,7 +737,8 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_ET_ROLE, "ENTRIES ROLE", "What the track is to Entries: BASS comes in first and goes last, then RHYTHM, "
                                    "HARMONY, MELODY (a melody only over a bass or harmony). ANCHOR is never taken out. "
                                    "AUTO: CHORD or chords harmony, ATLAS, drums or NOISE rhythm, the lowest track (a fifth "
-                                   "below the rest, or below C3) bass, else melody. GLO > ENTRIES with OCT- held, or OCT- held on FORM, KNOB 4."),
+                                   "below the rest, or below C3) bass, else melody. "
+                                   "GLO > ENTRIES with OCT- held, or OCT- held on FORM, KNOB 4."),
     XP_(TX_PL_LENGTH, "PIECE LENGTH", "FREE: the music plays on unplanned. A length, 1 minute to 4 hours: the piece is "
                                       "planned to it from PLAY, its SHAPE steering ENERGY (ARC how far), ENTRIES (how "
                                       "many tracks play) and the CHAIN (further away near the top, A in the last part). "

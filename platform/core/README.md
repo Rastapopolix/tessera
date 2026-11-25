@@ -7,7 +7,7 @@ changes its image.
 
 | File | What |
 | --- | --- |
-| `tess_core.h` | the API: events in (keys, buttons, knobs, MIDI, the transport, a DAW's clock), audio out (float, or fixed Q15 blocks), the screen and the panel's LEDs, the project as a `.tsp` record and the four slots, parameters by central ID (`pid.h`), MIDI out, the screen's zones for a mouse (`tess_view_t.zones`, `tess_core_zone_do`; a profile with `TESS_HAS_POINTER`) |
+| `tess_core.h` | the API: events in (keys, buttons, knobs, MIDI, the transport, a DAW's clock), audio out (float, or fixed Q15 blocks), the screen and the panel's LEDs, the project as a `.tsp` record and the four slots, parameters by central ID (`pid.h`), MIDI out, the screen's zones for a mouse (`tess_view_t.zones`, `tess_core_zone_do`; a profile with `TESS_HAS_POINTER`), a second screen, TRACKS (`tess_core_tracks_view`, `tess_core_tracks_do`; a profile with `TESS_SCR_COUNT` 2) |
 | `tess_core.c` | its implementation over the shared build. Audio time drives the clock: each millisecond of samples runs the FM-1's main loop (a UI frame every 15 ms) |
 | `core_unit.c` | the shared build: the whole firmware (sound, sequencer, generators, the FM-1's UI, the projects) on the host HAL, with `tess_core.c`. Each front end includes it with its own options (listed at its top) |
 | `host_hal.h` | the FM-1's hardware without the FM-1: the stand-ins for `firmware/hal/` (buttons, keys, encoders, LEDs, a 240 x 240 screen, no flash) |

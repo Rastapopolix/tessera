@@ -13,3 +13,4 @@
 #define TESS_TIER TESS_TIER_ROOMY   /* 8 MiB QSPI, 64 MiB SDRAM */
 #define TESS_HAS_BATTERY 1   /* (as before; Andamento's power is still to decide) */
 #define TESS_HAS_POINTER 0
+#define TESS_HOSTED 0

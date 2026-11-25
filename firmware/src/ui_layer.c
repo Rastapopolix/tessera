@@ -347,6 +347,9 @@ static void layer_key(uint32_t l, uint32_t k)
         if (tessera.key_link) scale_share(TSEL);       /* (KEY LINK: every melodic track's) */
     }
 }
+#if TESS_SCR_COUNT > 1
+static uint8_t solo_latch;                              /* the tracks the TRACKS page's S latches solo (tess_core_tracks_do) */
+#endif
 /* each pass: the keys the layer got now; then GLO's solo: the tracks of its keys still held (perform.c); FILL while E4
  * is, HOLD while D4 is (or latched) */
 static void layer_keys(uint32_t keys)
@@ -362,6 +365,9 @@ static void layer_keys(uint32_t keys)
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)
             s |= 1u << (UI_BASE + key_place(k));
+#if TESS_SCR_COUNT > 1
+    s |= solo_latch;                                    /* (the TRACKS page's S: latched, ui_tracks.c) */
+#endif
     track_solo = (uint8_t)s;
 }
 
@@ -433,13 +439,13 @@ static const char W_NOTE[16];
 static int glo_sounding(uint32_t t)
 {
     uint32_t warn = 0, out = tessera_entries_get(&warn, 0);
-    if (((warn | mute_waiting()) >> t) & 1u) return (fm1_ms / 125u) & 1u;   /* (Entries or a waiting mute key changes it
+    if (((warn | mute_waiting()) >> t) & 1u) return land_calm() || ((fm1_ms / 125u) & 1u);   /* (Entries or a waiting mute key changes it
                                                                             * on the next line: a quick blink) */
     return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
 }
 static uint32_t layer_leds(void)
 {
-    uint32_t k, m = 0, blink = ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
+    uint32_t k, m = 0, blink = !land_calm() && ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
     uint32_t mask = scale_mask(TSEL), root = (uint32_t)TSEL->p[P_ROOT] % 12u;
     for (k = 0; k < 27u; k++) {
         uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;

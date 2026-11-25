@@ -11,12 +11,19 @@ static void web_demos_load(void);
 #define TESS_CORE_BOOT_HOOK() web_demos_load()   /* (tess_core_boot: the demos in the slots, A loaded) */
 #include "../../platform/core/core_unit.c"
 
+#ifndef TESS_PLUGIN_IO
 #include "sim_demos.h"                       /* (web/sim/build.sh: demos/still-tide.tsp, koto-garden.tsp) */
+#endif
 
 /* the demos in the slots, as the backup page would put them there: A STILL TIDE (the first in the demo video),
- * B KOTO GARDEN; then A loaded, so the simulator starts with STILL TIDE (SAVE > PROJECT loads B) */
+ * B KOTO GARDEN; then A loaded, so the simulator starts with STILL TIDE (SAVE > PROJECT loads B). The plugin
+ * (TESS_PLUGIN_IO) starts as an FM-1 with nothing saved: a new project, every slot empty (its demos are in the
+ * DAW's preset browser and OPEN), the standalone app too */
 static void web_demos_load(void)
 {
+#ifdef TESS_PLUGIN_IO
+    project_new_blank();
+#else
     memcpy(proj_bank_slot[0], SIM_DEMO_A, sizeof SIM_DEMO_A);
     proj_bank_len[0] = sizeof SIM_DEMO_A;
     memcpy(proj_bank_slot[1], SIM_DEMO_B, sizeof SIM_DEMO_B);
@@ -24,6 +31,7 @@ static void web_demos_load(void)
     proj_fetch(0);
     proj_fetch(1);
     project_load(0);
+#endif
 }
 
 #ifdef __EMSCRIPTEN__

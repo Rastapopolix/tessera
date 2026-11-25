@@ -1,18 +1,24 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
-/* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Tessera.clap and checks
+/* The plugin's render test: a minimal CLAP host (POSIX) that loads the built Cosmati.clap and checks
  *   - one instance: a second create is refused while the first lives;
- *   - with the host's transport playing at 48 kHz, STILL TIDE (the project it starts with) makes sound;
+ *   - a new instance starts from a new project: with the host's transport playing it is silent;
+ *   - with the host's transport playing at 48 kHz, STILL TIDE (demos/still-tide.tsp, loaded as the host's state)
+ *     makes sound;
  *   - a note in on the selected track changes the output;
  *   - the state is a .tsp record (TSP1) and loads back;
  *   - the four track outputs sound, MIDI OUT sends the tracks' notes on their channels, in order;
  *   - the parameters: MASTER and MACRO 1..4, automation in at its sample, the value read back;
  *   - (Linux, with a DISPLAY, e.g. under xvfb-run) the window opens in a parent window and shows the FM-1's screen;
+ *     the host sizes it to 200 % (a dragged frame snapped to the nearest of 100, 150, 200 %) and back;
+ *     MIDI clicked: the notes since PLAY as a .mid; stopped, 16 bars rendered from the top;
  *     a click on GENERATE makes a new piece (the parameters change), held it brings back the project before it;
+ *     MODE EXPANDED in its menu makes it 1500 wide with TRACKS beside the screen, FM-1 1000 again;
  *     (macOS: built as Objective-C++) the window opens in an NSWindow's view and draws the FM-1's screen into its layer;
  *   - optionally writes the first seconds as a 16-bit WAV (third argument) to listen to.
- * usage: tessera-render-test path/to/Tessera.clap [seconds] [out.wav] [window.ppm] */
+ * usage: tessera-render-test path/to/Cosmati.clap [seconds] [out.wav] [window.ppm]   (from the repository's top: demos/) */
 #include <clap/clap.h>
+#include <clap/ext/draft/undo.h>
 #include <dlfcn.h>
 #include <string>
 #if defined(__linux__)
@@ -27,7 +33,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <initializer_list>
 #include <vector>
+
+#include "midifile.h"
 
 static int fails = 0;
 #define CHECK(c, ...)                                                                                                  \
@@ -50,8 +62,17 @@ static void h_rescan(const clap_host_t *, clap_param_rescan_flags f)
 static void h_clear(const clap_host_t *, clap_id, clap_param_clear_flags) {}
 static void h_flush(const clap_host_t *) {}
 static const clap_host_params_t host_params = {h_rescan, h_clear, h_flush};
+// the CLAP undo extension (draft): the steps the plugin tells it of
+static std::vector<std::string> undo_steps;
+static void hu_begin(const clap_host_t *) {}
+static void hu_cancel(const clap_host_t *) {}
+static void hu_made(const clap_host_t *, const char *name, const void *, size_t, bool) { undo_steps.push_back(name ? name : ""); }
+static void hu_req(const clap_host_t *) {}
+static void hu_ctx(const clap_host_t *, bool) {}
+static const clap_host_undo_t host_undo = {hu_begin, hu_cancel, hu_made, hu_req, hu_req, hu_ctx};
 static const void *h_get_extension(const clap_host_t *, const char *id)
 {
+    if (!std::strcmp(id, CLAP_EXT_UNDO)) return &host_undo;
     return !std::strcmp(id, CLAP_EXT_PARAMS) ? &host_params : nullptr;
 }
 static void h_nop(const clap_host_t *) {}
@@ -71,8 +92,22 @@ struct Events
 };
 // what the plugin sends: MIDI OUT's note-ons by channel, and the events out of order (there must be none)
 static uint32_t midi_on[16], out_of_order, out_last, out_frames;
+static uint32_t gestures_begun, gestures_ended, gesture_values;   // (MASTER's: a knob turned in the window)
+static int gesture_depth;                                         // (begun, not yet ended)
 static bool out_try_push(const clap_output_events_t *, const clap_event_header_t *h)
 {
+    if (h->type == CLAP_EVENT_PARAM_GESTURE_BEGIN || h->type == CLAP_EVENT_PARAM_GESTURE_END)
+    {
+        auto *g = reinterpret_cast<const clap_event_param_gesture_t *>(h);
+        if (g->param_id == 0)   // (MASTER)
+        {
+            if (h->type == CLAP_EVENT_PARAM_GESTURE_BEGIN) gestures_begun++, gesture_depth++;
+            else gestures_ended++, gesture_depth--;
+        }
+    }
+    if (h->type == CLAP_EVENT_PARAM_VALUE && reinterpret_cast<const clap_event_param_value_t *>(h)->param_id == 0 &&
+        gesture_depth > 0)
+        gesture_values++;
     if (h->time < out_last) out_of_order++;
     if (h->time >= out_frames) out_of_order++;
     out_last = h->time;
@@ -134,14 +169,14 @@ static void wav_write(const char *path, const std::vector<float> &l, const std::
     std::fclose(f);
 }
 
-// the library inside a plugin path: on macOS Tessera.clap is a bundle, its code in Contents/MacOS/Tessera
+// the library inside a plugin path: on macOS Cosmati.clap is a bundle, its code in Contents/MacOS/Tessera
 static std::string clap_library(const char *path)
 {
 #ifdef __APPLE__
     std::string p(path);
     while (p.size() > 1 && p.back() == '/') p.pop_back();
     std::string base = p.substr(p.find_last_of('/') == std::string::npos ? 0 : p.find_last_of('/') + 1);
-    std::string stem = base.substr(0, base.rfind('.'));   // (Tessera.clap: Tessera)
+    std::string stem = base.substr(0, base.rfind('.'));   // (Cosmati.clap: Tessera)
     std::string inner = p + "/Contents/MacOS/" + stem;
     if (FILE *f = std::fopen(inner.c_str(), "rb")) { std::fclose(f); return inner; }
 #endif
@@ -153,7 +188,7 @@ int main(int argc, char **argv)
     std::setvbuf(stdout, nullptr, _IONBF, 0);   // (every line out before a crash, in CI's log too)
     if (argc < 2)
     {
-        std::printf("usage: %s Tessera.clap [seconds] [out.wav]\n", argv[0]);
+        std::printf("usage: %s Cosmati.clap [seconds] [out.wav]\n", argv[0]);
         return 2;
     }
     double seconds = argc > 2 ? std::atof(argv[2]) : 12.0;
@@ -209,6 +244,36 @@ int main(int argc, char **argv)
     out_frames = block;
     proc.in_events = &in;
     proc.out_events = &oe;
+
+    // a new Tessera opens on a new project, as an FM-1 with nothing saved: the DAW playing, it plays nothing
+    auto *st0 = (const clap_plugin_state_t *)p->get_extension(p, CLAP_EXT_STATE);
+    {
+        double e0 = 0;
+        for (int b = 0; b < 300; b++)   // (3 s)
+        {
+            CHECK(p->process(p, &proc) == CLAP_PROCESS_CONTINUE, "process");
+            for (uint32_t k = 0; k < block; k++) e0 += (double)L[k] * L[k] + (double)R[k] * R[k];
+        }
+        std::printf("a new instance, the DAW playing 3 s: energy %.9f\n", e0);
+        CHECK(e0 < 1e-6, "a new Tessera plays nothing until it gets notes (energy %.9f)", e0);
+        // then STILL TIDE, as a DAW's saved song brings it back (its state), played from the DAW's zero
+        tr.flags = CLAP_TRANSPORT_HAS_TEMPO;   // (stopped)
+        p->process(p, &proc);
+        Buf demo;
+        if (FILE *f = std::fopen("demos/still-tide.tsp", "rb"))
+        {
+            uint8_t c[4096];
+            for (size_t n; (n = std::fread(c, 1, sizeof c, f)) > 0;) demo.b.insert(demo.b.end(), c, c + n);
+            std::fclose(f);
+        }
+        CHECK(demo.b.size() > 64, "demos/still-tide.tsp (run from the repository's top)");
+        clap_istream_t dis = {&demo, is_read};
+        CHECK(st0 && st0->load(p, &dis), "STILL TIDE loads as the state");
+        p->on_main_thread(p);   // (as a host answers the load's request: its parameters' texts rescanned)
+        tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+        if (fails)
+            return 1;
+    }
 
     uint32_t blocks = (uint32_t)(seconds * rate / block);
     double sum2 = 0, peak = 0;
@@ -532,6 +597,127 @@ int main(int argc, char **argv)
         CHECK(!st->load(p, &js), "junk state refused");
     }
 
+    // LISTEN on channel 16 (a state with "TLSN"): a chord there sets the key and does not play; a note under SPLIT
+    // GENERATEs on the main thread, the same note the same piece; the channel and SPLIT saved with the state, none
+    // when OFF at SPLIT 48
+    if (st && pa)
+    {
+        auto save = [&] {
+            Buf b;
+            clap_ostream_t os = {&b, os_write};
+            st->save(p, &os);
+            return b.b;
+        };
+        auto load = [&](const std::vector<uint8_t> &v) {
+            Buf b;
+            b.b = v;
+            clap_istream_t is = {&b, is_read};
+            return st->load(p, &is);
+        };
+        auto param = [&](const char *name) {
+            clap_param_info_t pi;
+            for (uint32_t i = 0; i < pa->count(p); i++)
+                if (pa->get_info(p, i, &pi) && !std::strcmp(pi.name, name))
+                {
+                    double v = -1;
+                    pa->get_value(p, pi.id, &v);
+                    return v;
+                }
+            return -1.0;
+        };
+        auto settings = [&] {
+            std::vector<double> v;
+            clap_param_info_t pi;
+            for (uint32_t i = 5; i < pa->count(p); i++)
+            {
+                double x = 0;
+                pa->get_info(p, i, &pi);
+                pa->get_value(p, pi.id, &x);
+                v.push_back(x);
+            }
+            return v;
+        };
+        auto send = [&](int ch, int key, bool on_) {
+            clap_event_note_t e = {};
+            e.header = {sizeof e, 0, CLAP_CORE_EVENT_SPACE_ID, (uint16_t)(on_ ? CLAP_EVENT_NOTE_ON : CLAP_EVENT_NOTE_OFF), 0};
+            e.note_id = -1, e.channel = (int16_t)ch, e.key = (int16_t)key, e.velocity = 0.8;
+            ev.notes.push_back(e);
+        };
+        std::vector<uint8_t> plain = save();
+        CHECK(plain.size() >= 6 && std::memcmp(&plain[plain.size() - 6], "TLSN", 4), "LISTEN OFF: no TLSN in the state");
+        std::vector<uint8_t> split24 = plain;   // (OFF, SPLIT moved: kept too)
+        split24.insert(split24.end(), {'T', 'L', 'S', 'N', 0, 24});
+        CHECK(load(split24) && save() == split24, "LISTEN OFF at SPLIT 24: saved with the state");
+        std::vector<uint8_t> listening = plain;
+        listening.insert(listening.end(), {'T', 'L', 'S', 'N', 16, 48});
+        CHECK(load(listening), "a state with LISTEN on channel 16 loads");
+        std::vector<uint8_t> again = save();
+        CHECK(again == listening, "LISTEN saved with the state (%zu vs %zu bytes)", again.size(), listening.size());
+        {   // (the song in MAJ first)
+            clap_param_info_t pi;
+            for (uint32_t i = 0; i < pa->count(p); i++)
+                if (pa->get_info(p, i, &pi) && !std::strcmp(pi.name, "T1 SCALE"))
+                {
+                    clap_event_param_value_t pv = {};
+                    pv.header = {sizeof pv, 0, CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_PARAM_VALUE, 0};
+                    pv.param_id = pi.id, pv.note_id = -1, pv.port_index = -1, pv.channel = -1, pv.key = -1, pv.value = 1;
+                    struct One { const clap_event_header_t *h; } one = {&pv.header};
+                    clap_input_events_t pin = {&one, [](const clap_input_events_t *) -> uint32_t { return 1; },
+                                               [](const clap_input_events_t *l, uint32_t) {
+                                                   return static_cast<const One *>(l->ctx)->h;
+                                               }};
+                    proc.in_events = &pin;
+                    p->process(p, &proc);
+                    proc.in_events = &in;
+                }
+        }
+        double scl0 = param("T1 SCALE");
+        for (int k : {57, 60, 64}) send(15, k, true);   // A C E on channel 16
+        uint32_t heard0 = midi_on[15];
+        for (int b = 0; b < 4; b++) p->process(p, &proc), ev.notes.clear();
+        double root = param("T1 ROOT"), scl1 = param("T1 SCALE");
+        std::printf("listen: A C E on channel 16: T1 ROOT %.0f, SCL %.0f -> %.0f\n", root, scl0, scl1);
+        CHECK(root == 9, "A minor: ROOT A (%.0f)", root);
+        CHECK(scl0 == 1 && scl1 == 2, "a MAJ song turns MIN (%.0f -> %.0f)", scl0, scl1);
+        CHECK(midi_on[15] == heard0, "the chord does not play (MIDI OUT channel 16)");
+        for (int k : {57, 60, 64}) send(15, k, false);
+        p->process(p, &proc), ev.notes.clear();
+        std::vector<uint8_t> before = save();
+        std::vector<double> s0 = settings();
+        int c0 = callbacks;
+        send(15, 12, true);
+        p->process(p, &proc), ev.notes.clear();
+        CHECK(callbacks > c0, "a note under SPLIT asks for the main thread");
+        p->on_main_thread(p);
+        std::vector<double> s1 = settings();
+        size_t changed = 0;
+        for (size_t i = 0; i < s0.size() && i < s1.size(); i++) changed += s0[i] != s1[i];
+        load(before);
+        send(15, 12, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s2 = settings();
+        std::printf("listen: a note under SPLIT generated (%zu settings changed); again from the same project: %s\n", changed,
+                    s1 == s2 ? "the same piece" : "another piece");
+        CHECK(changed > 50, "a note under SPLIT: a new piece (%zu changed)", changed);
+        CHECK(s1 == s2, "the same note: the same piece");
+        load(before);   // (36 and 38: the same velocity, two styles: two other pieces)
+        send(15, 36, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s3 = settings();
+        load(before);
+        send(15, 38, true);
+        p->process(p, &proc), ev.notes.clear();
+        p->on_main_thread(p);
+        std::vector<double> s4 = settings();
+        CHECK(s3 != s1 && s4 != s3, "36 and 38 (styles 1 and 2): pieces of their own");
+        CHECK(undo_steps.size() >= 2 && undo_steps.back() == "GENERATE", "each piece LISTEN made a step of the DAW's undo");
+        CHECK(load(plain), "LISTEN off again");
+        std::vector<uint8_t> off = save();
+        CHECK(off.size() < 6 || std::memcmp(&off[off.size() - 6], "TLSN", 4), "LISTEN OFF after a state without it");
+    }
+
 #if defined(__linux__)
     // the window, in a parent window of ours, driven by its timer as a host would
     if (std::getenv("DISPLAY"))
@@ -546,6 +732,17 @@ int main(int argc, char **argv)
             CHECK(gui->is_api_supported(p, CLAP_WINDOW_API_X11, false), "X11 supported");
             CHECK(gui->create(p, CLAP_WINDOW_API_X11, false), "gui create");
             gui->get_size(p, &w, &h);
+            {   // no MODE picked (a new user): EXPANDED when the screen has room (1600 wide at 100 %), FM-1 if not
+                bool picked = false;
+                if (const char *xdg = std::getenv("XDG_CONFIG_HOME"))
+                    picked = std::ifstream(std::string(xdg) + "/tessera/mode").good();
+                else if (const char *home = std::getenv("HOME"))
+                    picked = std::ifstream(std::string(home) + "/.config/tessera/mode").good();
+                int sw = DisplayWidth(d, DefaultScreen(d));
+                std::printf("window: opens %ux%u on a %d-wide screen%s\n", w, h, sw, picked ? " (MODE picked before)" : "");
+                CHECK(picked || w == (sw >= 1600 ? 1500u : 1000u), "no MODE picked: EXPANDED only if the screen has room (%u)", w);
+                CHECK(w == 1000, "this test wants FM-1 mode: run it on a screen under 1600 wide (xvfb-run's 1280)");
+            }
             Window parent = XCreateSimpleWindow(d, DefaultRootWindow(d), 0, 0, w, h, 0, 0, 0);
             XMapWindow(d, parent);
             XSync(d, False);
@@ -585,6 +782,57 @@ int main(int argc, char **argv)
                 if (all) XDestroyImage(all);
             }
             if (img) XDestroyImage(img);
+            // SIZE: the host sets 200 % (its frame dragged near 2000 wide: adjust_size snaps), then 100 % again
+            {
+                uint32_t aw = 1950, ah = 1200, gw = 0, gh = 0;
+                CHECK(gui->can_resize(p) && gui->adjust_size(p, &aw, &ah) && aw == 2000 && ah == 1248,
+                      "a frame dragged to 1950 x 1200 snaps to 200 %% (%ux%u)", aw, ah);
+                CHECK(gui->set_size(p, aw, ah) && gui->get_size(p, &gw, &gh) && gw == 2000 && gh == 1248, "the window at 200 %%");
+                for (int i = 0; i < 4; i++) { for (int b = 0; b < 3; b++) p->process(p, &proc); tim->on_timer(p, 0); }
+                Window root_r, parent_r, *kids = nullptr;
+                unsigned nk = 0, cw = 0, ch = 0, bw, dp;
+                int cx, cy;
+                XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                if (nk) XGetGeometry(d, kids[0], &root_r, &cx, &cy, &cw, &ch, &bw, &dp);
+                if (kids) XFree(kids);
+                std::printf("size: the window %ux%u at 200 %%\n", cw, ch);
+                CHECK(cw == 2000 && ch == 1248, "the plugin's X window at 200 %% (%ux%u)", cw, ch);
+                CHECK(!gui->set_size(p, 1234, 567), "a size not one of the three refused");
+                CHECK(gui->set_size(p, 1000, 624), "back to 100 %%");
+            }
+            // a knob turned in the window (MASTER, dragged up): its changes between a gesture's begin and end, so the
+            // DAW makes them one undo step; the end once the knob has been still half a second
+            {
+                Window root_r, parent_r, *kids = nullptr;
+                unsigned nk = 0;
+                XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                Window child = nk ? kids[0] : 0;
+                if (kids) XFree(kids);
+                auto ev = [&](int type, int y) {
+                    XEvent e{};
+                    e.type = type;
+                    if (type == MotionNotify) { e.xmotion.window = child; e.xmotion.x = 105; e.xmotion.y = y; }
+                    else { e.xbutton.window = child; e.xbutton.x = 105; e.xbutton.y = y; e.xbutton.button = Button1; }
+                    XSendEvent(d, child, False, type == MotionNotify ? PointerMotionMask : type == ButtonPress ? ButtonPressMask : ButtonReleaseMask, &e);
+                    XSync(d, False);
+                };
+                auto ticks = [&](int k) {
+                    for (int i = 0; i < k; i++) { for (int b = 0; b < 3; b++) p->process(p, &proc); tim->on_timer(p, 0); }
+                };
+                ticks(2);
+                gestures_begun = gestures_ended = gesture_values = 0;
+                gesture_depth = 0;
+                ev(ButtonPress, 100);
+                for (int y = 96; y >= 60; y -= 4) { ev(MotionNotify, y); ticks(1); }
+                ev(ButtonRelease, 60);
+                ticks(3);
+                CHECK(gestures_begun == 1 && gesture_depth == 1 && gesture_values >= 1,
+                      "MASTER dragged: a gesture begun, its values inside it (%u begun, %u values)", gestures_begun, gesture_values);
+                ticks(30);   // (more than half a second of blocks)
+                std::printf("undo: MASTER dragged in the window: %u gesture, %u values in it, %u ended\n", gestures_begun,
+                            gesture_values, gestures_ended);
+                CHECK(gestures_ended == 1 && gesture_depth == 0, "the gesture ended once the knob was still");
+            }
             // GENERATE (TESSERA's strip): a click on it makes a new piece, held half a second the project before it
             // comes back (the DAW's state: another project, then the one before again)
             {
@@ -626,6 +874,7 @@ int main(int argc, char **argv)
                     }
                 };
                 CHECK(child != 0, "the plugin's window in the parent");
+                undo_steps.clear();   // (LISTEN's pieces before: the strip's own from here)
                 std::vector<double> s0 = state_now();
                 press(true), ticks(2), press(false), ticks(40);
                 std::vector<double> s1 = state_now();
@@ -635,6 +884,104 @@ int main(int argc, char **argv)
                             differ(s0, s1), s0.size(), differ(s0, s2));
                 CHECK(differ(s0, s1) > 50, "GENERATE clicked: a new piece (%zu settings changed)", differ(s0, s1));
                 CHECK(differ(s0, s2) == 0, "GENERATE held: the project before the piece again (%zu differ)", differ(s0, s2));
+                CHECK(undo_steps.size() == 2 && undo_steps[0] == "GENERATE" && undo_steps[1] == "GENERATE: BEFORE",
+                      "the DAW's undo told of each: GENERATE, GENERATE: BEFORE (%zu)", undo_steps.size());
+                // MIDI under the keys: the notes played since PLAY, a .mid in Documents/Tessera/MIDI (HOME: a new folder)
+                {
+                    namespace fs = std::filesystem;
+                    std::string old_home = std::getenv("HOME") ? std::getenv("HOME") : "";
+                    fs::path home = fs::temp_directory_path() / "tessera-render-test-midi";
+                    fs::remove_all(home);
+                    fs::create_directories(home);
+                    setenv("HOME", home.c_str(), 1);
+                    ticks(200);   // (some notes)
+                    auto click_at = [&](int x, int y) {
+                        for (int down = 1; down >= 0; down--)
+                        {
+                            XEvent e{};
+                            e.type = down ? ButtonPress : ButtonRelease;
+                            e.xbutton.window = child;
+                            e.xbutton.x = x, e.xbutton.y = y, e.xbutton.button = Button1;
+                            XSendEvent(d, child, False, down ? ButtonPressMask : ButtonReleaseMask, &e);
+                            XSync(d, False);
+                            ticks(2);
+                        }
+                    };
+                    click_at(550, 605);   // (MIDI: the third of OPEN SAVE MIDI, centred under the keys, 4 or 8 tracks)
+                    ticks(4);
+                    int files = 0, tracks = 0, notes = 0;
+                    double q = 0;
+                    std::error_code ec;
+                    for (auto &f : fs::directory_iterator(home / "Documents" / "Tessera" / "MIDI", ec))
+                    {
+                        std::ifstream in(f.path(), std::ios::binary);
+                        std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        files += midifile::read_back(b, tracks, notes, q);
+                        std::printf("midi: %s, %zu bytes, %d tracks, %d notes, %.1f quarters\n",
+                                    f.path().filename().c_str(), b.size(), tracks, notes, q);
+                    }
+                    CHECK(files == 1 && tracks >= 2 && notes > 0, "MIDI clicked: a clip with notes (%d files)", files);
+                    // stopped (the DAW's STOP), MIDI renders the project from the top for 16 bars on a spare copy: a clip of
+                    // 64 quarters exactly, while this instance's own copy stays stopped
+                    tr.flags = CLAP_TRANSPORT_HAS_TEMPO;
+                    ticks(10);
+                    fs::remove_all(home / "Documents" / "Tessera" / "MIDI", ec);
+                    click_at(550, 605);
+                    ticks(4);
+                    files = 0;
+                    for (auto &f : fs::directory_iterator(home / "Documents" / "Tessera" / "MIDI", ec))
+                    {
+                        std::ifstream in(f.path(), std::ios::binary);
+                        std::vector<uint8_t> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                        files += midifile::read_back(b, tracks, notes, q);
+                        std::printf("midi stopped: %s, %zu bytes, %d tracks, %d notes, %.1f quarters\n",
+                                    f.path().filename().c_str(), b.size(), tracks, notes, q);
+                    }
+                    CHECK(files == 1 && notes > 0 && std::fabs(q - 64.0) < 1e-9,
+                          "MIDI clicked while stopped: 16 bars rendered (%d files, %.1f quarters)", files, q);
+                    tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
+                    ticks(4);
+                    // MODE EXPANDED in TESSERA's menu (the setting in this new HOME): the window 1500 wide, TRACKS beside
+                    // the screen, drawn with the view; FM-1 again: 1000 wide
+                    {
+                        std::string old_xdg = std::getenv("XDG_CONFIG_HOME") ? std::getenv("XDG_CONFIG_HOME") : "";
+                        unsetenv("XDG_CONFIG_HOME");
+                        auto child_w = [&] {
+                            Window root_r, parent_r, *kids = nullptr;
+                            unsigned nk = 0, cw = 0, ch = 0, bw, dp;
+                            int cx, cy;
+                            XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
+                            if (nk) XGetGeometry(d, kids[0], &root_r, &cx, &cy, &cw, &ch, &bw, &dp);
+                            if (kids) XFree(kids);
+                            return cw;
+                        };
+                        click_at(100, 25);    // the menu
+                        click_at(300, 164);   // MODE: EXPANDED
+                        ticks(8);
+                        uint32_t gw = 0, gh = 0;
+                        gui->get_size(p, &gw, &gh);
+                        XResizeWindow(d, parent, gw, gh);   // (as a host makes room)
+                        ticks(8);
+                        XSync(d, False);
+                        XImage *t2 = XGetImage(d, parent, 568, 52, 480, 240, AllPlanes, ZPixmap);
+                        int lit = 0;
+                        for (int y = 0; t2 && y < 240; y++)
+                            for (int x = 0; x < 480; x++) lit += (XGetPixel(t2, x, y) & 0xFFFFFF) != 0;
+                        if (t2) XDestroyImage(t2);
+                        std::printf("expanded: the window %ux%u (X %u wide), %d TRACKS pixels lit\n", gw, gh, child_w(), lit);
+                        CHECK(gw == 1500 && gh == 624 && child_w() == 1500, "EXPANDED: the window 1500 x 624 (%ux%u)", gw, gh);
+                        CHECK(lit > 2000, "EXPANDED: TRACKS drawn beside the screen (%d pixels)", lit);
+                        click_at(100, 25);
+                        click_at(190, 164);   // MODE: FM-1
+                        ticks(8);
+                        gui->get_size(p, &gw, &gh);
+                        CHECK(gw == 1000 && gh == 624 && child_w() == 1000, "FM-1 mode again: 1000 x 624 (%ux%u)", gw, gh);
+                        XResizeWindow(d, parent, gw, gh);
+                        if (!old_xdg.empty()) setenv("XDG_CONFIG_HOME", old_xdg.c_str(), 1);
+                    }
+                    setenv("HOME", old_home.c_str(), 1);
+                    fs::remove_all(home);
+                }
             }
             gui->destroy(p);
             XDestroyWindow(d, parent);

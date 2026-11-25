@@ -169,7 +169,7 @@ static void slot_draw(void)
         ui.graph_sig = 0;
     }
     draw_head();
-    pv_sound();
+    pv_sound();                                         /* (Mono: the page tabs, foot_tabs_on) */
     if (vis > n)
         vis = n;
     slv.first = (uint8_t)clamp((int32_t)cur - (int32_t)vis / 2, 0, (int32_t)(n - vis));
@@ -177,11 +177,23 @@ static void slot_draw(void)
           up_gen * 7919u + library_engine() * 104729u + bulk.on * 19u + bulk.anchor * 23u + bulk.end * 29u + sx_import.count * 37u;
     for (r = slv.first; r < slv.first + vis; r++)
         sig = str_hash(sig + (uint32_t)slot_row(k, r, tag, nm), nm);
+#if MELODEE_LOOK
+    sound_name(TSEL, nm);
+    sig = str_hash(sig + TSEL->eng_req * 3u, nm);       /* (the sound under the rows) */
+#endif
     if (!ui.force && sig == slv.sig)
         return;
     slv.sig = sig;
+#if MELODEE_LOOK
+    mo_slot_sound();
+    mo_foot_line();
+#endif
+    UZ(uz_list_set(EN_K1, -1, (int32_t)cur, (int32_t)slv.first, 1));   /* (zones: KNOB 1 the slot, OCT+ its sheet) */
+    UZ(uz_begin(UZ_G_LIST));
     for (r = slv.first, y = SL_Y0; r < slv.first + vis; r++) {
         int used = slot_row(k, r, tag, nm), on = r == cur;
+        UZ(uz_add(UZ_G_LIST, UZ_ROW, 0, y / 2, 118, (on ? SL_CARD : SL_ROW) / 2, EN_K1, -1, (int32_t)r, tag,
+                  used ? nm : "Empty"));
         if (on) {                                       /* the card: the name larger, a line about it */
             char d[24];
             int32_t nw = 196 - (boot == r + 1u ? 44 : 0);

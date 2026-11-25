@@ -15,6 +15,8 @@
  * saved; panel.c sim, ui_input.c sim_enter),
  * AUTOSAVE (automatic project saves after five seconds stopped and untouched),
  * CALIBRATION (the setup screen: HARDWARE CALIBRATION), ABOUT.
+ * Inside a DAW (TESS_HOSTED: the plugin) the device's own rows are left out: KNOBS and LARGE VALUE (the mouse turns
+ * the dials: DIAL, AUTO), SCREEN OFF (never), PANEL GAMMA, CLOCK OUT, the USB rows, SIM CONTROL and CALIBRATION.
  * PRESETS scrolls from ABOUT through all credits. ui.menu: 1 list, 2 information. */
 /* ------------------------------------------------------------ menu --- */
 #define MENU_HEAD 24                     /* the menu's own title strip (Stage and the pages: H_HEAD) */
@@ -22,57 +24,89 @@
  * together (menu_value, menu_input take them as a range) */
 enum { MI_COLOR,
 #if MELODEE_LOOK
-       MI_GROUND, MI_KNOBS, MI_LARGE, MI_TEXT, MI_IDLE,
+       MI_GROUND,
+#if !TESS_HOSTED
+       MI_KNOBS, MI_LARGE,
 #endif
-       MI_LIGHTS, MI_NLIGHT, MI_SCREEN,
+       MI_TEXT, MI_IDLE,
+#endif
+       MI_LIGHTS, MI_NLIGHT,
+#if !TESS_HOSTED
+       MI_SCREEN,
+#endif
 #if TESS_HAS_BATTERY
        MI_BATTERY,
 #endif
 #if MELODEE_VOICE_BUDGET
        MI_OVERLOAD,
 #endif
+#if !TESS_HOSTED
        MI_GAMMA,
+#endif
        MI_HOLD, MI_ACCEL, MI_TRACK_KNOB,
        MI_MUTES, MI_CLICK, MI_CLICK_LEVEL, MI_COUNTIN, MI_PREVIEW, MI_ADD, MI_AUTOSAVE,
-       MI_MIDI_OUT, MI_CLOCK_OUT, MI_CC_IN, MI_MIDI_LEARN,
-#if MELODEE_USB_AUDIO
+       MI_MIDI_OUT,
+#if !TESS_HOSTED
+       MI_CLOCK_OUT,
+#endif
+       MI_CC_IN, MI_MIDI_LEARN,
+#if MELODEE_USB_AUDIO && !TESS_HOSTED
        MI_USB, MI_USB_INPUT, MI_USB_VOLUME,
 #endif
 #if MELODEE_USB_HOST
        MI_USB_HOST,
 #endif
+#if !TESS_HOSTED
        MI_SIM,
-       MI_PANEL, MI_ABOUT, MI_BACK,
+       MI_PANEL,
+#endif
+       MI_ABOUT, MI_BACK,
        MI_COUNT };
 static const char *const GAMMA_NAME[GAMMA_N] = {"G2.2", "G1.8", "G2.5", "G1.0", "TUNED", "TUNED+VCOM"};   /* (lcd.c) */
 static const char *const MI_NAME[MI_COUNT] = {"COLOR",
 #if MELODEE_LOOK
-                                              "GROUND", "KNOBS", "LARGE VALUE", "TEXT", "IDLE",
+                                              "GROUND",
+#if !TESS_HOSTED
+                                              "KNOBS", "LARGE VALUE",
 #endif
-                                              "LIGHTS", "NOTE LIGHTS", "SCREEN OFF",
+                                              "TEXT", "IDLE",
+#endif
+                                              "LIGHTS", "NOTE LIGHTS",
+#if !TESS_HOSTED
+                                              "SCREEN OFF",
+#endif
 #if TESS_HAS_BATTERY
                                               "BATTERY",
 #endif
 #if MELODEE_VOICE_BUDGET
                                               "OVERLOAD",
 #endif
+#if !TESS_HOSTED
                                               "PANEL GAMMA",
+#endif
                                               "HOLD", "KNOB ACCEL", "TRACK KNOB",
                                               "MUTES", "AUDIO CLICK", "CLICK LEVEL", "COUNT-IN", "NOTE PREVIEW", "CHORD ENTRY",
                                               "AUTOSAVE",
-                                              "NOTES OUT", "CLOCK OUT", "MIDI CC IN", "MIDI LEARN",
-#if MELODEE_USB_AUDIO
+                                              "NOTES OUT",
+#if !TESS_HOSTED
+                                              "CLOCK OUT",
+#endif
+                                              "MIDI CC IN", "MIDI LEARN",
+#if MELODEE_USB_AUDIO && !TESS_HOSTED
                                               "USB AUDIO", "USB OUTPUT", "USB VOLUME",
 #endif
 #if MELODEE_USB_HOST
                                               "USB HOST",
 #endif
+#if !TESS_HOSTED
                                               "SIM CONTROL",
-                                              "CALIBRATION", "ABOUT", "BACK"};
+                                              "CALIBRATION",
+#endif
+                                              "ABOUT", "BACK"};
 _Static_assert(MI_ADD - MI_CLICK == 4, "MI_CLICK .. MI_ADD in a row");
 static uint8_t menu_cols;   /* Mono: the COLOR sheet open (KNOB 2 or OCT+ on COLOR; KNOB 1 off it, OCT- or closing folds it:
                              * HOME held shows the list first, beta3 Theo) */
-#if MELODEE_USB_AUDIO
+#if MELODEE_USB_AUDIO && !TESS_HOSTED
 /* USB AUDIO's four settings, named from the FM-1's side (#494): IN+OUT, IN (the computer plays into the FM-1, so
  * recording is off: UA_OFF_REC), OUT (the FM-1 records into the computer: UA_OFF_PLAY), OFF. The bits are what the
  * settings keep, unchanged since 1.3: the two middle settings swap places, so each saved choice still does the same. */
@@ -484,13 +518,17 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
     if (i == MI_COLOR) value = pal_name(settings.palette);   /* (the screen reader says the ink too) */
 #endif
     if (i == MI_GROUND) value = ux_ground ? "LIGHT" : "DARK";
+#if !TESS_HOSTED
     if (i == MI_KNOBS) value = KNOBS_BAR ? "BAR" : "DIAL";
     if (i == MI_LARGE) value = (const char *const[]){"AUTO", "ON", "OFF"}[LARGE_MODE];
+#endif
     if (i == MI_TEXT) value = TEXT_IDLE(TEXT_IDLE_BOLD) ? "BOLD" : "NORMAL";
     if (i == MI_IDLE) value = TEXT_IDLE(TEXT_IDLE_LAND) ? "LANDSCAPE" : "OFF";
 #endif
     if (i == MI_MIDI_OUT) value = (const char *const[]){"KEYS", "ALL", "OFF"}[settings_midi_out % MIDI_OUT_N];
+#if !TESS_HOSTED
     if (i == MI_CLOCK_OUT) value = settings_clock_out ? "ON" : "OFF";
+#endif
     if (i == MI_CC_IN) value = settings_cc_off ? "OFF" : "ON";
     if (i == MI_MIDI_LEARN && mlearn_ask) return "FORGET? OCT+";   /* (KNOB 2 left: OCT+ forgets them all) */
     if (i == MI_MIDI_LEARN) {                           /* how many CCs are learned */
@@ -502,7 +540,9 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_USB_HOST
     if (i == MI_USB_HOST) value = uh.want ? "ON" : "OFF";
 #endif
+#if !TESS_HOSTED
     if (i == MI_SIM) value = panel_out ? "OFF" : "NO SIM";   /* (on: the menu is out of reach, ui_input.c sim_input) */
+#endif
     if (i == MI_MUTES) value = MUTE_Q_NAME[settings_mute_q % 3u];   /* (ui_popup.c: MIXER's sheet turns it too) */
     if (i == MI_AUTOSAVE) value = settings_autosave ? "ON" : "OFF";
 #if TESS_HAS_BATTERY
@@ -511,11 +551,13 @@ static const char *menu_value(uint32_t i, char *b, uint32_t size)
 #if MELODEE_VOICE_BUDGET
     if (i == MI_OVERLOAD) value = OVL_ON ? "BLINK" : "OFF";
 #endif
+#if !TESS_HOSTED
     if (i == MI_SCREEN) value = (const char *const[]){"NEVER", "5 MIN", "15 MIN", "30 MIN", "60 MIN"}[scr_get()];
     if (i == MI_GAMMA) value = GAMMA_NAME[gamma_get()];
+#endif
     if (i == MI_LIGHTS) value = LIGHTS_NAME[settings_lights % LIGHTS_N];
     if (i == MI_NLIGHT) value = (const char *const[]){"OFF", "STEP", "ALL"}[NLIGHT_MODE];
-#if MELODEE_USB_AUDIO
+#if MELODEE_USB_AUDIO && !TESS_HOSTED
     if (i == MI_USB_INPUT) value = ua_tracks_want ? "4 TRACKS" : "STEREO";
     if (i == MI_USB_VOLUME) { fmt_int(b, settings_usb_volume); str_cpy(b + str_len(b), "%", 2); value = b; }
     if (i == MI_USB) value = (const char *const[]){"In + Out", "In", "Out", "Off"}[mi_usb_swap(ua_off_want & 3u)];
@@ -546,6 +588,16 @@ static uint32_t menu_color_step(int32_t d)            /* COLOR's next ink, from 
 static void menu_colors(void)
 {
     uint32_t k, cur = pal_shown(settings.palette), ni = 0, nm = 0;
+#if TESS_HAS_POINTER
+    uint32_t at = 0, here = 0;                          /* (the zones: the swatches a list on KNOB 2, in its order) */
+    for (k = 0; k < NPALETTES; k++)
+        if (pal_shown(k) == k && k < cur)
+            here++;
+    if (!cv_oy) {                                       /* (the first canvas: the zones once) */
+        uz_list_set(EN_K2, -1, (int32_t)here, 0, 0);
+        uz_begin(UZ_G_LIST);
+    }
+#endif
     mo_text("ONE INK", 2, 16, MO_DIM);
     mo_text("MOSAIC", 2, 50, MO_DIM);
     for (k = 0; k < NPALETTES; k++) {
@@ -563,6 +615,11 @@ static void menu_colors(void)
         }
         if (k == cur)
             mo_box(x - 2, y - 2, w + 4, 15, MO_HOT);
+#if TESS_HAS_POINTER
+        if (!cv_oy)                                     /* a swatch: KNOB 2 to it (click), the inks (wheel) */
+            uz_add(UZ_G_LIST, UZ_ROW, x - 1, MENU_HEAD / 2 + y - 1, w + 2, 13, EN_K2, -1, (int32_t)at, pal_name(k), "");
+        at++;
+#endif
     }
     mo_hl(0, 82, 120, MO_DIM);
     mo_text_s(pal_name(cur), 2, 88, 2, MO_INK);
@@ -627,6 +684,10 @@ static void draw_menu(void)
     menu_head();
     if (ui.menu >= 2) {
         int32_t scroll = ui.menu_scroll, max = menu_scroll_max();
+#if TESS_HAS_POINTER
+        uz_begin(UZ_G_LIST);                            /* (zones: the document scrolls under the wheel, PRESETS's) */
+        uz_add(UZ_G_LIST, UZ_SCROLL, 0, MENU_HEAD / 2, 120, (240 - MENU_HEAD) / 2, EN_PRESET, -1, 0, "ABOUT", "");
+#endif
         int32_t thumb = MENU_DOC_H * MENU_DOC_H / (max + MENU_DOC_H);
         if (thumb < 12) thumb = 12;
         for (pass = 0; pass < 2u; pass++) {
@@ -781,7 +842,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1;
     }
 
-#if MELODEE_USB_AUDIO
+#if MELODEE_USB_AUDIO && !TESS_HOSTED
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_USB_INPUT) {
         ua_tracks_set(s > 0 ? 1 : s < 0 ? 0 : !ua_tracks_want, fm1_ms);
         ok = 0;
@@ -842,6 +903,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         palette_set(settings.palette);              /* (saved when the menu closes) */
         ui.force = 1; ok = 0;
     }
+#if !TESS_HOSTED
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_KNOBS) {      /* KNOB 2 right BAR, left DIAL; OCT+ toggles */
         KNOBS_SAVED = (uint8_t)((s > 0 ? 1 : s < 0 ? 0 : !KNOBS_BAR) ? KNOBS_BAR_TAG : 0u);
         ui.force = 1; ok = 0;                          /* (ui_mono.c mo_cols; saved with the favorites) */
@@ -852,6 +914,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         LARGE_SAVED = (uint8_t)(m == LARGE_ON ? LARGE_ON_TAG : m == LARGE_OFF ? LARGE_OFF_TAG : 0u);
         ui.force = 1; ok = 0;                          /* (ui_mono.c mo_turn, mo_stage_panel; saved with the favorites) */
     }
+#endif
     if ((s || ok) && ui.menu == 1 && (ui.menu_sel == MI_TEXT || ui.menu_sel == MI_IDLE)) {   /* KNOB 2 right BOLD /
                                                        * LANDSCAPE, left NORMAL / OFF; OCT+ toggles */
         uint32_t bit = ui.menu_sel == MI_TEXT ? TEXT_IDLE_BOLD : TEXT_IDLE_LAND;
@@ -868,10 +931,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         settings_midi_out = (uint8_t)(s > 0 ? (v + 1u < MIDI_OUT_N ? v + 1u : v) : s < 0 ? (v ? v - 1u : 0u) : (v + 1u) % MIDI_OUT_N);
         ui.force = 1; ok = 0;                          /* (notes already sent still send their note-offs) */
     }
+#if !TESS_HOSTED
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_CLOCK_OUT) {  /* KNOB 2 right ON, left OFF; OCT+ toggles */
         settings_clock_out = (uint8_t)(s > 0 ? 1u : s < 0 ? 0u : !settings_clock_out);
         ui.force = 1; ok = 0;                          /* (on: from the next PLAY; off: STOP goes out now) */
     }
+#endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_CC_IN) {      /* KNOB 2 right ON, left OFF; OCT+ toggles */
         settings_cc_off = (uint8_t)(s > 0 ? 0u : s < 0 ? 1u : !settings_cc_off);
         ui.force = 1; ok = 0;                          /* (midi_cc.c: parameter CCs and NRPN) */
@@ -882,6 +947,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1; ok = 0;                          /* (not saved: the next boot is a USB device again; usb_host.c) */
     }
 #endif
+#if !TESS_HOSTED
     if ((s > 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_SIM) {   /* KNOB 2 right or OCT+: on, while the simulator */
         if (panel_out) {                                /* listens (editor.c PANEL); it closes the menu */
             sim_enter();
@@ -895,6 +961,7 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         lcd_gamma_switch(gamma_get());                 /* (the panel black and on again: ui.force draws it all) */
         ui.force = 1; ok = 0;
     }
+#endif
     if ((s || ok) && ui.menu == 1 && ui.menu_sel == MI_MUTES) {      /* KNOB 2 steps NOW BAR PHRASE, OCT+ wraps */
         mute_q_step(s);
         ui.force = 1; ok = 0;                          /* (entries.c mute_press: GLO's mute keys while playing) */
@@ -911,12 +978,14 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
         ui.force = 1; ok = 0;                          /* (ui.c ovl_tick; saved with the favorites) */
     }
 #endif
+#if !TESS_HOSTED
     if ((s || ok) && ui.menu==1 && ui.menu_sel==MI_SCREEN) {
         uint32_t value=scr_get(), top=4u;
         value=s>0?(value<top?value+1u:value):s<0?(value?value-1u:0u):(value+1u)%(top+1u);
         scr_put(value);
         ui.force=1; ok=0;
     }
+#endif
     if (ok && ui.menu == 1) {
         switch (ui.menu_sel) {
         case MI_COLOR:                                 /* OCT+ steps through the palettes too */
@@ -925,10 +994,12 @@ static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_tap
             palette_set(settings.palette);
             ui.force = 1;
             break;
+#if !TESS_HOSTED
         case MI_PANEL:
             panel_setup();
             ui.force = 1;
             break;
+#endif
         case MI_ABOUT:
             ui.menu = 2;
             ui.menu_scroll = 0;

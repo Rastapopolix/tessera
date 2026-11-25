@@ -24,6 +24,8 @@ struct GuiLink
     virtual std::string open_file(const std::string &path_utf8) = 0;
     virtual std::string save_file(const std::string &path_utf8) = 0;
     virtual std::string file_name() = 0;
+    /* MIDI: the notes played since PLAY as a .mid clip (Documents/Tessera/MIDI); what to show */
+    virtual std::string export_midi() { return ""; }
     /* the shell the window shows (Panel::shell_count), and one picked under the keys: the instance sets its ink and
      * remembers it for the next window */
     virtual int shell() = 0;
@@ -37,10 +39,21 @@ struct GuiLink
     virtual int tracks() = 0;
     /* MIDI in so far (notes and messages from the host, a count that wraps): TESSERA's shell lights its MIDI lamp */
     virtual uint32_t midi_count() { return 0; }
+    /* the standalone app (no DAW's transport): its own shortcuts (Panel::set_standalone) */
+    virtual bool standalone() { return false; }
     /* an FM-1 on USB (fm1_link.h): this instance's state, and a click: on (taken from any other Tessera) or off (for
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
+    /* SIZE (TESSERA's menu): the window's size now in % (100, 150, 200; EXPANDED 100, 125: Panel::size_fit), and a
+     * pick: the instance remembers it for every window and asks the host for the new size */
+    virtual int size_pct() { return 100; }
+    virtual void size_pick(int pct) { (void)pct; }
+    /* MODE (TESSERA's menu): EXPANDED picked (remembered for every window; the window is EXPANDED in TESSERA's shell),
+     * and a pick (the host asked for the new size); TRACKS as the core last drew it (EXPANDED: false if none yet) */
+    virtual bool expanded() { return false; }
+    virtual void mode_pick(bool on) { (void)on; }
+    virtual bool tracks_view(tess_tracks_t &t) { t.w = t.h = 0; t.zone_count = 0; return false; }
     /* GENERATE (TESSERA's strip; on the host's main thread): the styles' names (none: a build without it); a new piece
      * in a style at a VARIATION, from a new seed; before / after; a piece made before made again (dir -1 an older one,
      * +1 a newer); the style and VARIATION picked (remembered for the next window). Each returns what to show under the
@@ -52,8 +65,17 @@ struct GuiLink
     virtual void gen_pick(int style, int variation) { (void)style; (void)variation; }
     virtual Panel::GenState gen_state() { return {}; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
+    // LISTEN: the MIDI channel whose notes set the key and GENERATE (listen.h), 0 off; this instance's
+    virtual int listen_channel() { return 0; }
+    virtual void listen_pick(int ch) { (void)ch; }
+    // LISTEN's SPLIT: the first note that sets the key (the notes under it GENERATE), a C 12..108; this instance's
+    virtual int listen_split_note() { return 48; }
+    virtual void listen_split_pick(int note) { (void)note; }
     virtual bool keys_on() { return projfile::setting_get("keys") != "0"; }
     virtual void keys_set(bool on) { projfile::setting_put("keys", on ? "1" : "0"); }
+    /* HOVER HELP (TESSERA's menu), remembered as KEYS is: off unless turned on */
+    virtual bool hover_help_on() { return projfile::setting_get("hover_help") == "1"; }
+    virtual void hover_help_set(bool on) { projfile::setting_put("hover_help", on ? "1" : "0"); }
 };
 
 /* each window's tick: a click on FM-1 USB handed on, and its state shown */
@@ -64,6 +86,32 @@ inline void gui_fm1_tick(Panel &panel, GuiLink *link)
         link->fm1_set(f == 1);
     Fm1Link::State s = link->fm1_state();
     panel.set_fm1(s != Fm1Link::OFF, s != Fm1Link::ELSEWHERE, s == Fm1Link::LIVE, fm1_state_text(s));
+}
+
+/* each window's tick: MODE and SIZE picked in the menu handed on; the mode and the size shown */
+inline void gui_size_tick(Panel &panel, GuiLink *link)
+{
+    int m = panel.take_mode_request();
+    if (m >= 0)
+        link->mode_pick(m == 1);
+    panel.set_expanded(link->expanded());
+    int pct = panel.take_size_request();
+    if (pct > 0)
+        link->size_pick(pct);
+    panel.set_size_pct(link->size_pct());
+}
+
+/* each window's tick: LISTEN and SPLIT in the menu (a step asked for handed on, the channel and SPLIT shown) */
+inline void gui_listen_tick(Panel &panel, GuiLink *link)
+{
+    int ch = panel.take_listen_request();
+    if (ch >= 0)
+        link->listen_pick(ch);
+    int sp = panel.take_split_request();
+    if (sp >= 0)
+        link->listen_split_pick(sp);
+    panel.set_listen(link->listen_channel());
+    panel.set_split(link->listen_split_note());
 }
 
 /* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */
@@ -106,6 +154,12 @@ class Gui
     virtual bool show() = 0;
     virtual bool hide() = 0;
     virtual void tick() = 0;   // ~30 times a second (X11: from the host's timer)
+    /* the window's size: the panel at pct % (100, 125, 150, 200), its width the panel's (FM-1 or EXPANDED: the window
+     * follows Panel::width() each tick); before set_parent, the size it opens at */
+    virtual void set_scale(int pct) { (void)pct; }
     static const char *api();  // CLAP_WINDOW_API_WIN32 / _X11 / _COCOA, or nullptr
+    /* the main screen's width in the units a window is sized in (X11 and Windows pixels, macOS points; the room the
+     * OS leaves where it says), 0 if unknown: whether EXPANDED fits, for a window with no MODE picked yet */
+    static int screen_width();
     static std::unique_ptr<Gui> make(const clap_host_t *host, GuiLink *link);
 };

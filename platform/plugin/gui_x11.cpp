@@ -36,10 +36,14 @@ bool have(const char *prog)
     return std::system(c.c_str()) == 0;
 }
 
-// the dialog's command line; name: a file name made by projfile (letters, digits, spaces, - _ .), quoted
+// the dialog's command line; name: a file name made by projfile (letters, digits, spaces, - _ .), offered in the
+// user's preset folder (the DAW's preset browser lists what is saved there), quoted for the shell
 std::string dialog_command(int req, const std::string &name)
 {
-    std::string q = "'" + name + "'";
+    std::string dir = projfile::presets_dir(), q = "'";
+    for (char ch : (dir.empty() ? name : dir + "/" + name))
+        q += ch == '\'' ? std::string("'\\''") : std::string(1, ch);
+    q += "'";
     if (have("zenity"))
         return req == Panel::FILE_OPEN
                    ? "zenity --file-selection --title='Open a Tessera project' "
@@ -63,16 +67,24 @@ class GuiX11 : public Gui
     GC gc = nullptr;
     XImage *img = nullptr;
     Panel panel;
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
+    std::vector<uint32_t> out;   // the window's pixels at SIZE (Panel::scale)
+    int pct = 100;               // SIZE: 100, 125, 150, 200 %
+    int pw = Panel::W;           // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
+    int at(int v) const { return v * 100 / pct; }   // a window pixel at 1:1
 
     GuiX11(const clap_host_t *h, GuiLink *l) : host(h), link(l)
     {
         panel.set_shell(l->shell());
         panel.set_keys(l->keys_on());
+        panel.set_hover_help(l->hover_help_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     ~GuiX11() override
@@ -81,7 +93,7 @@ class GuiX11 : public Gui
             timers->unregister_timer(host, timer);
         if (img)
         {
-            img->data = nullptr;   // (px owns the pixels)
+            img->data = nullptr;   // (out owns the pixels)
             XDestroyImage(img);
         }
         if (dpy)
@@ -97,18 +109,52 @@ class GuiX11 : public Gui
         if (!(dpy = XOpenDisplay(nullptr)))
             return false;
         int scr = DefaultScreen(dpy);
-        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, Panel::W, Panel::H, 0, 0, BlackPixel(dpy, scr));
+        wnd = XCreateSimpleWindow(dpy, (Window)w->x11, 0, 0, pw * pct / 100, Panel::H * pct / 100, 0, 0,
+                                  BlackPixel(dpy, scr));
         XSelectInput(dpy, wnd, ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask |
                                    KeyReleaseMask | FocusChangeMask);
         gc = XCreateGC(dpy, wnd, 0, nullptr);
-        Visual *vis = DefaultVisual(dpy, scr);
-        img = XCreateImage(dpy, vis, DefaultDepth(dpy, scr), ZPixmap, 0, reinterpret_cast<char *>(px.data()),
-                           Panel::W, Panel::H, 32, Panel::W * 4);
+        make_image();
         timers = static_cast<const clap_host_timer_support_t *>(host->get_extension(host, CLAP_EXT_TIMER_SUPPORT));
         if (timers)
             timers->register_timer(host, 33, &timer);
         XFlush(dpy);
         return img != nullptr;
+    }
+    // the XImage over out, at the window's size
+    void make_image()
+    {
+        int w = pw * pct / 100, h = Panel::H * pct / 100, scr = DefaultScreen(dpy);
+        if (img)
+        {
+            img->data = nullptr;
+            XDestroyImage(img);
+        }
+        out.assign((size_t)w * h, 0xFF000000u);
+        img = XCreateImage(dpy, DefaultVisual(dpy, scr), DefaultDepth(dpy, scr), ZPixmap, 0,
+                           reinterpret_cast<char *>(out.data()), w, h, 32, w * 4);
+    }
+    void set_scale(int n) override
+    {
+        if (n < 100 || n > 200)
+            return;
+        pct = n;
+        resize();
+    }
+    // the window at the panel's width (FM-1 or EXPANDED) and SIZE, if it isn't
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        int w = panel.width();
+        if (!dpy || (w == pw && out.size() == (size_t)(w * pct / 100) * (Panel::H * pct / 100)))
+        {
+            pw = w;
+            return;   // (set_parent makes the window at this size)
+        }
+        pw = w;
+        XResizeWindow(dpy, wnd, pw * pct / 100, Panel::H * pct / 100);
+        make_image();
+        XFlush(dpy);
     }
     bool show() override
     {
@@ -132,6 +178,9 @@ class GuiX11 : public Gui
         int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
         if (kr >= 0)
             link->keys_set(kr == 1);
+        int hr = panel.take_hover_request();   // (HOVER HELP ON or OFF: every window's)
+        if (hr >= 0)
+            link->hover_help_set(hr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
@@ -154,6 +203,11 @@ class GuiX11 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
         std::string cmd = dialog_command(req, req == Panel::FILE_SAVE ? link->file_name() : std::string());
         if (cmd.empty())
         {
@@ -202,18 +256,18 @@ class GuiX11 : public Gui
             case ButtonPress:
                 XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
                 if (e.xbutton.button == Button1)
-                    changed |= panel.down(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.down(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button3)   // a button or key latched
-                    changed |= panel.latch(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.latch(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
-                    changed |= panel.wheel(e.xbutton.x, e.xbutton.y, e.xbutton.button == Button4 ? 1 : -1);
+                    changed |= panel.wheel(at(e.xbutton.x), at(e.xbutton.y), e.xbutton.button == Button4 ? 1 : -1);
                 break;
             case ButtonRelease:
                 if (e.xbutton.button == Button1)
-                    changed |= panel.up(e.xbutton.x, e.xbutton.y);
+                    changed |= panel.up(at(e.xbutton.x), at(e.xbutton.y));
                 break;
             case MotionNotify:
-                changed |= panel.move(e.xmotion.x, e.xmotion.y);
+                changed |= panel.move(at(e.xmotion.x), at(e.xmotion.y));
                 break;
             case KeyPress:
             case KeyRelease:
@@ -229,8 +283,24 @@ class GuiX11 : public Gui
                         break;   // (auto-repeat: a release and a press at once; the key is still held)
                 }
                 KeySym ks = XLookupKeysym(&e.xkey, 0);
+                if (e.type == KeyPress && panel.typing())   // NAME open: the character the layout gives, typed
+                {
+                    char c[8] = {};
+                    KeySym typed = 0;
+                    int n = XLookupString(&e.xkey, c, sizeof c - 1, &typed, nullptr);
+                    uint32_t ch = typed == XK_BackSpace ? TESS_TEXT_BACK : typed == XK_Return || typed == XK_KP_Enter ? TESS_TEXT_OK
+                                : typed == XK_Escape ? TESS_TEXT_CANCEL : typed == XK_Left ? TESS_TEXT_LEFT
+                                : typed == XK_Right ? TESS_TEXT_RIGHT : typed == XK_Delete ? TESS_TEXT_DELETE
+                                : n == 1 && (unsigned char)c[0] >= 32 ? (unsigned char)c[0] : 0;
+                    if (ch && panel.text(ch))
+                    {
+                        changed = true;
+                        break;
+                    }
+                }
                 int code = ks == XK_Up ? Panel::KEY_UP : ks == XK_Down ? Panel::KEY_DOWN : ks == XK_Left ? Panel::KEY_LEFT
-                         : ks == XK_Right ? Panel::KEY_RIGHT : (int)e.xkey.keycode - 8;
+                         : ks == XK_Right ? Panel::KEY_RIGHT : ks == XK_Prior ? Panel::KEY_PGUP : ks == XK_Next ? Panel::KEY_PGDN
+                         : (int)e.xkey.keycode - 8;
                 changed |= panel.key(code, e.type == KeyPress);
                 break;
             }
@@ -245,15 +315,30 @@ class GuiX11 : public Gui
             link->input(panel.input);
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();
-        panel.draw(px.data(), view);
-        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, Panel::W, Panel::H);
+        gui_size_tick(panel, link);
+        gui_listen_tick(panel, link);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the window follows)
+            resize();
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
+        Panel::scale(px.data(), out.data(), pw, pct);
+        XPutImage(dpy, wnd, gc, img, 0, 0, 0, 0, pw * pct / 100, Panel::H * pct / 100);
         XFlush(dpy);
     }
 };
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_X11; }
+int Gui::screen_width()
+{
+    Display *d = XOpenDisplay(nullptr);
+    if (!d) return 0;
+    int w = DisplayWidth(d, DefaultScreen(d));
+    XCloseDisplay(d);
+    return w;
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *host, GuiLink *link) { return std::make_unique<GuiX11>(host, link); }

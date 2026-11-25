@@ -98,6 +98,10 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define MELODEE_PLAITS 0         /* MACRO (eng_macro.c): Plaits' synthesis, C++ (macro_glue.cc, third_party/mi); never on the
                                   * FM-1, on in the plugin and the Daisy (Andamento CORE_MIGRATION step 5) */
 #endif
+#ifndef MELODEE_SMF
+#define MELODEE_SMF 0            /* a Standard MIDI File writer (smf.c, tess_core_smf): never on the FM-1 (no files there);
+                                  * on in the Daisy build for Andamento. The plugin includes smf.c itself (midifile.cpp) */
+#endif
 #ifndef MELODEE_PHASE
 #define MELODEE_PHASE 0          /* PHASE (eng_phase.c): the CZ-1's phase distortion, on the CZ-1's ID (15). Out of the FM-1
                                   * since 2026-10-22 (its tracks load FM6's INIT there); back 2026-11-21 for the plugin and
@@ -282,6 +286,13 @@ typedef struct {
     uint32_t age;
     uint8_t mvel;                /* mod.c: the note-on velocity (before UNISON scaling) and RAND of the note */
     int16_t mrnd;
+#if TESS_MPE
+    uint8_t mch, mkey;           /* per-note expression (the plugin): the MIDI channel + 1 the note came in on, 0 the
+                                  * sequencer's or a generator's (they read the track's AT and SLIDE), and its key */
+    uint8_t mat, msl;            /* .. its own pressure (AT) and slide (SLIDE: MPE's CC74, a CLAP note's BRIGHTNESS) */
+    int16_t mbt, mtune;          /* .. its own bend: its channel's pitch bend and a CLAP note's TUNING, Q8 semitones */
+    int32_t mbq8;                /* .. their sum as it sounds, smoothed as the track's bend is (voice.c track_render) */
+#endif
 } voice_t;
 
 typedef struct {                 /* per-voice control-rate modulation, computed in voice.c */
@@ -544,6 +555,9 @@ typedef struct track {
     uint8_t xp_n, xp_note[4], xp_vel[4];   /* note-ons during the fade, played on the new engine */
     /* modulation matrix (mod.c): MIDI performance controllers of the track's channel, 0..127 */
     uint8_t mw, at;              /* CC1 mod wheel, channel aftertouch */
+#if TESS_MPE
+    uint8_t sl;                  /* CC74 (SLIDE) of the track's channel, for the notes not from MIDI */
+#endif
     uint8_t foot, breath, porta; /* CC4 foot, CC2 breath, CC65 portamento on: FM6's DX7 controllers */
     int16_t bend_raw;            /* the pitch bend as sent (signed 14-bit): FM6 bends by its own range */
     uint8_t ex_off;              /* 127 - CC11 expression (0: full, the MIDI default) */

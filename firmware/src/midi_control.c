@@ -11,6 +11,9 @@ typedef struct {
     uint8_t owned[NTRK];                    /* held/pedal notes per track, at most 128 per channel */
     uint8_t ready, semis, cents;
     uint8_t rpn_msb, rpn_lsb;
+#if TESS_MPE
+    uint8_t at, sl;                         /* its last channel pressure and CC74: an MPE note's start (voice.c) */
+#endif
 } midi_channel_t;
 static midi_channel_t midi_ch[16];
 /* A note's owner, a nibble per note (two notes a byte): bits 0..2 track + 1, bit 3 key released, held by its
@@ -69,12 +72,34 @@ static void midi_expression(track_t *t, const midi_channel_t *c)
     t->bend_raw = c->bend;                        /* (FM6 bends by its own range: its DX7 function settings) */
 }
 
+#if TESS_MPE
+/* channel ch's bend as its own notes take it (TESS_MPE): Q8 semitones by its RPN 0 range (MPE's members: 48) */
+static int32_t mpe_bend_q8(uint32_t ch)
+{
+    const midi_channel_t *c = midi_channel(ch);
+    int32_t range = ((int32_t)c->semis * 100 + c->cents) * 256 / 100;
+    return (int32_t)c->bend * range / (c->bend < 0 ? 8192 : 8191);
+}
+/* the notes that came in on channel ch bend by its bend (key < 0) */
+static void mpe_bend_channel(uint32_t ch)
+{
+    uint32_t i, k;
+    int32_t b = mpe_bend_q8(ch);
+    for (i = 0; i < NPART; i++)
+        for (k = 0; k < NVOICE; k++)
+            if (trk[i].v[k].active && trk[i].v[k].mch == ch + 1u) trk[i].v[k].mbt = (int16_t)b;
+}
+#endif
+
 static void midi_expression_channel(uint32_t ch)
 {
     uint32_t i, mask = midi_targets(ch);
     for (i = 0; i < NPART; i++)
         if (mask & (1u << i))
             midi_expression(&trk[i], midi_channel(ch));
+#if TESS_MPE
+    mpe_bend_channel(ch);
+#endif
 }
 
 /* a MIDI note of track t sounds note: one played as itself, or a tone of one played as a chord (chord.c) */
@@ -322,9 +347,28 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
         c->rpn_msb = c->rpn_lsb = 127;
         break;
     case 6: case 38:
-        if (!c->rpn_msb && !c->rpn_lsb) {           /* RPN 0: +/-0..24 semitones, 0..99 cents */
+#if TESS_MPE
+        if (!c->rpn_msb && c->rpn_lsb == 6u && cc == 6u && (ch == 0u || ch == 15u)) {   /* MPE's configuration (MCM):
+                                                    * VALUE member channels after (lower zone) or before (upper) the
+                                                    * master; their bend range 48 semitones, the master's 2 */
+            uint32_t k;
+            for (k = 1; k <= value && k < 16u; k++) {
+                midi_channel_t *m = midi_channel(ch ? 15u - k : k);
+                m->semis = 48;
+                m->cents = 0;
+                mpe_bend_channel(ch ? 15u - k : k);     /* (its notes sounding: the new range at once) */
+            }
+            c->semis = 2;
+            c->cents = 0;
+        }
+#endif
+        if (!c->rpn_msb && !c->rpn_lsb) {           /* RPN 0: +/-0..24 semitones, 0..99 cents (TESS_MPE: 96, MPE's) */
             if (cc == 6u)
+#if TESS_MPE
+                c->semis = (uint8_t)(value > 96u ? 96u : value);
+#else
                 c->semis = (uint8_t)(value > 24u ? 24u : value);
+#endif
             else
                 c->cents = (uint8_t)(value > 99u ? 99u : value);
             midi_expression_channel(ch);
@@ -334,6 +378,53 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     }
 }
 
+#if TESS_MPE
+/* per-note expression (TESS_MPE): pressure (kind 0) or slide (1) v of the voices whose note came in on channel ch and,
+ * key >= 0, key key (an MPE member channel's pressure and CC74: every note of its channel; Poly AT and a CLAP note
+ * expression: one key). The voices of every track, held or releasing: a chord's tones and UNISON's voices together */
+static void mpe_set(uint32_t ch, int32_t key, uint32_t kind, uint32_t v)
+{
+    uint32_t i, k;
+    for (i = 0; i < NPART; i++)
+        for (k = 0; k < NVOICE; k++) {
+            voice_t *x = &trk[i].v[k];
+            if (!x->active || x->mch != ch + 1u || (key >= 0 && x->mkey != (uint32_t)key)) continue;
+            if (kind) x->msl = (uint8_t)v;
+            else x->mat = (uint8_t)v;
+        }
+}
+/* a CLAP note's TUNING (tess_core_note_tune), Q8 semitones: a queue of its own (the MIDI queue's packets have no room
+ * for a key and a signed value), taken after the block's MIDI (seq.c), so after the note-on it follows */
+#define MPE_TQ 64u
+static struct { int8_t ch, key; int16_t q8; } mpe_tq[MPE_TQ];
+static volatile uint32_t mpe_tq_w, mpe_tq_r;
+static uint32_t mpe_tune_put(int32_t ch, int32_t key, int32_t q8)
+{
+    if (mpe_tq_w - mpe_tq_r >= MPE_TQ) return 0;
+    mpe_tq[mpe_tq_w % MPE_TQ].ch = (int8_t)(ch < 0 ? -1 : ch & 15);
+    mpe_tq[mpe_tq_w % MPE_TQ].key = (int8_t)(key < 0 ? -1 : key & 127);
+    mpe_tq[mpe_tq_w % MPE_TQ].q8 = (int16_t)clamp(q8, -120 * 256, 120 * 256);
+    mpe_tq_w++;
+    return 1;
+}
+static void mpe_tune_take(void)
+{
+    uint32_t i, k;
+    for (; mpe_tq_r != mpe_tq_w; mpe_tq_r++) {
+        int32_t ch = mpe_tq[mpe_tq_r % MPE_TQ].ch, key = mpe_tq[mpe_tq_r % MPE_TQ].key;
+        for (i = 0; i < NPART; i++)
+            for (k = 0; k < NVOICE; k++) {
+                voice_t *x = &trk[i].v[k];
+                if (x->active && x->mch && (ch < 0 || x->mch == (uint32_t)ch + 1u) && (key < 0 || x->mkey == (uint32_t)key))
+                    x->mtune = mpe_tq[mpe_tq_r % MPE_TQ].q8;
+            }
+    }
+}
+#endif
+
+#if TESS_PC_IN
+void tessera_pc_in(uint32_t n);                    /* (form_chain.c: a DAW's Program Change, sections and banks) */
+#endif
 /* Keep the occasional controller/panic dispatch outside the hot rendering loop. */
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
@@ -341,14 +432,41 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
     track_t *t = midi_track(ch);
     /* Controllers retain channel state even outside ROUT, but only mapped/owned tracks receive them.
      * In particular, pedal-up must clear sustain even if the channel currently owns no notes. */
-    if (st == 0x90u || st == 0x80u)
+    if (st == 0x90u || st == 0x80u) {
+#if TESS_MPE
+        if (st == 0x90u && d2) {                    /* (the voices it starts: this channel's, voice.c voice_mpe_take) */
+            mpe_on_ch = (uint8_t)(ch + 1u); mpe_on_key = (uint8_t)d1;
+            mpe_on_at = midi_ch[ch].at; mpe_on_sl = midi_ch[ch].sl;
+            mpe_on_bend = (int16_t)mpe_bend_q8(ch);
+        }
+#endif
         midi_note_event(ch, d1, st == 0x90u ? d2 : 0);
-    else if (st == 0xE0u) {
+#if TESS_MPE
+        mpe_on_ch = 0;
+#endif
+    } else if (st == 0xE0u) {
         midi_channel(ch)->bend = (int16_t)((int32_t)(d1 | (d2 << 7)) - 8192);
         midi_expression_channel(ch);
     } else if (st == 0xB0u) {
+#if TESS_MPE
+        if (d1 == 74u) { midi_ch[ch].sl = (uint8_t)d2; mpe_set(ch, -1, 1, d2); }   /* (MPE: slide) */
+        else if (d1 == 121u) midi_ch[ch].at = midi_ch[ch].sl = 0;
+#endif
         if (t) mod_midi(t, st, d1, d2);
         midi_control(ch, d1, d2);
-    } else if (st == 0xD0u && t)
-        mod_midi(t, st, d1, d2);
+    } else if (st == 0xD0u) {
+#if TESS_MPE
+        midi_ch[ch].at = (uint8_t)d1;               /* (MPE: each note's pressure on its own channel) */
+        mpe_set(ch, -1, 0, d1);
+#endif
+        if (t) mod_midi(t, st, d1, d2);
+    }
+#if TESS_MPE
+    else if (st == 0xA0u)
+        mpe_set(ch, (int32_t)d1, 0, d2);           /* (Poly AT: one key's pressure; a CLAP note's PRESSURE) */
+#endif
+#if TESS_PC_IN
+    else if (st == 0xC0u)
+        tessera_pc_in(d1);
+#endif
 }

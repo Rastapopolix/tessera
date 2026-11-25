@@ -2,8 +2,8 @@
 
 Short projects, one per feature still to be checked on the FM-1, each set so its feature shows within a minute or two.
 They are plain music on purpose (A minor, 110 BPM, the same four tracks), so only the feature under test changes.
-Put them on the FM-1 from the web editor (**Projects** > **Demo projects** > **Test projects**: pick a slot for each,
-four at a time) and play them while you go down the checklist.
+Put them on the FM-1 one at a time from the web editor (**Projects** > **Project files** > **Load a file**, picking a
+slot) and play them while you go down the checklist. The editor's **Demo projects** list offers only the demos.
 
 All four tracks start the same: **T1** a TRIO pad on CHORD, **T2** an FM6 piano on TURING (eighths), **T3** a TRIO sub
 bass on EUCLID (3 in 8), **T4** the 909 on ATLAS.

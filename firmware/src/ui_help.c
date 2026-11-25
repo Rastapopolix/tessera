@@ -739,7 +739,8 @@ static uint32_t help_count(void)
  * (help.card), not the page under it again: drawing that first showed the page for a moment, a flicker */
 static int help_knob(uint32_t k, int32_t s)
 {
-    if (!(fm1_in.buttons & (1u << panel.btn[B_ARP])) || ui.menu || ui.confirm || ui.layer)   /* (a popup: ui_input.c) */
+    if ((!(fm1_in.buttons & (1u << panel.btn[B_ARP])) && !UZ_HELP_PIN) || ui.menu || ui.confirm || ui.layer)   /* (a
+                                                         * popup: ui_input.c; UZ_HELP_PIN: a card the mouse opened) */
         return 0;
     if (!help.on || help.knob != k) {
         help_find(k);

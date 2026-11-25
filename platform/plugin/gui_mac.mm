@@ -36,6 +36,11 @@ int scan_code(unsigned short kc)
     case 0x7D: return Panel::KEY_DOWN;
     case 0x7B: return Panel::KEY_LEFT;
     case 0x7C: return Panel::KEY_RIGHT;
+    case 0x74: return Panel::KEY_PGUP;
+    case 0x79: return Panel::KEY_PGDN;
+    case 0x7A: return 0x3B;   // F1
+    case 0x35: return 0x01;   // Esc
+    case 0x24: return 0x1C;   // Return
     }
     return kc < sizeof SC ? SC[kc] : 0;
 }
@@ -51,19 +56,56 @@ class GuiMac : public Gui
     {
         panel.set_shell(l->shell());
         panel.set_keys(l->keys_on());
+        panel.set_hover_help(l->hover_help_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     Panel panel;
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
+    int pw = Panel::W;               // the panel's width the view has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
     NSView *nsview = nil;
     NSTimer *timer = nil;
     CGColorSpaceRef rgb = nullptr;
     CGContextRef bitmap = nullptr;   // over px
     double wheel_acc = 0;            // a trackpad's scrolling, not yet a whole notch
+    int pct = 100;                   // SIZE 100 / 125 / 150 / 200 %: the layer stretches the 1:1 picture
+    void set_scale(int n) override
+    {
+        if (n < 100 || n > 200)
+            return;
+        pct = n;
+        resize();
+    }
+    // the view at the panel's width (FM-1 or EXPANDED) and SIZE; the bitmap over px as wide as the panel
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        bool wider = panel.width() != pw;
+        pw = panel.width();
+        if (!nsview)
+            return;   // (set_parent makes the view at this size)
+        if (wider)
+            make_bitmap();
+        [nsview setFrameSize:NSMakeSize(pw * pct / 100, Panel::H * pct / 100)];
+        filter();
+    }
+    bool make_bitmap()
+    {
+        if (bitmap)
+            CGContextRelease(bitmap);
+        // px is 0xAARRGGBB words: in memory B G R A, the alpha unused
+        bitmap = CGBitmapContextCreate(px.data(), pw, Panel::H, 8, pw * 4, rgb,
+                                       kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
+        return bitmap != nullptr;
+    }
+    // whole pixels doubled at 100 % and 200 % (Retina: 2x, 4x); smoothed at 125 and 150 %, where they cannot be whole
+    void filter() { nsview.layer.magnificationFilter = pct % 100 ? kCAFilterLinear : kCAFilterNearest; }
 
     ~GuiMac() override
     {
@@ -99,6 +141,9 @@ class GuiMac : public Gui
         int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
         if (kr >= 0)
             link->keys_set(kr == 1);
+        int hr = panel.take_hover_request();   // (HOVER HELP ON or OFF: every window's)
+        if (hr >= 0)
+            link->hover_help_set(hr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
@@ -108,6 +153,11 @@ class GuiMac : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"   // (allowedFileTypes: allowedContentTypes needs macOS 11)
         if (req == Panel::FILE_OPEN)
@@ -127,6 +177,9 @@ class GuiMac : public Gui
             sp.title = @"Save the Tessera project";
             sp.allowedFileTypes = @[ @"tsp" ];
             sp.nameFieldStringValue = [NSString stringWithUTF8String:link->file_name().c_str()] ?: @"Tessera.tsp";
+            std::string presets = projfile::presets_dir();   // (the DAW's preset browser lists what is saved there)
+            if (!presets.empty())
+                sp.directoryURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:presets.c_str()] isDirectory:YES];
             if ([sp runModal] == NSModalResponseOK && sp.URL.fileSystemRepresentation)
                 panel.note(link->save_file(sp.URL.fileSystemRepresentation));
         }
@@ -148,7 +201,8 @@ class GuiMac : public Gui
     {
         if (!nsview || !bitmap)
             return;
-        panel.draw(px.data(), view);
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
         CGImageRef img = CGBitmapContextCreateImage(bitmap);   // (a copy: the layer keeps it)
         [CATransaction begin];
         [CATransaction setDisableActions:YES];   // (no fade between frames)
@@ -170,14 +224,23 @@ class GuiMac : public Gui
     {
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
+        gui_size_tick(panel, link);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the view follows)
+            resize();
+        gui_listen_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();
         draw();
     }
 
-    // a point in the view (flipped: top left 0,0) as window pixels
-    NSPoint where(NSEvent *e) { return [nsview convertPoint:e.locationInWindow fromView:nil]; }
+    // a point in the view (flipped: top left 0,0) as the panel's pixels (1:1, whatever SIZE)
+    NSPoint where(NSEvent *e)
+    {
+        NSPoint p = [nsview convertPoint:e.locationInWindow fromView:nil];
+        return NSMakePoint(p.x * 100 / pct, p.y * 100 / pct);
+    }
 };
 
 // ---- the view's methods (the class is made in view_class)
@@ -240,8 +303,29 @@ void v_wheel(id self, SEL, NSEvent *e)
 bool v_key(id self, NSEvent *e, bool down)
 {
     GuiMac *g = gui_of(self);
+    if (g && down && (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl |
+                                         NSEventModifierFlagOption)) == NSEventModifierFlagCommand &&
+        (e.keyCode == 0x1F || e.keyCode == 0x01) && g->panel.shortcut(e.keyCode == 0x1F ? 'O' : 'S'))
+    {   // (the standalone app: Cmd+O / Cmd+S, OPEN / SAVE)
+        g->files();
+        return true;
+    }
     if (!g || (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)))
         return false;   // (the host's)
+    if (down && g->panel.typing())   // NAME open: the character the layout gives, typed
+    {
+        uint16_t kc = e.keyCode;
+        uint32_t ch = kc == 51 ? TESS_TEXT_BACK : kc == 36 || kc == 76 ? TESS_TEXT_OK : kc == 53 ? TESS_TEXT_CANCEL
+                    : kc == 123 ? TESS_TEXT_LEFT : kc == 124 ? TESS_TEXT_RIGHT : kc == 117 ? TESS_TEXT_DELETE : 0;
+        NSString *typed = e.characters;
+        if (!ch && typed.length == 1 && [typed characterAtIndex:0] >= 32 && [typed characterAtIndex:0] < 0xF700)
+            ch = [typed characterAtIndex:0];   // (0xF700..: the function keys' private codes)
+        if (ch && g->panel.text(ch))
+        {
+            g->input(true);
+            return true;
+        }
+    }
     int code = scan_code(e.keyCode);
     if (!code)
         return false;
@@ -260,6 +344,19 @@ void v_key_up(id self, SEL, NSEvent *e)
 {
     if (!v_key(self, e, false))
         [[self nextResponder] keyUp:e];
+}
+// Shift (left 56, right 60): no keyDown / keyUp of its own, only the modifiers' change; to the panel as the PC's 0x2A
+void v_flags(id self, SEL, NSEvent *e)
+{
+    GuiMac *g = gui_of(self);
+    bool ours = false;
+    if (g && (e.keyCode == 56 || e.keyCode == 60))
+    {
+        ours = g->panel.key(0x2A, (e.modifierFlags & NSEventModifierFlagShift) != 0);
+        g->input(ours);
+    }
+    if (!ours)
+        [[self nextResponder] flagsChanged:e];
 }
 BOOL v_resign(id self, SEL)
 {
@@ -317,6 +414,7 @@ Class view_class()
     add(cls, @selector(scrollWheel:), (IMP)v_wheel, types_of(@selector(scrollWheel:)));
     add(cls, @selector(keyDown:), (IMP)v_key_down, types_of(@selector(keyDown:)));
     add(cls, @selector(keyUp:), (IMP)v_key_up, types_of(@selector(keyUp:)));
+    add(cls, @selector(flagsChanged:), (IMP)v_flags, types_of(@selector(flagsChanged:)));
     add(cls, @selector(resignFirstResponder), (IMP)v_resign, types_of(@selector(resignFirstResponder)));
     add(cls, @selector(updateTrackingAreas), (IMP)v_tracking, types_of(@selector(updateTrackingAreas)));
     char t_enter[16], t_drop[16];   // (NSDraggingDestination: no NSView method to copy the types from)
@@ -335,17 +433,14 @@ bool GuiMac::set_parent(const clap_window_t *w)
     if (!parent || nsview)
         return false;
     rgb = CGColorSpaceCreateDeviceRGB();
-    // px is 0xAARRGGBB words: in memory B G R A, the alpha unused
-    bitmap = CGBitmapContextCreate(px.data(), Panel::W, Panel::H, 8, Panel::W * 4, rgb,
-                                   kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
-    if (!bitmap)
+    if (!make_bitmap())
         return false;
-    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, Panel::W, Panel::H)];
+    nsview = [[view_class() alloc] initWithFrame:NSMakeRect(0, 0, pw * pct / 100, Panel::H * pct / 100)];
     *reinterpret_cast<GuiMac **>((char *)(__bridge void *)nsview + ivar_getOffset(gui_ivar)) = this;
     nsview.wantsLayer = YES;
     nsview.layer.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
     nsview.layer.contentsGravity = kCAGravityResize;
-    nsview.layer.magnificationFilter = kCAFilterNearest;   // (Retina: whole pixels doubled, no blur)
+    filter();   // (Retina: whole pixels doubled, no blur)
     nsview.layer.opaque = YES;
     [nsview registerForDraggedTypes:@[ NSPasteboardTypeFileURL ]];
     [parent addSubview:nsview];
@@ -358,4 +453,9 @@ bool GuiMac::set_parent(const clap_window_t *w)
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_COCOA; }
+int Gui::screen_width()
+{
+    NSScreen *s = [NSScreen mainScreen];   // (points; the visible frame: without the Dock)
+    return s ? (int)s.visibleFrame.size.width : 0;
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiMac>(link); }

@@ -4,6 +4,8 @@
  * OPEN / SAVE under the keys use the system's file dialogs; a .tsp or a backup dropped on the window opens too. */
 #include "gui.h"
 
+#include <memory>
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -30,16 +32,23 @@ class GuiWin32 : public Gui
     {
         panel.set_shell(l->shell());
         panel.set_keys(l->keys_on());
+        panel.set_hover_help(l->hover_help_on());
         panel.set_inks(l->inks());
         panel.set_tracks(l->tracks());
         panel.set_version(tess_version());
+        panel.set_expanded(l->expanded());
+        pw = panel.width();
     }
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
     int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
-    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W * Panel::H);
+    std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
+    int pct = 100;          // SIZE 100 / 125 / 150 / 200 %: the panel drawn at 1:1, stretched to the window
+    int pw = Panel::W;      // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
+    std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
+    int at(int v) const { return v * 100 / pct; }   // a window pixel at 1:1
 
     ~GuiWin32() override
     {
@@ -55,7 +64,7 @@ class GuiWin32 : public Gui
         auto *g = reinterpret_cast<GuiWin32 *>(GetWindowLongPtrW(h, GWLP_USERDATA));
         if (!g)
             return DefWindowProcW(h, msg, wp, lp);
-        int x = GET_X_LPARAM(lp), y = GET_Y_LPARAM(lp);
+        int x = g->at(GET_X_LPARAM(lp)), y = g->at(GET_Y_LPARAM(lp));
         switch (msg)
         {
         case WM_TIMER:
@@ -107,13 +116,38 @@ class GuiWin32 : public Gui
         case WM_KEYUP:
         {
             // the computer keyboard (panel.h key): by scan code, as the web simulator does; Ctrl / Alt are the host's
+            if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 && (wp == 'O' || wp == 'S') &&
+                g->panel.shortcut((char)wp))   // (the standalone app: Ctrl+O / Ctrl+S, OPEN / SAVE)
+            {
+                g->files();
+                return 0;
+            }
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;
+            if (msg == WM_KEYDOWN && g->panel.typing())   // NAME open: the character the layout gives, typed
+            {
+                uint32_t ch = wp == VK_BACK ? TESS_TEXT_BACK : wp == VK_RETURN ? TESS_TEXT_OK : wp == VK_ESCAPE ? TESS_TEXT_CANCEL
+                            : wp == VK_LEFT ? TESS_TEXT_LEFT : wp == VK_RIGHT ? TESS_TEXT_RIGHT : wp == VK_DELETE ? TESS_TEXT_DELETE : 0;
+                if (!ch)
+                {
+                    BYTE state[256];
+                    WCHAR w[4];
+                    if (GetKeyboardState(state) && ToUnicode((UINT)wp, (UINT)sc, state, w, 4, 4) == 1 && w[0] >= 32)
+                        ch = w[0];   // (flag 4: the keyboard's dead-key state left alone)
+                }
+                if (ch && g->panel.text(ch))
+                {
+                    g->input(true);
+                    return 0;
+                }
+            }
             if (wp == VK_UP) code = Panel::KEY_UP;
             else if (wp == VK_DOWN) code = Panel::KEY_DOWN;
             else if (wp == VK_LEFT) code = Panel::KEY_LEFT;
             else if (wp == VK_RIGHT) code = Panel::KEY_RIGHT;
+            else if (wp == VK_PRIOR && (lp >> 24 & 1)) code = Panel::KEY_PGUP;   // (not the keypad's 9 / 3)
+            else if (wp == VK_NEXT && (lp >> 24 & 1)) code = Panel::KEY_PGDN;
             else if (lp >> 24 & 1) break;   // (another extended key: not a panel key)
             if (g->panel.key(code, msg == WM_KEYDOWN))
             {
@@ -131,6 +165,7 @@ class GuiWin32 : public Gui
         {
             POINT p{x, y};   // (screen coordinates)
             ScreenToClient(h, &p);
+            p.x = g->at(p.x), p.y = g->at(p.y);
             g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
             int n = g->wheel_acc / WHEEL_DELTA;
             g->wheel_acc -= n * WHEEL_DELTA;
@@ -163,6 +198,9 @@ class GuiWin32 : public Gui
         int kr = panel.take_keys_request();    // (KEYS ON or OFF: every window's)
         if (kr >= 0)
             link->keys_set(kr == 1);
+        int hr = panel.take_hover_request();   // (HOVER HELP ON or OFF: every window's)
+        if (hr >= 0)
+            link->hover_help_set(hr == 1);
         int sh = panel.take_shell_request();   // (a shell picked: its ink)
         if (sh >= 0)
             link->shell_picked(sh);
@@ -172,12 +210,20 @@ class GuiWin32 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
+        {
+            panel.note(link->export_midi());
+            return;
+        }
         wchar_t path[MAX_PATH * 4] = {};
         OPENFILENAMEW of{};
         of.lStructSize = sizeof of;
         of.hwndOwner = GetAncestor(wnd, GA_ROOT);
         of.lpstrFile = path;
         of.nMaxFile = (DWORD)(sizeof path / sizeof path[0]);
+        std::wstring presets = wide(projfile::presets_dir());   // (the DAW's preset browser lists what is saved there)
+        if (!presets.empty())
+            of.lpstrInitialDir = presets.c_str();
         if (req == Panel::FILE_OPEN)
         {
             of.lpstrFilter = L"Tessera project or FM-1 backup (*.tsp, *.json)\0*.tsp;*.json\0All files\0*.*\0";
@@ -211,15 +257,21 @@ class GuiWin32 : public Gui
 
     void paint(HDC dc)
     {
-        panel.draw(px.data(), view);
+        bool t2 = panel.expanded() && link->tracks_view(*tracks);
+        panel.draw(px.data(), view, t2 ? tracks.get() : nullptr);
         BITMAPINFO bi{};
         bi.bmiHeader.biSize = sizeof bi.bmiHeader;
-        bi.bmiHeader.biWidth = Panel::W;
+        bi.bmiHeader.biWidth = pw;
         bi.bmiHeader.biHeight = -Panel::H;   // top row first
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        SetDIBitsToDevice(dc, 0, 0, Panel::W, Panel::H, 0, 0, 0, Panel::H, px.data(), &bi, DIB_RGB_COLORS);
+        // 100 %: as it is; 200 %: each pixel doubled; 125, 150 %: GDI's HALFTONE, each pixel the mean of what it covers
+        bool soft = pct % 100 != 0;
+        SetStretchBltMode(dc, soft ? HALFTONE : COLORONCOLOR);
+        if (soft) SetBrushOrgEx(dc, 0, 0, nullptr);
+        StretchDIBits(dc, 0, 0, pw * pct / 100, Panel::H * pct / 100, 0, 0, pw, Panel::H, px.data(), &bi,
+                      DIB_RGB_COLORS, SRCCOPY);
     }
 
     bool set_parent(const clap_window_t *w) override
@@ -236,7 +288,8 @@ class GuiWin32 : public Gui
             wc.lpszClassName = CLASS_NAME;
             RegisterClassExW(&wc);
         }
-        wnd = CreateWindowExW(0, CLASS_NAME, L"Tessera", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, Panel::W, Panel::H,
+        wnd = CreateWindowExW(0, CLASS_NAME, L"Cosmati", WS_CHILD | WS_CLIPSIBLINGS, 0, 0, pw * pct / 100,
+                              Panel::H * pct / 100,
                               static_cast<HWND>(w->win32), nullptr, inst, nullptr);
         if (!wnd)
             return false;
@@ -244,6 +297,25 @@ class GuiWin32 : public Gui
         DragAcceptFiles(wnd, TRUE);
         SetTimer(wnd, 1, 33, nullptr);
         return true;
+    }
+    void set_scale(int n) override
+    {
+        if (n < 100 || n > 200)
+            return;
+        pct = n;
+        resize();
+    }
+    // the window at the panel's width (FM-1 or EXPANDED) and SIZE
+    void resize()
+    {
+        panel.set_expanded(link->expanded());
+        pw = panel.width();
+        if (wnd)
+        {
+            SetWindowPos(wnd, nullptr, 0, 0, pw * pct / 100, Panel::H * pct / 100,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            InvalidateRect(wnd, nullptr, FALSE);
+        }
     }
     bool show() override { return wnd && (ShowWindow(wnd, SW_SHOW), true); }
     bool hide() override { return wnd && (ShowWindow(wnd, SW_HIDE), true); }
@@ -259,7 +331,12 @@ class GuiWin32 : public Gui
     {
         link->view(view);
         panel.set_midi(link->midi_count());
+        panel.set_standalone(link->standalone());
         gui_fm1_tick(panel, link);
+        gui_size_tick(panel, link);
+        if (panel.width() != pw)   // (MODE, or a shell picked: the window follows)
+            resize();
+        gui_listen_tick(panel, link);
         gui_gen_tick(panel, link);
         ink_check();
         InvalidateRect(wnd, nullptr, FALSE);
@@ -268,4 +345,10 @@ class GuiWin32 : public Gui
 }   // namespace
 
 const char *Gui::api() { return CLAP_WINDOW_API_WIN32; }
+int Gui::screen_width()
+{
+    RECT r{};   // (the primary screen's work area: without the taskbar)
+    if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &r, 0)) return (int)(r.right - r.left);
+    return GetSystemMetrics(SM_CXSCREEN);
+}
 std::unique_ptr<Gui> Gui::make(const clap_host_t *, GuiLink *link) { return std::make_unique<GuiWin32>(link); }

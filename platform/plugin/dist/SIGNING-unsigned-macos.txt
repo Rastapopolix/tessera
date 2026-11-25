@@ -1,10 +1,13 @@
 This beta is not signed with an Apple Developer ID yet, so macOS quarantines the download and your
-DAW may call Tessera "damaged" or say it "can't be verified". After copying the plugins (step 1),
+DAW may call Cosmati "damaged" or say it "can't be verified". After copying the plugins (step 1),
 clear the quarantine once, in Terminal (Applications > Utilities > Terminal):
 
-  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Tessera.clap
-  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Tessera.vst3
-  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/Tessera.component
-  xattr -dr com.apple.quarantine /Applications/Tessera.app
+  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/CLAP/Cosmati.clap
+  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Cosmati.vst3
+  xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/Cosmati.component
+  xattr -dr com.apple.quarantine /Applications/Cosmati.app
 
-(the last one where you put Tessera.app). Then restart your DAW and rescan.
+(the last one where you put Cosmati.app). Then restart your DAW and rescan.
+
+Signing takes these steps away, and costs about USD 99 a year with Apple. If you'd like to help get
+Cosmati signed: https://ko-fi.com/Rastapopolix

@@ -31,6 +31,28 @@ uint32_t tess_core_tracks(void) { return NTRK; }
 static uint32_t core_booted, core_last_frame, core_samples_due;
 static uint32_t core_track_req = 0xFFu;           /* tess_core_track_select: the track asked for (0xFF none) */
 
+/* every track its seed now (a new project's tracks 1..4 have none until first used; tessera_reset gives 5..8 theirs):
+ * EVOLVE ROLL in its range 1..128, not 0, for a DAW that reads the start's values as the parameters' defaults */
+static void core_seeds(void)
+{
+    uint32_t k;
+    for (k = 0; k < TESSERA_TRACKS; k++)
+        tess_seed_fresh(k);
+#if MELODEE_FM6
+    {                                             /* a track not on FM6 keeps FM6's INIT VOICE in its record, not the
+                                                   * core's zeros: their name would come back as spaces after a load,
+                                                   * and a state saved, loaded and saved again must be the same bytes
+                                                   * (as generate.c gen_patches_reset does for a piece) */
+        uint8_t v[FP_SIZE + 1u];
+        for (k = 0; k < PROJ_NTRK; k++)
+            if (trk[k].eng_req != ENGI_FM6) {
+                fm6_unpack(FM6_INIT, v);
+                fm6_put_patch(k, v, 1);
+            }
+    }
+#endif
+}
+
 /* power-on (main.c melodee_init via host_boot.h's ui_power_on, with the device's BPM and scale), in the default ink */
 void tess_core_boot(void)
 {
@@ -56,6 +78,7 @@ void tess_core_boot(void)
     settings_midi_out = MIDI_OUT_ALL;             /* (a DAW wants the generators' notes too; MENU can change it) */
     song.g[G_ROUTE] = 1;                          /* ROUT SEL: a DAW sends on channel 1, and the notes play the selected
                                                    * track, as the panel's keys do (GLO > SYSTEM can set the ranges) */
+    core_seeds();                                 /* (the plugin starts on a new project: tess_core_project_new's) */
 #endif
 }
 
@@ -65,7 +88,8 @@ void tess_core_boot(void)
  * detents as the hand's (a quick wheel speeds up as a quick knob does) */
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE };
+_Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -81,6 +105,27 @@ static void zq_turn(int32_t role, int32_t n)          /* n detents of a knob (at
         return;
     for (k = 0; k < a && k < 64; k++)
         zq_put(ZQ_DETENT, (uint32_t)role, n);
+}
+/* the mouse's help (TESS_ZA_HELP, TESS_BTN_HELP): knob k's card (0..3: KNOB 1..4), as ARP held + that knob opens it,
+ * pinned (UZ_HELP_PIN) till help_unpin: a click */
+static void core_help(uint32_t k)
+{
+    if (ui.menu || ui.confirm || ui.layer || pop.on)
+        return;
+    help.on = 0;                                      /* (another knob's, or again: from its top) */
+    uz_help_pin = 1;
+    (void)help_knob(k & 3u, 0);
+}
+static int help_unpin(void)                           /* 1: a pinned card closed */
+{
+    if (!uz_help_pin)
+        return 0;
+    uz_help_pin = 0;
+    if (help.on) {
+        help.on = 0;
+        ui.force = 1;
+    }
+    return 1;
 }
 static void zq_run(void)
 {
@@ -103,6 +148,38 @@ static void zq_run(void)
         break;
     case ZQ_DETENT:
         tess_core_enc(arg, sg);
+        break;
+    case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
+        page_scroll(sg);
+        ui.force = 1;
+        break;
+    case ZQ_EDIT:                                     /* TRACKS' row double-clicked: its EDIT page (one there already
+                                                       * stays, as EDIT pressed again would go on) */
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && (ui.home || !in_fam(ui.page, FAM_EDIT)))
+            open_family(FAM_EDIT);
+        ui.force = 1;
+        break;
+    case ZQ_PICK:                                     /* MODS' SOURCE / DESTINATION clicked: its picker, kept */
+        pick_touch(arg);
+        if (pop.on == POP_PICK)
+            uz_pick_pin = 1;
+        ui.force = 1;
+        break;
+    case ZQ_PICK_DONE:                                /* a row of that picker clicked: taken, the picker goes */
+        if (pop.on == POP_PICK && uz_pick_pin)
+            pop_close();
+        break;
+    case ZQ_SOUNDS:                                   /* HOME's track double-clicked: its sounds (SAVE > PRESETS) */
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && page_titled("PRESETS") < NPAGES) {
+            ui.page = (uint8_t)page_titled("PRESETS");
+            ui.home = 0;
+            page_entered();
+        }
+        ui.force = 1;
+        break;
+    case ZQ_HELP:                                     /* KNOB arg+1's help card, kept till a click (a list's row:
+                                                       * the cursor there first, KNOB 2 its value's) */
+        core_help(arg);
         break;
     case ZQ_PRESS:
         m = 1u << panel.btn[arg % NB];
@@ -136,6 +213,38 @@ static void zone_reset(int32_t role)
     if (d && vp && d->max > d->min && *vp != d->def)
         edit_param(c, (int32_t)d->def - *vp);
 }
+/* KNOB c+1's value one of two (FREE / NOTE, BI / UNI, ON / OFF): the turn to the other, +1 or -1; 0 when it has more */
+static int32_t zone_two(int32_t role)
+{
+    int16_t *vp = 0;
+    const param_desc_t *d;
+    if (role < EN_K1 || role > EN_K4 || ui.home || ui.menu || ui.confirm || pop.on || ui.layer)
+        return 0;
+    d = page_desc(cur_page(), (uint32_t)(role - EN_K1), &vp);
+    if (!d || !vp || d->max - d->min != 1)
+        return 0;
+    return *vp > d->min ? -1 : 1;
+}
+/* the tempo dragged or double-clicked (a screen's header, TRACKS'): a BPM a detent, 120; not while a DAW or EXT clock
+ * sets it */
+static void core_tempo(uint32_t action, int32_t n)
+{
+    int32_t k;
+    if (action == TESS_ZA_WHEEL)
+        action = TESS_ZA_TURN;
+    if (action != TESS_ZA_TURN && action != TESS_ZA_DOUBLE)
+        return;
+    if (song.g[G_CLOCK]) {
+        ui_message("CLOCK IS EXT");
+    } else if (tess_host_clock) {
+        ui_message("DAW SETS TEMPO");
+    } else {
+        k = action == TESS_ZA_DOUBLE ? GP[G_BPM].def : song.g[G_BPM] + n;
+        song.g[G_BPM] = (int16_t)clamp(k, GP[G_BPM].min, GP[G_BPM].max);
+        ui.bpm_t = 40;
+    }
+    ui.force = 1;
+}
 static int zone_live(const tess_zone_t *z)          /* the zone is still on the screen */
 {
     uint32_t i;
@@ -153,18 +262,83 @@ static void core_ui_input(void)
     ui_input();
 }
 
+#if TESS_HAS_POINTER || (TESS_SCR_COUNT > 1 && MELODEE_LOOK)
+/* track tr's M (GLO's black key: MENU MUTES' now, bar or phrase) or S (its solo latched, or let go), as TRACKS' and
+ * MIXER's zones click them */
+static void core_mute_solo(uint32_t kind, uint32_t tr)
+{
+    if (kind == TESS_ZONE_MUTE) {
+        mute_press(tr, 0);
+    } else {
+        solo_latch ^= (uint8_t)(1u << tr);
+        track_solo = (uint8_t)(track_solo ^ (1u << tr));   /* (at once: layer_keys keeps it from the next pass) */
+    }
+    ui.force = 1;
+}
+#endif
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
     int32_t d, k;
+    if (z && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && help_unpin())
+        return;                                       /* a pinned help card: any click closes it, and does no more */
+    if (z && action == TESS_ZA_DOUBLE && z->kind == TESS_ZONE_CELL && z->group == UZ_G_PIC && z->role == EN_K2 &&
+        !ui.home && cur_page()->graph == GR_BROWSE) {
+        zq_key(B_OCTUP);                              /* the browser: a sound double-clicked (its first click went there;
+                                                       * its zone moved with it): kept, OK */
+        return;
+    }
     if (!z || !zone_live(z))
         return;
+    if (z->kind == TESS_ZONE_ROLL) {                  /* NOTES' steps: the note at the mouse's place (ui_roll.c) */
+        if (action == TESS_ZA_WHEEL) roll_do(ROLL_GRAB, z->x, z->y, 0);
+        roll_do(action == TESS_ZA_CLICK ? ROLL_ADD : action == TESS_ZA_HELP ? ROLL_DEL : action == TESS_ZA_GRAB ?
+                ROLL_GRAB : action == TESS_ZA_TURN || action == TESS_ZA_WHEEL ? ROLL_MOVE : action ==
+                TESS_ZA_TURN_CHORD ? ROLL_MOVE_ALL : 0u, z->x, z->y, n);
+        return;
+    }
+    if (action == TESS_ZA_HELP) {                     /* a value's column or a list's row: what it does */
+        if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
+            help_unpin();
+            zq_put(ZQ_HELP, (uint32_t)(z->role - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_ROW && z->vrole >= EN_K1 && z->vrole <= EN_K4) {
+            help_unpin();
+            tess_core_zone_do(z, TESS_ZA_CLICK, 0);   /* (the cursor on the row) */
+            zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
+        } else if (z->kind == TESS_ZONE_POINT && (z->row & 0x200) && zone_live(z)) {
+            zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
+        } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
+            help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
+            core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
+            ui.force = 1;
+        }
+        return;
+    }
+    if (uz_help_pin && help.on && z->kind == TESS_ZONE_SCROLL && (action == TESS_ZA_WHEEL || action == TESS_ZA_TURN)) {
+        (void)help_knob(help.knob, action == TESS_ZA_WHEEL ? -n : n);   /* (the card's text: as ARP + its knob) */
+        return;
+    }
+    if (action == TESS_ZA_WHEEL && z->kind == TESS_ZONE_ROW) {   /* a list under the wheel: it moves, a row a notch
+                                                                  * (up: up the list, its knob anticlockwise) */
+        zq_turn(z->role, -n);
+        return;
+    }
+    if (action == TESS_ZA_WHEEL && (z->kind == TESS_ZONE_SCROLL || z->group == UZ_G_SIDES ||
+                                    (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_BROWSE))) {
+        action = TESS_ZA_TURN;                        /* (a text, the browser's and SCALES' two lists: wheel up, up */
+        n = -n;                                       /* them, as every list) */
+    } else if (action == TESS_ZA_WHEEL) {             /* (anything else: as a turn; a marker: up-down) */
+        action = z->kind == TESS_ZONE_POINT ? TESS_ZA_TURN_Y : TESS_ZA_TURN;
+    }
     switch (z->kind) {
     case TESS_ZONE_KNOB:
-        if (action == TESS_ZA_TURN)
+        if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
-        else if (action == TESS_ZA_DOUBLE)
+        } else if ((d = zone_two(z->role)) != 0) {
+            zq_turn(z->role, d);                      /* (two values, FREE / NOTE, BI / UNI: each click the other) */
+        } else if (action == TESS_ZA_DOUBLE) {
             zone_reset(z->role);
+        }
         break;
     case TESS_ZONE_ROW:
         if (action == TESS_ZA_TURN && z->vrole < 0) {   /* a list that is its value (a picker, a whole list): it
@@ -185,6 +359,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_turn(z->vrole, n);                     /* then its value */
         else if (action == TESS_ZA_DOUBLE && uz_list.ok)
             zq_key(B_OCTUP);                          /* then OCT+: done, or its whole list */
+        else if (action == TESS_ZA_CLICK && pop.on == POP_PICK && uz_pick_pin)
+            zq_put(ZQ_PICK_DONE, 0, 1);               /* (a picker the mouse opened: the row taken, it goes) */
         break;
     case TESS_ZONE_KEY:
         if (action != TESS_ZA_TURN && z->row >= 0 && z->row < (int32_t)NB)
@@ -193,6 +369,104 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_TRACK:
         if (action != TESS_ZA_TURN)
             tess_core_track_select((uint32_t)z->row);
+        if (action == TESS_ZA_DOUBLE && ui.home)
+            zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
+        break;
+    case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
+                                                       * a right-click one less, the wheel or a drag up and down) */
+            if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
+            else if (action == TESS_ZA_HELP) zq_turn(z->vrole, -1);
+            else if (action == TESS_ZA_TURN_Y) zq_turn(z->vrole, n);
+            break;
+        }
+        if (z->row & 0x100) {                         /* (PIECE's SHAPE USER: point row & 7's level, up and down) */
+            if (action == TESS_ZA_TURN_Y)
+                tessera_piece_knob((uint32_t)z->row & 3u, n, 1 + (((uint32_t)z->row >> 2) & 1u));
+            ui.force = 1;
+            break;
+        }
+        if (action == TESS_ZA_DOUBLE) {
+            zone_reset(z->role);
+            zone_reset(z->vrole);
+        } else if (action == TESS_ZA_TURN && z->role >= 0) {
+            zq_turn(z->role, (z->row & 1) ? -n : n);
+        } else if (action == TESS_ZA_TURN_Y || action == TESS_ZA_TURN) {
+            if (z->vrole >= 0) zq_turn(z->vrole, n);
+            else if (z->role >= 0) zq_turn(z->role, (z->row & 1) ? -n : n);
+        }
+        break;
+    case TESS_ZONE_PICK:                              /* MODS' SOURCE / DESTINATION: the mod's row first (KNOB 2), */
+        d = z->row - uz_list.sel;                     /* then its knob: a click its picker, kept; a turn its value */
+        for (k = 0; k < (d < 0 ? -d : d) && k < 64; k++)
+            zq_put(ZQ_STEP, (uint32_t)z->vrole, d);
+        if (d) {
+            uz_list.sel = z->row;
+            uz_list_sel_pending = 1;
+        }
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->role, n);
+        else if (z->role >= EN_K1 && z->role <= EN_K4)
+            zq_put(ZQ_PICK, (uint32_t)(z->role - EN_K1), 1);
+        break;
+    case TESS_ZONE_MUTE:                              /* MIXER's strips: as TRACKS' M, S */
+    case TESS_ZONE_SOLO:
+        if (action == TESS_ZA_TURN || z->row < 0 || z->row >= (int32_t)NTRK) break;
+        if (z->kind == TESS_ZONE_MUTE && z->role == 1) {   /* (MIXER's word, the strip wide: click MUTE, soloed SOLO
+                                                       * off; double-click SOLO, the click's MUTE taken back) */
+            static int32_t last_tr = -1;              /* (the track the last click muted) */
+            uint32_t tr = (uint32_t)z->row;
+            if (action == TESS_ZA_DOUBLE) {
+                if (last_tr == (int32_t)tr) core_mute_solo(TESS_ZONE_MUTE, tr), core_mute_solo(TESS_ZONE_SOLO, tr);
+                last_tr = -1;
+            } else if (track_solo >> tr & 1u) {
+                core_mute_solo(TESS_ZONE_SOLO, tr), last_tr = -1;
+            } else {
+                core_mute_solo(TESS_ZONE_MUTE, tr), last_tr = (int32_t)tr;
+            }
+            break;
+        }
+        core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_TAB:                               /* the footer's tabs: that page (row: the pages from here) */
+        if (action == TESS_ZA_CLICK)
+            for (k = 0; k < (z->row < 0 ? -z->row : z->row) && k < 16; k++) zq_put(ZQ_PAGE, 0, z->row);
+        break;
+    case TESS_ZONE_TEMPO:                             /* the header's BPM: as SELECT on HOME, a step a detent */
+        if (!ui.menu && !ui.confirm && !pop.on)
+            core_tempo(action, n);
+        break;
+    case TESS_ZONE_SCROLL:                            /* a text to read: its knob, the wheel the other way round */
+        if (action == TESS_ZA_TURN)
+            zq_turn(z->role, n);
+        break;
+    case TESS_ZONE_LEVEL:                             /* MIXER's strips: a track's level, pan */
+    case TESS_ZONE_PAN:
+        if (z->row >= 0 && z->row < (int32_t)NTRK && (action == TESS_ZA_TURN || action == TESS_ZA_DOUBLE)) {
+            uint32_t p = z->kind == TESS_ZONE_LEVEL ? (uint32_t)P_LEVEL : (uint32_t)P_PAN;
+            const param_desc_t *pd = pid_desc(p, (uint32_t)z->row);
+            int32_t v = action == TESS_ZA_DOUBLE ? pd->def : (int32_t)trk[z->row].p[p] + n;
+            pid_set(p, (uint32_t)z->row, v < pd->min ? pd->min : v > pd->max ? pd->max : v);
+            ui.force = 1;
+        }
+        break;
+    case TESS_ZONE_CELL:                              /* a place in a grid: its knobs turned to it, a detent each */
+        if (action == TESS_ZA_TURN) {
+            zq_turn(z->role, n);
+            break;
+        }
+        {
+            int32_t turn[2] = {(int8_t)(uint8_t)((uint16_t)z->row & 0xFFu), (int8_t)(uint8_t)((uint16_t)z->row >> 8)};
+            int32_t role[2] = {z->role, z->vrole}, j;
+            for (j = 0; j < 2; j++)
+                for (k = 0, d = turn[j]; role[j] >= 0 && k < (d < 0 ? -d : d) && k < 64; k++)
+                    zq_put(ZQ_STEP, (uint32_t)role[j], d);
+            uz_begin(z->group);                       /* (its grid's cells go until it is drawn again: a second click
+                                                       * counts from there, not from the turns already on their way) */
+            if (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_MATRIX)
+                zq_key(B_OCTUP);                      /* (MATRIX: and OPEN, the cell's mod in MODS) */
+
+        }
         break;
     }
 #else
@@ -200,10 +474,88 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 #endif
 }
 
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+static tess_zone_t hover_z;
+static char hover_txt[384];
+/* z's help text into hover_txt, as its knob's card (help_find) would have it, the card's own state left as it was; a
+ * list's row: its own help, the list's cursor put there for the asking and back. Nothing while a card shows (its text
+ * may live in the same buffer, pid.c) */
+static void hover_find(const tess_zone_t *z)
+{
+    int32_t k = z->kind == TESS_ZONE_KNOB ? z->role : z->kind == TESS_ZONE_ROW ? z->vrole : -1;
+    hover_txt[0] = 0;
+    if (help.on || k < EN_K1 || k > EN_K4 || ui.menu || ui.confirm)
+        return;
+    {
+        uint8_t was_help[sizeof help], row = lst.row;
+        uint32_t tr = help_tr;
+        memcpy(was_help, &help, sizeof help);
+        if (z->kind == TESS_ZONE_ROW && list_on() && z->row >= 0)
+            lst.row = (uint8_t)z->row;
+        help_find((uint32_t)(k - EN_K1));
+        str_cpy(hover_txt, help_text(), sizeof hover_txt);
+        lst.row = row;
+        help_tr = tr;
+        memcpy(&help, was_help, sizeof help);
+    }
+}
+#endif
+void tess_core_hover(const tess_zone_t *z)
+{
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+    memset(&hover_z, 0, sizeof hover_z);
+    hover_txt[0] = 0;
+    if (z && zone_live(z)) {
+        hover_z = *z;
+        hover_find(z);
+    }
+#else
+    (void)z;
+#endif
+}
+
+void tess_core_away(void)
+{
+#if TESS_HAS_POINTER
+    if (ui.confirm || help_unpin())               /* (a YES / NO stays; a pinned card: closed, and no more) */
+        return;
+    if (pop.on)
+        zq_key(B_OCTDN);                          /* a picker, a sheet: as BACK (OCT-) */
+#endif
+}
+
+void tess_core_key_words(int on)
+{
+#if TESS_HAS_POINTER
+    if ((uint8_t)(on != 0) != uz_key_words) {
+        uz_key_words = (uint8_t)(on != 0);
+        ui.force = 1;                                 /* (the hints again, in the other words) */
+    }
+#else
+    (void)on;
+#endif
+}
+void tess_core_text(uint32_t ch)
+{
+#if TESS_HAS_POINTER
+    _Static_assert(NT_BACK == TESS_TEXT_BACK && NT_OK == TESS_TEXT_OK && NT_CANCEL == TESS_TEXT_CANCEL &&
+                   NT_LEFT == TESS_TEXT_LEFT && NT_RIGHT == TESS_TEXT_RIGHT && NT_DELETE == TESS_TEXT_DELETE,
+                   "ui_name.c's keys as tess_core.h's");
+    int r = name_text(ch);
+    if (r == 2 || r == 3)
+        zq_key(r == 2 ? B_OCTUP : B_OCTDN);          /* (OK, cancel: as the keys, through the same queue) */
+    if (r)
+        ui.force = 1;
+#else
+    (void)ch;
+#endif
+}
+
 /* one pass of main.c's loop: what a host has (no USB, editor, UBOOT, flash) */
 static void core_frame(void)
 {
     if (core_track_req < NTRK) {                  /* (between passes, as KNOB 1 on TRACKS would) */
+        if (core_track_req != song.sel) pop_close();   /* (an open sheet is the last track's: it closes) */
         track_select(core_track_req);
         core_track_req = 0xFFu;
     }
@@ -374,6 +726,9 @@ void tess_core_block(int32_t *out)
 uint32_t tess_core_frames(void) { return ring_r; }
 
 /* ---- events in: by the printed labels (panel.c maps them to the matrix), as the device's scan would see them */
+#if TESS_HAS_POINTER
+static uint32_t host_extra;                           /* SHIFT, OCTAVE DOWN / UP held (labels' TESS_BTN_* bits) */
+#endif
 void tess_core_buttons(uint32_t labels)
 {
     uint32_t m = 0, b;
@@ -382,6 +737,32 @@ void tess_core_buttons(uint32_t labels)
             m |= 1u << panel.btn[b];
     host_pressed |= m & ~fm1_in.buttons;
 #if TESS_HAS_POINTER
+    {   /* Smalti's own buttons: SHIFT holds OCT- with no press (no edge: never BACK, never an octave; its release no
+         * tap), the knobs' second layer; OCTAVE DOWN / UP step the keys' octave, on any page, as OCT- / OCT+ do on
+         * Stage (both: back to 0) */
+        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP | TESS_BTN_HELP),
+                 go = ex & ~host_extra;
+        if (go & TESS_BTN_HELP) {                     /* ?: KNOB 1's help card (turn another knob for its), or it closes */
+            if (!help_unpin())
+                zq_put(ZQ_HELP, 0, 1);
+        } else if (m & ~fm1_in.buttons) {
+            help_unpin();                             /* (a button pressed: a pinned card closes, the press goes on) */
+        }
+        if (ex & TESS_BTN_SHIFT)
+            m |= 1u << panel.btn[B_OCTDN];
+        if ((ex ^ host_extra) & TESS_BTN_SHIFT)
+            ui.force = 1;
+        if (go & (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP)) {
+            if ((ex & (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP)) == (TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP))
+                song.octave = 0;
+            else if (go & TESS_BTN_OCT_DOWN)
+                song.octave -= song.octave > -3 ? 1 : 0;
+            else
+                song.octave += song.octave < 3 ? 1 : 0;
+            ui.force = 1;
+        }
+        host_extra = ex;
+    }
     host_btn = m;
     fm1_in.buttons = m | zone_btn;                /* (a key a zone's click holds a moment: tess_core_zone_do) */
 #else
@@ -391,6 +772,10 @@ void tess_core_buttons(uint32_t labels)
 void tess_core_keys(uint32_t mask)
 {
     mask &= (1u << TESS_KEYS) - 1u;
+#if TESS_HAS_POINTER
+    if (mask & ~fm1_in.notes)
+        help_unpin();                                 /* (a key played: a pinned help card closes) */
+#endif
     host_notes |= mask & ~fm1_in.notes;
     fm1_in.notes = mask;
 }
@@ -421,6 +806,40 @@ uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2)
     midi_in_q[mi_w % MQ] = (status >> 4) | status << 8 | (d1 & 127u) << 16 | (d2 & 127u) << 24;
     mi_w++;
     return 1;
+}
+uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v)
+{
+#if TESS_MPE
+    uint32_t c, ok = 1;
+    v = v > 127u ? 127u : v;
+    for (c = 0; c < 16u; c++) {
+        if (ch >= 0 && (uint32_t)ch != c)
+            continue;
+        if (key < 0)                       /* (every key: the channel's pressure or CC74, as an MPE member channel's) */
+            ok &= tess_core_midi(kind ? 0xB0u | c : 0xD0u | c, kind ? 74u : v, kind ? v : 0u);
+        else if (kind == TESS_EXPR_PRESSURE)
+            ok &= tess_core_midi(0xA0u | c, (uint32_t)key & 127u, v);   /* (Poly AT) */
+        else if (mi_w - mi_r >= MQ)
+            ok = 0;
+        else {                             /* (one key's slide: no MIDI 1.0 message, so code index 0: seq.c) */
+            midi_in_q[mi_w % MQ] = (0xA0u | c) << 8 | ((uint32_t)key & 127u) << 16 | v << 24;
+            mi_w++;
+        }
+    }
+    return ok;
+#else
+    (void)kind; (void)ch; (void)key; (void)v;
+    return 0;
+#endif
+}
+uint32_t tess_core_note_tune(int32_t ch, int32_t key, int32_t cents)
+{
+#if TESS_MPE
+    return mpe_tune_put(ch, key, cents * 256 / 100);
+#else
+    (void)ch; (void)key; (void)cents;
+    return 0;
+#endif
 }
 void tess_core_transport(int play)
 {
@@ -475,6 +894,102 @@ static const uint8_t *led_dim_plane(void)
         led_dim[c] = (uint8_t)((fm1_led_dim[0][c] | fm1_led_dim[1][c]) & ~fm1_led[c]);
     return led_dim;
 }
+#if TESS_HAS_POINTER
+/* the keys' jobs on the page shown (tessera-notes docs/analysis/plugin-key-roles.md), for a front end's labels over the
+ * keys: sh 1-3 characters, lg the hover's meaning; both empty where the keys just play. The same tests in the same order
+ * as ui_input.c gives the keys to NAME, a held layer (MIXER, PERF, LANDSCAPE: GLO's), the pattern keys, AWAKE, CHORD
+ * USER, ATLAS's PART 4, the DRUM grid and a USER scale */
+static void key_put(char *sh, char *lg, const char *a, const char *b, const char *c)   /* lg: a, b and c joined */
+{
+    str_cpy(sh, a, 4);
+    lg[0] = 0;
+    str_cpy(lg, b, 16);
+    if (c)
+        str_cpy(lg + str_len(lg), c, 16 - str_len(lg));
+}
+static void key_legend(uint32_t k, char *sh, char *lg)
+{
+    uint32_t p = key_place(k), blk = (uint32_t)key_black(k), l = layer_held() ? ui.ly : mixer_live() ? LAYER_GLO : 0u;
+    char a[8], b[16];
+    sh[0] = lg[0] = 0;
+    if (name_on()) {
+        static const char *const NB[] = {"<", "SPC", ">", "DEL", "MOD"}, *const NL[] = {"CURSOR LEFT", "SPACE",
+                                         "CURSOR RIGHT", "DELETE", "ABC / 123"};
+        uint32_t f = blk ? nm_black(k) : (uint32_t)NB_NONE;
+        _Static_assert(NB_LEFT == 0 && NB_SPACE == 1 && NB_RIGHT == 2 && NB_DEL == 3 && NB_MODE == 4 && NB_NONE == 5,
+                       "ui_name.c's black keys in NB's order");
+        if (!blk && p < 16u)
+            key_put(sh, lg, nm_group(p), "TYPE ", nm_group(p));
+        else if (f < NB_NONE)
+            key_put(sh, lg, NB[f], NL[f], 0);
+        return;
+    }
+    if (l == LAYER_GLO) {
+        static const char *const W[4] = {"ALL", "HLD", "FIL", "TAP"}, *const WL[4] = {"UNMUTE ALL", "HOLD (2X: LATCH)",
+                                         "FILL (HELD)", "TAP TEMPO"};
+        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + UI_BASE + p), a[2] = 0;
+        b[0] = 'T', b[1] = a[1], b[2] = 0;
+        if (p < UI_NT && UI_BASE + p < NTRK)
+            key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
+        else if (!blk && p >= 4u && p < 8u)
+            key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
+        return;
+    }
+    if (l == LAYER_SCL) {
+        key_put(sh, lg, N_NOTE[(k + 5u) % 12u], "ROOT ", N_NOTE[(k + 5u) % 12u]);
+        return;
+    }
+    if (l)
+        return;
+    if (pattern_keys_on()) {
+        for (uint32_t i = 0; i < NPAT; i++)
+            if (PAT_KEY[i] == k) {
+                a[0] = 'P', a[1] = (char)('1' + i), a[2] = 0;
+                key_put(sh, lg, a, "PATTERN ", a + 1);
+            }
+        return;
+    }
+    if (awake_entry_on()) {
+        if (!blk && p < 16u) {
+            fmt_int(a, (int32_t)p + 1);
+            key_put(sh, lg, a, "STEP ", a);
+        }
+        return;
+    }
+    if (ch_user_entry_on()) {
+        key_put(sh, lg, N_NOTE[(k + 5u) % 12u], "NEXT CHORD ON ", N_NOTE[(k + 5u) % 12u]);
+        return;
+    }
+    if (gr_layer_on()) {
+        for (uint32_t i = 0; blk && p < NLANE && i < GEN_GRIDS_P4_N; i++)
+            if (GEN_GRIDS_P4_NOTE[i] == DRUM_LANE_NOTE[p])
+                key_put(sh, lg, drum_lane_abbr(TSEL, p), "PART 4: ", drum_lane_name(TSEL, p));
+        return;
+    }
+    if (song.grid == 1u) {                                /* the DRUM grid (grid_keys) */
+        if (!blk) {
+            uint32_t i = ui.bank * 16u + p;
+            if (i < (uint32_t)TSEL->p[P_SLEN]) {
+                fmt_int(a, (int32_t)i + 1);
+                key_put(sh, lg, a, "STEP ", a);
+            }
+        } else if (p < NLANE) {
+            key_put(sh, lg, drum_lane_abbr(TSEL, p), "LANE ", drum_lane_name(TSEL, p));
+        } else if (p == GK_ACC) {
+            key_put(sh, lg, "ACC", "ACCENT (HELD)", 0);
+        } else {
+            key_put(sh, lg, p == GK_PGUP ? "PG>" : "<PG", p == GK_PGUP ? "NEXT PAGE" : "PAGE BEFORE", 0);
+        }
+        return;
+    }
+    if (uscale_edit()) {                                  /* a USER scale: each key's note in or out (the root stays) */
+        uint32_t d = (53u + k + 120u - (uint32_t)TSEL->p[P_ROOT]) % 12u;
+        uint32_t in = (uscale_mask[(uscale_sel - 1u) % USCALE_SLOTS] >> d) & 1u;
+        str_cpy(b, N_NOTE[(53u + k) % 12u], sizeof b);
+        key_put(sh, lg, !d ? "R" : in ? "IN" : "-", b, !d ? " ROOT" : in ? " IN: TAKE OUT" : " OUT: ADD");
+    }
+}
+#endif
 void tess_core_view(tess_view_t *v)
 {
     uint32_t i;
@@ -491,18 +1006,45 @@ void tess_core_view(tess_view_t *v)
     v->dim_keys = led_keys(led_dim_plane());
     v->breath_buttons = led_buttons(fm1_led_dim[2]);
     v->breath_keys = led_keys(fm1_led_dim[2]);
+#if TESS_HAS_POINTER
+    if (uz_key_words && !oct_nav()) {             /* Stage, NOTES: the OCT LEDs show the octave: on the front end's
+                                                   * own OCTAVE DOWN / UP, its BACK and OK dark there */
+        uint32_t oct = 3u << 12;
+        v->lit_buttons = (v->lit_buttons & ~oct) | ((v->lit_buttons >> 12) & 3u) << 17;
+        v->dim_buttons &= ~oct;
+        v->breath_buttons &= ~oct;
+    }
+#endif
+#if TESS_HAS_POINTER
+    for (i = 0; i < TESS_KEYS; i++)
+        key_legend(i, v->key_short[i], v->key_long[i]);
+#else
+    for (i = 0; i < TESS_KEYS; i++)
+        v->key_short[i][0] = v->key_long[i][0] = 0;
+#endif
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;
     v->master = tess_core_master_get();
     v->ink = settings.palette;
     v->track = song.sel;
     v->zone_count = 0;
+    v->typing = 0;
+    v->closable = 0;
+#if TESS_HAS_POINTER && !MELODEE_ACCESS
+    v->hover = hover_z;
+    str_cpy(v->hover_help, hover_txt, sizeof v->hover_help);
+#else
+    memset(&v->hover, 0, sizeof v->hover);
+    v->hover_help[0] = 0;
+#endif
     v->zone_gen = 0;
 #if TESS_HAS_POINTER
     {                                             /* the zones, in the order a hit is looked for: a list over the
-                                                   * page, a dialog's or a screen's keys, the page's columns, a
-                                                   * screen's two lists, HOME's tracks */
-        static const uint8_t ORDER[UZ_GROUPS] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_COLS, UZ_G_SIDES, UZ_G_TRACKS};
+                                                   * page, a dialog's or a screen's keys, the page's columns,
+                                                   * MIXER's strips, a screen's two lists, HOME's tracks */
+        static const uint8_t ORDER[] = {UZ_G_LIST, UZ_G_KEYS, UZ_G_PIC, UZ_G_COLS, UZ_G_STRIPS, UZ_G_SIDES, UZ_G_TRACKS,
+                                        UZ_G_TABS, UZ_G_HEAD};
+        _Static_assert(sizeof ORDER == UZ_GROUPS, "every zone group in ORDER, once");
         uint32_t g, n = 0;
         for (g = 0; g < UZ_GROUPS; g++)
             for (i = 0; i < uz_n && n < TESS_ZONES; i++)
@@ -515,6 +1057,8 @@ void tess_core_view(tess_view_t *v)
                     str_cpy(z->value, uz[i].value, sizeof z->value);
                 }
         v->zone_count = n;
+        v->typing = name_on() ? 1u : 0u;
+        v->closable = !ui.confirm && ((uz_help_pin && help.on) || pop.on) ? 1u : 0u;
         v->zone_gen = uz_gen;
     }
 #endif
@@ -525,6 +1069,71 @@ void tess_core_track_select(uint32_t t)
 {
     if (t < NTRK)
         core_track_req = t;
+}
+
+/* ---- screen 2, TRACKS (ui_tracks.c) */
+void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
+{
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    uint32_t i;
+    _Static_assert(TESS_TRACKS_W == T2_W_MAX && TESS_TRACKS_H == T2_H_MAX && TESS_TRACKS_ZONES == T2_ZONES,
+                   "tess_core.h's TRACKS sizes are ui_tracks.c's");
+    _Static_assert(TESS_ZONE_MUTE == T2_Z_MUTE && TESS_ZONE_SOLO == T2_Z_SOLO && TESS_ZONE_LEVEL == T2_Z_LEVEL &&
+                   TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
+    tracks_draw((int32_t)(w < 1u ? 1u : w), (int32_t)(h < 1u ? 1u : h), (fm1_ms / 250u) & 1u);
+    v->w = (uint32_t)t2_w, v->h = (uint32_t)t2_h;
+    for (i = 0; i < v->w * v->h; i++)                  /* (drawn as RGB565 already: no LCD byte order here) */
+        v->screen[i] = t2_px[i];
+    v->zone_count = 0;
+    for (i = 0; i < t2_zn; i++) {                       /* M, S and the levels first, then the rows */
+        tess_zone_t *z = &v->zones[v->zone_count++];
+        const uz_t *u = &t2_z[i];
+        z->x = (uint16_t)u->x, z->y = (uint16_t)u->y, z->w = (uint16_t)u->w, z->h = (uint16_t)u->h;
+        z->kind = u->kind, z->group = u->group, z->role = u->role, z->vrole = u->vrole, z->row = u->row;
+        str_cpy(z->name, u->name, sizeof z->name);
+        str_cpy(z->value, u->value, sizeof z->value);
+    }
+    {
+        uint32_t a, b;                                  /* (drawn row by row: the rows to the end) */
+        for (a = 0, b = 0; a < v->zone_count; a++)
+            if (v->zones[a].kind != TESS_ZONE_TRACK) {
+                tess_zone_t t = v->zones[a];
+                memmove(&v->zones[b + 1], &v->zones[b], (a - b) * sizeof t);
+                v->zones[b++] = t;
+            }
+    }
+#else
+    (void)w, (void)h;
+    v->w = v->h = 0;
+    v->zone_count = 0;
+#endif
+}
+void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
+{
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    uint32_t tr = z ? (uint32_t)z->row : NTRK, click = action != TESS_ZA_TURN;
+    if (z && z->kind == TESS_ZONE_TEMPO) {            /* (the header's tempo: dragged, the wheel, double-click) */
+        core_tempo(action, n);
+        return;
+    }
+    if (tr >= NTRK)
+        return;
+    if (z->kind == TESS_ZONE_TRACK && click) {
+        tess_core_track_select(tr);
+#if TESS_HAS_POINTER
+        if (action == TESS_ZA_DOUBLE)
+            zq_put(ZQ_EDIT, 0, 1);                    /* (a double-click: and its EDIT page) */
+#endif
+    } else if ((z->kind == TESS_ZONE_MUTE || z->kind == TESS_ZONE_SOLO) && click) {
+        core_mute_solo(z->kind, tr);
+    } else if (z->kind == TESS_ZONE_LEVEL && !click && n) {
+        int32_t v = (trk[tr].p[P_LEVEL] & 127) + n;
+        pid_set(P_LEVEL, tr, v < 0 ? 0 : v > 127 ? 127 : v);
+    }
+    ui.force = 1;
+#else
+    (void)z, (void)action, (void)n;
+#endif
 }
 
 /* ---- the project */
@@ -592,6 +1201,14 @@ void tess_core_slot_load(uint32_t slot)
     project_load(slot);
     ui.force = 1;
 }
+/* a new project, as an FM-1 with nothing saved starts with (project.c project_new_blank: the power-on sounds, every
+ * pattern empty, no generator running, the device's MIDI setup kept); the slots are left as they are */
+void tess_core_project_new(void)
+{
+    project_new_blank();
+    core_seeds();
+    ui.force = 1;
+}
 
 /* the device's own MIDI and tuning setup (project.c GLO_KEPT: a project load leaves it as it is), for a front end to
  * keep beside the project: version 1, ROUT, DRUM's channel, NOTES OUT, TUNE (-50..50, +128) */
@@ -626,6 +1243,22 @@ uint32_t tess_core_setup_load(const uint8_t *in, uint32_t len)
 }
 
 /* every note MIDI OUT still has on goes off (each track's, midi_out.c), as a STOP sends them */
+#if MELODEE_SMF
+_Static_assert(sizeof(tess_smf_ev) == sizeof(smf_ev), "tess_smf_ev is smf.c's smf_ev");
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap)
+{
+    return smf_write((const smf_ev *)ev, n, bpm, name, bars, out, cap);
+}
+#else
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap)
+{
+    (void)ev, (void)n, (void)bpm, (void)name, (void)bars, (void)out, (void)cap;
+    return 0;
+}
+#endif
+
 void tess_core_notes_off(void)
 {
     uint32_t k;
@@ -696,6 +1329,32 @@ uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v)
     if (pid < PID_GLOBAL(0) && scale_shared(pid))
         scale_share(&trk[track]);
     return 1;
+}
+/* a key from outside (the plugin's LISTEN: a chord played to it): ROOT on every melodic track (a drum track keeps
+ * its own, as KEY LINK leaves it), and minor 1 / 0 turns the song's scale to its minor / major twin (MAJ <-> MIN,
+ * PEN <-> MPEN; any other scale stays, -1 keeps it). 1 if anything changed */
+uint32_t tess_core_key(uint32_t root, int32_t minor)
+{
+    static const uint8_t TWIN[][2] = {{1u, 2u}, {5u, 6u}};   /* (scales.h: MAJ MIN, PEN MPEN: major, minor) */
+    uint32_t k, i, mel = NTRK, changed = 0;
+    root %= 12u;
+    for (k = 0; k < NTRK; k++) {
+        if (drum_track(&trk[k]))
+            continue;
+        if (mel == NTRK)
+            mel = k;
+        if ((uint32_t)trk[k].p[P_ROOT] != root && pid_set(P_ROOT, k, (int32_t)root))
+            changed = 1;
+    }
+    if (minor < 0 || mel == NTRK)
+        return changed;
+    for (i = 0; i < sizeof TWIN / sizeof TWIN[0]; i++)
+        if ((uint32_t)trk[mel].p[P_SCALE] == TWIN[i][!minor] && pid_set(P_SCALE, mel, TWIN[i][minor != 0])) {
+            scale_share(&trk[mel]);
+            changed = 1;
+            break;
+        }
+    return changed;
 }
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap)
 {

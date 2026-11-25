@@ -108,6 +108,9 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "pid.c"                 /* the central parameter ids (pid.h) */
 #include "cord.c"                /* cords: the signal bus (cord.h) */
 #include "mscope.c"              /* MOD SCOPE: the picked mod sampled for MODS */
+#if MELODEE_SMF
+#include "smf.c"                 /* a .mid of the notes played: never on the FM-1 (no files), off */
+#endif
 #include "audio.c"
 
 /* -------------------------------------------------------------- UI --- */
@@ -121,6 +124,8 @@ static int ann_wire_send(const uint8_t *p, uint32_t n)   /* never waits: no room
 #include "ui_menu.c"
 #include "ui_input.c"
 #include "ui_layer.c"              /* the quick layers (GLO SCL held) */
+#include "ui_tracks.c"              /* the TRACKS page (TESS_SCR_COUNT > 1: not the FM-1; nothing here) */
+#include "ui_roll.c"                /* NOTES' steps under a mouse (TESS_HAS_POINTER 0: nothing here) */
 #ifdef ANN_VER
 #include "ui_speak.c"              /* the screen reader: what changed on the screen (MELODEE_ACCESS) */
 #endif

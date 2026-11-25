@@ -14,6 +14,8 @@
 #include "ui_menu.c"
 #include "ui_input.c"
 #include "ui_layer.c"
+#include "ui_tracks.c"               /* the TRACKS page, a second screen (TESS_SCR_COUNT > 1; else nothing) */
+#include "ui_roll.c"                 /* NOTES' steps under a mouse (TESS_HAS_POINTER; else nothing) */
 #ifdef ANN_VER
 #include "ui_speak.c"
 #endif

@@ -21,8 +21,8 @@ enum { TESS_CORE_BLOCK = 32 };       /* frames of tess_core_block: Tessera's con
 uint32_t tess_core_rate(void);
 /* the build's tracks: 4 as the FM-1, or 8 (CORE_TRACKS 8: the plugin, Andamento) */
 uint32_t tess_core_tracks(void);
-/* power-on, once: the device's start (its BPM, scales, the default ink), stopped. The web simulator and the plugin
- * then load their demos (tess_core_slot_put, tess_core_slot_load) */
+/* power-on, once: the device's start (its BPM, scales, the default ink), stopped. The web simulator puts its demos in
+ * slots A and B and loads A; the plugin puts them there and starts from a new project (web/sim/sim.c) */
 void tess_core_boot(void);
 
 /* ---- audio out. Audio time drives the device's clock, so an offline render plays as real time does. Use one of
@@ -40,8 +40,17 @@ uint32_t tess_core_frames(void);
 /* ---- events in */
 /* keys held, bit k = key k (F3 .. G5; 7 = C4) */
 void tess_core_keys(uint32_t mask);
-/* buttons held, bit b = label b (B_FX .. B_OCTUP: FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+) */
+/* buttons held, bit b = label b (B_FX .. B_OCTUP: FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+); and, in
+ * a build with TESS_HAS_POINTER (the plugin), a front end's own buttons beyond the FM-1's: SHIFT (OCT-'s held layer,
+ * never its BACK), OCTAVE DOWN / UP (the keys' octave a step, on any page; both: back to 0). With these, OCT- and OCT+
+ * are BACK and OK alone: tess_core_key_words */
+enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18,
+       TESS_BTN_HELP = 1u << 19 };   /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
 void tess_core_buttons(uint32_t mask);
+/* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
+ * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
+ * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways */
+void tess_core_key_words(int on);
 /* an encoder (knob) turned n detents: role 0 SELECT, 1 ALGORITHM, 2 PRESETS, 3..6 KNOB 1..4 */
 void tess_core_enc(uint32_t role, int32_t n);
 /* MASTER 0..1023 (the FM-1's pot, squared) */
@@ -49,6 +58,15 @@ void tess_core_master(uint32_t v);
 uint32_t tess_core_master_get(void);
 /* a MIDI channel message in, as from USB MIDI: 0 = the queue was full */
 uint32_t tess_core_midi(uint32_t status, uint32_t d1, uint32_t d2);
+/* per-note expression (a build with TESS_MPE; else nothing, 0): kind TESS_EXPR_PRESSURE or TESS_EXPR_SLIDE (MPE's
+ * CC74, a CLAP note's BRIGHTNESS), v 0..127, for the notes that came in on channel ch (-1: every channel) and key (-1:
+ * every key of the channel). Queued with the MIDI, so it reaches the note a note-on just before it started. Each note's
+ * own AT and SLIDE in the mods (a note not from MIDI keeps the track's). 0 = the queue was full */
+enum { TESS_EXPR_PRESSURE, TESS_EXPR_SLIDE };
+uint32_t tess_core_note_expr(uint32_t kind, int32_t ch, int32_t key, uint32_t v);
+/* a note's own tuning (TESS_MPE: a CLAP note's TUNING; else nothing, 0): cents (-12000..12000) added to the bend of
+ * the notes from channel ch (-1: every channel) and key (-1: every key), until their next note-on. 0 = queue full */
+uint32_t tess_core_note_tune(int32_t ch, int32_t key, int32_t cents);
 /* the transport: 1 play (from where the song is), 0 stop. Does nothing if it is already so */
 void tess_core_transport(int play);
 uint32_t tess_core_playing(void);
@@ -56,6 +74,16 @@ uint32_t tess_core_playing(void);
 /* ---- MIDI out (Settings > NOTES OUT; each track on its own channel, GLO > MIDI OUT), as USB MIDI packets: the
  * next one whose frame (tess_core_frames' count) has been rendered. 0 = none. A build with TESS_PLUGIN_IO only */
 uint32_t tess_core_midi_out(uint32_t *pkt, uint32_t *frame);
+/* ---- a Standard MIDI File of notes played (firmware/src/smf.c): format 1, 480 ticks a quarter, 4/4, a track per
+ * channel. ev: messages in tick order (ticks from the song's top: tess_core_position() * 480), notes only kept. bars 0:
+ * from the bar of the first note to the last message; bars N: from the top for N bars exactly. Its length (more than
+ * cap: out holds its start only), 0 no notes. A build with MELODEE_SMF only (the Daisy's; 0 elsewhere) */
+typedef struct tess_smf_ev {
+    uint32_t tick;
+    uint8_t status, d1, d2, pad;
+} tess_smf_ev;
+uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const char *name, uint32_t bars, uint8_t *out,
+                       uint32_t cap);
 /* note-offs for every note MIDI out still has on (they come out of tess_core_midi_out after the next render) */
 void tess_core_notes_off(void);
 
@@ -71,22 +99,59 @@ typedef struct {
 void tess_core_screen(tess_screen_t *s);
 /* the screen's zones (a build whose profile has TESS_HAS_POINTER, the plugin; else none): what a mouse can use, where
  * the page drew it, in screen pixels. A front end finds the first zone under the mouse (the list is in that order) and
- * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn: the wheel, a drag; double-click: its default);
- * ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn: its value, or the list scrolls when
- * the row is the value); KEY: OK, BACK, YES, NO (click); TRACK: HOME's column (click: that track) */
+ * hands it back to tess_core_zone_do as it got it. KNOB: a value (turn or wheel: a drag, the wheel; double-click: its
+ * default); ROW: a list's row (click: the cursor there; double-click: there and OCT+; turn, a drag: its value, or the
+ * list moves when the row is the value; wheel: the list moves, a row a notch, up the wheel up the list); KEY: OK,
+ * BACK, YES, NO (click); TRACK: HOME's column (click: that track); CELL: a place in a grid (PATTERNS, SONG: click,
+ * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
+ * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
+ * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
 enum { TESS_ZONES = 48 };
-enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK };
+enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
+       TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK, TESS_ZONE_POINT };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
+                                            * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
+                                            * transport keeps its own. PICK: MODS' SOURCE or DESTINATION; click: that
+                                            * mod, and its list, kept till a row of it is clicked; turn: its value) */
+                                     /* (5..7, TESS_ZONE_MUTE, _SOLO, _LEVEL: below) */
+/* ROLL: NOTES' steps, a piano roll (a step a column, a note's height its pitch): the front end hands it back with x and
+ * y set to the mouse's place on the screen (where a drag began), w and h as they were. CLICK: a note on that step at
+ * that pitch (a step with notes: one more, a chord of up to 4; on one of them: that one picked); HELP (a right-click):
+ * the note there removed; GRAB (the button pressed there), then TURN n (dragged: n rows up, - down): that note's
+ * pitch, in key when the track quantises, over its chord's other notes; TURN_CHORD n: the whole chord, its shape kept;
+ * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records */
+enum { TESS_ZONE_ROLL = 15 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
     int8_t role, vrole;              /* (the core's: the knob it turns, a row's value knob) */
-    int16_t row;                     /* (the core's: a row's place, a key's button label, a track) */
+    int16_t row;                     /* (the core's: a row's place, a key's button label, a track, a cell's turns) */
     char name[16], value[16];        /* what it shows: a front end's hover */
 } tess_zone_t;
-enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE };
-/* do what the mouse did on zone z: TURN n detents (+ clockwise / up), CLICK, DOUBLE. A zone no longer on the screen
+enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
+enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
+/* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
+ * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up); either -1: none. The wheel:
+ * the up-down knob, else the other; double-click: both to their defaults */
+/* HELP (a right-click): on MIXER's MUTE word, that track's solo (on, or off again); a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
+ * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
+ * on any zone, or a button pressed, closes it (that click does nothing more) */
+/* do what the mouse did on zone z: TURN n detents (+ clockwise / up: a drag), CLICK, DOUBLE, WHEEL n notches (+ up). A
+ * zone no longer on the screen
  * is let go. Its steps run a millisecond each as the device plays (a row three away: three detents) */
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n);
+/* a character typed on a computer keyboard while NAME is open (tess_view_t.typing; a build with TESS_HAS_POINTER):
+ * a letter, digit, space or one of - . _ / # + at the cursor (letters upper case; anything else is ignored), or one
+ * of these: */
+enum { TESS_TEXT_BACK = 8, TESS_TEXT_OK = 13, TESS_TEXT_CANCEL = 27, TESS_TEXT_LEFT = 0x110, TESS_TEXT_RIGHT,
+       TESS_TEXT_DELETE };          /* BACK: the character before the cursor; OK, CANCEL: as OCT+, OCT-; DELETE: the
+                                     * one at it */
+void tess_core_text(uint32_t ch);
+/* a click away from what tess_view_t.closable says is open (the panel's empty space, the screen where no zone is): a
+ * pinned help card closes, else a picker or sheet as BACK closes it. Nothing when nothing is (or a YES / NO is) */
+void tess_core_away(void);
+/* the zone the mouse rests on (HOVER HELP: a front end's setting), or 0 for none: its help text, as its knob's help card
+ * has it, comes back in tess_view_t.hover_help (a value's column, a list's row with a value, a mod's row) */
+void tess_core_hover(const tess_zone_t *z);
 /* what the FM-1 panel shows */
 typedef struct {
     uint16_t screen[TESS_SCREEN * TESS_SCREEN];   /* RGB565 (host order) */
@@ -96,12 +161,45 @@ typedef struct {
     uint32_t track;                  /* the selected track, 0 .. tess_core_tracks() - 1 (8 tracks: its bank, track & 4) */
     uint32_t zone_count, zone_gen;   /* the screen's zones (above), and a count that changes when they do */
     tess_zone_t zones[TESS_ZONES];
+    uint32_t typing;                 /* 1: NAME is open (a name being typed): a computer keyboard types into it
+                                      * (tess_core_text) rather than playing the keys */
+    /* each key's job on this page, where the page gives the keys one (a build with TESS_HAS_POINTER; else, and where the
+     * keys just play, empty): short, 1-3 characters for a label over the key ("M3", "P5", "ACC"); long, its meaning
+     * ("T3 MUTE", "PATTERN 5", "PART 4: TOM") */
+    char key_short[TESS_KEYS][4], key_long[TESS_KEYS][16];
+    tess_zone_t hover;               /* the zone tess_core_hover was given (kind 0: none), and its help text: what its
+                                      * knob's help card says ("" none; a build with TESS_HAS_POINTER and the cards) */
+    char hover_help[384];
+    uint32_t closable;               /* 1: a picker, a sheet or a help card the mouse opened is over the page, which a
+                                      * click away closes (tess_core_away); not a YES / NO question (a build with
+                                      * TESS_HAS_POINTER; else 0) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
  * pattern; 8 tracks: the panel's bank of four with it). The selection happens at the UI's next pass */
 uint32_t tess_core_track(void);
 void tess_core_track_select(uint32_t t);
+
+/* ---- screen 2, TRACKS (a build whose profile has a second screen, TESS_SCR_COUNT 2: the plugin's EXPANDED mode; else
+ * w and h 0 and nothing drawn). Every track at once, a row each (number, role, engine, pattern, the 16 steps of the bar
+ * playing with the playhead, level, M, S), the selected one boxed; drawn when asked, at the size asked: 480 x 240 (2 px
+ * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen) */
+enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 33 };
+/* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO and _LEVEL (row: the
+ * track), then TESS_ZONE_TRACK, the rows */
+enum { TESS_ZONE_MUTE = 5, TESS_ZONE_SOLO, TESS_ZONE_LEVEL };
+typedef struct {
+    uint32_t w, h;                   /* as drawn (0 0: no TRACKS page in this build) */
+    uint16_t screen[TESS_TRACKS_W * TESS_TRACKS_H];   /* RGB565 (host order), w x h of it, row by row */
+    uint32_t zone_count;
+    tess_zone_t zones[TESS_TRACKS_ZONES];
+} tess_tracks_t;
+void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h);
+/* what the mouse did on a TRACKS zone, as tess_tracks_t gave it: a row's CLICK selects that track (as
+ * tess_core_track_select), its DOUBLE selects it and opens its EDIT page; M's CLICK is GLO's mute key (MENU MUTES: now, or waits for the bar or phrase); S's CLICK
+ * latches that track's solo, or lets it go (GLO's white keys solo while held; this one stays); TURN n on the level: its
+ * LEVEL n steps. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
+void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n);
 
 /* ---- the project, as a .tsp record (TSP1: byte for byte what SAVE > PROJECT writes on the FM-1) */
 /* the music as it is now: its length, 0 = failed/too big */
@@ -114,6 +212,7 @@ uint32_t tess_core_tsp_max(void);
 uint32_t tess_core_slot_get(uint32_t slot, uint8_t *out, uint32_t cap);   /* its length, 0 = empty */
 uint32_t tess_core_slot_put(uint32_t slot, const uint8_t *in, uint32_t len);   /* 0 done, 1 not a record */
 void tess_core_slot_load(uint32_t slot);                                /* as SAVE > PROJECT > LOAD */
+void tess_core_project_new(void);                                       /* a new project: nothing plays (slots kept) */
 /* the device's MIDI and tuning setup (ROUT, DRUM's channel, NOTES OUT, TUNE), which a project load leaves alone: for a
  * front end to keep with its own state (the plugin's, in the DAW project). save: its length, 0 = cap too small;
  * load: 0 done, 1 not a setup this core reads */
@@ -138,6 +237,10 @@ uint32_t tess_core_param_info(uint32_t pid, uint32_t track, tess_param_t *info);
 int32_t tess_core_param_get(uint32_t pid, uint32_t track);
 /* the stored value, clamped, as a project load sets it: 0 not settable (an action, a device setting) */
 uint32_t tess_core_param_set(uint32_t pid, uint32_t track, int32_t v);
+/* a key from outside (the plugin's LISTEN: a chord played to it): ROOT 0..11 on every melodic track (a drum track
+ * keeps its own); minor 1 / 0 turns the song's scale to its minor / major twin (MAJ <-> MIN, PEN <-> MPEN; another
+ * scale stays), -1 keeps the scale. 1 if anything changed */
+uint32_t tess_core_key(uint32_t root, int32_t minor);
 /* the value v as the FM-1's screen shows it ("SAW", "1/16", "250ms", "42%"), into out (cap bytes, terminated): its
  * length, 0 if pid is not a parameter */
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap);

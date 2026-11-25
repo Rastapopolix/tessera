@@ -322,6 +322,9 @@ static void list_draw(void)
         lst.sig = sig;
         list_drawn = l;
         list_rows(list_n(l), lst.row, lst.first, vis);
+#if MELODEE_LOOK
+        mo_foot_line();                                 /* (the line over the page tabs) */
+#endif
     }
     if (l->pic == LP_SCALE) {
         static uint32_t ps;
@@ -329,7 +332,7 @@ static void list_draw(void)
         if (ui.force || s2 != ps) {
             ps = s2;
 #if MELODEE_LOOK
-            mo_scale_pic(pic_y, PV_SOUND_Y - pic_y);
+            mo_scale_pic(pic_y, PV_SOUND_Y - 2 - pic_y);   /* (over the tabs' line) */
 #else
             list_scale_pic(pic_y, PV_SOUND_Y - pic_y);
 #endif

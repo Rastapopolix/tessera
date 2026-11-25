@@ -172,7 +172,7 @@ start=$(date +%s)
 # ------------------------------------------------------------------ QUICK ---
 # qmap FILE: the jobs (QSEL) and regress's engines (QENG) for a changed file; returns 1 when no rule covers it.
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
-G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test"
+G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test lfo_seek_test lfo_seek_test_8"
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
 G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
@@ -199,7 +199,7 @@ qmap() {
         firmware/src/eng_wheel.c) eng WHEEL ;;
         firmware/src/eng_formant.c) eng VOICE ;;
         firmware/src/fx.c) QREG=1; QSEL="$QSEL $G_AUDIO fx_test echo_sync_test echo_sync_test_plugin fx_performance no_effects_test" ;;
-        firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test" ;;
+        firmware/src/mod.c) QREG=1; QSEL="$QSEL $G_AUDIO mod_test mod_spread_test mpe_test" ;;
         firmware/src/voice.c | firmware/src/mix.c | firmware/src/dsp.c | firmware/src/audio*.[ch] | firmware/src/engines.c | \
             firmware/src/resources.c | firmware/src/native_presets.c) QREG=1; QSEL="$QSEL $G_AUDIO" ;;
         firmware/src/ui_cords.c | firmware/src/cord.[ch]) QSEL="$QSEL $G_UI cord_test mod_test recipes_test" ;;
@@ -215,7 +215,7 @@ qmap() {
         firmware/src/song_chain.c) QSEL="$QSEL $G_SEQ ui_test" ;;
         firmware/src/gen*.[ch] | firmware/src/tessera.[ch] | firmware/src/pat_gen.c | firmware/src/answer.c | \
             firmware/src/organic.c | firmware/src/vary.c | firmware/src/page_random.c) QSEL="$QSEL $G_GEN" ;;
-        firmware/src/form_chain.c) QSEL="$QSEL chain_test entries_test planner_test" ;;
+        firmware/src/form_chain.c) QSEL="$QSEL chain_test chain_test_pc entries_test planner_test" ;;
         firmware/src/entries.c | firmware/src/energy.c | firmware/src/planner.c) QSEL="$QSEL entries_test planner_test generate_test" ;;
         firmware/src/generate.c | tests/generate_test.c) QSEL="$QSEL generate_test" ;;
         firmware/src/storage*.c | firmware/src/project*.c | firmware/src/settings_persist.c | firmware/src/fm6_store.c | \
@@ -544,6 +544,9 @@ sound && t "FX performance: all effects, four-track mixer, shared send bus and o
 sound && t "FX: three-slot chains, reverb decay/density/rate conversion, smooth Tape, track ownership, dry bypass and frozen legacy storage" fx_test -O1 $FW
 sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms ring" echo_sync_test -O2 $FW
 sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
+core && t "LFO SYNC + FREE after a Song Position: on the bar, as from the top (a DAW's start, loop, locate)" lfo_seek_test -O1 $FW
+core && t "LFO SYNC + FREE after a Song Position, at the plugin's 8 tracks" lfo_seek_test_8:lfo_seek_test -O1 $FW -DCORE_TRACKS=8
+sound && t "MPE (the plugin's TESS_MPE): each note's own AT and SLIDE, channels, Poly AT, CLAP BRIGHTNESS, per voice in the mods, cost" mpe_test -O2 $FW -DTESS_MPE=1 -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
 sound && [ $TABLES = 1 ] && job dsp_tracks
@@ -686,6 +689,8 @@ if core && [ $TABLES = 1 ]; then
         -O2 $FW -- "$OUT/tessera_test" tests/tessera_baseline.txt build/tessera_log
     t "FORM CHAIN: the project's FORM on the bar clock: order, counts, FOLLOW / OWN, SKIP, WANDER, OFF unchanged" \
         chain_test -O2 $FW
+    t "FORM CHAIN with a DAW's Program Change in (the plugin's TESS_PC_IN): sections from the next line, banks, at 8 tracks" \
+        chain_test_pc:chain_test -O2 $FW -DTESS_PC_IN=1 -DCORE_TRACKS=8
     t "ENTRIES: tracks out and back on the phrase lines: the rules, DWELL, anchors, breakdowns, CUT / FADE, hand, OFF unchanged" \
         entries_test -O2 $FW
     t "SPLIT: TIMING's SPLIT: DOUBLE, PUSH, MIX on generators, STEP and drums; SPLIT 0 and a generator's own notes unchanged" \

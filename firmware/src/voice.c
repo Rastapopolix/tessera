@@ -76,6 +76,19 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
     lfo_sync_rem[ti] = (uint16_t)rem;
     return inc;
 }
+/* Song Position (seq.c seq_seek, right after seq_start): a SYNC + FREE LFO where it would be UNITS from the top, so it
+ * stays on the bar when a DAW starts mid-song, loops or locates (a MIDI master's Song Position too). The phase is
+ * LPHASE plus (units mod cycle) x 2^32 / cycle, as lfo_sync_inc would have summed it, in 32 bits: with r < cycle =
+ * 1024 x, r x 2^22 / x = (r / x) 2^22 + q 2^22 / x, q = r mod x < x (<= 6144), the second in two steps of 2^9 and 2^13 */
+static void lfo_seek(track_t *t, uint32_t units)
+{
+    if (!t->p[P_LSYNC] || !t->p[P_LTRIG]) return;      /* (NOTE: each phrase starts it again; OFF: RATE's, free) */
+    uint32_t x = lsync_cycle((uint32_t)t->p[P_LSYNC]) / 1024u;
+    if (!x) return;
+    uint32_t r = units % (x * 1024u), q = r % x, a = q << 9;
+    t->lfo_ph = ((uint32_t)t->p[P_LPHASE] << 25) + ((r / x) << 22) + ((a / x) << 13) + (((a % x) << 13) / x);
+    lfo_sync_rem[(uint32_t)(t - trk) % NTRK] = 0;
+}
 
 static uint8_t lfo_eoc;                              /* bit tr: its LFO wrapped and the first eighth of the cycle is not over */
 static int lfo_eoc_now(const track_t *t) { return (lfo_eoc >> ((uint32_t)(t - trk) % NTRK)) & 1u; }   /* (cord.c CS_EOC) */
@@ -478,6 +491,22 @@ static void voice_scale_pitch(const track_t *t, voice_t *v, uint32_t note)
     }
 }
 
+#if TESS_MPE
+/* the MIDI note-on being played (midi_control.c midi_event, around midi_note_event): its channel + 1 (0: none, the
+ * sequencer's or a generator's), key, and its channel's pressure and CC74 so far; a voice started meanwhile keeps them */
+static uint8_t mpe_on_ch, mpe_on_key, mpe_on_at, mpe_on_sl;
+static int16_t mpe_on_bend;                         /* .. its channel's bend so far, Q8 semitones */
+static void voice_mpe_take(voice_t *v)
+{
+    v->mch = mpe_on_ch;
+    v->mkey = mpe_on_key;
+    v->mat = mpe_on_at;
+    v->msl = mpe_on_sl;
+    v->mbt = mpe_on_bend;
+    v->mtune = 0;
+    v->mbq8 = mpe_on_bend;                          /* (from where its channel is: no glide in) */
+}
+#endif
 static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int glide)
 {
     AP_START(attack_start);
@@ -497,6 +526,9 @@ static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int
     voice_scale_pitch(t, v, note);
     v->mvel = t->m_vel;                                 /* mod.c: the note's VEL and RAND */
     v->mrnd = t->m_rnd;
+#if TESS_MPE
+    voice_mpe_take(v);
+#endif
     t->m_vi = (uint8_t)(v - t->v);
     glide_set(t, v, glide);
     if (!sounding) {
@@ -553,6 +585,9 @@ static void mono_play(track_t *t, uint32_t note, uint32_t vel, int retrig, int g
             voice_scale_pitch(t, v, note);
             v->mvel = t->m_vel;
             v->mrnd = t->m_rnd;
+#if TESS_MPE
+            voice_mpe_take(v);                          /* (MPE legato: the new note's channel from here) */
+#endif
             if (vel > v->vel && nv == 1u)
                 v->vel = (uint8_t)vel;
             glide_set(t, v, glide);
@@ -935,6 +970,9 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
     bend = midi_bend_q8[ti];
     bend16 = bend >= 0 ? bend / 16 : -((-bend + 15) / 16);
     bend_fine = (bend - bend16 * 16) * 2367 / 2560;
+#if TESS_MPE
+    int32_t tbend16 = bend16, tbend_fine = bend_fine, bend_on = ENGINES[eng_idx(t->eng_req)] != &ENG_DRUM;
+#endif
     for (i = 0; i < NVOICE; i++) {
         voice_t *v = &t->v[i];
         vmod_t m;
@@ -984,6 +1022,17 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
         }
         if (!env && !m.amp0 && v->stage == 2 && !e->sampled)
             continue;                                   /* held at a silent sustain (SUS 0): nothing to render */
+#if TESS_MPE
+        if (v->mch && bend_on) {                        /* a note from MIDI: its own channel's bend and TUNING */
+            int32_t d = (int32_t)v->mbt + v->mtune - v->mbq8;
+            v->mbq8 += d > 0 ? (d < 4 ? d : (d + 3) / 4) : (d > -4 ? d : (d - 3) / 4);   /* (as the track's) */
+            bend16 = v->mbq8 >= 0 ? v->mbq8 / 16 : -((-v->mbq8 + 15) / 16);
+            bend_fine = (v->mbq8 - bend16 * 16) * 2367 / 2560;
+        } else {
+            bend16 = tbend16;
+            bend_fine = tbend_fine;
+        }
+#endif
         pitch = v->pitch_cur + tune + bend16 + ((lfo * p[P_LD_PIT] * 3) >> 15) + ((m.envq15 * p[P_ED_PIT] * 3) >> 15);
         m.pitch16 = clamp(pitch, 0, 2047);
         m.inc = tuned_pitch_inc(m.pitch16);

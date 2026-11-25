@@ -4,11 +4,15 @@
  *   - the panel draws; the screen shows the firmware's picture (not black) once it has run;
  *   - a click on PLAY starts the song, and its LED lights; a click on SEQ changes the screen;
  *   - a knob dragged turns its encoder; a key clicked sounds;
- *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB), the MIDI lamp;
+ *   - TESSERA's shell (the default): its layout, its menu (a shell, an ink, FM-1 USB, SIZE), the MIDI lamp; the window
+ *     at 150 and 200 % (Panel::scale);
  *   - GENERATE's strip in it: a click asks for a piece, a hold for before / after, the style's list and arrows, VAR,
  *     the seed's wheel; a piece made through the core shows its seed (none of it in an FM-1 shell or without styles);
  *   - the screen's zones: the mouse over FX's MIX outlines it, with a card under the screen; the wheel there, a drag and a
  *     double-click reach the core as that knob's turns and its default;
+ *   - EXPANDED (MODE in TESSERA's menu): 1500 wide, SIZE 100 / 125, TRACKS beside the screen as the core draws it, a
+ *     click on a row selects that track, the wheel on a level turns it, the keys across the window, no bank switch; an
+ *     FM-1 shell is FM-1 mode; 125 % scales;
  *   - writes the window as PPM pictures (argument: a folder) to look at.
  * usage: tessera-panel-test [out-folder] */
 #include <cmath>
@@ -38,6 +42,7 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
     PanelInput &in = p.input;
     if (in.changed)
     {
+        tess_core_key_words(in.key_words ? 1 : 0);
         tess_core_buttons(in.buttons);
         tess_core_keys(in.keys);
         if (in.master >= 0) tess_core_master((uint32_t)in.master);
@@ -48,6 +53,8 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
             if (in.enc[r]) { tess_core_enc((uint32_t)r, in.enc[r]); in.enc[r] = 0; }
         for (auto &a : in.zones) tess_core_zone_do(&a.z, a.action, a.n);
         in.zones.clear();
+        for (auto &a : in.tzones) tess_core_tracks_do(&a.z, a.action, a.n);
+        in.tzones.clear();
         in.changed = false;
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
@@ -64,13 +71,14 @@ static void click(Panel &p, int x, int y)
     p.up(x, y);
     run(p, 0.12);
 }
-static void ppm(const std::string &path, const std::vector<uint32_t> &px)
+static void ppm(const std::string &path, const std::vector<uint32_t> &px, int w = Panel::W)
 {
     FILE *f = std::fopen(path.c_str(), "wb");
     if (!f) return;
-    std::fprintf(f, "P6\n%d %d\n255\n", Panel::W, Panel::H);
-    for (uint32_t c : px)
+    std::fprintf(f, "P6\n%d %d\n255\n", w, Panel::H);
+    for (size_t i = 0; i < (size_t)w * Panel::H && i < px.size(); i++)
     {
+        uint32_t c = px[i];
         unsigned char rgb[3] = {(unsigned char)(c >> 16), (unsigned char)(c >> 8), (unsigned char)c};
         std::fwrite(rgb, 1, 3, f);
     }
@@ -132,6 +140,30 @@ int main(int argc, char **argv)
     p.draw(px.data(), v);
     if (!out.empty()) ppm(out + "/04_knob1.ppm", px);
 
+    // MASTER dragged fast while the view lags (the audio thread takes each value a block or two later, as in the
+    // Windows app): every step counts, from where the drag left it, not from the last view
+    {
+        tess_core_view(&v);
+        p.draw(px.data(), v);
+        int m0 = (int)v.master, last = -1;
+        int mx, my;
+        p.knob_at_xy(0, mx, my);
+        p.down(mx, my);
+        for (int i = 1; i <= 10; i++)
+        {
+            p.move(mx, my - 3 * i);   // (3 px: a step of 16)
+            if (p.input.master >= 0) last = p.input.master;
+            p.input.master = -1;          // handed on; the view not yet updated
+            p.draw(px.data(), v);
+        }
+        p.up(mx, my - 30);
+        int want = m0 + 160 > 1023 ? 1023 : m0 + 160;
+        CHECK(last == want, "MASTER dragged 30 px up from %d: %d, not %d", m0, want, last);
+        CHECK(std::abs(p.knob_angle(0) - (-135 + 270.0 * want / 1023)) < 0.01, "MASTER's pointer where the drag left it");
+        tess_core_master((uint32_t)m0);   // (as it was, for what follows)
+        p.input.changed = false;
+    }
+
     // PLAY again stops; then a key held sounds
     click(p, 582 + 4 * 63 + 27, 236 + 24);
     double quiet = run(p, 6.0);
@@ -158,7 +190,31 @@ int main(int argc, char **argv)
     p.input.enc[0] = 0;
     CHECK(p.key(Panel::KEY_UP, true) && p.input.enc[0] == 1, "up arrow turns SELECT");
     p.input.enc[0] = 0;
-    CHECK(!p.key(0x39, true), "space: not a panel key");
+    CHECK(!p.key(0x39, true), "space: not a panel key (in a DAW)");
+    CHECK(!p.shortcut('O') && p.take_file_request() == Panel::FILE_NONE, "Ctrl+O in a DAW: the DAW's");
+    CHECK(p.key(0x01, true) && (p.input.buttons >> 12 & 1u), "Esc holds OCT- (BACK)");
+    CHECK(p.key(0x01, false) && !(p.input.buttons >> 12 & 1u), "Esc let go");
+    CHECK(p.key(0x1C, true) && (p.input.buttons >> 13 & 1u), "Enter holds OCT+ (OK)");
+    CHECK(p.key(0x1C, false) && !(p.input.buttons >> 13 & 1u), "Enter let go");
+    p.set_standalone(true);
+    CHECK(p.key(0x39, true) && (p.input.buttons >> 10 & 1u), "the standalone app: space holds PLAY");
+    CHECK(p.key(0x39, false) && !(p.input.buttons >> 10 & 1u), "space let go");
+    CHECK(p.shortcut('S') && p.take_file_request() == Panel::FILE_SAVE, "the standalone app: Ctrl+S asks for SAVE");
+    p.set_standalone(false);
+    {   // a click on nothing (the body) while a picker, sheet or help card is open: away (tess_core_away); else nothing
+        tess_view_t cv;
+        tess_core_view(&cv);
+        cv.closable = 1;
+        p.draw(px.data(), cv);
+        p.input.away = false;
+        CHECK(p.down(280, 315) && p.input.away, "a click on the body with a picker open: away");
+        p.up(280, 315);
+        p.input.away = false;
+        cv.closable = 0;
+        p.draw(px.data(), cv);
+        CHECK(!p.down(280, 315) && !p.input.away, "nothing open: a click on the body does nothing");
+        p.up(280, 315);
+    }
     CHECK(p.key(0x10, true) && p.release_keys() && !p.input.keys, "focus lost: every key up");
 
     // OPEN and SAVE under the keys: a click asks once (the window answers with its dialog), the outcome is shown
@@ -169,6 +225,9 @@ int main(int argc, char **argv)
     p.down(142 + 36, 588 + 5 + 12);
     p.up(142 + 36, 588 + 5 + 12);
     CHECK(p.take_file_request() == Panel::FILE_SAVE, "SAVE asks");
+    p.down(224 + 36, 588 + 5 + 12);
+    p.up(224 + 36, 588 + 5 + 12);
+    CHECK(p.take_file_request() == Panel::FILE_MIDI, "MIDI asks");
     std::vector<uint32_t> before_note = px;
     p.draw(before_note.data(), v);
     p.note("Saved Undertow");
@@ -269,9 +328,9 @@ int main(int argc, char **argv)
         tess_core_view(&v);
         int at1 = head_lit();
         p.draw(px.data(), v);
-        uint32_t off = px[(BY + 8) * Panel::W + 286 + 6];
+        uint32_t off = px[(BY + 8) * Panel::W + 368 + 6];
         CHECK(v.track < 4, "the song starts on a track of 1-4 (%u)", v.track);
-        click(p, 286 + 26, BY);              // 5-8
+        click(p, 368 + 26, BY);              // 5-8
         run(p, 0.3);
         tess_core_view(&v);
         p.draw(px.data(), v);
@@ -280,8 +339,8 @@ int main(int argc, char **argv)
         std::printf("bank: 5-8 selects T%u (core T%u); header pixels %d -> %d\n", v.track + 1, tess_core_track() + 1, at1, at5);
         CHECK(v.track == 4 && tess_core_track() == 4, "5-8 should select T5 (%u)", v.track);
         CHECK(at5 > at1 + 150, "the header should show 5-8 (%d -> %d lit pixels)", at1, at5);
-        CHECK(px[(BY + 8) * Panel::W + 286 + 6] != off, "the 5-8 half should light");
-        click(p, 234 + 26, BY);              // 1-4
+        CHECK(px[(BY + 8) * Panel::W + 368 + 6] != off, "the 5-8 half should light");
+        click(p, 316 + 26, BY);              // 1-4
         run(p, 0.3);
         tess_core_view(&v);
         CHECK(v.track == 0 && head_lit() == at1, "1-4 should select T1 and take the marker away (T%u, %d)", v.track + 1, head_lit());
@@ -378,6 +437,44 @@ int main(int argc, char **argv)
         q.down(ix, iy);
         q.up(ix, iy);
         CHECK(q.take_ink_request() == 8 && q.take_ink_request() == -1 && !q.menu_shown(), "an ink picked from the menu");
+        // typing: a character goes to NAME only while the view says NAME is open, and isn't a key then
+        CHECK(!q.text('a') && q.input.text.empty(), "not typing: a character is a key's, not NAME's");
+        {
+            tess_view_t tv2 = v;
+            tv2.typing = 1;
+            q.draw(px.data(), tv2);
+            CHECK(q.text('a') && q.input.text.size() == 1 && q.input.text[0] == 'a', "NAME open: a character typed into it");
+            q.input.text.clear();
+            q.draw(px.data(), v);
+        }
+        // INK's row shows the ink as its swatch does: a four-ink palette (MOSAIC) in quarters, not its first ink alone
+        {
+            int mos = -1;
+            for (int j = 0; j < (int)inks.size() && mos < 0; j++)
+                if (inks[j].rgb[0] != inks[j].rgb[1] && inks[j].rgb[1] != inks[j].rgb[2]) mos = j;
+            CHECK(mos >= 0, "a four-ink palette among the inks");
+            if (mos >= 0)
+            {
+                q.down(100, 25), q.up(100, 25);
+                q.down(80, 46 + 10 + 36 + 18), q.up(80, 46 + 10 + 36 + 18);   // INK
+                const int mx2 = 344 + 18 + mos % 5 * 44 + 16, my2 = 46 + 10 + 36 - 10 + 18 + mos / 5 * 44 + 16;
+                q.down(mx2, my2), q.up(mx2, my2);
+                q.take_ink_request();
+                q.down(100, 25), q.up(100, 25);   // (the menu again: INK's row)
+                q.draw(px.data(), v);
+                int seen = 0;
+                for (int i = 0; i < 4; i++)
+                {
+                    bool here = false;
+                    for (int y = 92; y < 92 + 36 && !here; y++)
+                        for (int x = 20; x < 340 && !here; x++) here = px[y * Panel::W + x] == (0xFF000000u | inks[mos].rgb[i]);
+                    seen += here;
+                }
+                CHECK(seen == 4, "INK's row: %s's four inks in quarters (%d of 4)", inks[mos].name.c_str(), seen);
+                if (!out.empty()) ppm(out + "/12b_tessera_ink_row.ppm", px);
+                q.key(0x01, true);
+            }
+        }
         // a click outside, or Esc, shuts it
         q.down(100, 25);
         q.up(100, 25);
@@ -388,6 +485,50 @@ int main(int argc, char **argv)
         q.up(100, 25);
         q.key(0x01, true);
         CHECK(!q.menu_shown(), "Esc shuts the menu");
+        // SIZE: 100, 150 or 200 picked in the menu (asked once, the menu shut); the pixels at 150 and 200 %
+        CHECK(q.take_size_request() == -1, "no size asked for yet");
+        q.down(100, 25), q.up(100, 25);
+        CHECK(q.menu_shown(), "the menu again");
+        q.down(300, 200), q.up(300, 200);   // (SIZE's row, its right end: 200)
+        CHECK(q.take_size_request() == 200 && !q.menu_shown(), "SIZE 200 picked from the menu");
+        q.set_size_pct(200);
+        q.down(100, 25), q.up(100, 25);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/14_tessera_size.ppm", px);   // (the menu: SIZE 200 lit)
+        q.down(247, 200), q.up(247, 200);
+        CHECK(q.take_size_request() == 150, "SIZE 150 picked from the menu");
+        q.down(100, 25), q.up(100, 25);
+        q.down(300, 200), q.up(300, 200);
+        CHECK(q.take_size_request() == -1, "SIZE 200 again: nothing to ask (it is 200 already)");
+        q.key(0x01, true);
+        q.draw(px.data(), v);
+        std::vector<uint32_t> big((size_t)Panel::W * Panel::H * 4), mid((size_t)Panel::W * Panel::H * 9 / 4);
+        Panel::scale(px.data(), big.data(), Panel::W, 200);
+        Panel::scale(px.data(), mid.data(), Panel::W, 150);
+        int same = 0, even = 0;
+        for (int y = 0; y < Panel::H; y += 7)
+            for (int x = 0; x < Panel::W; x += 7)
+            {
+                uint32_t c = px[y * Panel::W + x];
+                same += big[(2 * y) * 2 * Panel::W + 2 * x] == c && big[(2 * y + 1) * 2 * Panel::W + 2 * x + 1] == c;
+                even += mid[(3 * y / 2) * (3 * Panel::W / 2) + 3 * x / 2] == c || (x & 1) || (y & 1);
+            }
+        CHECK(same == ((Panel::H + 6) / 7) * ((Panel::W + 6) / 7), "200 %%: every pixel doubled");
+        CHECK(even == ((Panel::H + 6) / 7) * ((Panel::W + 6) / 7), "150 %%: an even pixel lands whole");
+        if (!out.empty())
+        {
+            FILE *f = std::fopen((out + "/15_tessera_150.ppm").c_str(), "wb");
+            if (f)
+            {
+                std::fprintf(f, "P6\n%d %d\n255\n", Panel::W * 3 / 2, Panel::H * 3 / 2);
+                for (uint32_t c : mid)
+                {
+                    unsigned char rgb[3] = {(unsigned char)(c >> 16), (unsigned char)(c >> 8), (unsigned char)c};
+                    std::fwrite(rgb, 1, 3, f);
+                }
+                std::fclose(f);
+            }
+        }
     }
 
     // FM-1 USB: TESSERA's menu row (OFF / ON, or a click on the row: the other one), the FM-1 shells' button
@@ -423,6 +564,40 @@ int main(int argc, char **argv)
         q.up(310, ky);
         CHECK(q.keys_on() && q.take_keys_request() == 1, "KEYS ON asks for on");
         CHECK(q.key(0x2C, true) && (q.input.keys & 1u) && q.key(0x2C, false), "KEYS ON: Z plays again");
+        // HOVER HELP: OFF to start; ON asks once
+        int hy = ky + 36;   // (row_y(ROW_HOVER)'s middle)
+        CHECK(!q.hover_help() && q.take_hover_request() == -1, "HOVER HELP off to start, nothing asked");
+        q.down(310, hy);   // ON
+        q.up(310, hy);
+        CHECK(q.hover_help() && q.take_hover_request() == 1 && q.take_hover_request() == -1, "HOVER HELP ON asks once");
+        q.down(254, hy);   // OFF
+        q.up(254, hy);
+        CHECK(!q.hover_help() && q.take_hover_request() == 0, "HOVER HELP OFF asks for off");
+        // LISTEN: < OFF >, the channel whose notes steer (listen.h)
+        int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
+        auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
+        CHECK(q.listen() == 0 && q.take_listen_request() == -1, "LISTEN OFF to start, nothing asked");
+        CHECK(lclick(198) == -1, "< at OFF: nothing");
+        CHECK(lclick(306) == 1 && q.listen() == 1, "> : channel 1");
+        CHECK(lclick(306) == 2 && lclick(198) == 1, "> then <: 2, then 1");
+        CHECK(lclick(252) == 0 && q.listen() == 0, "its value: OFF");
+        CHECK(lclick(252) == 1, "its value again: back to the last channel (1)");
+        q.set_listen(16);
+        CHECK(lclick(306) == -1 && q.listen() == 16, "> at 16: nothing");
+        // SPLIT, the row under: 48 to start, < and > an octave, 12..108
+        int sy = ly + 36;   // (row_y(ROW_SPLIT)'s middle)
+        auto sclick = [&](int x) { q.down(x, sy), q.up(x, sy); return q.take_split_request(); };
+        CHECK(q.split() == 48 && q.take_split_request() == -1, "SPLIT 48 to start, nothing asked");
+        CHECK(sclick(198) == 36 && sclick(306) == 48 && sclick(306) == 60, "< 36, > 48, > 60");
+        CHECK(sclick(252) == -1 && q.split() == 60, "its value: nothing");
+        q.set_split(12);
+        CHECK(sclick(198) == -1 && q.split() == 12, "< at 12: nothing");
+        q.set_split(108);
+        CHECK(sclick(306) == -1 && q.split() == 108, "> at 108: nothing");
+        q.set_split(48);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/15_tessera_listen.ppm", px);   // (the menu: LISTEN on CH 16)
+        CHECK(q.menu_shown(), "the menu stays open");
         q.key(0x01, true);   // (Esc: the menu shut)
         CHECK(!q.menu_shown(), "Esc shuts the menu");
         // a right-click latches a button or key: GLO held while FX is clicked, then let go; Esc lets every latch go
@@ -445,13 +620,211 @@ int main(int argc, char **argv)
         f.set_shell(1);
         int fy = 0;
         for (int yy = 560; yy < 624 && !fy; yy++)   // (the FM-1 USB button: under the keys, after 5-8)
-            if (f.down(400, yy), f.up(400, yy), f.take_fm1_request() == 1)
+            if (f.down(480, yy), f.up(480, yy), f.take_fm1_request() == 1)
                 fy = yy;
         CHECK(fy > 0, "the FM-1 shells' FM-1 USB button asks for on");
         f.set_fm1(true, true, true, "FM-1 CONNECTED");
-        f.down(400, fy);
-        f.up(400, fy);
+        f.down(480, fy);
+        f.up(480, fy);
         CHECK(f.take_fm1_request() == 0, "lit, it asks for off");
+
+        // TESSERA's own BACK, SHIFT, OK and OCT- / OCT+: the screen names them (key words), an FM-1 shell or an FM-1
+        // on USB keeps OCT- / OCT+; SHIFT holds OCT-'s layer and is never BACK; OCT- / OCT+ step the octave anywhere,
+        // BACK / OK on Stage no longer do
+        CHECK(q.input.key_words && !f.input.key_words, "key words: TESSERA's shell on, an FM-1 shell off");
+        q.set_fm1(true, true, true, "FM-1 CONNECTED");
+        CHECK(!q.input.key_words, "an FM-1 on USB playing it: OCT- / OCT+ as ever");
+        q.set_fm1(false, false, false, "");
+        CHECK(q.input.key_words, "and back to BACK / OK / SHIFT");
+        q.move(50 + 33, 258 + 17);   // the mouse over SHIFT: what it does, in a card over it
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10b_tessera_shift_tip.ppm", px);
+        int tip = 0;
+        for (int yy = 258 - 40; yy < 258; yy++)
+            for (int xx = 20; xx < 400; xx++) tip += px[yy * Panel::W + xx] == 0xFFFFD020u;
+        CHECK(tip > 100, "SHIFT's card over it (%d yellow pixels)", tip);
+        q.down(50 + 33, 258 + 17);
+        q.up(0, 0);
+        CHECK(q.input.buttons == 1u << 16, "SHIFT clicked: latched (%#x)", q.input.buttons);
+        q.down(50 + 33, 258 + 17);
+        q.up(0, 0);
+        CHECK(q.input.buttons == 0, "SHIFT clicked again: let go (%#x)", q.input.buttons);
+        q.down(36 + 30, 332 + 128 + 5 + 23);   // (OCT-: under OCT+, at the keys' left)
+        CHECK(q.input.buttons == 1u << 17, "OCT- (the octave) held (%#x)", q.input.buttons);
+        q.up(0, 0);
+        q.down(118 + 28, 258 + 17);
+        CHECK(q.input.buttons == 1u << 12, "BACK is the FM-1's OCT- (%#x)", q.input.buttons);
+        q.up(0, 0);
+        q.down(180 + 25, 258 + 17);
+        CHECK(q.input.buttons == 1u << 13, "OK is the FM-1's OCT+ (%#x)", q.input.buttons);
+        q.up(0, 0);
+        // the computer keyboard: Shift SHIFT (held only), [ ] BACK / OK, Page Up / Page Down OCT+ / OCT-
+        q.key(0x2A, true);
+        CHECK(q.input.buttons == 1u << 16, "Shift: SHIFT held (%#x)", q.input.buttons);
+        q.key(0x2A, false);
+        CHECK(q.input.buttons == 0, "Shift let go: SHIFT too, never latched (%#x)", q.input.buttons);
+        q.key(0x36, true);
+        CHECK(q.input.buttons == 1u << 16, "right Shift: SHIFT (%#x)", q.input.buttons);
+        q.key(0x36, false);
+        q.key(0x1A, true);
+        CHECK(q.input.buttons == 1u << 12, "[: BACK (%#x)", q.input.buttons);
+        q.key(0x1A, false);
+        q.key(0x1B, true);
+        CHECK(q.input.buttons == 1u << 13, "]: OK (%#x)", q.input.buttons);
+        q.key(0x1B, false);
+        q.key(Panel::KEY_PGUP, true);
+        CHECK(q.input.buttons == 1u << 18, "Page Up: OCT+ (%#x)", q.input.buttons);
+        q.key(Panel::KEY_PGUP, false);
+        q.key(Panel::KEY_PGDN, true);
+        CHECK(q.input.buttons == 1u << 17, "Page Down: OCT- (%#x)", q.input.buttons);
+        q.key(Panel::KEY_PGDN, false);
+        q.key(0x3B, true);
+        CHECK(q.input.buttons == 1u << 19, "F1: ? (%#x)", q.input.buttons);
+        q.key(0x3B, false);
+        CHECK(q.input.buttons == 0, "every key up (%#x)", q.input.buttons);
+        int shot_n = 0;
+        auto shot = [&](double t) {
+            run(q, t);
+            tess_core_view(&v);
+            if (getenv("SHOTS"))
+            {
+                std::vector<uint32_t> sp(TESS_SCREEN * Panel::H, 0xFF000000u);
+                for (int i = 0; i < TESS_SCREEN * TESS_SCREEN; i++)
+                {
+                    uint16_t c5 = v.screen[i];
+                    sp[i] = 0xFF000000u | (c5 >> 11 & 31) * 255 / 31 << 16 | (c5 >> 5 & 63) * 255 / 63 << 8 | (c5 & 31) * 255 / 31;
+                }
+                ppm(std::string(getenv("SHOTS")) + "/s" + std::to_string(shot_n++) + ".ppm", sp, TESS_SCREEN);
+            }
+            return std::vector<uint16_t>(v.screen, v.screen + TESS_SCREEN * TESS_SCREEN);
+        };
+        auto press = [&](uint32_t b, double t) {
+            tess_core_buttons(b);
+            run(q, t);
+            tess_core_buttons(0);
+        };
+        run(q, 0.05);           // (the clicks' input taken first: run hands it in once)
+        tess_core_key_words(1);
+        press(1u << 6, 0.05);   // HOME
+        std::vector<uint16_t> home = shot(0.4);
+        const uint32_t octs = 3u << 12 | 3u << 17;   // (Stage: the OCT LEDs show the octave; here OCT- / OCT+'s)
+        CHECK(!(v.lit_buttons & octs), "Stage at octave 0: no OCT LED (%#x)", v.lit_buttons);
+        press(1u << 13, 0.05);   // OK on Stage: nothing (the FM-1: an octave up)
+        CHECK(shot(0.4) == home && !(v.lit_buttons & octs), "OK tapped on Stage: no octave (%#x)", v.lit_buttons);
+        press(1u << 18, 0.05);   // OCT+: an octave up, its LED lit
+        shot(0.4);
+        CHECK((v.lit_buttons & octs) == 1u << 18, "OCT+ on Stage: an octave up, OCT+ lit (%#x)", v.lit_buttons);
+        press(1u << 17, 0.05);
+        shot(0.4);
+        CHECK(!(v.lit_buttons & octs), "OCT- on Stage: back to 0 (%#x)", v.lit_buttons);
+        press(1u << 0, 0.05);   // FX
+        std::vector<uint16_t> fx = shot(0.4);
+        press(1u << 16, 0.05);  // SHIFT tapped: never BACK
+        CHECK(shot(0.4) == fx, "SHIFT tapped on FX: still FX");
+        std::vector<uint16_t> mixer;   // (a page with an OCT- layer: GLO's pages, SELECT on till OCT- held shows one)
+        press(1u << 5, 0.05);   // GLO
+        for (int pg = 0; pg < 12; pg++)
+        {
+            mixer = shot(1.0);
+            tess_core_buttons(1u << 12);
+            std::vector<uint16_t> layer = shot(0.4);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            if (layer != mixer) break;
+            tess_core_enc(0, 1);
+        }
+        press(1u << 16, 0.05);  // SHIFT tapped: never BACK
+        CHECK(shot(0.4) == mixer, "SHIFT tapped on a page: still there");
+        tess_core_buttons(1u << 16);
+        std::vector<uint16_t> shifted = shot(0.4);
+        tess_core_buttons(0);
+        run(q, 0.2);
+        tess_core_buttons(1u << 12);
+        std::vector<uint16_t> held = shot(0.4);
+        tess_core_buttons(0);
+        CHECK(shifted == held && shifted != mixer, "SHIFT held shows what OCT- held shows (the page's second layer)");
+        CHECK(shot(0.4) == mixer, "OCT- let go after a hold: still the page");
+        // help by the mouse: a right-click on FX's KNOB 2 column opens its card, kept without ARP; a click closes it and
+        // does nothing more; ? opens KNOB 1's and closes it again
+        press(1u << 0, 0.05);   // FX
+        fx = shot(0.6);
+        {
+            int mix = -1;
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_KNOB && v.zones[i].role == 4) mix = (int)i;
+            CHECK(mix >= 0, "FX: KNOB 2's column is a zone (help)");
+            if (mix >= 0)
+            {
+                const tess_zone_t m = v.zones[mix];
+                std::string before = m.value;
+                const int mx = 292 + 8 + m.x + m.w / 2, my = 44 + 8 + m.y + m.h / 2;
+                q.draw(px.data(), v);
+                CHECK(q.latch(mx, my) && q.input.zones.size() == 1 && q.input.zones[0].action == TESS_ZA_HELP,
+                      "a right-click on KNOB 2's column asks for its help");
+                q.input.buttons = 0;
+                std::vector<uint16_t> card = shot(0.3);
+                CHECK(card != fx, "its help card over FX");
+                CHECK(shot(1.0) == card, "the card stays without ARP held");
+                q.draw(px.data(), v);
+                if (!out.empty()) ppm(out + "/10e_tessera_help.ppm", px);
+                tess_zone_t any = v.zones[0];
+                for (uint32_t i = 0; i < v.zone_count; i++)
+                    if (v.zones[i].kind == TESS_ZONE_KNOB) any = v.zones[i];
+                tess_core_zone_do(&any, TESS_ZA_CLICK, 0);   // (a click anywhere on the screen)
+                CHECK(shot(0.4) == fx, "a click closes it");
+                CHECK(v.zones[mix].value == before, "and changes nothing (%s)", v.zones[mix].value);
+                press(1u << 19, 0.05);   // ?
+                CHECK(shot(0.4) != fx, "? opens KNOB 1's card");
+                press(1u << 19, 0.05);
+                CHECK(shot(0.4) == fx, "? again closes it");
+            }
+        }
+
+        // the keys' jobs (tess_view_t.key_short / key_long): GLO held, MIXER's keys (M / S, ALL HLD FIL TAP); SEQ held,
+        // the patterns; HOME: the keys play, no labels; the labels drawn over the keys, a key's meaning in a card
+        press(1u << 6, 0.05);   // HOME
+        shot(0.3);
+        int labelled = 0;
+        for (int k = 0; k < TESS_KEYS; k++) labelled += v.key_short[k][0] != 0;
+        CHECK(!labelled, "HOME: the keys play, no labels (%d)", labelled);
+        tess_core_buttons(1u << 5);   // GLO held
+        shot(0.4);
+        CHECK(!std::strcmp(v.key_short[1], "M1") && !std::strcmp(v.key_long[1], "T1 MUTE"), "GLO: F#3 is T1's MUTE (%s, %s)",
+              v.key_short[1], v.key_long[1]);
+        CHECK(!std::strcmp(v.key_short[0], "S1") && !std::strcmp(v.key_short[7], "ALL") && !std::strcmp(v.key_short[11], "FIL"),
+              "GLO: F3 T1's SOLO, C4 ALL, E4 FILL (%s %s %s)", v.key_short[0], v.key_short[7], v.key_short[11]);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10c_tessera_glo_keys.ppm", px);
+        {
+            int lab = 0;   // (dim yellow over F#3, the first black key)
+            for (int yy = 332; yy < 342; yy++)
+                for (int xx = 36; xx < 300; xx++) lab += px[yy * Panel::W + xx] != 0xFF111111u && px[yy * Panel::W + xx] != 0xFF3B3007u;
+            CHECK(lab > 10, "the labels drawn over the keys (%d pixels)", lab);
+        }
+        tess_core_buttons(0);
+        shot(0.4);   // (GLO let go: its page, MIXER, whose keys are GLO's)
+        CHECK(!std::strcmp(v.key_long[3], "T2 MUTE"), "MIXER: G#3 T2's MUTE (%s)", v.key_long[3]);
+        press(1u << 6, 0.05);   // HOME
+        run(q, 0.3);
+        tess_core_buttons(1u << 9);   // SEQ held: the patterns
+        shot(0.4);
+        CHECK(!std::strcmp(v.key_short[0], "P1") && !std::strcmp(v.key_long[12], "PATTERN 8") && !v.key_short[1][0],
+              "SEQ held: F3 P1, F4 PATTERN 8, F#3 nothing (%s %s)", v.key_short[0], v.key_long[12]);
+        q.draw(px.data(), v);
+        q.move(36 + 76 + 12 + (int)(0.5 * ((928 - 76 - 24) / 16)), 332 + 192);   // over F3 (right of OCT+ / OCT-): PATTERN 1
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/10d_tessera_seq_keys.ppm", px);
+        {
+            int card = 0;
+            for (int yy = 400; yy < 470; yy++)
+                for (int xx = 20; xx < 360; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+            CHECK(card > 100, "PATTERN 1 in a card over F3 (%d)", card);
+        }
+        q.move(5, 5);
+        tess_core_buttons(0);
+        run(q, 0.2);
+        tess_core_key_words(0);
+        run(q, 0.2);
     }
 
     // ---- the screen's zones: FX's MIX column under the mouse
@@ -480,8 +853,8 @@ int main(int argc, char **argv)
                 for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
             CHECK(card > 40, "the mouse over %s: a card with its value under the screen (%d yellow pixels)", m.name, card);
             if (!out.empty()) ppm(out + "/09_zone_hover.ppm", px);
-            CHECK(z.wheel(mx, my, 2) && z.input.zones.size() == 1 && z.input.zones[0].action == TESS_ZA_TURN &&
-                      z.input.zones[0].n == 2, "the wheel on %s: two detents up for its knob", m.name);
+            CHECK(z.wheel(mx, my, 2) && z.input.zones.size() == 1 && z.input.zones[0].action == TESS_ZA_WHEEL &&
+                      z.input.zones[0].n == 2, "the wheel on %s: two notches up (its knob: two detents)", m.name);
             CHECK(!z.wheel(5, 5, 1), "the wheel off the screen and the knobs: nothing");
             run(z, 0.3);
             tess_core_view(&v);
@@ -506,6 +879,45 @@ int main(int argc, char **argv)
                         v.zones[mix].value);
             CHECK(std::string(v.zones[mix].value) != v2, "%s back to its default (%s)", m.name, v.zones[mix].value);
         }
+    }
+
+    // ---- NOTES' roll (TESS_ZONE_ROLL): the mouse's place goes with each action; a press grabs, a drag turns, a still
+    // release clicks, a right-click removes, the wheel turns the note under it; with Shift, the chord
+    {
+        Panel r;
+        r.set_shell(1);
+        tess_view_t fake = v;
+        fake.zone_count = 1;
+        fake.zones[0] = tess_zone_t{};
+        fake.zones[0].x = 2, fake.zones[0].y = 132, fake.zones[0].w = 236, fake.zones[0].h = 66;
+        fake.zones[0].kind = TESS_ZONE_ROLL, fake.zones[0].role = fake.zones[0].vrole = -1;
+        r.draw(px.data(), fake);
+        const int ox = 292 + 256 / 32, oy = 44 + 256 / 32, mx = ox + 50, my = oy + 170;
+        r.input.zones.clear();
+        r.down(mx, my), r.up(mx, my);
+        CHECK(r.input.zones.size() == 2 && r.input.zones[0].action == TESS_ZA_GRAB && r.input.zones[1].action == TESS_ZA_CLICK &&
+                  r.input.zones[1].z.x == 50 && r.input.zones[1].z.y == 170,
+              "the roll: a press grabs, a still release clicks, at the place (%zu actions)", r.input.zones.size());
+        r.input.zones.clear();
+        r.down(mx, my);
+        for (int i = 1; i <= 3; i++) r.move(mx + 1, my - 4 * i);
+        r.up(mx + 1, my - 12);
+        int turned = 0, clicks = 0;
+        for (auto &a : r.input.zones) turned += a.action == TESS_ZA_TURN ? a.n : 0, clicks += a.action == TESS_ZA_CLICK;
+        CHECK(turned == 2 && !clicks && r.input.zones.back().z.y == 170,
+              "a drag up 12 px: two rows, from where it began, no click (%d, %d)", turned, clicks);
+        r.input.zones.clear();
+        r.input.buttons |= 1u << 16;   // (SHIFT held: panel.cpp BIT_SHIFT, latched or the Shift key)
+        r.down(mx, my), r.move(mx, my + 6), r.up(mx, my + 6);
+        r.input.buttons &= ~(1u << 16);
+        CHECK(!r.input.zones.empty() && r.input.zones.back().action == TESS_ZA_TURN_CHORD && r.input.zones.back().n == -1,
+              "Shift + a drag down: the chord a row down");
+        r.input.zones.clear();
+        CHECK(r.latch(mx, my) && r.input.zones.size() == 1 && r.input.zones[0].action == TESS_ZA_HELP &&
+                  r.input.zones[0].z.x == 50, "a right-click on the roll: HELP there (remove)");
+        r.input.zones.clear();
+        CHECK(r.wheel(mx, my, 1) && r.input.zones.size() == 1 && r.input.zones[0].action == TESS_ZA_WHEEL &&
+                  r.input.zones[0].z.y == 170, "the wheel on the roll: at the place");
     }
 
     // GENERATE's strip (TESSERA's shell, a build with styles)
@@ -593,6 +1005,121 @@ int main(int argc, char **argv)
         CHECK(g.take_gen_request().what == Panel::GEN_NONE, "no GENERATE in an FM-1 shell");
     }
 
+    // EXPANDED: MODE in TESSERA's menu
+    {
+        static tess_tracks_t t2;
+        tess_core_track_select(0);
+        run(p, 0.2);
+        Panel e;
+        e.set_inks(inks);
+        e.set_tracks((int)tess_core_tracks());
+        e.set_version("0.1-beta2");
+        e.set_size_pct(150);
+        CHECK(e.width() == Panel::W, "FM-1 mode first (%d)", e.width());
+        e.down(100, 25), e.up(100, 25);   // the menu; MODE's EXPANDED
+        e.down(300, 164), e.up(300, 164);
+        CHECK(e.take_mode_request() == 1 && e.expanded() && e.width() == Panel::W_EXPANDED,
+              "MODE EXPANDED picked: the panel 1500 wide (%d)", e.width());
+        CHECK(!e.menu_shown(), "the menu shuts on a pick");
+        e.down(100, 25), e.up(100, 25);   // SIZE: 125 and 100 only
+        e.down(300, 200), e.up(300, 200);
+        CHECK(e.take_size_request() == 125, "EXPANDED's SIZE: 125 at the right");
+        CHECK(Panel::size_fit(150, true) == 125 && Panel::size_fit(200, true) == 125 && Panel::size_fit(125, false) == 150,
+              "SIZE 150 / 200 show at 125 in EXPANDED, 125 at 150 in FM-1 mode");
+        e.set_size_pct(125);
+        tess_core_view(&v);
+        tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+        std::vector<uint32_t> wide((size_t)Panel::W_MAX * Panel::H);
+        e.draw(wide.data(), v, &t2);
+        if (!out.empty()) ppm(out + "/16_expanded.ppm", wide, Panel::W_EXPANDED);
+        int same = 0;
+        for (int y = 0; y < TESS_TRACKS_H; y += 3)
+            for (int x = 0; x < TESS_TRACKS_W; x += 3)
+            {
+                uint16_t q = t2.screen[y * TESS_TRACKS_W + x];
+                uint32_t c = 0xFF000000u | ((q >> 11 & 31) * 255 / 31) << 16 | ((q >> 5 & 63) * 255 / 63) << 8 | (q & 31) * 255 / 31;
+                same += wide[(52 + y) * Panel::W_EXPANDED + 568 + x] == c;
+            }
+        CHECK(same == 80 * 160, "TRACKS at 568,52, 1:1 (%d of %d pixels)", same, 80 * 160);
+        CHECK(e.down(668, 152), "a click on TRACKS' row 4");
+        e.up(668, 152);
+        run(e, 0.2);
+        CHECK(tess_core_track() == 3, "row 4 selects T4 (T%u)", tess_core_track() + 1);
+        CHECK(e.wheel(978, 152, -1) && !e.input.tzones.empty() && e.input.tzones.back().z.kind == TESS_ZONE_LEVEL &&
+                  e.input.tzones.back().action == TESS_ZA_TURN,
+              "the wheel on T4's level turns it");
+        run(e, 0.1);
+        CHECK(!e.key(0x0F, true), "no bank switch in EXPANDED (Tab: nothing)");
+        e.down(1396, 524);   // the top key, G5, at the right of the wide keybed
+        CHECK(e.input.keys >> 26 & 1u, "the keys across the window: G5 at the right (%08X)", e.input.keys);
+        e.up(1396, 524);
+        int knobs = 0;   // KNOB 4's ring right of TRACKS
+        for (int x = 1412 - 24; x <= 1412 + 24; x++) knobs += wide[100 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
+        CHECK(knobs >= 2, "KNOB 4 at x 1412 (%d)", knobs);
+        {
+            std::vector<uint32_t> big((size_t)Panel::W_EXPANDED * 5 / 4 * Panel::H * 5 / 4);
+            Panel::scale(wide.data(), big.data(), Panel::W_EXPANDED, 125);
+            int kept = 0, n = 0;
+            for (int y = 0; y < Panel::H; y += 8)
+                for (int x = 0; x < Panel::W_EXPANDED; x += 8, n++)   // (a multiple of 4: lands whole)
+                    kept += big[(y * 5 / 4) * (Panel::W_EXPANDED * 5 / 4) + x * 5 / 4] == wide[y * Panel::W_EXPANDED + x] ||
+                            wide[y * Panel::W_EXPANDED + x] != wide[y * Panel::W_EXPANDED + x + 1];
+            CHECK(kept >= n * 98 / 100, "125 %%: the pixels land (%d of %d)", kept, n);
+        }
+        e.set_shell(1);
+        CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());
+        e.set_shell(0);
+        CHECK(e.width() == Panel::W_EXPANDED, "TESSERA's shell again: EXPANDED (%d)", e.width());
+    }
+
+    {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back
+        Panel b;
+        b.set_shell(0);
+        tess_core_track_select(0);
+        tess_core_view(&v);
+        b.draw(px.data(), v);
+        auto zone_xy = [&](const char *name, uint32_t kind, int *zx, int *zy) {
+            tess_core_view(&v);
+            b.draw(px.data(), v);
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (!std::strcmp(v.zones[i].name, name) && v.zones[i].kind == kind)
+                {
+                    *zx = 292 + 8 + v.zones[i].x + v.zones[i].w / 2, *zy = 44 + 8 + v.zones[i].y + v.zones[i].h / 2;
+                    return true;
+                }
+            return false;
+        };
+        int x, y;
+        for (int i = 0; i < 3 && !zone_xy("T1", TESS_ZONE_TRACK, &x, &y); i++)   // (HOME, from wherever the test was)
+        {
+            tess_core_buttons(1u << 6);
+            run(b, 0.1);
+            tess_core_buttons(0);
+            run(b, 0.3);
+        }
+        if (zone_xy("T1", TESS_ZONE_TRACK, &x, &y))
+        {
+            b.down(x, y), b.up(x, y), b.down(x, y), b.up(x, y);   // (a double-click: T1's sounds)
+            run(b, 0.3);
+        }
+        bool in = zone_xy("SOUND", TESS_ZONE_CELL, &x, &y);
+        CHECK(in, "the panel: HOME's T1 double-clicked opens the browser");
+        int sx = x, sy = y + 24;   // (a sound under the card)
+        b.down(sx, sy), b.up(sx, sy);
+        run(b, 1.0);
+        bool back = zone_xy("BACK", TESS_ZONE_KEY, &x, &y);
+        CHECK(back, "a sound loaded: BACK on the screen");
+        if (back)
+        {
+            b.down(x, y);
+            run(b, 0.1);
+            b.up(x, y);
+            run(b, 0.3);
+            CHECK(!zone_xy("SOUND", TESS_ZONE_CELL, &x, &y), "the panel: BACK clicked leaves the browser");
+        }
+        tess_core_view(&v);
+        b.draw(px.data(), v);
+    }
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }

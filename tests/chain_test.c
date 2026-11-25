@@ -452,6 +452,71 @@ static void test_long_steps(void)
     check("long steps: the 4-bar STEP track's key is its phrase's (KEY B in B, KEY C in C)", key_b == 5 && key_c == -3);
 }
 
+#if TESS_PC_IN
+/* Program Change in (the plugin's TESS_PC_IN: form_chain.c tessera_pc_in): 0..2 the CHAIN's section from the next
+ * phrase line, or the next PLAY's first while stopped; the letter playing holds; ENTRIES' look-ahead leaves the cue
+ * alone; a letter not in the FORM, FORM OFF and other numbers do nothing; 8..15 every track's bank, as PATTERNS */
+static void pc_to_bar(uint32_t bar) { block(); while (bar_n < bar) block(); }   /* (the first: PLAY's) */
+static void pc_setup(uint32_t seed, uint32_t entries)
+{
+    if (song.playing) seq_stop();                      /* (power_on leaves the transport as it was) */
+    power_on(seed);
+    gen(0, TESS_ENG_TURING);
+    gen(1, TESS_ENG_EUCLID);
+    px(0, TX_FC_FORM, FM_ABAC);
+    px(0, TX_FC_PHRASE, 0);
+    if (entries) px(0, TX_ET_AMOUNT, 50);
+    memset(ct_sec, 0xFF, sizeof ct_sec);
+}
+static void test_pc_in(void)
+{
+    uint32_t stray, tr, ok;
+    pc_setup(11, 0);
+    tessera_pc_in(2);
+    play();
+    run_phrases(5, 4, 3u, &stray);
+    check("PC 2 while stopped: PLAY starts on C, then the FORM on from C's place (ABAC: C A B A C)",
+          seq_is(0, "CABAC") && seq_is(1, "CABAC") && stray == 0u);
+
+    pc_setup(12, 1);                                   /* (ENTRIES on: its look-ahead steps copies a bar early) */
+    play();
+    pc_to_bar(6);                                      /* (phrase 1, B, half way) */
+    tessera_pc_in(2);
+    run_phrases(6, 4, 3u, &stray);
+    check("PC 2 in phrase 1 (B): C from the next phrase line, then A B A, ENTRIES on", ct_sec[2][0] == 2u &&
+          ct_sec[3][0] == 0u && ct_sec[4][0] == 1u && ct_sec[5][0] == 0u && ct_sec[2][1] == 2u && stray == 0u);
+
+    pc_setup(13, 0);
+    play();
+    pc_to_bar(6);
+    tessera_pc_in(1);
+    run_phrases(6, 4, 1u, &stray);
+    check("PC 1 while B plays: B holds a phrase more, then on (B A C A)", ct_sec[2][0] == 1u && ct_sec[3][0] == 0u &&
+          ct_sec[4][0] == 2u && ct_sec[5][0] == 0u);
+
+    pc_setup(14, 0);
+    px(0, TX_FC_FORM, FM_AB);
+    tessera_pc_in(2);
+    check("PC 2 with FORM AB: no C, nothing cued", !fchain.cue);
+    px(0, TX_FC_FORM, FM_OFF);
+    tessera_pc_in(1);
+    check("FORM OFF: nothing cued", !fchain.cue);
+
+    pc_setup(15, 0);
+    tessera_pc_in(10);
+    for (ok = 1, tr = 0; tr < NTRK; tr++) ok &= trk[tr].pattern == 2u;
+    check("PC 10 while stopped: every track on bank 3 at once", ok);
+    play();
+    block();
+    tessera_pc_in(15);
+    for (ok = 1, tr = 0; tr < NTRK; tr++) ok &= trk[tr].pattern == 2u && trk[tr].pattern_next == 7u;
+    check("PC 15 playing: every track's bank 8 queued, as PATTERNS does", ok);
+    for (uint32_t n = 3; n < 128u; n++) if (n < 8u || n > 15u) tessera_pc_in(n);
+    for (ok = 1, tr = 0; tr < NTRK; tr++) ok &= trk[tr].pattern == 2u && trk[tr].pattern_next == 7u;
+    check("PC 3..7 and 16..127: nothing", ok && !fchain.cue);
+}
+#endif
+
 int main(void)
 {
     test_off();
@@ -465,6 +530,9 @@ int main(void)
     test_stop_restart();
     test_keys();
     test_long_steps();
+#if TESS_PC_IN
+    test_pc_in();
+#endif
     printf(fails ? "chain: %d FAILED\n" : "chain tests passed\n", fails);
     return fails != 0;
 }

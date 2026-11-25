@@ -44,7 +44,8 @@ if (TESS_GEN)
     if (NOT TESS_GEN_RC EQUAL 0)
         message(FATAL_ERROR "platform/plugin/gen.py failed (needs Python 3 with Pillow (with Raqm) and fontTools)")
     endif()
-elseif (NOT EXISTS ${TESS_ROOT}/build/gen/sim_demos.h OR NOT EXISTS ${TESS_ROOT}/build/gen/core_syms.h)
+elseif (NOT EXISTS ${TESS_ROOT}/build/gen/sim_demos.h OR NOT EXISTS ${TESS_ROOT}/build/gen/core_syms.h OR
+        NOT EXISTS ${TESS_ROOT}/build/gen/plugin_demos.h)
     message(FATAL_ERROR "TESS_GEN is OFF but build/gen has no generated headers: run platform/plugin/gen.py first")
 endif()
 
@@ -52,7 +53,9 @@ include(FetchContent)
 FetchContent_Declare(clap GIT_REPOSITORY https://github.com/free-audio/clap GIT_TAG 1.2.10 GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(clap)
 set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "" FORCE)
-FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/clap-wrapper GIT_TAG v0.17.0
+# v0.18.0: its Windows standalone snaps the window to the plugin's sizes while it is dragged (WM_SIZING through
+# adjust_size), as our patch did for v0.17.0 (now gone)
+FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/clap-wrapper GIT_TAG v0.18.0
                      GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(clap-wrapper)
 
@@ -140,9 +143,10 @@ if (WIN32)
 elseif (APPLE)
     target_link_libraries(tessera-fm1 PUBLIC "-framework CoreMIDI" "-framework CoreFoundation")
 endif()
-add_library(tessera-impl STATIC tessera_clap.cpp projfile.cpp ${TESS_GUI})
+add_library(tessera-impl STATIC tessera_clap.cpp projfile.cpp presets.cpp midifile.cpp midirender.cpp ${TESS_GUI})
 target_link_libraries(tessera-impl PUBLIC clap tessera-copies tessera-panel tessera-fm1)
 target_compile_definitions(tessera-impl PRIVATE TESS_VERSION_STR="${TESS_VERSION}")
+target_include_directories(tessera-impl PRIVATE ${TESS_ROOT}/build/gen)   # (plugin_demos.h: presets.cpp)
 if (WIN32)
     target_link_libraries(tessera-impl PUBLIC comdlg32 shell32)
 elseif (APPLE)
@@ -158,10 +162,10 @@ endif()
 
 if (WIN32)
     set(TESS_FORMATS CLAP VST3)
-    set(TESS_STANDALONE standalone "Tessera" "io.github.rastapopolix.tessera")
+    set(TESS_STANDALONE standalone "Cosmati" "io.github.rastapopolix.tessera")
 elseif (APPLE)
     set(TESS_FORMATS CLAP VST3 AUV2)
-    set(TESS_STANDALONE standalone "Tessera" "io.github.rastapopolix.tessera")
+    set(TESS_STANDALONE standalone "Cosmati" "io.github.rastapopolix.tessera")
 else()
     set(TESS_FORMATS CLAP VST3)   # (a Linux standalone needs ALSA / JACK headers: not in the spike)
     set(TESS_STANDALONE "")
@@ -170,23 +174,25 @@ endif()
 make_clapfirst_plugins(
     TARGET_NAME tessera
     IMPL_TARGET tessera-impl
-    OUTPUT_NAME "Tessera"
+    OUTPUT_NAME "Cosmati"         # the plugin's name (Tessera is the firmware; Audio Damage has a plugin called Tessera)
     ENTRY_SOURCE tessera_entry.cpp
-    BUNDLE_IDENTIFIER "io.github.rastapopolix.tessera"
+    BUNDLE_IDENTIFIER "io.github.rastapopolix.tessera"   # (the ids, codes and ~/.config/tessera stay: saved songs load)
     BUNDLE_VERSION ${PROJECT_VERSION}
     COPY_AFTER_BUILD FALSE
     PLUGIN_FORMATS ${TESS_FORMATS}
     ASSET_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out
-    AUV2_MANUFACTURER_NAME "Tessera"
+    AUV2_MANUFACTURER_NAME "Rastapopolix"
     AUV2_MANUFACTURER_CODE "Tess"
     AUV2_SUBTYPE_CODE "Tsra"
     AUV2_INSTRUMENT_TYPE "aumu"
     STANDALONE_CONFIGURATIONS ${TESS_STANDALONE}
+    STANDALONE_WINDOWS_ICON ${CMAKE_CURRENT_SOURCE_DIR}/icons/tessera.ico    # the site's mark (icons/make_icons.py)
+    STANDALONE_MACOS_ICON ${CMAKE_CURRENT_SOURCE_DIR}/icons/tessera.icns
 )
 
 # ---- the render test: loads the built .clap as a host would
 if (TESS_PLUGIN_TESTS AND NOT WIN32)
-    add_executable(tessera-render-test render_test.cpp)
+    add_executable(tessera-render-test render_test.cpp midifile.cpp)
     target_link_libraries(tessera-render-test PRIVATE clap ${CMAKE_DL_LIBS})
     if (APPLE)   # (the window's part: Objective-C++, Cocoa)
         set_source_files_properties(render_test.cpp PROPERTIES LANGUAGE OBJCXX COMPILE_OPTIONS "-fobjc-arc")
@@ -198,6 +204,18 @@ if (TESS_PLUGIN_TESTS AND NOT WIN32)
     add_executable(tessera-session-test session_test.cpp)   # (a DAW's session saved and opened again)
     target_link_libraries(tessera-session-test PRIVATE clap ${CMAKE_DL_LIBS})
     add_dependencies(tessera-session-test tessera_clap)
+    add_executable(tessera-presets-test presets_test.cpp)   # (the DAW's preset browser: discovery and loading)
+    target_link_libraries(tessera-presets-test PRIVATE clap ${CMAKE_DL_LIBS})
+    add_dependencies(tessera-presets-test tessera_clap)
+    if (NOT APPLE)   # (the presets through the VST3 wrapper: a VST3 host over Cosmati.vst3; only the SDK's headers)
+        add_executable(tessera-vst3-presets-test vst3_presets_test.cpp)
+        target_include_directories(tessera-vst3-presets-test PRIVATE $<TARGET_PROPERTY:base-sdk-vst3,INTERFACE_INCLUDE_DIRECTORIES>)
+        target_link_libraries(tessera-vst3-presets-test PRIVATE ${CMAKE_DL_LIBS} Threads::Threads)
+        add_dependencies(tessera-vst3-presets-test tessera_vst3)
+    else()   # (the presets through the AU wrapper: an AU host over the installed Cosmati.component)
+        add_executable(tessera-au-presets-test au_presets_test.cpp)
+        target_link_libraries(tessera-au-presets-test PRIVATE "-framework AudioToolbox" "-framework CoreFoundation")
+    endif()
 endif()
 
 # ---- the window's test: the core and the panel, no host (every platform)
@@ -205,14 +223,19 @@ if (TESS_PLUGIN_TESTS)
     add_executable(tessera-panel-test panel_test.cpp)
     target_link_libraries(tessera-panel-test PRIVATE tessera-panel tessera-core)
     find_package(Threads REQUIRED)
-    add_executable(tessera-copies-test copies_test.cpp)
+    add_executable(tessera-copies-test copies_test.cpp midifile.cpp midirender.cpp)   # (+ MIDI's N bars offline)
     target_link_libraries(tessera-copies-test PRIVATE tessera-copies Threads::Threads)
+    target_include_directories(tessera-copies-test PRIVATE ${TESS_ROOT}/build/gen)   # (sim_demos.h: STILL TIDE)
+    add_executable(tessera-resample-test resample_test.cpp)   # (the resampler alone: resample.h)
+    add_executable(tessera-midifile-test midifile_test.cpp midifile.cpp)   # (the MIDI clip: midifile.h)
+    add_executable(tessera-listen-test listen_test.cpp)   # (LISTEN alone: listen.h)
     add_executable(tessera-projfile-test projfile_test.cpp projfile.cpp)
     target_link_libraries(tessera-projfile-test PRIVATE tessera-core)
     add_executable(tessera-sync-test sync_test.cpp)
     target_link_libraries(tessera-sync-test PRIVATE tessera-core)
     add_executable(tessera-zones-test zones_test.cpp)
     target_link_libraries(tessera-zones-test PRIVATE tessera-core)
+    target_include_directories(tessera-zones-test PRIVATE ${TESS_ROOT}/build/gen)
     add_executable(tessera-fm1-test fm1_link_test.cpp)   # (an FM-1 on USB: the decoder, the names, the link)
     target_link_libraries(tessera-fm1-test PRIVATE tessera-fm1)
 endif()

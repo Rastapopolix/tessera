@@ -79,16 +79,16 @@ jobs:
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
           build/plugin/tessera-fm1-test
-          xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
-          build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+          xvfb-run -s "-screen 0 1280x800x24" build/plugin/tessera-render-test build/plugin/out/Cosmati.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+          build/plugin/tessera-session-test build/plugin/out/Cosmati.clap
       - name: The version is stamped in
-        run: grep -qaF "$V" build/plugin/out/Tessera.clap || { echo "Tessera.clap doesn't carry $V"; exit 1; }
+        run: grep -qaF "$V" build/plugin/out/Cosmati.clap || { echo "Cosmati.clap doesn't carry $V"; exit 1; }
       - name: Pack
         run: |
-          d="Tessera-plugin-$V-linux"
+          d="Cosmati-$V-linux"
           mkdir -p "pkg/$d"
-          cp build/plugin/out/Tessera.clap "pkg/$d/"
-          cp -R build/plugin/out/Tessera.vst3 "pkg/$d/"
+          cp build/plugin/out/Cosmati.clap "pkg/$d/"
+          cp -R build/plugin/out/Cosmati.vst3 "pkg/$d/"
           sed "s/VERSION/$V/" platform/plugin/dist/INSTALL-linux.txt > "pkg/$d/INSTALL.txt"
           cp platform/plugin/dist/BETA_NOTES.md LICENSE LICENSING.md "pkg/$d/"
           tar -C pkg -czf "pkg/$d.tar.gz" "$d"
@@ -130,13 +130,13 @@ jobs:
         shell: bash
         run: |
           find build/plugin/out -maxdepth 4 | sort
-          d="Tessera-plugin-$V-windows"
+          d="Cosmati-$V-windows"
           mkdir -p "pkg/$d"
-          clap=$(find build/plugin/out -name Tessera.clap -type f | head -1)
-          vst3=$(find build/plugin/out -name Tessera.vst3 -prune | head -1)   # (a file here, a bundle folder elsewhere)
-          exe=$(find build/plugin/out -name Tessera.exe -type f | head -1)
+          clap=$(find build/plugin/out -name Cosmati.clap -type f | head -1)
+          vst3=$(find build/plugin/out -name Cosmati.vst3 -prune | head -1)   # (a file here, a bundle folder elsewhere)
+          exe=$(find build/plugin/out -name Cosmati.exe -type f | head -1)
           [ -n "$clap" ] && [ -n "$vst3" ] && [ -n "$exe" ] || { echo "missing: clap '$clap' vst3 '$vst3' exe '$exe'"; exit 1; }
-          grep -qaF "$V" "$clap" || { echo "Tessera.clap doesn't carry $V"; exit 1; }
+          grep -qaF "$V" "$clap" || { echo "Cosmati.clap doesn't carry $V"; exit 1; }
           cp "$clap" "$exe" "pkg/$d/"
           cp -R "$vst3" "pkg/$d/"
           sed "s/VERSION/$V/" platform/plugin/dist/INSTALL-windows.txt | sed 's/$/\r/' > "pkg/$d/INSTALL.txt"
@@ -180,23 +180,23 @@ jobs:
           build/plugin/tessera-copies-test
           build/plugin/tessera-projfile-test
           build/plugin/tessera-fm1-test
-          build/plugin/tessera-render-test build/plugin/out/Tessera.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
-          build/plugin/tessera-session-test build/plugin/out/Tessera.clap
+          build/plugin/tessera-render-test build/plugin/out/Cosmati.clap 12 build/plugin/still-tide-48k.wav build/plugin/window.ppm
+          build/plugin/tessera-session-test build/plugin/out/Cosmati.clap
       - name: Both architectures, the version stamped in
         run: |
-          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+          for b in Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app; do
             f=$(find "build/plugin/out/$b" -path '*/Contents/MacOS/*' -type f | head -1)
             [ -n "$f" ] || { echo "missing: $b"; exit 1; }
             lipo "$f" -verify_arch arm64 x86_64
           done
-          grep -qaF "$V" "$(find build/plugin/out/Tessera.clap -path '*/Contents/MacOS/*' -type f | head -1)" ||
-            { echo "Tessera.clap doesn't carry $V"; exit 1; }
+          grep -qaF "$V" "$(find build/plugin/out/Cosmati.clap -path '*/Contents/MacOS/*' -type f | head -1)" ||
+            { echo "Cosmati.clap doesn't carry $V"; exit 1; }
       - name: Gather the bundles
         run: |
-          d="Tessera-plugin-$V-macos"
+          d="Cosmati-$V-macos"
           echo "D=$d" >> "$GITHUB_ENV"
           mkdir -p "pkg/$d"
-          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do ditto "build/plugin/out/$b" "pkg/$d/$b"; done
+          for b in Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app; do ditto "build/plugin/out/$b" "pkg/$d/$b"; done
       - name: Sign and notarise (only with the Developer ID secrets)
         if: env.MACOS_CERT_P12 != '' && env.MACOS_SIGN_ID != '' && env.APPLE_ID != ''
         run: |
@@ -208,14 +208,14 @@ jobs:
           security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$kp" "$kc"
           security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
-          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do
+          for b in Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app; do
             codesign --force --deep --options runtime --timestamp --sign "$MACOS_SIGN_ID" "pkg/$D/$b"
             codesign --verify --deep --strict "pkg/$D/$b"
           done
           ditto -c -k --keepParent "pkg/$D" "$RUNNER_TEMP/notarise.zip"
           xcrun notarytool submit "$RUNNER_TEMP/notarise.zip" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_APP_PASSWORD" --wait
-          for b in Tessera.clap Tessera.vst3 Tessera.component Tessera.app; do xcrun stapler staple "pkg/$D/$b"; done
+          for b in Cosmati.clap Cosmati.vst3 Cosmati.component Cosmati.app; do xcrun stapler staple "pkg/$D/$b"; done
           echo "SIGNED=1" >> "$GITHUB_ENV"
       - name: Pack
         run: |
@@ -266,6 +266,6 @@ jobs:
             fi
           fi
           gh release create "$tag" pkg/* --draft --prerelease --target "$GITHUB_SHA" \
-            --title "Tessera plugin $V (beta)" --notes-file platform/plugin/dist/BETA_NOTES.md
+            --title "Cosmati $V (beta): Tessera as a plugin" --notes-file platform/plugin/dist/BETA_NOTES.md
           echo "### Draft release $tag made" >> "$GITHUB_STEP_SUMMARY"
           echo "Open it under Releases and click **Publish release** to make it public." >> "$GITHUB_STEP_SUMMARY"

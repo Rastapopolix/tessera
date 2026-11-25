@@ -139,17 +139,16 @@ def words_file():
 
 def copy_editor(ed):
     """this checkout's editor into ed: editor.html, its font and fm1backup.js, and the demo projects for its Demo
-    projects (demos/*.tsp, demos/checks/*.tsp: the test projects)"""
+    projects (demos/*.tsp; not the device-check test projects in demos/checks/)"""
     ed.mkdir(parents=True, exist_ok=True)
     (ed / "index.html").write_text((HERE / "editor.html").read_text(encoding="utf-8").replace(
         'const WORDS_FILE = "";', f'const WORDS_FILE = "{words_file()}";', 1), encoding="utf-8")
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
-    for sub in ("", "checks"):
-        (ed / "demos" / sub).mkdir(parents=True, exist_ok=True)
-        for f in sorted((HERE.parent / "demos" / sub).glob("*.tsp")):
-            shutil.copy(f, ed / "demos" / sub / f.name)
+    (ed / "demos").mkdir(parents=True, exist_ok=True)
+    for f in sorted((HERE.parent / "demos").glob("*.tsp")):
+        shutil.copy(f, ed / "demos" / f.name)
 
 
 def copy_sim(sim, dest, version=None):

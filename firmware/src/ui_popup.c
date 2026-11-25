@@ -44,6 +44,7 @@ static void slot_save_sheet(void);
 
 static void pop_close(void)
 {
+    UZ(uz_pick_pin = 0);
     if (pop.on) {
         pop.on = POP_NONE;
         ui.force = 1;
@@ -659,11 +660,12 @@ static void pick_touch(uint32_t c)
     } else {
     d = page_desc(cur_page(), c, &vp);
     if (!d || !vp || d->fmt != F_ENUM || !d->names || d->max - d->min < 4 || pick_numbers(d) || enum_order(d) ||
-        d->names == N_AMODE || d->names == N_CHRD || d->names == N_VOIC || d->names == N_FX)
+        d->names == N_AMODE || d->names == N_CHRD || d->names == N_VOIC || d->names == N_FX || d->names == N_LWAVE ||
+        d->names == N_FMLFW)
         return;                                         /* (DIV, ARP RATE, TEMPO's QNT, LFO SYNC: their value under the knob, slow to
                                                          * fast; beta7: the list read as a drop-down. ARP MODE, CHORD's
                                                          * CHRD and VOIC, FX: short names, under the knob too; Theo,
-                                                         * 2026-11-12) */
+                                                         * 2026-11-12; the LFOs' WAVE, its shape drawn: 2026-11-24) */
     }
     if (pop.on != POP_PICK)
         ui.force = 1;                                   /* (the page dimmed under it) */
@@ -673,7 +675,7 @@ static void pick_touch(uint32_t c)
 }
 static void pick_poll(void)                             /* ST_KNOB_MS after the last turn: gone */
 {
-    if (pop.on == POP_PICK && fm1_ms - pop.t > ST_KNOB_MS)
+    if (pop.on == POP_PICK && !UZ_PICK_PIN && fm1_ms - pop.t > ST_KNOB_MS)
         pop_close();
 }
 
