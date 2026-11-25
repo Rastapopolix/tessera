@@ -261,10 +261,16 @@ class GuiX11 : public Gui
                     changed |= panel.latch(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
                     changed |= panel.wheel(at(e.xbutton.x), at(e.xbutton.y), e.xbutton.button == Button4 ? 1 : -1);
+                else if (e.xbutton.button == 6 || e.xbutton.button == 7)   // the wheel sideways: a page (7 right)
+                    changed |= panel.hwheel(e.xbutton.button == 7 ? 1 : -1);
+                else if (e.xbutton.button == 8 || e.xbutton.button == 9)   // back / forward: BACK, OK
+                    changed |= panel.side_button(e.xbutton.button == 9, true);
                 break;
             case ButtonRelease:
                 if (e.xbutton.button == Button1)
                     changed |= panel.up(at(e.xbutton.x), at(e.xbutton.y));
+                else if (e.xbutton.button == 8 || e.xbutton.button == 9)
+                    changed |= panel.side_button(e.xbutton.button == 9, false);
                 break;
             case MotionNotify:
                 changed |= panel.move(at(e.xmotion.x), at(e.xmotion.y));

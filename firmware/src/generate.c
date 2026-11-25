@@ -243,6 +243,8 @@ static void rnd_oracle(uint32_t tr, uint32_t wild)
     if (p[OR_LEVEL_A] < 50u && p[OR_LEVEL_B] < 50u) p[OR_LEVEL_A] = (uint8_t)rnd_rr(70, 127);
     if (p[OR_CUTOFF] < 30u) p[OR_CUTOFF] = (uint8_t)rnd_rr(30, 110);
     if (p[OR_SUSTAIN_AMP] < 40u && p[OR_DECAY_AMP] < 40u) p[OR_SUSTAIN_AMP] = (uint8_t)rnd_rr(60, 127);
+    if (p[OR_ATTACK_AMP] > 90u) p[OR_ATTACK_AMP] = (uint8_t)rnd_rr(40, 90);   /* (a swell, not notes that never open)
+                                                     * WILD seed 24757's KEYS at 105: -82 dB) */
     p[OR_RELEASE_AMP] = (uint8_t)rnd_rr(40, 127);
     p[OR_NOISE] = (uint8_t)(rnd_pct(45) ? rnd_rr(20, 127) : p[OR_NOISE]);   /* (hiss and grit, often) */
 }

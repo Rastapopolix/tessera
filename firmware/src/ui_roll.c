@@ -46,17 +46,23 @@ static int32_t roll_pitch(const step_t *st, int32_t cy)
         ;
     return clamp(uz_roll.c0 + x, 1, 127);
 }
-/* the note of step st under row cy: 0 its bar, k a chord's k-th tick above it; -1 none (above them all) */
+/* the note of step st under row cy: k a chord's k-th note, drawn at its own pitch (mo_pic_notes), within a row of its
+ * line; else 0 its bar (the first note); -1 none (above them all) */
 static int32_t roll_slot(const step_t *st, int32_t cy)
 {
-    int32_t top, k;
+    int32_t top, k, best = -1, bd = 2;
     if (!step_on(st) || !st->n)
         return -1;
+    for (k = 1; k < (int32_t)st->n && k < 4; k++) {
+        int32_t d = cy - (ROLL_BASE - mo_note_h((int32_t)st->note[k] - uz_roll.c0, uz_roll.span));
+        d = d < 0 ? -d : d;
+        if (d < bd)
+            bd = d, best = k;
+    }
+    if (best >= 0)
+        return best;
     top = ROLL_BASE - mo_note_h((int32_t)st->note[0] - uz_roll.c0, uz_roll.span);
-    if (cy >= top - 1)
-        return 0;
-    k = (top - cy + 1) / 2;
-    return k < (int32_t)st->n && k < 4 ? k : -1;
+    return cy >= top - 1 ? 0 : -1;
 }
 static int roll_has(const step_t *st, int32_t n, int32_t skip)
 {
@@ -121,6 +127,8 @@ static void roll_do(uint32_t op, int32_t x, int32_t y, int32_t n)
         {
             int32_t p = roll_pitch(st, cy), q = tessera_pitch_turn(t, p - 1, 1, 0);   /* (in key: the scale's next) */
             p = q >= 1 && q <= 127 ? q : p;
+            if (step_on(st) && st->n > 1u && (q = roll_slot(st, cy)) > 0)
+                p = st->note[q];                        /* (on a chord's note, as drawn: that one picked) */
             if (!step_on(st) || !st->n || (t->p[P_VOICE] && !ENGINES[t->engine]->oneshot)) {
                 if (!step_on(st)) step_clear(st);
                 st->note[0] = (uint8_t)p, st->n = 1, st->time = ST_NOTE;

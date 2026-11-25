@@ -72,6 +72,14 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
+    /* the wheel sideways (a tilt, a trackpad's swipe): the next page of the shown one's family (+ right), as its footer's
+     * tab or arrow clicked; none past the last or before the first (the family's button wraps, this stops). One page a
+     * call, and none within a quarter second of the last (one swipe, one page) */
+    bool hwheel(int notches);
+    /* the mouse's back (fwd false) and forward buttons, down and up: BACK and OK (the FM-1's OCT- and OCT+) */
+    bool side_button(bool fwd, bool down);
+    /* the screen's column a knob turns (role 3..6: KNOB 1..4; its name and value over the knob), none: nullptr */
+    const tess_zone_t *knob_zone(int role) const;
     /* a right-click (or Ctrl-click on a Mac): on the screen, a value's column or a list's row: its help card (TESS_ZA_HELP);
      * else a button or key latched, held until it is right-clicked or clicked again
      * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
@@ -133,11 +141,15 @@ class Panel
      * and asks for its ink (take_shell_request: the shell's index, -1 none); each shell's id (stored) and Mono ink
      * (MENU > COLOR's name) */
     static int shell_count();
+    static bool shell_native(int i);   // TESSERA's shell, NIGHT (0) or DAY (the last)
     static const char *shell_id(int i);
     static const char *shell_ink(int i);
     static int shell_by_id(const std::string &id);   // -1 if none
     void set_shell(int i);
     int shell() const { return shell_; }
+    bool native() const { return shell_native(shell_); }
+    bool day() const { return shell_ == shell_count() - 1; }   // TESSERA's shell's DAY skin (the last shell)
+    int skin_switch_x() const { return skin_x; }               // the header's sun / moon (its left edge)
     int take_shell_request() { int r = shell_req; shell_req = -1; return r; }
     /* the screen's inks (MENU > COLOR's choices, tess_core_ink_at): a row of swatches under the buttons, the one the
      * view has (tess_view_t.ink) ringed, its name while the mouse is on one. A click asks for that ink
@@ -195,7 +207,6 @@ class Panel
     void gen_var_step(int n);
     void draw_gen(uint32_t *px);
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
-    bool native() const { return shell_ == 0; }
     void layout();
     void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
@@ -226,6 +237,7 @@ class Panel
     FileButton usb{};                  // the FM-1's shells: FM-1 USB, under the keys
     FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
     int tracks_ = 4, track_now = 0, bank_held = -1;
+    uint32_t hwheel_at = 0;            // the frame of the last sideways page step (hwheel; 0 none yet)
     bool banked() const { return tracks_ > 4 && !expanded(); }   // the 1-4 / 5-8 switch (EXPANDED: TRACKS shows all)
     int bank_at(int x, int y) const;
     int file_req = FILE_NONE, file_held = -1;
@@ -233,6 +245,7 @@ class Panel
     static constexpr int SWATCH_R = 9;
     static constexpr int SHELL_GAP = 14;   // (TESSERA's swatch apart from the FM-1's)
     int shell_ = 0, shell_req = -1, shell_hover = -1;
+    int skin_x = 0;                    // the sun / moon's left edge in the header (TESSERA's shell; 0 not drawn yet)
     void swatch_xy(int i, int &x, int &y) const;
     int swatch_at(int x, int y) const;
     static constexpr int INK_R = 7;

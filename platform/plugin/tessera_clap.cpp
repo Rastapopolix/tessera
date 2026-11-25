@@ -299,7 +299,7 @@ struct Tessera : GuiLink
     // MODE (gui.h): EXPANDED picked in any window (the setting `mode`); the window is EXPANDED in TESSERA's shell
     std::atomic<bool> mode_expanded{false};
     bool expanded() override { return mode_expanded.load(); }
-    bool win_expanded() const { return mode_expanded.load() && shell_i == 0; }
+    bool win_expanded() const { return mode_expanded.load() && Panel::shell_native(shell_i); }
     int win_w() const { return Panel::width_of(win_expanded()); }
     void mode_pick(bool on) override;
     // no MODE picked yet: EXPANDED if a screen of width w (Gui::screen_width; 0 unknown: FM-1) has room for its window
@@ -696,8 +696,9 @@ void Tessera::shell_picked(int i)
 {
     if (i < 0 || i >= Panel::shell_count())
         return;
-    bool wide = win_expanded();
+    bool wide = win_expanded(), skin = Panel::shell_native(shell_i) && Panel::shell_native(i);
     shell_i = i;
+    if (!skin)   // (NIGHT <-> DAY: the ink stays as it is)
     {
         std::lock_guard<std::mutex> g(core_lock);
         core->ink(Panel::shell_ink(i));
@@ -1076,6 +1077,15 @@ bool p_init(const clap_plugin_t *p)
         if (projfile::setting_get("ink") == "YELLOW")
             projfile::setting_put("ink", "");
         projfile::setting_put("shell_v", "3");
+    }
+    if (projfile::setting_get("shell_v") == "3")   // (the FM-1's shells are no longer offered: one picked opens as
+    {                                             // TESSERA's, NIGHT, with its MOSAIC; NIGHT or DAY stays)
+        if (!Panel::shell_native(Panel::shell_by_id(projfile::setting_get("shell"))))
+        {
+            projfile::setting_put("shell", Panel::shell_id(0));
+            projfile::setting_put("ink", "");
+        }
+        projfile::setting_put("shell_v", "4");
     }
     int sh = Panel::shell_by_id(projfile::setting_get("shell"));   // (the shell last picked, and its ink)
     if (sh >= 0)
