@@ -10,6 +10,7 @@ what you expected and what happened).
 ## New since 3.7.5
 
 ## Fixed
+- LANDSCAPE (and IDLE's LANDSCAPE): the keys no longer flash; they follow the menu's LIGHTS level (dark at OFF), only a solo, FILL or HOLD bright.
 
 ## Good to know
 

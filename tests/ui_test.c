@@ -6260,6 +6260,60 @@ static int test_key_lights(void)
     led_pos_init();
     return bad;
 }
+#if MELODEE_LOOK
+/* LANDSCAPE (as itself or IDLE's; a user on 3.7.5: keys flashing fast with LIGHTS LOW): GLO's keys calm, no
+ * blinking; the tracks' black keys at the LIGHTS level (dark at OFF), only what is engaged bright; MIXER's map blinks */
+static int test_land_lights(void)
+{
+    int bad = 0, ok;
+    uint32_t k;
+    ui_power_on();
+    ui_leds();
+    for (k = 0; k < 41u; k++)                            /* (key_light's map, as test_key_lights) */
+        led_pos[k] = (uint8_t)((k % FM1_NCOL) << 3 | (1u + k / FM1_NCOL));
+    {
+        uint32_t t0, lit[2] = {0, 0}, br[2] = {0, 0}, bl = 0, dm = 0, i;
+        settings_lights = LIGHTS_LOW;
+        go_page(GR_LAND);
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0; k < 27u; k++)
+                if (key_light(14u + k)) { lit[t0] |= 1u << k; if (key_light(14u + k) == 2u) br[t0] |= 1u << k; }
+        }
+        for (k = 0, i = 0; k < 27u; k++)
+            if (key_black(k) && key_place(k) < UI_NT) { bl |= 1u << k; i++; }
+        for (k = 0; k < 27u; k++)
+            if (key_light(14u + k) == 1u) dm |= 1u << k;
+        bad += check("LANDSCAPE, LIGHTS LOW: the same keys lit 250 ms apart (no blinking), none bright",
+                     lit[0] == lit[1] && !br[0] && !br[1]);
+        bad += check("  the four tracks' black keys glow at LOW, nothing else", dm == bl && i == 4u &&
+                     fm1_led_dim_mask[0] == LIGHTS_MASK[LIGHTS_LOW]);
+        settings_lights = LIGHTS_OFF;
+        frame(); ui_leds();
+        for (k = 0, ok = 1; k < 27u; k++)
+            ok &= !key_light(14u + k);
+        bad += check("  LIGHTS OFF: every key dark", ok);
+        frame();
+        tessera.hold = 1;                                /* (as latched: frame() reads it from the keys) */
+        ui_leds();
+        for (k = 0, i = 0; k < 27u; k++)
+            i += key_light(14u + k) == 2u;
+        bad += check("  HOLD on: its key alone bright (engaged)", i == 1u);
+        tessera.hold = 0;
+        settings_lights = LIGHTS_LOW;
+        go_page(GR_TRK);
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0, lit[t0] = 0; k < 27u; k++)
+                lit[t0] |= (key_light(14u + k) == 2u) << k;
+        }
+        bad += check("  MIXER: its map still blinks", lit[0] != lit[1]);
+    }
+    settings_lights = LIGHTS_MID;
+    led_pos_init();
+    return bad;
+}
+#endif
 
 /* FM6's pages (params.c fm6_page_desc / fm6_page_put): the PRESETS knob picks the operator of the operator pages, a
  * knob edits that operator in the track's patch, ON switches it (fm6_on), the function settings are the track's and

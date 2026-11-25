@@ -1594,7 +1594,9 @@ first.
 **GLO > LANDSCAPE** is a page to look at while the music plays: a night sea, drawn by the music. It has no settings,
 and the scene itself changes nothing.
 
-- **The keys** are MIXER's (mute, solo, FILL, tap).
+- **The keys** are MIXER's (mute, solo, FILL, tap), and their lights stay calm: nothing blinks, the playing tracks' black keys glow at the
+  menu's **LIGHTS** level (dark at OFF), and only what you switch on (a solo, FILL, HOLD) is bright. Hold **GLO** for
+  the usual blinking map.
 - **KNOB 1 to 4** are PERF's **MACRO 1 to 4**, so you can thin the music or make a big move and watch the sea answer.
   A macro being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here), and
   the screen reader says it.

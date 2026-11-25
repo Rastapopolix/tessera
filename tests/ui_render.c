@@ -2898,6 +2898,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "ui_render: IDLE LANDSCAPE\n");
         nfind++;
     }
+    if (test_land_lights()) {                   /* LANDSCAPE's keys calm, at the LIGHTS level (ui_test.c) */
+        fprintf(stderr, "ui_render: LANDSCAPE LIGHTS\n");
+        nfind++;
+    }
     if (test_landscape()) {                     /* LANDSCAPE (ui_test.c): the feed, the rings, drawn again only moving */
         fprintf(stderr, "ui_render: LANDSCAPE\n");
         nfind++;
