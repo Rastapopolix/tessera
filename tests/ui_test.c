@@ -2830,20 +2830,13 @@ static int test_grid(void)
     ok &= t->step[2].hit == 1u << DV_CLAP && t->step[2].acc == 1u << DV_CLAP;
     bad += check("KNOB 1 STEP, 2 LANE, 3 HIT on / off, 4 ACC (an accent adds the hit)", ok);
     press(B_EDIT);
-    bad += check("EDIT: the cursor step cleared, on to the next", t->step[2].time == ST_REST && !t->step[2].hit && ui.cursor == 3u &&
-                 grid_on());
-    t->step[1].hit = t->step[2].hit = 1u << DV_CLAP;
-    t->step[1].time = t->step[2].time = ST_NOTE;
-    turn(EN_K1, -1);                                  /* (KNOB 1 to the left: 2) */
-    press(B_EDIT);
-    ok = !t->step[2].hit && t->step[1].hit && ui.cursor == 1u;
-    press(B_EDIT);
-    ok &= !t->step[1].hit && ui.cursor == 0u;
-    turn(EN_K1, 1);                                   /* (and right again: on to the right) */
-    press(B_EDIT);
-    ok &= ui.cursor == 2u;
-    bad += check("EDIT: on the way KNOB 1 last turned (left: the step before; right again: the next)", ok);
-    cursor_set(3); ui.cursor_dir = 1;                 /* (as the EDIT before left it, for the checks after) */
+    bad += check("EDIT: its pages, as every group button (the grid's steps untouched; Clear hit: the hit's sheet)",
+                 cur_page()->fam == FAM_EDIT && t->step[2].hit == 1u << DV_CLAP && !grid_on());
+    go_title("NOTES");                                /* (back on the grid) */
+    frame();
+    cursor_set(3); ui.cursor_dir = 1;
+    t->step[2] = (step_t){0};
+    t->step[2].time = ST_REST;
     /* pages: LEN 32, the page keys */
     t->p[P_SLEN] = 32;
     leds = grid_leds();
@@ -4314,7 +4307,7 @@ static int test_popups(void)
         tessera.qnt_own = 0;
         for (k = 0; k < NTRK; k++) trk[k].p[P_QUANT] = Q_OFF;
     }
-    {   /* sections (ui_sections.c): PRESETS the next section and back to the page last used; EDIT: the map */
+    {   /* sections (ui_sections.c): PRESETS the next section and back to the page last used; the sound sheet's Page map */
         uint32_t f;
         ui_power_on();
         set_engine_of(TSEL, ENGI_FM6); TSEL->engine = ENGI_FM6; sec.ok = 0;
@@ -4324,9 +4317,12 @@ static int test_popups(void)
         o = sec_of(ui.page) == sec_of(f) + 1u;
         turn(EN_PRESET, -1);
         bad += check("SECTIONS: PRESETS the next section, back: the page last used in it", o && ui.page == f);
-        press(B_EDIT); press(B_EDIT);
-        bad += check("SECTIONS: EDIT twice opens and closes the map", !smap.on);
+        sheet_do("Page map");
+        o = smap.on;
         press(B_EDIT);
+        bad += check("SECTIONS: the sound sheet's Page map opens the map, EDIT closes it", o && !smap.on &&
+                     cur_page()->fam == FAM_EDIT);
+        sheet_do("Page map");
         o = smap.on && smap.row == 0u && smap.col == 0u;
         turn(EN_K1, 1);
         f = smap.col;
@@ -4346,11 +4342,11 @@ static int test_popups(void)
         press(B_SEQ);
         bad += check("..SEQ from the map: SEQ's page (the track's GEN or steps), the map closed", !smap.on && !ui.home &&
                      cur_page()->fam != FAM_EDIT);
-        press(B_EDIT); press(B_EDIT);
+        press(B_EDIT); sheet_do("Page map");
         press(B_LFO);
         bad += check("..LFO from the map: an LFO page (FM6 too), the map closed", !smap.on && !ui.home &&
                      (cur_page()->fam == FAM_LFO || str_prefix(cur_page()->title, "FM LFO")));
-        press(B_EDIT); press(B_EDIT);                   /* (EDIT, then the map: LFO's pages are not EDIT's) */
+        press(B_EDIT); sheet_do("Page map");            /* (EDIT, then the map: LFO's pages are not EDIT's) */
         o = smap.on;
         press(B_HOME);
         bad += check("..HOME from the map: HOME, the map closed", o && !smap.on && ui.home);
@@ -4359,7 +4355,7 @@ static int test_popups(void)
             uint8_t pg[8];
             sec.ok = 0; fm6_opsel = 0;                  /* (the sections again: no page used in them yet) */
             ui.home = 0; ui.page = (uint8_t)page_first(FAM_EDIT); page_entered(); frame();
-            press(B_EDIT);
+            sheet_do("Page map");
             turn(EN_K2, 2);
             smap_pages(smap.row, pg);
             o = sec.op[smap.row] == 1u && str_eq(PAGES[pg[smap.col]].title, "FREQ");
@@ -4375,7 +4371,7 @@ static int test_popups(void)
             press(B_OCTDN);
             bad += check("..OCT- closes the map; OCT- again: nothing (still EG RATE)", o && !ui.home && !smap.on &&
                          str_eq(cur_page()->title, "EG RATE"));
-            press(B_EDIT);
+            sheet_do("Page map");
             turn(EN_K2, 1);
             smap_pages(smap.row, pg);
             o = sec.op[smap.row] == 2u && str_eq(PAGES[pg[smap.col]].title, "FREQ");
@@ -4684,7 +4680,8 @@ static int test_product_ux(void)
     tessera_param_set(1, TX_SOUND, 0);
     tessera_param_set(1, TX_MIDI_DMAP, 0);
     go_home(); hold(B_SEQ);
-    bad += check("long SEQ goes directly to PATTERNS (the song under it) with no tap on release", cur_page()->graph == GR_PATGRID);
+    bad += check("long SEQ opens no page (a modifier, as every hold) and no tap on release", ui.home);
+    go_title("PATTERNS");
     turn(EN_SELECT, 1);
     bad += check("  SELECT: SONG next to it", cur_page()->graph == GR_SONG);
     song.rec = 1; chain.armed = 1; press(B_REC);
@@ -5557,11 +5554,12 @@ static int test_layer(void)
     btn_down(B_EDIT); frame();
     ok = step_on(&TSEL->step[0]) && ui.cursor == 0;
     btn_up(B_EDIT); frame();
-    bad += check("EDIT on STEP clears the step when let go (not on press)", ok && !step_on(&TSEL->step[0]) && ui.cursor == 1);
+    bad += check("EDIT on STEP opens EDIT when let go, the step kept (Delete note: the note's sheet)",
+                 ok && step_on(&TSEL->step[0]) && cur_page()->fam == FAM_EDIT);
     ui_power_on(); hold(B_HOME);
     ok = ui.menu == 1; hold(B_HOME); ok &= !ui.menu;
-    go_home(); hold(B_SEQ); ok &= cur_page()->graph == GR_PATGRID;
-    bad += check("HOME (menu) and SEQ (PATTERNS) holds of 0.7 s", ok);
+    go_home(); hold(B_SEQ); ok &= ui.home;
+    bad += check("HOME holds (the menu) of 0.7 s; SEQ held opens no page", ok);
 
     ui_power_on();btn_down(B_FX);frames(800);
     ok=ui.home && !ui.layer && !(kb_mask & (1u<<panel.btn[B_FX]));
@@ -5709,22 +5707,22 @@ static int test_name(void)
     bad += check("  EDIT held, FX held: nothing in NAME (no undo, no map, no page)", name_on() && ok && cur_page()->graph == GR_USER &&
                  !ui.msg_t);
     press(B_OCTDN);
-    /* rename: EDIT on USER */
+    /* rename: the slot's sheet (EDIT itself turns the pages) */
     ui.uslot = 5;
-    press(B_EDIT);
-    bad += check("  EDIT on an empty slot: EMPTY SLOT", !name_on() && msg_is("EMPTY SLOT") && cur_page()->graph == GR_USER);
+    sheet_do("Rename");
+    bad += check("  Rename on an empty slot: EMPTY SLOT", !name_on() && msg_is("EMPTY SLOT") && cur_page()->graph == GR_USER);
     ui.uslot = 2;
     up_load(2);                                   /* (the sound now comes from U03) */
     trk[0].p[P_E0] = 33;                          /* an edit: a rename must not store it */
-    press(B_EDIT);
-    bad += check("  EDIT on a used slot: NAME (rename) with its name", name_on() && nm.kind == NK_USER_RENAME && str_eq(nm.s, "CB 2"));
+    sheet_do("Rename");
+    bad += check("  Rename on a used slot: NAME with its name", name_on() && nm.kind == NK_USER_RENAME && str_eq(nm.s, "CB 2"));
     nm_tap(nm_black_key(NB_DEL, 0));
     nm_tap(white(10)); nm_tap(white(10));          /* VW: W */
     press(B_OCTUP);
     up_name(2, b);
     bad += check("  OCT+: renamed (CB W), the sound stored there unchanged", !name_on() && str_eq(b, "CB W") &&
                  up_value(up_rec(2), P_E0) != 33 && msg_is("RENAMED (RAM)"));
-    press(B_EDIT);
+    sheet_do("Rename");
     for (i = 0; i < 12u; i++) nm_tap(nm_black_key(NB_DEL, 0));
     press(B_OCTUP);
     {
@@ -5756,20 +5754,20 @@ static int test_name(void)
     project_load(1);
     bad += check("  loading it brings its name back (the next save's prefill)", str_eq(proj_name, "PNPNPNPN"));
     trk[0].p[P_LEVEL] = 7;
-    press(B_EDIT);
+    sheet_do("Rename");
     for (i = 0; i < 4u; i++) nm_tap(nm_black_key(NB_DEL, 1));
     press(B_OCTUP);
     {
         char pn[16];
         project_name(1, pn);
-        bad += check("  EDIT renames a project (PNPN); its music unchanged", str_eq(pn, "PNPN") && stored_param(1, 0, P_LEVEL) != 7 &&
+        bad += check("  Rename on a project (PNPN); its music unchanged", str_eq(pn, "PNPN") && stored_param(1, 0, P_LEVEL) != 7 &&
                      msg_is("RENAMED (RAM)"));
     }
     song.g[G_SLOT] = 4;
-    press(B_EDIT);
-    bad += check("  EDIT on an empty project slot: EMPTY SLOT", !name_on() && msg_is("EMPTY SLOT"));
+    sheet_do("Rename");
+    bad += check("  Rename on an empty project slot: EMPTY SLOT", !name_on() && msg_is("EMPTY SLOT"));
     song.g[G_SLOT] = 2;
-    press(B_EDIT);
+    sheet_do("Rename");
     hold(B_HOME);
     bad += check("  HOME held in NAME: the menu, NAME closed", ui.menu && !name_on());
     hold(B_HOME);
@@ -5874,8 +5872,8 @@ static int test_boot_template(void)
     sheet_do("Save as template");
     bad += check("SAVE on TMPL: the template, at once (no NAME, no dialog)", template_used() && !name_on() &&
                  ui.confirm == CF_NONE && (msg_is("TEMPLATE IN RAM") || msg_is("TEMPLATE SAVED")));
-    press(B_EDIT);
-    bad += check("  EDIT there: no NAME (the template has no name)", !name_on());
+    name_rename();
+    bad += check("  Rename there: no NAME (the template has no name)", !name_on());
     trk[1].p[P_LEVEL] = 20;
     fm6_fn[1][FN_PBUP] = 2;
     set_engine_of(&trk[2], 6);
@@ -7032,18 +7030,18 @@ static int test_bughunt_ui(void)
         btn_up(B_FX); frame();
     }
     bad += check("SET layers: the OCT- LED lit (UNDO), OCT+ dark; after: the octave; FX: the octave", ok);
-    /* 9: no "HOLD [EDIT] SET" over NAME (EDIT tapped on USER / PROJECT renames) */
+    /* 9: no "HOLD [EDIT] SET" over NAME (the slot sheet's Rename) */
     ui_power_on_general();
     layer_seen = 0;
     up_ui(2, 0);
     go_page(GR_USER); ui.uslot = 0; frame();
     ui.msg_t = 0;
-    press(B_EDIT);
+    sheet_do("Rename");
     ok = name_on() && !msg_is("HOLD [EDIT] SET");
     ui_power_on();
     layer_seen = 0;
     press(B_EDIT);
-    bad += check("EDIT tap = RENAME on USER: no layer hint over NAME (no retired layer hint)",
+    bad += check("Rename on USER: no layer hint over NAME (no retired layer hint)",
                  ok && !msg_is("HOLD [EDIT] SET"));
     return bad;
 }
@@ -7301,7 +7299,7 @@ static int test_bughunt_ui2(void)
         ok = str_eq(proj_name, "OLD");
         project_rename(2, "ELSE");
         ok &= str_eq(proj_name, "OLD");                               /* another slot: the music's name stays */
-        press(B_EDIT);                                                /* rename B on the slot list */
+        sheet_do("Rename");                                           /* rename B on the slot list */
         while (nm.len) { nm_do(NB_DEL); }
         nm_white(13); frames(900);
         str_cpy(nm.s, "NEW", sizeof nm.s); nm.len = nm.cur = 3; nm.key = 0;
