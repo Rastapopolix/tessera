@@ -370,6 +370,18 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
+static void sheet_row(const char *label)   // the page's sheet (OCT+, tapped or held) and its row, double-clicked
+{
+    tap(B_OCTUP);
+    tess_core_view(&v);
+    if (find(label, TESS_ZONE_ROW) < 0) {
+        tap(B_OCTDN);
+        hold(B_OCTUP, 120);
+        tess_core_view(&v);
+    }
+    act(find(label, TESS_ZONE_ROW), TESS_ZA_DOUBLE, 0, 40);
+    tess_core_view(&v);
+}
 static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)
 {
     tess_screen_t sc;
@@ -378,13 +390,13 @@ static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels
     for (uint32_t i = 0; i < sc.w * sc.h; i++) h = (h ^ sc.pixels[i]) * 16777619u;
     return h;
 }
-static void smap()   // EDIT's sections map (EDIT again on an engine's page, T3's FM6): a tile a page, a click opens it
+static void smap()   // EDIT's sections map (Page map on the sound's sheet, T3's FM6): a tile a page, a click opens it
 {
     tess_core_track_select(2);
     run(20);
     tap(B_HOME);
     tap(B_EDIT);
-    tap(B_EDIT);
+    sheet_row("Page map");
     int n = count(TESS_ZONE_SMAP);
     CHECK(n >= 4, "the sections map: a zone a tile (%d)", n);
     int pick = -1;
@@ -516,16 +528,15 @@ static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel 
     CHECK(found, "a HELP card longer than the card: a SCROLL zone (SEQ's pages)");
     tap(B_HOME);
 }
-static void typing()   // NAME (SAVE > PROJECT, EDIT renames slot A): a computer keyboard types into it
+static void typing()   // NAME (SAVE > PROJECT, Rename on slot A's sheet): a computer keyboard types into it
 {
     tap(B_HOME);
     tap(B_SAVE);
     for (int i = 0; i < 6 && find("A", TESS_ZONE_ROW) < 0; i++) tap(B_SAVE);
     act(find("A", TESS_ZONE_ROW), TESS_ZA_CLICK, 0, 40);
     CHECK(!v.typing, "PROJECT: not typing");
-    tap(B_EDIT);
-    tess_core_view(&v);
-    CHECK(v.typing, "EDIT on PROJECT's slot A: NAME open, typing");
+    sheet_row("Rename");
+    CHECK(v.typing, "Rename on PROJECT's slot A: NAME open, typing");
     for (int i = 0; i < 14; i++) tess_core_text(TESS_TEXT_BACK);   // (the name it has: gone)
     for (const char *c = "dub sketch!7"; *c; c++) tess_core_text((uint8_t)*c);   // ('!' isn't in the set: left out)
     tess_core_text(TESS_TEXT_LEFT);
