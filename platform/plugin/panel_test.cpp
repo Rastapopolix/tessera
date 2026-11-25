@@ -574,6 +574,15 @@ int main(int argc, char **argv)
         q.down(254, hy);   // OFF
         q.up(254, hy);
         CHECK(!q.hover_help() && q.take_hover_request() == 0, "HOVER HELP OFF asks for off");
+        // OUTPUTS: STEREO to start; MONO asks once (the ports change from the DAW's next load)
+        int oy = 46 + 10 + 9 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_OUTS)'s middle)
+        CHECK(q.take_outs_request() == -1, "OUTPUTS: nothing asked to start");
+        q.down(200, oy);   // MONO
+        q.up(200, oy);
+        CHECK(q.take_outs_request() == 1 && q.take_outs_request() == -1, "OUTPUTS MONO asks once");
+        q.down(300, oy);   // STEREO
+        q.up(300, oy);
+        CHECK(q.take_outs_request() == 0, "OUTPUTS STEREO asks for stereo");
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
         int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };

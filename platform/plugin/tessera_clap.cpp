@@ -196,6 +196,12 @@ struct Tessera : GuiLink
     // note), the window's to pick, saved in the DAW's state ("TLSN"); the audio thread's copy and what it held, and
     // a piece for the main thread (the seed, the style + 1 above it: 0 the strip's)
     std::atomic<int> listen_ch{0}, listen_split{Listen::SPLIT};
+    // OUTPUTS (MENU): the eight track ports mono (one channel each: the track before its pan) or stereo pairs (the same,
+    // twice); fixed while the instance lives, from the setting when it was made, or the host's pick (audio-ports-config)
+    bool mono_outs = projfile::setting_get("outputs") == "mono";
+    bool outs_mono() override { return projfile::setting_get("outputs") == "mono"; }
+    bool outs_live_mono() override { return mono_outs; }
+    void outs_set(bool mono) override { projfile::setting_put("outputs", mono ? "mono" : "stereo"); }
     Listen listen;
     bool listen_params = false;           // a key set: every parameter to the host in this block
     std::atomic<uint64_t> listen_gen{0};
@@ -1325,8 +1331,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
 // ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..8 (each alone: the FM-1's USB stems)
 
 uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 1 + NSTEMS; }
-bool ap_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_audio_port_info_t *info)
+bool ap_get(const clap_plugin_t *p, uint32_t index, bool is_input, clap_audio_port_info_t *info)
 {
+    const bool mono = index > 0 && self(p)->mono_outs;   // (OUTPUTS MONO: a track's port one channel)
     if (is_input || index > NSTEMS)
         return false;
     info->id = index;
@@ -1335,12 +1342,37 @@ bool ap_get(const clap_plugin_t *, uint32_t index, bool is_input, clap_audio_por
     else
         std::snprintf(info->name, sizeof(info->name), "Track %u", index);
     info->flags = index == 0 ? CLAP_AUDIO_PORT_IS_MAIN : 0;
-    info->channel_count = 2;
-    info->port_type = CLAP_PORT_STEREO;
+    info->channel_count = mono ? 1 : 2;
+    info->port_type = mono ? CLAP_PORT_MONO : CLAP_PORT_STEREO;
     info->in_place_pair = CLAP_INVALID_ID;
     return true;
 }
 const clap_plugin_audio_ports_t audio_ports = {ap_count, ap_get};
+
+// ---- audio ports configs (a host that offers them: the track ports as stereo pairs, 0, or mono, 1; Main stereo)
+uint32_t apc_count(const clap_plugin_t *) { return 2; }
+bool apc_get(const clap_plugin_t *, uint32_t index, clap_audio_ports_config_t *config)
+{
+    if (index > 1)
+        return false;
+    config->id = index;
+    std::strncpy(config->name, index ? "Tracks mono" : "Tracks stereo", sizeof(config->name));
+    config->input_port_count = 0;
+    config->output_port_count = 1 + NSTEMS;
+    config->has_main_input = false;
+    config->has_main_output = true;
+    config->main_output_channel_count = 2;
+    config->main_output_port_type = CLAP_PORT_STEREO;
+    return true;
+}
+bool apc_select(const clap_plugin_t *p, clap_id config_id)   // (the host calls it while deactivated)
+{
+    if (config_id > 1)
+        return false;
+    self(p)->mono_outs = config_id == 1;
+    return true;
+}
+const clap_plugin_audio_ports_config_t audio_ports_config = {apc_count, apc_get, apc_select};
 
 // ---- note ports: one in
 
@@ -1741,6 +1773,7 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_GUI)) return Gui::api() ? &gui_ext : nullptr;
     if (!std::strcmp(id, CLAP_EXT_TIMER_SUPPORT)) return &timer_ext;
     if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS)) return &audio_ports;
+    if (!std::strcmp(id, CLAP_EXT_AUDIO_PORTS_CONFIG)) return &audio_ports_config;
     if (!std::strcmp(id, CLAP_EXT_NOTE_PORTS)) return &note_ports;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
     if (!std::strcmp(id, CLAP_EXT_PRESET_LOAD) || !std::strcmp(id, CLAP_EXT_PRESET_LOAD_COMPAT)) return &preset_load_ext;
