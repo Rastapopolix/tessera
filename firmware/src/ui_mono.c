@@ -2958,8 +2958,8 @@ static uint32_t mo_signature(void)
     return h;
 }
 
-/* a knob turning: its name and value large across the foot, as HOME shows them (mo_stage_panel), over the page's
- * tabs and the picture's last rows until it rests (ui.hot_t); where the value sits in its range, a bar at the right.
+/* a knob turning: its name and value large over the picture's last rows, as HOME shows them (mo_stage_panel), until it
+ * rests (ui.hot_t); the page's tabs stay under it (one rule: the tabs always show, Theo 2026-11-26); where the value sits in its range, a bar at the right.
  * Not on NOTES: it would cover the steps being placed (the column keeps the value, inverted). MENU > LARGE VALUE: AUTO
  * only over the output (a page with a picture of its own keeps it in view), ON always, OFF never */
 static int mo_turn(void)
@@ -2973,22 +2973,22 @@ static int mo_turn(void)
     for (i = 0; i < 4u && !(mo_col[i].used && mo_col[i].hot); i++) ;
     if (i >= 4u || mo_col[i].val[0] == '[')
         return 0;
-    mo_fill(0, 88, 120, 32, MO_BG);
-    mo_hl(0, 88, 120, MO_INK);
-    mo_text(mo_col[i].label, 2, 92, MO_DIM);
+    mo_fill(0, 76, 120, 32, MO_BG);
+    mo_hl(0, 76, 120, MO_INK);
+    mo_text(mo_col[i].label, 2, 80, MO_DIM);
     str_cpy(b, mo_col[i].val, sizeof b);
     str_cpy(b + str_len(b), mo_col[i].unit, sizeof b - str_len(b));
     b[9] = 0;                                           /* (nine large characters across) */
-    x = mo_text_s(b, 2, 103, 2, MO_HOT);
+    x = mo_text_s(b, 2, 91, 2, MO_HOT);
     mo_wait_s(b, i);                                    /* ROLL: the seed waiting, dotted beside it */
-    mo_text_dot(b, x + 12, 103, 2, MO_HOT);
+    mo_text_dot(b, x + 12, 91, 2, MO_HOT);
     if (mo_col[i].ratio >= 0) {
         int32_t w = 40 * mo_col[i].ratio / 1000;
-        mo_box(76, 92, 42, 7, MO_DIM);
+        mo_box(76, 80, 42, 7, MO_DIM);
         if (w)
-            mo_fill(77, 93, w, 5, MO_HOT);
+            mo_fill(77, 81, w, 5, MO_HOT);
         if (mo_col[i].live)                             /* (the mods' mark, over the bar) */
-            mo_vl(77 + 40 * (mo_col[i].live - 1) / 1000, 89, 2, MO_INK);
+            mo_vl(77 + 40 * (mo_col[i].live - 1) / 1000, 77, 2, MO_INK);
     }
     return 1;
 }
@@ -3019,8 +3019,9 @@ static void mono_page(void)
         MO_HOOK_PIC(1);
         mo_picture();
         MO_HOOK_PIC(0);
-        if (cur_page()->graph == GR_ROLL || !mo_turn())
-            mo_foot();
+        if (cur_page()->graph != GR_ROLL)
+            mo_turn();
+        mo_foot();
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }

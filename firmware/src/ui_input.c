@@ -1856,10 +1856,6 @@ static void page_tap(uint32_t b)
         return;
     }
     if(b==B_EDIT && !ui.home && cur_page()->scope==SC_DRUMHIT){drum_hit_delete();return;}
-    if (b == B_GLO) {
-        open_global();                                  /* MIXER -> GLOBAL -> SYSTEM -> MIXER */
-        return;
-    }
     if (b == B_EDIT && song.seq_mode && !ui.home && cur_page()->graph == GR_ROLL) {   /* the DRUM grid: EDIT clears
                                                          * the step (synth STEP: a step modifier, ui_input) */
         if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
@@ -1878,26 +1874,7 @@ static void page_tap(uint32_t b)
         name_rename();                                  /* SAVE > USER / PROJECT: EDIT renames the slot */
         return;
     }
-    if (b == B_ARP) {                                   /* ARP: the shaping lane (ui.c arp_page); again: its next page */
-        uint8_t pg[NPAGES];
-        uint32_t n = fam_pages(FAM_ARP, pg), k, last = ui.fam_last[FAM_ARP];
-        if (!n) return;
-        for (k = 0; k < n && pg[k] != ui.page; k++) {}
-        if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
-        else {
-            for (k = 0; k < n && pg[k] != last; k++) {}
-            if (k < n) ui.page = (uint8_t)last;
-            else {                                      /* first time: the lane's first (ARP 2 is ARP's OCT- layer, not listed) */
-                for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
-                ui.page = pg[k < n ? k : 0u];
-            }
-        }
-        ui.fam_last[FAM_ARP] = ui.page;
-        ui.home = 0;
-        page_entered();
-        return;
-    }
-    for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
+    for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)       /* (GLO: FAM_GLO before FAM_TRK; ARP: its lane, open_family) */
         if (FAM_BTN[f] == b) {
             open_family(f);
             return;

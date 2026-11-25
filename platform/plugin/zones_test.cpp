@@ -459,6 +459,14 @@ static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns
     tess_core_track_select(0);
     run(20);
 }
+static void hosted_words()   // inside a DAW the MIDI page's input is the DAW's, CLK's INT the DAW's (TESS_HOSTED)
+{
+    tap(B_HOME);
+    int i = -1;
+    for (int k = 0; k < 16 && (i = find("MIDI", TESS_ZONE_KNOB)) < 0; k++) tap(B_GLO);
+    CHECK(i >= 0 && !std::strcmp(v.zones[i].value, "DAW"), "GLO's MIDI page: the input is DAW (%s)", i >= 0 ? v.zones[i].value : "-");
+    tap(B_HOME);
+}
 static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel scrolls (down, then back up)
 {
     tap(B_HOME);
@@ -1272,6 +1280,7 @@ int main(int argc, char **argv)
     roll();
     smap();
     chord_user();
+    hosted_words();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;
