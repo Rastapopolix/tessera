@@ -124,6 +124,9 @@ enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_Z
  * pitch, in key when the track quantises, over its chord's other notes; TURN_CHORD n: the whole chord, its shape kept;
  * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records */
 enum { TESS_ZONE_ROLL = 15 };
+/* SMAP: a tile of EDIT's sections map (EDIT pressed on an engine's page: a row a section, a tile a page); row: the
+ * section * 8 + the tile. CLICK or DOUBLE: that page opened (as the map's cursor moved there, then OCT+) */
+enum { TESS_ZONE_SMAP = 17 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;

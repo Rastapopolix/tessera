@@ -429,6 +429,16 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         }
         core_mute_solo(z->kind, (uint32_t)z->row);
         break;
+    case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
+        if (smap.on && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && z->row >= 0) {
+            sec_build();
+            if ((uint32_t)z->row / 8u < sec.n) {
+                smap.row = (uint8_t)(z->row / 8);
+                smap.col = (uint8_t)(z->row % 8);
+                smap_input(0, 0, 2u);
+            }
+        }
+        break;
     case TESS_ZONE_TAB:                               /* the footer's tabs: that page (row: the pages from here) */
         if (action == TESS_ZA_CLICK)
             for (k = 0; k < (z->row < 0 ? -z->row : z->row) && k < 16; k++) zq_put(ZQ_PAGE, 0, z->row);
