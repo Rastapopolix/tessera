@@ -1023,27 +1023,30 @@ int main(int argc, char **argv)
             NSView *v = nw.contentView.subviews.count ? nw.contentView.subviews[0] : nil;
             CHECK(v && NSEqualSizes(v.frame.size, NSMakeSize(w, h)), "the plugin's view in the parent, %ux%u", w, h);
             CGImageRef img = v ? (__bridge CGImageRef)v.layer.contents : nullptr;
+            // the layer's picture is the panel at 1:1 (the layer stretches it to the view: SIZE, which a small screen
+            // makes less than 100 % until one is picked)
             int lit = 0;
-            std::vector<uint32_t> all(w * h);
-            if (img && CGImageGetWidth(img) == w && CGImageGetHeight(img) == h)
+            const uint32_t iw = img ? (uint32_t)CGImageGetWidth(img) : 0u, ih = img ? (uint32_t)CGImageGetHeight(img) : 0u;
+            std::vector<uint32_t> all((size_t)iw * ih);
+            if (img && iw >= 540u && ih >= 292u)
             {
                 CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-                CGContextRef c = CGBitmapContextCreate(all.data(), w, h, 8, w * 4, cs,
+                CGContextRef c = CGBitmapContextCreate(all.data(), iw, ih, 8, iw * 4, cs,
                                                        kCGBitmapByteOrder32Little | (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
-                CGContextDrawImage(c, CGRectMake(0, 0, w, h), img);
+                CGContextDrawImage(c, CGRectMake(0, 0, iw, ih), img);
                 CGContextRelease(c);
                 CGColorSpaceRelease(cs);
                 for (int y = 52; y < 52 + 240; y++)
                     for (int x = 300; x < 300 + 240; x++)
-                        lit += (all[y * w + x] & 0xFFFFFF) != 0;
+                        lit += (all[y * iw + x] & 0xFFFFFF) != 0;
             }
-            std::printf("window: %ux%u, %d of 57600 screen pixels lit\n", w, h, lit);
+            std::printf("window: %ux%u (picture %ux%u), %d of 57600 screen pixels lit\n", w, h, iw, ih, lit);
             CHECK(lit > 500, "the window should show the FM-1's screen");
             if (argc > 4 && img)
                 if (FILE *f = std::fopen(argv[4], "wb"))
                 {
-                    std::fprintf(f, "P6\n%u %u\n255\n", w, h);
-                    for (uint32_t i = 0; i < w * h; i++)
+                    std::fprintf(f, "P6\n%u %u\n255\n", iw, ih);
+                    for (uint32_t i = 0; i < iw * ih; i++)
                     {
                         unsigned char rgb[3] = {(unsigned char)(all[i] >> 16), (unsigned char)(all[i] >> 8), (unsigned char)all[i]};
                         std::fwrite(rgb, 1, 3, f);
