@@ -1120,6 +1120,46 @@ int main(int argc, char **argv)
         tess_core_view(&v);
         b.draw(px.data(), v);
     }
+    // Cosmati: the knobs named by the page, sideways scroll a page (stopping at the ends), the mouse's back / forward
+    {
+        Panel q;
+        q.set_tracks((int)tess_core_tracks());
+        auto frames = [&](int n) { for (int i = 0; i < n; i++) { tess_core_view(&v); q.draw(px.data(), v); } };
+        tess_core_buttons(1u << 2);   // (ENV: FILT ENV, AMP ENV)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.3);
+        frames(1);
+        const tess_zone_t *k1 = q.knob_zone(3);
+        CHECK(k1 && k1->value[0], "ENV: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
+        if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
+        uint64_t h0 = screen_hash(v);
+        CHECK(!q.hwheel(-1), "sideways left on the first page: nothing (it stops)");
+        CHECK(q.hwheel(1), "sideways right: the next page");
+        run(q, 0.3);
+        frames(1);
+        uint64_t h1 = screen_hash(v);
+        CHECK(h1 != h0, "sideways right: the page changed");
+        CHECK(!q.hwheel(1), "sideways again at once: nothing (one swipe, one page)");
+        int steps = 1;
+        for (frames(9); steps < 16 && q.hwheel(1); steps++) { run(q, 0.3); frames(9); }
+        CHECK(steps > 1 && steps < 16 && !q.hwheel(1), "sideways right to the last page, then nothing (it stops; %d pages)", steps + 1);
+        uint64_t h2 = screen_hash(v);
+        CHECK(q.hwheel(-1), "sideways left: the page before");
+        run(q, 0.3);
+        frames(1);
+        CHECK(screen_hash(v) != h2, "sideways left: back a page");
+        CHECK(q.side_button(false, true) && (q.input.buttons >> 12 & 1u), "the mouse's back button holds BACK (OCT-)");
+        CHECK(q.side_button(false, false) && !(q.input.buttons >> 12 & 1u), "and lets it go");
+        CHECK(q.side_button(true, true) && (q.input.buttons >> 13 & 1u), "forward: OK (OCT+)");
+        q.side_button(true, false);
+        run(q, 0.3);
+        tess_core_buttons(1u << 6);   // (HOME)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.3);
+    }
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }
