@@ -26,6 +26,15 @@ static void put_note(track_t *t, uint32_t at, uint32_t pitch, uint32_t length)
     step_note_resize(t, at, (int32_t)length);
 }
 
+/* the note's sheet, Delete note; a selection's, Delete selected (EDIT tapped turns pages now; DRUM HIT: the hit's key takes it off) */
+static void del_tap(void)
+{
+    if (cur_page()->graph == GR_DRUMHIT)
+        drum_hit_delete();
+    else
+        sheet_do(bulk.on ? "Delete selected" : "Delete note");
+}
+
 /* EDIT+OCT acts before the hold timeout, and never opens the EDIT page on release. */
 static void history_key(uint32_t oct)
 {
@@ -71,8 +80,8 @@ static int test_note_edits(void)
     bad += check("several SCL-held moves are one undo", step_note_length(t, 14) == 3 && t->step[14].n == 3 && ui.cursor == 14);
     history_key(B_OCTUP);
     bad += check("move redo preserves all note data", step_note_length(t, 1) == 3 && t->step[1].probability == 50);
-    cursor_set(2); press(B_EDIT);
-    bad += check("EDIT on a chord tail removes one pitch and preserves its neighbours and ties",
+    cursor_set(2); del_tap();
+    bad += check("Delete note on a chord tail removes one pitch and preserves its neighbours and ties",
                  t->step[1].n == 2 && t->step[1].note[0] == 64 && t->step[2].time == ST_TIE && t->step[3].time == ST_TIE && t->step[4].note[0] == 72);
     hold(B_EDIT);
     bad += check("whole-note deletion is one undo with its tail cursor", step_note_length(t, 1) == 3 && ui.cursor == 2);
@@ -243,11 +252,11 @@ static int test_step_modifiers(void)
     hold(B_EDIT);
     bad += check("one SCL-held movement gesture is one undo", step_note_length(t, 4) == 4 && ui.cursor == 4);
     history_key(B_OCTUP);
-    cursor_set(7); frame(); press(B_EDIT);
-    bad += check("EDIT deletes a selected note and all ties, advances from its onset", !step_on(&t->step[6]) && t->step[7].time == ST_REST && ui.cursor == 7 && cur_page()->graph == GR_ROLL);
+    cursor_set(7); frame(); del_tap();
+    bad += check("Delete note removes a selected note and all ties, advances from its onset", !step_on(&t->step[6]) && t->step[7].time == ST_REST && ui.cursor == 7 && cur_page()->graph == GR_ROLL);
     fm1_in.buttons |= 1u << panel.btn[B_EDIT]; host_pressed |= 1u << panel.btn[B_EDIT]; frame();
     press(B_OCTDN); fm1_in.buttons &= ~(1u << panel.btn[B_EDIT]); frame();
-    bad += check("EDIT then OCT- undoes without deletion, navigation or octave shift", step_note_length(t, 6) == 4 && ui.cursor == 7 && !song.octave && cur_page()->graph == GR_ROLL && !ui.ly);
+    bad += check("Delete, then EDIT + OCT- undoes without deletion, navigation or octave shift", step_note_length(t, 6) == 4 && ui.cursor == 7 && !song.octave && cur_page()->graph == GR_ROLL && !ui.ly);
     fm1_in.buttons |= 1u << panel.btn[B_OCTUP]; host_pressed |= 1u << panel.btn[B_OCTUP]; frame();
     press(B_EDIT); fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]); frame();
     bad += check("OCT+ then EDIT redoes, either order works", !step_on(&t->step[6]) && ui.cursor == 7 && !song.octave && cur_page()->graph == GR_ROLL);
