@@ -115,6 +115,10 @@ class Panel
     void set_split(int note) { split_note = note; }
     int split() const { return split_note; }
     int take_split_request() { int r = split_req; split_req = -1; return r; }
+    /* OUTPUTS (TESSERA's menu): the track ports MONO or STEREO from the DAW's next load of the plugin (a click asks:
+     * take_outs_request 1 mono, 0 stereo, -1 none); live: this instance's ports */
+    void set_outs(bool mono, bool live) { outs_mono_ = mono, outs_live_ = live; }
+    int take_outs_request() { int r = outs_req; outs_req = -1; return r; }
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
@@ -248,6 +252,8 @@ class Panel
     bool keys_on_ = true;
     int keys_req = -1;
     int listen_ch = 0, listen_last = 16, listen_req = -1, split_note = 48, split_req = -1;
+    bool outs_mono_ = false, outs_live_ = false;
+    int outs_req = -1;
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag
