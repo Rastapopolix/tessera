@@ -196,7 +196,7 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 // EXPANDED: the TRACKS screen beside the FM-1's (its frame as the FM-1's: 8 px round 480 x 240), and KNOB 1..4 and the
 // twelve buttons right of it
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
-const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
+const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 60;   // (60: SCALE, SOUND, SHAPE at full size)
 // TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
@@ -1337,7 +1337,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
-        const int fs = Canvas::ptext_w(b.face, 2) <= b.w - 6 ? 2 : 1, mid = (y + 2 + y + h - bottom) / 2;
+        const int fs = Canvas::ptext_w(b.face, 2) <= b.w - 2 ? 2 : 1, mid = (y + 2 + y + h - bottom) / 2;
         if (b.sub)   // (a renamed button: the FM-1's name under it, small)
         {
             c.ptext_c(b.x + b.w / 2, mid - 11, b.face, fs, ink);

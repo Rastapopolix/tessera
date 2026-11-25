@@ -78,6 +78,8 @@ class Panel
     bool hwheel(int notches);
     /* the mouse's back (fwd false) and forward buttons, down and up: BACK and OK (the FM-1's OCT- and OCT+) */
     bool side_button(bool fwd, bool down);
+    /* the screen's column a knob turns (role 3..6: KNOB 1..4; its name and value over the knob), none: nullptr */
+    const tess_zone_t *knob_zone(int role) const;
     /* a right-click (or Ctrl-click on a Mac): on the screen, a value's column or a list's row: its help card (TESS_ZA_HELP);
      * else a button or key latched, held until it is right-clicked or clicked again
      * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
@@ -295,5 +297,4 @@ class Panel
     int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
     tess_zone_t zone_here(int zi, int x, int y) const;   // zone zi as the core takes it from (x, y): a ROLL with the place
     void zone_act(const tess_zone_t &z, uint32_t action, int n);
-    const tess_zone_t *knob_zone(int role) const;
 };
