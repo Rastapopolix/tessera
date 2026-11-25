@@ -250,7 +250,7 @@ static void test_dir_sheet(void)
     assert(changes <= 120u * 16u / 300u + 2u && !host_redrawn);   /* (at most one change in 300 ms; 44 before) */
     pop_close(); cord_clear();
 }
-/* B1 + B2: the header's line a PIECE's progress (every Mono header), the PLAY triangle's beat (HOME, the lists) */
+/* B1 + B2: the header's line a PIECE's progress (every Mono header), the PLAY triangle's beat (HOME; the lists have the page header since #999) */
 static int mo_lit(int32_t x, int32_t y) { return host_screen[(y * 2) * 240 + x * 2] == swap16(T_TEXT); }   /* (a cell: MO_INK) */
 static uint32_t head_dots(int32_t y, int32_t x0, int32_t x1)   /* the header's line from x0 to x1-1: 1 solid, 2 dotted, 0 */
 {
@@ -262,8 +262,6 @@ static uint32_t head_dots(int32_t y, int32_t x0, int32_t x1)   /* the header's l
 static int test_head_beat_piece(void)
 {
     int bad = 0;
-    char b[8];
-    int32_t tx;
     ui_power_on();
     stop_transport();
     tessera.pl_length = 1;                              /* (a minute) */
@@ -286,24 +284,12 @@ static int test_head_beat_piece(void)
     bad += check("  OCT+ held: the sheet's hold in its place", head_dots(9, 0, 56) == 1u && head_dots(9, 64, 120) == 2u);
     fm1_in.buttons &= ~(1u << panel.btn[B_OCTUP]);
     ui.oct_t0 = 0;
-    go_title("SCL");                                    /* a list: its header's line (row 8), the triangle */
+    go_title("SCL");                                    /* a list: the ordinary page header since #999 (no tempo, no triangle) */
     plan.at_b = 15u * (uint32_t)FS;
     screen_clear(); ui.force = 1; frame();
-    fmt_int(b, song.g[G_BPM]);
-    tx = 119 - mo_tw(b) - 7;
-    bad += check("  a list's header the same", head_dots(8, 0, 26) == 1u && head_dots(8, 34, 120) == 2u);
-    bad += check("  an off-beat: the list's triangle hollow", mo_lit(tx, 4) && mo_lit(tx + 1, 2) && !mo_lit(tx + 1, 4));
-    beat_n = 0;
-    frame();
-    bad += check("  the 1: solid (drawn again)", mo_lit(tx, 4) && mo_lit(tx + 1, 4));
+    bad += check("  a list's header the same", head_dots(9, 0, 26) == 1u && head_dots(9, 34, 120) == 2u);
     tessera.fc_phrase = 0;                              /* (phrases of 4 bars) */
     bar_n = 4;
-    beat_pos = MIDI_BEAT_UNITS / 4u;
-    frame();
-    bad += check("  a phrase line's 1 blinks: out a sixteenth ..", !mo_lit(tx, 4));
-    beat_pos = MIDI_BEAT_UNITS / 2u;
-    frame();
-    bad += check("  .. in the next", mo_lit(tx, 4) && mo_lit(tx + 1, 4));
     go_home();
     beat_n = 2;
     screen_clear(); ui.force = 1; frame();
