@@ -539,7 +539,8 @@ static void tabs()   // the footer's tabs: a click goes to that page
     int arrow = -1;
     for (int i = 0; i < (int)v.zone_count; i++)
         if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x >= 116) arrow = i;
-    CHECK(arrow >= 0, "GLO's footer: a zone on the right arrow");
+    CHECK(arrow >= 0 && v.zones[arrow].row == 1, "GLO's footer: a zone on the right arrow, the next page (row %d)",
+          arrow >= 0 ? v.zones[arrow].row : 0);
     if (arrow >= 0)
     {
         want = v.zones[arrow].value;
@@ -552,7 +553,34 @@ static void tabs()   // the footer's tabs: a click goes to that page
         int left = -1;
         for (int i = 0; i < (int)v.zone_count; i++)
             if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x == 0) left = i;
-        CHECK(left >= 0 && v.zones[left].row < 0, "then a left arrow, a page back");
+        CHECK(left < 0 || v.zones[left].row == -1, "a left arrow: the page next to this one, back (row %d)",
+              left >= 0 ? v.zones[left].row : 0);
+        for (int k = 0; k < 16 && left < 0; k++)   // right arrow again until the tabs scroll: a left arrow
+        {
+            arrow = left = -1;
+            for (int i = 0; i < (int)v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x >= 116) arrow = i;
+            if (arrow < 0) break;
+            act(arrow, TESS_ZA_CLICK, 0, 40);
+            for (int i = 0; i < (int)v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].x == 0) left = i;
+        }
+        CHECK(left >= 0, "the right arrow, again: the tabs scroll, a left arrow");
+        if (left >= 0)
+        {
+            std::string back;
+            for (int i = 0; i < (int)v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == -1) back = v.zones[i].value;
+            CHECK(v.zones[left].row == -1 && back == v.zones[left].value, "the left arrow: the page before (%s, not %s)",
+                  back.c_str(), v.zones[left].value);
+            want = v.zones[left].value;
+            act(left, TESS_ZA_CLICK, 0, 40);
+            here = -1;
+            for (int i = 0; i < (int)v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) here = i;
+            CHECK(here >= 0 && want == v.zones[here].value, "a click on the left arrow: %s (now %s)", want.c_str(),
+                  here >= 0 ? v.zones[here].value : "?");
+        }
     }
     tap(B_HOME);
 }

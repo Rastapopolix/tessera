@@ -717,18 +717,16 @@ static void mo_foot(void)
         for (i = 0; i < 3u; i++)
             mo_vl((int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
 #if TESS_HAS_POINTER
-        mo_tab_name(t, idx, first - 1u);                /* (zones: an arrow, the page past it) */
-        uz_add(UZ_G_TABS, UZ_TAB, 0, 110, 5, 10, -1, -1, (int32_t)first - 1 - (int32_t)cur, t,
-               mo_title(&PAGES[idx[first - 1u]]));
+        mo_tab_name(t, idx, cur - 1u);                  /* (zones: an arrow, the page next to this one) */
+        uz_add(UZ_G_TABS, UZ_TAB, 0, 110, 5, 10, -1, -1, -1, t, mo_title(&PAGES[idx[cur - 1u]]));
 #endif
     }
     if (last < n) {                                     /* .. after: right */
         for (i = 0; i < 3u; i++)
             mo_vl(119 - (int32_t)i, 115 - (int32_t)i, 1 + 2 * (int32_t)i, MO_DIM);
 #if TESS_HAS_POINTER
-        mo_tab_name(t, idx, last);
-        uz_add(UZ_G_TABS, UZ_TAB, 116, 110, 4, 10, -1, -1, (int32_t)last - (int32_t)cur, t,
-               mo_title(&PAGES[idx[last]]));
+        mo_tab_name(t, idx, cur + 1u);
+        uz_add(UZ_G_TABS, UZ_TAB, 116, 110, 4, 10, -1, -1, 1, t, mo_title(&PAGES[idx[cur + 1u]]));
 #endif
     }
 }
