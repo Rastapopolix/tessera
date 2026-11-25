@@ -184,6 +184,7 @@ static void zq_run(void)
     case ZQ_PRESS:
         m = 1u << panel.btn[arg % NB];
         host_pressed |= m & ~fm1_in.buttons;
+        ly_ptr |= m;                                  /* (a click's press: a mouse's) */
         zone_btn |= m;
         fm1_in.buttons |= m;
         zq_wait = 40u;
@@ -763,6 +764,8 @@ void tess_core_buttons(uint32_t labels)
         }
         host_extra = ex;
     }
+    if (m & ~fm1_in.buttons)                          /* (who pressed: ui_layer.c ly_ptr) */
+        ly_ptr = labels & TESS_BTN_POINTER ? ly_ptr | (m & ~fm1_in.buttons) : ly_ptr & ~(m & ~fm1_in.buttons);
     host_btn = m;
     fm1_in.buttons = m | zone_btn;                /* (a key a zone's click holds a moment: tess_core_zone_do) */
 #else

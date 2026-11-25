@@ -8220,6 +8220,25 @@ static int test_sim_control(void)
     return bad;
 }
 
+/* each page button (GLO too, Theo 2026-11-26; SAVE always USER): back from another button, the page last used in its group, not
+ * the first */
+static int test_group_last_page(void)
+{
+    static const uint8_t BTN[] = {B_FX, B_ENV, B_LFO, B_SCL, B_EDIT, B_SEQ, B_ARP, B_GLO};   /* (SAVE: always USER) */
+    int bad = 0;
+    uint32_t k;
+    for (k = 0; k < sizeof BTN; k++) {
+        uint32_t first, second, back;
+        ui_power_on();
+        press(BTN[k]); first = ui.page;
+        press(BTN[k]); second = ui.page;
+        press(BTN[k] == B_SEQ ? B_FX : B_SEQ);
+        press(BTN[k]); back = ui.page;
+        bad += check("a group's button again after another's: its page last used", first == second || back == second);
+    }
+    return bad;
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -8227,6 +8246,7 @@ int main(void)
 #if !MELODEE_LOOK
     bad += test_large_face();
 #endif
+    bad += test_group_last_page();
     bad += test_arp_hold_latch();
 #if TESS_HAS_BATTERY
     bad += test_battery();

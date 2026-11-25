@@ -45,7 +45,11 @@ void tess_core_keys(uint32_t mask);
  * never its BACK), OCTAVE DOWN / UP (the keys' octave a step, on any page; both: back to 0). With these, OCT- and OCT+
  * are BACK and OK alone: tess_core_key_words */
 enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18,
-       TESS_BTN_HELP = 1u << 19 };   /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
+       TESS_BTN_HELP = 1u << 19,     /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
+       TESS_BTN_POINTER = 1u << 20 };   /* the buttons first pressed in this call are a mouse's (the window's), not an
+                                         * FM-1's: GLO / SEL clicked twice quickly turn two pages (no LOCK), and a layer
+                                         * held open stays open when let go, till its button is clicked again (a mouse
+                                         * cannot hold it and play the keys) */
 void tess_core_buttons(uint32_t mask);
 /* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer

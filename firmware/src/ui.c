@@ -807,7 +807,8 @@ static void open_family(uint32_t fam)
         uint32_t i;
         for (i = 0; i < NPAGES; i++)
             if (PAGES[i].graph == GR_USER) break;
-        ui.page = (uint8_t)i;                         /* SAVE enters the sound save screen directly */
+        ui.page = (uint8_t)i;                         /* SAVE enters the sound save screen directly (always: the quick
+                                                       * save SAVE, OCT+, OCT+, OCT+ is muscle memory) */
     } else {
         ui.page = ui.fam_last[fam] && in_fam(ui.fam_last[fam], fam) && page_visible(ui.fam_last[fam]) ? ui.fam_last[fam]
                                                                           : (uint8_t)page_first(fam);
@@ -820,14 +821,17 @@ static void open_family(uint32_t fam)
         slot_save_sheet();                       /* SAVE: USER; OCT+ then its slot's sheet on Save here (ui_slots.c) */
 }
 
-/* GLO always enters MIXER (its first page) from another family; then each tap the next GLO page, after the last
- * MIXER again */
+/* GLO from another family: the GLO page last used (first time: MIXER, its first); then each tap the next GLO page,
+ * after the last MIXER again */
 static void open_global(void)
 {
-    uint32_t i = NPAGES;
+    uint32_t i = ui.fam_last[FAM_GLO];
     if (!ui.home && cur_page()->fam == FAM_GLO)
         for (i = ui.page + 1u; i < NPAGES && (PAGES[i].fam != FAM_GLO || !page_visible(i)); i++) {}
+    else if (PAGES[i].fam != FAM_GLO || !page_visible(i))   /* (0, never used: FX 1) */
+        i = NPAGES;
     ui.page = (uint8_t)(i < NPAGES ? i : page_first(FAM_GLO));
+    ui.fam_last[FAM_GLO] = ui.page;
     ui.home = 0;
     page_entered();
 }
