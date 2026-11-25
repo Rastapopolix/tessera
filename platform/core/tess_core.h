@@ -180,6 +180,8 @@ typedef struct {
     uint32_t closable;               /* 1: a picker, a sheet or a help card the mouse opened is over the page, which a
                                       * click away closes (tess_core_away); not a YES / NO question (a build with
                                       * TESS_HAS_POINTER; else 0) */
+    uint32_t sheet;                  /* 1: the page has a sheet, which OCT+ (OK) held opens (a build with TESS_HAS_POINTER;
+                                      * else 0) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

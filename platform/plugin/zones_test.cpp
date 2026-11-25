@@ -401,6 +401,7 @@ static void smap()   // EDIT's sections map (EDIT again on an engine's page, T3'
     else
         dump("smap");
     tap(B_HOME);
+    CHECK(v.sheet == 1, "HOME: the view says the page has a sheet (OK held)");
     tess_core_track_select(0);
     run(20);
 }

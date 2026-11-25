@@ -1043,6 +1043,7 @@ void tess_core_view(tess_view_t *v)
     v->zone_count = 0;
     v->typing = 0;
     v->closable = 0;
+    v->sheet = 0;
 #if TESS_HAS_POINTER && !MELODEE_ACCESS
     v->hover = hover_z;
     str_cpy(v->hover_help, hover_txt, sizeof v->hover_help);
@@ -1072,6 +1073,7 @@ void tess_core_view(tess_view_t *v)
         v->zone_count = n;
         v->typing = name_on() ? 1u : 0u;
         v->closable = !ui.confirm && ((uz_help_pin && help.on) || pop.on) ? 1u : 0u;
+        v->sheet = page_sheet() != 0u;
         v->zone_gen = uz_gen;
     }
 #endif
