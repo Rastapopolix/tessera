@@ -54,6 +54,17 @@ static struct {
 } lys;
 
 static const uint32_t LY_DTAP_MS=300u;
+#if TESS_HAS_POINTER
+static uint32_t ly_ptr;                /* the buttons last pressed by a mouse (tess_core_buttons, TESS_BTN_POINTER) */
+static uint8_t ly_plock;               /* locked open (a double tap, a mouse's hold): the next release of its button closes */
+#define LY_PTR(l) ((ly_ptr & ly_bit(l)) != 0u)
+#define LY_PLOCK_OFF() (ly_plock = 0)
+#define LY_PLOCK_ON() (ly_plock = 1)
+#else
+#define LY_PTR(l) 0
+#define LY_PLOCK_OFF() ((void)0)
+#define LY_PLOCK_ON() ((void)0)
+#endif
 enum { LH_KEY = 1, LH_LATCH = 2, LH_TAP = 4 };   /* D4 held; HOLD latched; a tap just let go (the next press latches) */
 #define LY_D4 9u                       /* D4's key (0 = F3) */
 
@@ -112,7 +123,7 @@ static void layer_arm(uint32_t pressed, uint32_t now)
         return;
     for (l = LAYER_GLO; l < LAYER_N; l++)
         if (pressed & ly_bit(l) & layer_bits()) {
-            lys.dtap=lys.dt_l==l && fm1_ms-lys.dt_ms<=LY_DTAP_MS;
+            lys.dtap=lys.dt_l==l && fm1_ms-lys.dt_ms<=LY_DTAP_MS && !LY_PTR(l);   /* (clicked twice: two pages) */
             lys.dt_l=0;
             ui.ly = (uint8_t)l;
             ui.ly_t0 = (now & ~15u) | 1u | (layer_allowed() ? 0u : LY_DEAD);
@@ -147,7 +158,7 @@ static void layer_let_go(uint32_t quiet)
     (void)quiet;
 
     if (lys.rp_dirty) { lys.rp_dirty=0; settings_save(); }
-    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0; lys.snd=0;
+    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0; lys.snd=0; LY_PLOCK_OFF();
 }
 static void layer_lock_input(uint32_t pressed)
 {
@@ -186,9 +197,17 @@ static uint32_t layer_gesture(uint32_t now, uint32_t combo)
         ui.home=lys.nv.home; ui.page=lys.nv.page; ui.act=lys.nv.act;
         memcpy(ui.fam_last,lys.nv.fam,sizeof ui.fam_last); song.seq_mode=lys.nv.seq;
         ui.entry_open=0; ui.msg_t=0; ui.lock=(uint8_t)l;
-        ui.ly_t0=(now&~15u)|1u|LY_OPEN; ui.force=1; layer_opened(l);
+        ui.ly_t0=(now&~15u)|1u|LY_OPEN; ui.force=1; layer_opened(l); LY_PLOCK_ON();
         return 0;
     }
+#if TESS_HAS_POINTER
+    if ((*t0 & (LY_OPEN | LY_DEAD)) == LY_OPEN && !combo && !ui.lock && !ly_plock && LY_PTR(ui.ly)) {   /* held open by a mouse */
+        ui.lock = ui.ly;                                /* and let go: kept open, as a double tap's LOCK */
+        LY_PLOCK_ON();
+        ui.force = 1;
+        return 0;
+    }
+#endif
     layer_let_go(*t0 & LY_OPEN || combo);
     return l;
 }
