@@ -137,7 +137,8 @@ them. Every one starts OFF, and you can use any of them alone.
 
 <p><a href="https://youtu.be/md3v8T15dVg"><img src="assets/guides/e01-pages.png" width="240" alt="Video: Find your way around"></a> <a href="https://youtu.be/tCmJ-fns_dY"><img src="assets/guides/r-fx.png" width="240" alt="Video: FX: inserts and sends"></a></p> <!-- guide videos -->
 
-Tap a button to reach its pages; tap again (or turn **SELECT**) to step through them. Coming back from another
+Tap a button to reach its pages; tap again to step through them (after the last, the first again), or turn **SELECT**
+(it stops at the first and the last page). Coming back from another
 button, it opens the page you last used there (SAVE always opens USER, for the quick save). The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.
 
@@ -430,7 +431,6 @@ key skips it.
 | Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). KNOB 2 to 4 of this layer are the generator's own ([The GEN layer](#the-gen-layer)); on TWEAK, FOLLOW's HOW, RHYTHM and HOLD. MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
-| Tap **GLO** or **SEL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SEL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
 | **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their phrase as LOCK 100 (at LOCK 0, the last pass they played), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |

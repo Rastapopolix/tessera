@@ -80,7 +80,7 @@
 # LEGACY FX (tests/no_effects_test.c): legacy values/automation do not process audio or allocate,
 #                   old notes survive, retired MIDI sends are inert, FX opens only the new knob page.
 # MOD / SPREAD (tests/mod_spread_test.c): the matrix's S&H / SLEW sources and DEPTH destination, SPREAD's sides.
-# LAYERS / SCREEN (tests/layer_screen_test.c): GLO/SCL double-tapped layers, SCREEN OFF, LFO 2; the header's PIECE line
+# LAYERS / SCREEN (tests/layer_screen_test.c): GLO/SCL held layers (no double-tap lock), SCREEN OFF, LFO 2; the header's PIECE line
 #                   and the PLAY triangle's beat (Mono).
 # INPUT (tests/input_test.c): the key / button debounce of hal/fm1_input.h against the TIMER5 scan and bouncing
 #                   contacts: a press within 2 scans (<= 2.3 ms), one note per bouncy press, no early or hanging
@@ -721,7 +721,7 @@ if core && [ $TABLES = 1 ]; then
     t "TABLES: the computed readouts (TIME, LFO Hz, CUTOFF, dB) equal the tables they replace" tables_test -O1 $FW
     t "CORDS: the destination table, frozen against tests/cord_dests.txt" cord_test \
         -O1 $FW -- "$OUT/cord_test" tests/cord_dests.txt
-    t "double-tap layers, SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT, DIR sheet: no pixel sent twice; the header's beat and PIECE line" layer_screen_test \
+    t "held layers (no double-tap lock), SCREEN OFF, LFO 2 SYNC / TRIG / POL; MODS scrolled, FX + knobs, MODS AMOUNT, DIR sheet: no pixel sent twice; the header's beat and PIECE line" layer_screen_test \
         -O1 -DMELODEE_USB_AUDIO=1 $FW
     t "DRUM EDITOR: synthesized 909, sound controls, individual pitch/length, undo and storage" drum_editor_test -O2 $FW
 fi
