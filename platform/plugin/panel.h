@@ -40,15 +40,15 @@ class Panel
     static constexpr int W = 1000, H = 624, W_EXPANDED = 1500, W_MAX = 1500;
     static int width_of(bool expanded) { return expanded ? W_EXPANDED : W; }
     int width() const { return width_of(expanded()); }
-    /* the window's size: SIZE in %, any whole number from SIZE_MIN to SIZE_MAX (EXPANDED: to SIZE_MAX_EXPANDED, 2250 px
+    /* the window's size: SIZE in %, any whole number from PCT_MIN to PCT_MAX (EXPANDED: to PCT_MAX_EXPANDED, 2250 px
      * wide); TESSERA's menu has presets, a host's frame can be dragged to any size between; size_fit: pct held to the
      * mode's range. The panel draws at 1:1; a window shows it pct / 100 times as large and hands the mouse in at 1:1
      * (x * 100 / pct) */
-    static constexpr int SIZE_MIN = 75, SIZE_MAX = 200, SIZE_MAX_EXPANDED = 150;
+    static constexpr int PCT_MIN = 75, PCT_MAX = 200, PCT_MAX_EXPANDED = 150;
     static int size_fit(int pct, bool expanded)
     {
-        const int hi = expanded ? SIZE_MAX_EXPANDED : SIZE_MAX;
-        return pct < SIZE_MIN ? SIZE_MIN : pct > hi ? hi : pct;
+        const int hi = expanded ? PCT_MAX_EXPANDED : PCT_MAX;
+        return pct < PCT_MIN ? PCT_MIN : pct > hi ? hi : pct;
     }
     /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, any other each window pixel the mean of the
      * 1:1 pixels under its quarter points (200 %: each pixel doubled; the 1-bit lines stay even, a little soft) */

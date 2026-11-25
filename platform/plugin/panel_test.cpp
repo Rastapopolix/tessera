@@ -1049,11 +1049,12 @@ int main(int argc, char **argv)
         CHECK(e.take_mode_request() == 1 && e.expanded() && e.width() == Panel::W_EXPANDED,
               "MODE EXPANDED picked: the panel 1500 wide (%d)", e.width());
         CHECK(!e.menu_shown(), "the menu shuts on a pick");
+        e.set_size_pct(100);
         e.down(100, 25), e.up(100, 25);   // SIZE: 150 at most
         e.down(300, 200), e.up(300, 200);
         CHECK(e.take_size_request() == 150, "EXPANDED's SIZE: 150 at the right");
         CHECK(Panel::size_fit(200, true) == 150 && Panel::size_fit(125, true) == 125 && Panel::size_fit(117, false) == 117 &&
-                  Panel::size_fit(40, false) == Panel::SIZE_MIN && Panel::size_fit(250, false) == 200,
+                  Panel::size_fit(40, false) == Panel::PCT_MIN && Panel::size_fit(250, false) == 200,
               "SIZE: any whole %% from 75, to 150 in EXPANDED and 200 in FM-1 mode");
         e.set_size_pct(125);
         tess_core_view(&v);

@@ -136,7 +136,7 @@ class GuiX11 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n < Panel::SIZE_MIN || n > Panel::SIZE_MAX)
+        if (n < Panel::PCT_MIN || n > Panel::PCT_MAX)
             return;
         pct = n;
         resize();

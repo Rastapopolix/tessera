@@ -77,7 +77,7 @@ class GuiMac : public Gui
     int pct = 100;                   // SIZE in % (75 to 200): the layer stretches the 1:1 picture
     void set_scale(int n) override
     {
-        if (n < Panel::SIZE_MIN || n > Panel::SIZE_MAX)
+        if (n < Panel::PCT_MIN || n > Panel::PCT_MAX)
             return;
         pct = n;
         resize();
