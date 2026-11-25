@@ -684,6 +684,13 @@ static void mo_cols(void)
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
 }
+/* a row on PATTERNS' and SONG's foot: a, or b in a mouse's build, where the page tabs follow it (mo_foot) */
+#if TESS_HAS_POINTER
+#define MO_FY(a, b) (b)
+#else
+#define MO_FY(a, b) (a)
+#endif
+static void mo_foot(void);
 /* the family's pages as tabs, the shown one inverted; more than fit: from late enough to show it, a cell less each
  * side, and an arrow at the side that has pages past it */
 static void mo_foot(void)
@@ -850,7 +857,7 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
 #if TESS_HAS_POINTER
     if (!cv_under && (mo_knob_named("X") >= 0 || mo_knob_named("Y") >= 0)) {   /* (zones: the cross-hair: X, Y) */
         uz_begin(UZ_G_PIC);
-        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");
+        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");   /* (row bit 1: Y grows downward here) */
     }
 #endif
     mo_disc(px, py, 2, MO_INK);
@@ -983,6 +990,13 @@ static void mo_pic_notes(const track_t *t)
         if (step_on(st) && st->n) {
             lo = st->note[0] < lo ? st->note[0] : lo;
             hi = st->note[0] > hi ? st->note[0] : hi;
+#if TESS_HAS_POINTER
+            for (uint32_t k = 1; k < st->n && k < 4u; k++) {   /* (a mouse's build: a chord's notes at their pitch, so
+                                                                 * they count for the range) */
+                lo = st->note[k] < lo ? st->note[k] : lo;
+                hi = st->note[k] > hi ? st->note[k] : hi;
+            }
+#endif
         }
     }
     c0 = lo / 12 * 12;
@@ -1009,8 +1023,18 @@ static void mo_pic_notes(const track_t *t)
             h = mo_note_h(st->note[0] - c0, span);
             prev = h;
             mo_fill(x, base - h, 5, h, MO_INK);
+#if TESS_HAS_POINTER
+            for (k = 1; k < st->n && k < 4u; k++) {     /* a chord's other notes, each at its own pitch (a mouse's
+                                                         * build: ui_roll.c picks them there): a line over the bar, a
+                                                         * notch cut in it below its top */
+                int32_t hk = mo_note_h(st->note[k] - c0, span);
+                if (hk < h) mo_hl(x + 1, base - hk, 3, MO_BG);
+                else mo_hl(x, base - hk, 5, MO_INK), mo_px(x + 2, base - hk + 1, MO_INK);
+            }
+#else
             for (k = 1; k < st->n && k < 4u; k++)       /* a chord's other notes */
                 mo_hl(x + 1, base - h - 2 * (int32_t)k, 3, MO_INK);
+#endif
             if (st->flags & SF_ACCENT) mo_fill(x + 1, base + 2, 3, 2, MO_INK);
             if (st->flags & SF_SLIDE) mo_hl(x + 5, base - h, 2, MO_INK);
             if (st->climb) {                            /* Accumulate: a caret over it, up climbing, down falling */
@@ -2221,6 +2245,20 @@ static void mo_pic_dxenv(void)
         mo_line(px[i], py[i], px[i + 1], py[i + 1], MO_INK);
         if (!lv && seg >= 0 && seg == hot) mo_line(px[i], py[i] - 1, px[i + 1], py[i + 1] - 1, MO_INK);
     }
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: the corners R1..R3's ends and the release's: on the
+                                                         * rates' page each across, right a slower rate (row bit 0); on
+                                                         * the levels' up and down) */
+        static const char *const RN[4] = {"R1", "R2", "R3", "R4"}, *const LN[4] = {"L1", "L2", "L3", "L4"};
+        uz_begin(UZ_G_PIC);
+        for (i = 1; i <= 5; i++) {
+            int32_t c = i < 4 ? i - 1 : i == 5 ? 3 : -1, ix = i == 5 ? px[5] - 3 : px[i];
+            if (c < 0) continue;
+            uz_add(UZ_G_PIC, UZ_POINT, ix - 3, py[i] - 3, 7, 7, lv ? -1 : (int32_t)EN_K1 + c, lv ? (int32_t)EN_K1 + c : -1,
+                   lv ? 0 : 1, lv ? LN[c] : RN[c], "");
+        }
+    }
+#endif
     for (i = 1; i < 5; i++) {
         int on = hot >= 0 && (lv ? i == hot + 1 || (hot == 2 && i == 4) : 0);
         mo_disc(px[i], py[i], on ? 3 : 2, MO_BG);
@@ -2231,9 +2269,21 @@ static void mo_pic_dxenv(void)
 }
 /* a page with a cutoff: the filter's response as its type shapes it (ui_stage.c flt_curve: flat, the resonance's peak
  * at the cutoff (dashed), the slope); the area under it hatched dim */
+#if TESS_HAS_POINTER
+static int8_t mo_flt_kc = -1, mo_flt_kr = -1;           /* (the knobs of the picture's CUT and RES, -1 none: set by the
+                                                         * caller just before, for the peak's zone) */
+#endif
 static void mo_pic_filter(int32_t cut, int32_t res, uint32_t type)
 {
     int32_t x, fc = 4 + clamp(cut, 0, 127) * 108 / 127, peak = clamp(res, 0, 127) * 20 / 127, y0 = 76, py = 0;
+#if TESS_HAS_POINTER
+    if (!cv_under && (mo_flt_kc >= 0 || mo_flt_kr >= 0)) {   /* (zones: the peak, dragged: across the cutoff, up and
+                                                              * down the resonance) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_POINT, fc - 4, y0 - peak - 4, 9, 9, mo_flt_kc, mo_flt_kr, 0, "CUT / RES", "");
+    }
+    mo_flt_kc = mo_flt_kr = -1;
+#endif
     for (x = MO_PY0 + 2; x < 100; x += 3) mo_px(fc, x, MO_INK);
     for (x = 2; x < 118; x++) {
         int32_t d = x - fc, y = y0 - flt_curve(type, d, 16, peak * 16, 14, (100 - y0) * 16, res) / 16;
@@ -2319,6 +2369,15 @@ static void mo_pic_fx(void)
     type = (uint32_t)clamp(values[base], 0, FX_COUNT - 1);
     mix = values[base + 1u];
     cha = values[base + 3u];
+#if TESS_HAS_POINTER
+    if (type == FX_FILTER) {                            /* FILTER (a mouse's build): its low-pass, CUT (KNOB 3) and RES
+                                                         * (KNOB 4), as an engine's filter page draws it, its peak dragged */
+        mo_flt_kc = (int8_t)(EN_K1 + 2), mo_flt_kr = (int8_t)(EN_K1 + 3);
+        mo_pic_filter(values[base + 2u], values[base + 3u], FLT_LP);
+        if (!mix) mo_text("MIX UP TO HEAR", 2, 102, MO_DIM);
+        return;
+    }
+#endif
     mo_text(hint[type], 2, 56, MO_DIM);
     if (type == FX_DRIVE) {                             /* (as fx_drive_design: Q8 gain, Q15 make-up) */
         g = clamp(values[base + 2u], 0, 127);
@@ -2568,6 +2627,15 @@ static void mo_pic_fm6(const track_t *t)
         if (hotset >> k & 1u) { mo_vl(x[k] - 7, y[k] + 1, 7, MO_INK); mo_vl(x[k] + 7, y[k] + 1, 7, MO_INK); }
     }
     mo_text(b, 2, 56, hot == P_E0 || hot == P_E7 ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (zones: each operator's box: a click picks it, a double-click
+                                                         * opens its pages) */
+        static const char *const ON[6] = {"OP 1", "OP 2", "OP 3", "OP 4", "OP 5", "OP 6"};
+        uz_begin(UZ_G_PIC);
+        for (k = 0; k < 6u; k++)
+            uz_add(UZ_G_PIC, UZ_OP, x[k] - 6, y[k] - 1, 13, 11, -1, -1, (int32_t)k, ON[k], "");
+    }
+#endif
 }
 static uint8_t mo_pic_own;                             /* the page drew a picture of its own (LARGE VALUE AUTO), not
                                                          * the output */
@@ -2664,6 +2732,18 @@ static void mo_picture(void)
     if (pv_kind() == PV_CURVE || pv_kind() == PV_RINGS) {   /* the sound pages' pictures (ui_pages.c pv_pic) */
         int32_t cut, res;
         uint32_t type, pic = pv_pic(&cut, &res, &type);
+#if TESS_HAS_POINTER
+        if (pic == 3u) {
+            uint32_t c;
+            for (c = 0; c < 4u; c++) {                  /* (the knobs of CUT and RES, as pv_pic found them) */
+                int16_t *vp;
+                const param_desc_t *d = page_desc(pg, c, &vp);
+                if (!d || !vp) continue;
+                if (d->fmt == F_CUTOFF || str_eq(d->label, "CUTOFF")) mo_flt_kc = (int8_t)(EN_K1 + c);
+                else if (str_eq(d->label, "RES") || str_eq(d->label, "RESO")) mo_flt_kr = (int8_t)(EN_K1 + c);
+            }
+        }
+#endif
         if (pic == 3u) { mo_pic_filter(cut, res, type); return; }
         if (pic == 5u) { mo_pic_arp(t); return; }
         if (pic == 9u) { mo_pic_fx(); return; }
@@ -4017,10 +4097,10 @@ static void mo_patterns(void)
                 }
             }
         }
-        mo_hl(0, 98, 120, MO_DIM);
-        mo_text(jamrows ? "JAM" : "SONG", 2, 104, MO_DIM);
+        mo_hl(0, MO_FY(98, 95), 120, MO_DIM);
+        mo_text(jamrows ? "JAM" : "SONG", 2, MO_FY(104, 98), MO_DIM);
         if (!n) {
-            mo_text("--", 30, 104, MO_DIM);
+            mo_text("--", 30, MO_FY(104, 98), MO_DIM);
         } else {
             uint32_t first = cur > 2u ? cur - 2u : 0u;
             if (n > 6u && first > n - 6u) first = n - 6u;
@@ -4028,11 +4108,14 @@ static void mo_patterns(void)
             for (i = first; i < first + 6u && i < n; i++) {
                 int32_t x = 28 + 15 * (int32_t)(i - first);
                 char l[2] = {row_letter(pat, i), 0};
-                if (i == cur) mo_fill(x, 102, 13, 11, MO_INK);
-                else mo_box(x, 102, 13, 11, MO_DIM);
-                mo_textc(l, x + 7, 104, i == cur ? MO_BG : MO_INK);
+                if (i == cur) mo_fill(x, MO_FY(102, 96), 13, 11, MO_INK);
+                else mo_box(x, MO_FY(102, 96), 13, 11, MO_DIM);
+                mo_textc(l, x + 7, MO_FY(104, 98), i == cur ? MO_BG : MO_INK);
             }
         }
+#if TESS_HAS_POINTER
+        mo_foot();                                      /* (a mouse's build: the page tabs, clickable, under the rows) */
+#endif
         cv_oy = 0;
         cv_blit(0, s ? 120u : 18u);
     }
@@ -4168,22 +4251,25 @@ static void mo_song(void)
         }
         if (sg.px >= 0)                                 /* the playhead (sg_frame: px of 8 + 56 a column) */
             mo_vl(4 + (sg.px - 8) / 2, 11, 85, MO_INK);
-        mo_hl(0, 98, 120, MO_DIM);                      /* the foot */
+        mo_hl(0, MO_FY(98, 95), 120, MO_DIM);           /* the foot */
         if (!n) {
-            mo_text("NO SECTIONS YET", 2, 101, MO_DIM);
+            mo_text("NO SECTIONS YET", 2, MO_FY(101, 97), MO_DIM);
         } else {
             fmt_int(b, (int32_t)n);
             str_cpy(b + str_len(b), n > 1u ? " SECTIONS " : " SECTION ", 11);
             fmt_int(b + str_len(b), (int32_t)sg.bars);
             str_cpy(b + str_len(b), sg.bars > 1u ? " BARS" : " BAR", 6);
             b[19] = 0;                                  /* (19 characters fit) */
-            mo_text(b, 2, 101, MO_DIM);
+            mo_text(b, 2, MO_FY(101, 97), MO_DIM);
         }
-        mo_box(2, 112, 116, 5, MO_DIM);
+        mo_box(2, MO_FY(112, 104), 116, MO_FY(5, 4), MO_DIM);
         if (chain.running && sg.bars) {
             int32_t w = (int32_t)(sg.play * 114u / sg.bars);
-            mo_fill(3, 113, w < 2 ? 2 : w, 3, MO_INK);
+            mo_fill(3, MO_FY(113, 105), w < 2 ? 2 : w, MO_FY(3, 2), MO_INK);
         }
+#if TESS_HAS_POINTER
+        mo_foot();                                      /* (a mouse's build: the page tabs, clickable, under the foot) */
+#endif
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
