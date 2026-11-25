@@ -869,8 +869,8 @@ bool Panel::down(int x, int y)
             return true;
         }
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
-            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT)   // (a value, a text,
-                                                                                                   // the tempo, a marker)
+            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT ||
+            z.kind == TESS_ZONE_CHORD)   // (a value, a text, the tempo, a marker, CHORD USER's card: its root)
         {
             drag = ZONE;
             drag_zone = z;

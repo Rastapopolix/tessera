@@ -130,6 +130,10 @@ enum { TESS_ZONE_OP = 16 };
 /* SMAP: a tile of EDIT's sections map (EDIT pressed on an engine's page: a row a section, a tile a page); row: the
  * section * 8 + the tile. CLICK or DOUBLE: that page opened (as the map's cursor moved there, then OCT+) */
 enum { TESS_ZONE_SMAP = 17 };
+/* CHORD: a card of CHORD USER's progression on GEN (a track whose generator is CHORD, PROG USER); row: its slot (0..7),
+ * or the progression's length for the "+" card after it. TURN or WHEEL n: that chord's root n scale degrees up (- down);
+ * CLICK on "+": a chord more (a fourth above the last); HELP (a right-click) on a card: that chord gone (one stays) */
+enum { TESS_ZONE_CHORD = 18 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
