@@ -16,6 +16,7 @@
 #include <objc/message.h>
 #include <objc/runtime.h>
 
+#include <cmath>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -73,7 +74,7 @@ class GuiMac : public Gui
     NSTimer *timer = nil;
     CGColorSpaceRef rgb = nullptr;
     CGContextRef bitmap = nullptr;   // over px
-    double wheel_acc = 0;            // a trackpad's scrolling, not yet a whole notch
+    double wheel_acc = 0, hwheel_acc = 0;   // a trackpad's scrolling, not yet a whole notch (up-down, sideways)
     int pct = 100;                   // SIZE in % (75 to 200): the layer stretches the 1:1 picture
     void set_scale(int n) override
     {
@@ -267,6 +268,14 @@ void v_right_down(id self, SEL, NSEvent *e)   // a button or key latched
         g->input(g->panel.latch((int)p.x, (int)p.y));
     }
 }
+void v_other(id self, NSEvent *e, bool down)   // the mouse's back (3) and forward (4) buttons: BACK, OK
+{
+    GuiMac *g = gui_of(self);
+    if (g && (e.buttonNumber == 3 || e.buttonNumber == 4))
+        g->input(g->panel.side_button(e.buttonNumber == 4, down));
+}
+void v_other_down(id self, SEL, NSEvent *e) { v_other(self, e, true); }
+void v_other_up(id self, SEL, NSEvent *e) { v_other(self, e, false); }
 void v_drag(id self, SEL, NSEvent *e)
 {
     if (GuiMac *g = gui_of(self))
@@ -289,6 +298,21 @@ void v_wheel(id self, SEL, NSEvent *e)
     GuiMac *g = gui_of(self);
     if (!g)
         return;
+    // sideways (a tilt, a swipe): a page, about 40 points of a trackpad's swipe one (Panel::hwheel then waits a
+    // quarter second, so one swipe is one page); macOS reports right as negative
+    double dx = e.hasPreciseScrollingDeltas ? e.scrollingDeltaX / 40.0 : e.scrollingDeltaX;
+    if (e.isDirectionInvertedFromDevice) dx = -dx;
+    if (dx != 0 && std::fabs(e.scrollingDeltaX) > std::fabs(e.scrollingDeltaY))
+    {
+        g->hwheel_acc -= dx;
+        int n = (int)g->hwheel_acc;
+        if (n)
+        {
+            g->hwheel_acc = 0;
+            g->input(g->panel.hwheel(n));
+        }
+        return;
+    }
     // a notch a step; a trackpad's smooth deltas gathered into steps of about a notch
     double d = e.hasPreciseScrollingDeltas ? e.scrollingDeltaY / 10.0 : e.scrollingDeltaY;
     if (e.isDirectionInvertedFromDevice) d = -d;
@@ -412,6 +436,8 @@ Class view_class()
     add(cls, @selector(mouseMoved:), (IMP)v_drag, types_of(@selector(mouseMoved:)));
     add(cls, @selector(mouseUp:), (IMP)v_up, types_of(@selector(mouseUp:)));
     add(cls, @selector(scrollWheel:), (IMP)v_wheel, types_of(@selector(scrollWheel:)));
+    add(cls, @selector(otherMouseDown:), (IMP)v_other_down, types_of(@selector(otherMouseDown:)));
+    add(cls, @selector(otherMouseUp:), (IMP)v_other_up, types_of(@selector(otherMouseUp:)));
     add(cls, @selector(keyDown:), (IMP)v_key_down, types_of(@selector(keyDown:)));
     add(cls, @selector(keyUp:), (IMP)v_key_up, types_of(@selector(keyUp:)));
     add(cls, @selector(flagsChanged:), (IMP)v_flags, types_of(@selector(flagsChanged:)));

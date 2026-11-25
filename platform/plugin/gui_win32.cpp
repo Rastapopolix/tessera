@@ -42,7 +42,7 @@ class GuiWin32 : public Gui
     GuiLink *link;   // this window's instance
     HWND wnd = nullptr;
     Panel panel;
-    int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
+    int wheel_acc = 0, hwheel_acc = 0;   // (WM_MOUSEWHEEL's, WM_MOUSEHWHEEL's deltas not yet a notch)
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
     int pct = 100;          // SIZE in % (75 to 200): the panel drawn at 1:1, stretched to the window
     int pw = Panel::W;      // the panel's width the window has (FM-1 or EXPANDED: panel.width())
@@ -97,6 +97,19 @@ class GuiWin32 : public Gui
             g->input(g->panel.up(x, y));
             g->files();   // (OPEN or SAVE clicked: its dialog, once the button is up)
             return 0;
+        case WM_XBUTTONDOWN:   // the mouse's back / forward buttons: BACK and OK
+        case WM_XBUTTONUP:
+            g->input(g->panel.side_button(GET_XBUTTON_WPARAM(wp) == XBUTTON2, msg == WM_XBUTTONDOWN));
+            return TRUE;
+        case WM_MOUSEHWHEEL:   // the wheel sideways: the next page (+ right)
+        {
+            g->hwheel_acc += GET_WHEEL_DELTA_WPARAM(wp);
+            int n = g->hwheel_acc / WHEEL_DELTA;
+            g->hwheel_acc -= n * WHEEL_DELTA;
+            if (n)
+                g->input(g->panel.hwheel(n));
+            return 0;
+        }
         case WM_DROPFILES:
         {
             HDROP d = reinterpret_cast<HDROP>(wp);
