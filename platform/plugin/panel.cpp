@@ -245,12 +245,21 @@ void Panel::layout()
         buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)   KEY: ESC"});        // SHIFT, BACK, OK)
         buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET   KEY: ENTER"});
         buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)   KEY: F1"});
-        static const char *K1[6] = {"KEY: 1", "KEY: 2", "KEY: 3", "KEY: 4", "KEY: 5", "KEY: 6"},   // (panel.h key)
-                          *K2[6] = {"KEY: 7", "KEY: 8", "KEY: 9", "KEY: 0", "KEY: -", "KEY: ="};
+        // the grid named by what each button opens (Andamento's groups), the FM-1's name small under a renamed one
+        // (the screen and the help still say ARP held, GLO + ...); the card: what is behind it and its key (panel.h key)
+        static const char *N1[6] = {"FX", "SCALE", "ENV", "MOD", "SOUND", "MIX"},
+                          *N2[6] = {"HOME", "SAVE", "SHAPE", "SEQ", "PLAY", "REC"},
+                          *S1[6] = {nullptr, "SEL", nullptr, "LFO", "EDIT", "GLO"},
+                          *S2[6] = {nullptr, nullptr, "ARP", nullptr, nullptr, nullptr},
+                          *K1[6] = {"FX 1-3, SENDS   KEY: 1", "SCALES, LOCK   KEY: 2", "FILTER, AMP ENVELOPES   KEY: 3",
+                                    "MODS, MATRIX, LFOS, ORGANIC   KEY: 4", "THE ENGINE'S PAGES   KEY: 5",
+                                    "MIXER, PERF, PIECE, CHAIN   KEY: 6"},
+                          *K2[6] = {"KEY: 7", "KEY: 8", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 9",
+                                    "PATTERN, TEMPO, PATTERNS, SONG   KEY: 0", "KEY: -", "KEY: ="};
         for (int i = 0; i < 6; i++)
         {
-            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr, K1[i]});
-            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], nullptr,
+            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], N1[i], S1[i], K1[i]});
+            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], N2[i], S2[i],
                                R2[i] == B_PLAY && standalone_ ? "KEY: SPACE  (OR -)" : K2[i]});
         }
         const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
@@ -1138,6 +1147,30 @@ bool Panel::wheel(int x, int y, int notches)
     return true;
 }
 
+bool Panel::hwheel(int notches)
+{
+    if (!notches || (hwheel_at && frame - hwheel_at < 8u))   // (8 frames at 30 a second)
+        return false;
+    const int want = notches > 0 ? 1 : -1;
+    for (auto &z : zones)
+        if (z.kind == TESS_ZONE_TAB && z.row == want)   // (the tab next to the shown one, or the arrow to it)
+        {
+            hwheel_at = frame ? frame : 1u;
+            zone_act(z, TESS_ZA_CLICK, 0);
+            return true;
+        }
+    return false;
+}
+
+bool Panel::side_button(bool fwd, bool down)
+{
+    const uint32_t was = kbd_buttons, bit = 1u << (fwd ? B_OCTUP : B_OCTDN);
+    kbd_buttons = down ? kbd_buttons | bit : kbd_buttons & ~bit;
+    if (kbd_buttons == was) return false;
+    merge_held();
+    return true;
+}
+
 // ---- TESSERA's shell: the project page's look (docs/index.html), flat and 1-bit: black and #111 body, Tessera yellow
 // for what is live or lit, a dim yellow for lines, warm white for what is held, warm grey for words; corners cut a
 // dot, buttons with a lip that sit down when lit or held; the menu under the mark
@@ -1269,7 +1302,16 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         const Knob &k = knobs[i];
         bool turning = turned[i] && frame - turned[i] < 15;
         uint32_t ring = turning ? T_HELD : T_YEL;
-        c.ptext_c(k.x, k.y - 48, k.name, 2, T_WORD);
+        // the name: KNOB 1..4 the page's setting under them (its column's zone; none: dim), the value under the knob
+        // (Andamento's DIAL screen, the FM-1 screen's names in full); the left ones by what they turn here
+        static const char *LEFT[3] = {"PAGE", "TRACK", "BROWSE"};   // (SELECT, ALGORITHM, PRESETS)
+        const tess_zone_t *kz = k.role >= 3 ? knob_zone(k.role) : nullptr;
+        const char *name = kz ? kz->name : k.role >= 0 && k.role < 3 ? LEFT[k.role] : k.name;
+        const int room = k.role >= 3 ? (expanded() ? XK_PITCH : 104) - 8 : 100;
+        c.ptext_c(k.x, k.y - 48, name, Canvas::ptext_w(name, 2) <= room ? 2 : 1,
+                  k.role >= 3 && !kz ? T_OFF : T_WORD);
+        if (kz && kz->value[0])
+            c.ptext_c(k.x, k.y + k.r + 8, kz->value, Canvas::ptext_w(kz->value, 2) <= room ? 2 : 1, T_YEL);
         c.circle(k.x, k.y, k.r, ring);
         c.circle(k.x, k.y, k.r - 4, T_BLACK);
         if (k.role < 0 || turning)
@@ -1295,7 +1337,14 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
-        c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
+        const int fs = Canvas::ptext_w(b.face, 2) <= b.w - 6 ? 2 : 1, mid = (y + 2 + y + h - bottom) / 2;
+        if (b.sub)   // (a renamed button: the FM-1's name under it, small)
+        {
+            c.ptext_c(b.x + b.w / 2, mid - 11, b.face, fs, ink);
+            c.ptext_c(b.x + b.w / 2, mid + 6, b.sub, 1, ink == T_WORD ? T_OFF : ink);
+        }
+        else
+            c.ptext_c(b.x + b.w / 2, mid - 7, b.face, fs, ink);
     }
 
     // the keys: naturals a dim outline, sharps dim and solid; held warm white; lit, an LED on the key (Theo
@@ -1839,6 +1888,15 @@ tess_zone_t Panel::zone_here(int zi, int x, int y) const
     if (z.kind == TESS_ZONE_ROLL)
         z.x = (uint16_t)(x - (SCREEN_X + SCREEN_S / 32)), z.y = (uint16_t)(y - (SCREEN_Y + SCREEN_S / 32));
     return z;
+}
+
+// the screen's column a knob turns (role 3..6: KNOB 1..4), its name and value; none on this page: nullptr
+const tess_zone_t *Panel::knob_zone(int role) const
+{
+    for (auto &z : zones)
+        if (z.kind == TESS_ZONE_KNOB && z.role == role && z.name[0])
+            return &z;
+    return nullptr;
 }
 
 void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
