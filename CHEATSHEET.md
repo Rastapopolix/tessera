@@ -13,7 +13,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **HOME** | The home page: four tracks, their sounds and knobs |
 | **HOME** held | The menu (held again: leaves it) |
 | **ALGORITHM** | Picks the track, on every page (MENU > TRACK KNOB LEFT swaps it with PRESETS) |
-| **SELECT** | The pages of the section shown, both ways; on HOME and MIXER the tempo |
+| **SELECT** | The pages of the section shown, both ways, stopping at the ends; on HOME and MIXER the tempo |
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet, map or selection; a page opened from the map or MATRIX: back there; else nothing (HOME: the home page) |
 | **OCT+** (off HOME) | Enter: opens the row, slot, note or mod picked; does the action picked; else nothing (the sheet: held) |
@@ -50,7 +50,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
-| **GLO** held | [GLO] SET over the page; tapped twice, [GLO] LOCK (no need to hold; tap again to close) |
+| **GLO** held | [GLO] SET over the page while held |
 | **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding); MENU > MUTES BAR or PHRASE waits for it (blinking) |
 | **GLO** + white keys F3 G3 A3 B3 | Solo track 1 to 4 while the key is held |
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
@@ -62,7 +62,6 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **SEL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
 | **SEL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |
 | **GLO** / **SEL** + OCT- | Puts back what the layer changed since it opened |
-| **GLO** or **SEL** tapped twice | Locks the layer open; press it again to close |
 
 ## Knob holds
 

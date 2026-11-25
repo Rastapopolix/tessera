@@ -1650,6 +1650,11 @@ static void draw_columns_(void)
             continue;
         }
         if (cur_page()->id[c] == G_MIDI && cur_page()->scope == SC_GLOBAL) {   /* KNOB 1: which input's status */
+#if TESS_HOSTED
+            uint32_t any = midi_rx_recent(0) || midi_rx_recent(1);   /* (inside a DAW: the DAW's MIDI, RX while notes come) */
+            draw_column(c, "MIDI", "DAW", any ? "RX" : "", any ? T_ACCENT : T_THEME, -1, ICON_AUTO);
+            continue;
+#endif
             uint32_t trs = song.g[G_MIDI] != 0, rx = midi_rx_recent(trs);
             str_cpy(val, trs ? "TRS" : "USB", 12);
             unit = rx ? "RX" : trs ? MIDI_TRS_STATE :

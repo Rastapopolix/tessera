@@ -36,7 +36,11 @@ static const char *const N_GLMODE[] = {"RATE", "TIME"};
 static const char *const N_PRIO[] = {"LAST", "LOW", "HIGH"};
 static const char *const N_ALLOC[] = {"ROT", "REUSE"};
 static const char *const N_ORDER[] = {"NOTE", "PLAY"};
+#if TESS_HOSTED
+static const char *const N_CLOCK[] = {"DAW", "USB", "TRS"};   /* (inside a DAW the clock is the DAW's: INT shown as DAW) */
+#else
 static const char *const N_CLOCK[] = {"INT", "USB", "TRS"};
+#endif
 static const char *const N_MIDI_INPUT[] = {"USB", "TRS"};
 static const char *const N_PPQN[] = {"24", "48", "4", "8", "12"};   /* G_PPQN: 0 = 24, the MIDI standard (midi_clock.c PPQN) */
 #if CORE_TRACKS > 4   /* (8 tracks: a range reaches a track a channel, up to channel 16; seq.c midi_track) */

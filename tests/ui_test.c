@@ -4142,10 +4142,11 @@ static int test_native_env_lfo(void)
     turn(EN_SELECT, 1);
     o &= str_eq(cur_page()->title, "PITCH LV");
     turn(EN_SELECT, 1);
-    o &= str_eq(cur_page()->title, "EG RATE") && cur_fam() == FAM_ENV;
+    o &= str_eq(cur_page()->title, "PITCH LV") && cur_fam() == FAM_ENV;
     turn(EN_SELECT, -1);
-    bad += check("..SELECT turns ENV's pages only (EG RATE, EG LVL, PITCH EG, PITCH LV, round), ENV lit, never EDIT's",
-                 o && str_eq(cur_page()->title, "PITCH LV") && cur_fam() == FAM_ENV);
+    bad += check("..SELECT turns ENV's pages only (EG RATE, EG LVL, PITCH EG, PITCH LV, stops), ENV lit, never EDIT's",
+                 o && str_eq(cur_page()->title, "PITCH EG") && cur_fam() == FAM_ENV);
+    ui.fam_last[FAM_EDIT] = 0; go_home();         /* (from EDIT's first: SELECT stops at the last) */
     open_family(FAM_EDIT);
     for (i = 0; i < 12u && !str_eq(cur_page()->title, "EG RATE"); i++) turn(EN_SELECT, 1);
     turn(EN_SELECT, 1);
@@ -4160,8 +4161,8 @@ static int test_native_env_lfo(void)
                  str_eq(cur_page()->title, "FM LFO") && i == 6u && (open_family(FAM_LFO), str_eq(cur_page()->title, "MODS")));
     for (i = 0; i < 8u && !str_eq(cur_page()->title, "FM LFO"); i++) open_family(FAM_LFO);
     turn(EN_SELECT, 1);
-    bad += check("..SELECT from FM LFO: round to MODS (not FM BEND)", str_eq(cur_page()->title, "MODS") && cur_fam() == FAM_LFO);
-    open_family(FAM_LFO); go_home(); open_family(FAM_LFO);
+    bad += check("..SELECT from FM LFO: stays, the last (not FM BEND)", str_eq(cur_page()->title, "FM LFO") && cur_fam() == FAM_LFO);
+    open_family(FAM_LFO); open_family(FAM_LFO); go_home(); open_family(FAM_LFO);
     bad += check("..from elsewhere: the LFO page last used", str_eq(cur_page()->title, "MATRIX"));
     go_home();
     set_engine_of(TSEL, 6);
@@ -5781,6 +5782,7 @@ static int engine_cycle(const char *const *want, uint32_t n)   /* EDIT tapped fr
     uint32_t i;
     int ok = 1;
     go_home(); frame();
+    ui.fam_last[FAM_EDIT] = 0;                    /* (the cycle before stopped on its last page: EDIT from its first) */
     for (i = 0; i < n; i++) {
         if (i) turn(EN_SELECT, 1);
         else press(B_EDIT);
@@ -5790,11 +5792,11 @@ static int engine_cycle(const char *const *want, uint32_t n)   /* EDIT tapped fr
 }
 static int test_edit_cycle(void)
 {
-    static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "VOICE", "EDIT 1"};   /* (VOICE: VOICE 1-3's list) */
+    static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "VOICE", "VOICE"};   /* (SELECT stops at the last) */   /* (VOICE: VOICE 1-3's list) */
     static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "STORE", "ALGO", "FREQ", "OUT", "EG RATE", "EG LVL", "SCALE",
-                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "EDIT 1"};
+                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "VOICE"};
     static const char *const CYC_D[] = {"EDIT 1", "EDIT 2", "OP1 ENV", "OP2 ENV", "OP3 ENV", "OP4 ENV",
-                                        "OP LEVEL", "VOICE", "EDIT 1"};
+                                        "OP LEVEL", "VOICE", "VOICE"};
     int bad = 0, ok;
     uint32_t i;
     ui_power_on();
@@ -5806,9 +5808,9 @@ static int test_edit_cycle(void)
         ok &= !str_eq(PAGES[i].title, "ENGINE");
     bad += check("no ENGINE page (engines are the EDIT layer's)", ok);
     set_engine_of(TSEL, 6);
-    bad += check("EDIT cycle (TRIO): EDIT 1 EDIT 2 VOICE VOICE 2 EDIT 1", engine_cycle(CYC_A, NELEM(CYC_A)));
+    bad += check("EDIT cycle (TRIO): EDIT 1 EDIT 2 VOICE, SELECT stops there", engine_cycle(CYC_A, NELEM(CYC_A)));
     set_engine_of(TSEL, ENGI_FM6);
-    bad += check("EDIT cycle (FM6): EDIT 1 EDIT 2, FM6's 16 pages, VOICE VOICE 2",
+    bad += check("EDIT cycle (FM6): EDIT 1 EDIT 2, FM6's pages, VOICE, SELECT stops there",
                  TSEL->eng_req == ENGI_FM6 && engine_cycle(CYC_F, NELEM(CYC_F)));
     (void)CYC_D;
     go_title("OP2 ENV"); ui.fam_last[FAM_EDIT] = ui.page;
@@ -5923,7 +5925,7 @@ static int test_boot_template(void)
 }
 
 /* BPM and SWG: SEQ > TEMPO, the project's (saved and loaded with it); SELECT never sets the BPM: it turns the open
- * section's pages both ways (wrapping) and moves the cursor on STEP */
+ * section's pages both ways (stopping at the ends) and moves the cursor on STEP */
 static int test_tempo_select(void)
 {
     int bad = 0, ok;
@@ -5941,10 +5943,13 @@ static int test_tempo_select(void)
     turn(EN_SELECT, 1);
     ok &= str_eq(cur_page()->title, "MIDI OUT");
     turn(EN_SELECT, 1);
-    ok &= str_eq(cur_page()->title, "MIXER") && cur_page()->graph == GR_TRK;   /* (MIXER is a page like any other now) */
+    ok &= str_eq(cur_page()->title, "MIDI OUT");                /* (the last: SELECT stops, GLO's button wraps) */
     turn(EN_SELECT, -1);
-    bad += check("SELECT on GLO: PIECE -> CHAIN -> ENTRIES -> SYSTEM -> MIDI IN -> MIDI OUT -> MIXER (wraps), back the other way; the BPM untouched",
-                 ok && str_eq(cur_page()->title, "MIDI OUT") && song.g[G_BPM] == 120);
+    ok &= str_eq(cur_page()->title, "MIDI IN");
+    go_title("MIXER");
+    turn(EN_SELECT, -1);
+    bad += check("SELECT on GLO: PIECE -> CHAIN -> ENTRIES -> SYSTEM -> MIDI IN -> MIDI OUT, stops at both ends; the BPM untouched",
+                 ok && str_eq(cur_page()->title, "MIXER") && song.g[G_BPM] == 120);
     go_title("NOTES");
     cursor_set(4);
     turn(EN_SELECT, 1);
