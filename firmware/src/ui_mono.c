@@ -684,12 +684,8 @@ static void mo_cols(void)
     mo_vals_new = 1;
     mo_dash(0, 50, 120, MO_DIM);
 }
-/* a row on PATTERNS' and SONG's foot: a, or b in a mouse's build, where the page tabs follow it (mo_foot) */
-#if TESS_HAS_POINTER
+/* a row on PATTERNS' and SONG's foot, moved up for the page tabs under it (mo_foot): a was the row before them */
 #define MO_FY(a, b) (b)
-#else
-#define MO_FY(a, b) (a)
-#endif
 static void mo_foot(void);
 /* the family's pages as tabs, the shown one inverted; more than fit: from late enough to show it, a cell less each
  * side, and an arrow at the side that has pages past it */
@@ -4113,9 +4109,7 @@ static void mo_patterns(void)
                 mo_textc(l, x + 7, MO_FY(104, 98), i == cur ? MO_BG : MO_INK);
             }
         }
-#if TESS_HAS_POINTER
-        mo_foot();                                      /* (a mouse's build: the page tabs, clickable, under the rows) */
-#endif
+        mo_foot();                                      /* (the page tabs, under the rows; a mouse's build clicks them) */
         cv_oy = 0;
         cv_blit(0, s ? 120u : 18u);
     }
@@ -4267,9 +4261,7 @@ static void mo_song(void)
             int32_t w = (int32_t)(sg.play * 114u / sg.bars);
             mo_fill(3, MO_FY(113, 105), w < 2 ? 2 : w, MO_FY(3, 2), MO_INK);
         }
-#if TESS_HAS_POINTER
-        mo_foot();                                      /* (a mouse's build: the page tabs, clickable, under the foot) */
-#endif
+        mo_foot();                                      /* (the page tabs, under the foot; a mouse's build clicks them) */
         cv_oy = 0;
         cv_blit(0, s * 120u);
     }
