@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* Host test of Felucca 1.2's panel controls as Melodee has them, through the UI test's stubs (ui_test.c):
- * double-tapped quick layers stay open and own the keys silently, FX LATCH, the FX key map (PRESETS assigns, EDIT
+ * held quick layers own the keys silently (a double tap locks nothing), FX LATCH, the FX key map (PRESETS assigns, EDIT
  * restores the default), MENU > SCREEN OFF (the panel dark while the transport runs, the wake press swallowed, NEVER),
  * LFO 2 (SYNC's increments at every division and tempo, TRIG NOTE / FREE, POL UNI, the transport's reset), and MODS
  * scrolled, the mod shortcut's knobs and MODS' AMOUNT turned (Mono) with no pixel sent twice in a frame; the header's line a
@@ -42,14 +42,16 @@ static void test_layers(void)
 {
     for (uint32_t l=LAYER_GLO;l<LAYER_N;l++) {
         reset_controls(); uint32_t b=LAYERS[l].btn;
-        tap_fast(b); tap_fast(b);
-        assert(ui.lock==l && ui.layer==l && ui.home);
+        tap_fast(b); tap_fast(b);                       /* (two quick taps: two pages, no lock, Theo 2026-11-26) */
+        assert(!ui.lock && !ui.layer && !ui.home);
+        btn_down(b); for (uint32_t k = 0; k < 52u; k++) frame();   /* held: the layer, its keys silent */
+        assert(ui.layer==l);
         key_down(white(0)); frame();
         assert(kb_layer & (1u<<white(0))); assert(!gates());
-        key_up(white(0)); frame(); tap_fast(b);
+        key_up(white(0)); frame(); btn_up(b); frame();
         assert(!ui.lock && !ui.layer);
     }
-    puts("layers/screen: double-tap layers and silent layer keys passed");
+    puts("layers/screen: no double-tap lock, held layers and silent layer keys passed");
 }
 static void test_screen_sleep(void)
 {
