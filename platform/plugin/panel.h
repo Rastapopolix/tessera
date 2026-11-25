@@ -268,6 +268,7 @@ class Panel
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0, acc_y = 0;
     bool zone_still = false;
     bool closable_ = false;
+    bool sheet_ = false;     // the view's: the page has a sheet (OK held)
     bool standalone_ = false;
     bool hover_help_ = false;
     int hover_req = -1;

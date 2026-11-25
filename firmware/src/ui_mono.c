@@ -4506,6 +4506,7 @@ static void mo_smap(uint32_t cur)
         sec_short(pg[smap.col < n ? smap.col : 0u], t, sizeof t);
         mo_ascii(b + str_len(b), t, sizeof b - str_len(b));
     }
+    UZ(uz_begin(UZ_G_LIST));
     for (s = 0; s < 2u; s++) {
         cv_begin(240, s ? 120u : 102u, MO_BG);
         cv_oy = s ? -120 : -18;
@@ -4527,6 +4528,12 @@ static void mo_smap(uint32_t cur)
                 int on = r == smap.row && c == smap.col, here = pg[c] == ui.page && r == cur;
                 if (on) mo_fill(x, y - 1, w, 9, MO_INK);
                 else mo_box(x, y - 1, w, 9, MO_DIM);
+#if TESS_HAS_POINTER
+                if (!s) {                               /* (zones: the tile, its page; once, on the first pass) */
+                    sec_short(pg[c], t, sizeof t);
+                    uz_add(UZ_G_LIST, UZ_SMAP, x, y - 1, w, 9, -1, -1, (int32_t)(r * 8u + c), t, sec.name[r]);
+                }
+#endif
                 if (!sec.op[r] && w >= 26) {
                     sec_short(pg[c], t, sizeof t);
                     mo_ascii(b, t, sizeof b);

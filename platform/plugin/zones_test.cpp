@@ -378,6 +378,33 @@ static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels
     for (uint32_t i = 0; i < sc.w * sc.h; i++) h = (h ^ sc.pixels[i]) * 16777619u;
     return h;
 }
+static void smap()   // EDIT's sections map (EDIT again on an engine's page, T3's FM6): a tile a page, a click opens it
+{
+    tess_core_track_select(2);
+    run(20);
+    tap(B_HOME);
+    tap(B_EDIT);
+    tap(B_EDIT);
+    int n = count(TESS_ZONE_SMAP);
+    CHECK(n >= 4, "the sections map: a zone a tile (%d)", n);
+    int pick = -1;
+    for (uint32_t i = 0; i < v.zone_count && pick < 0; i++)
+        if (v.zones[i].kind == TESS_ZONE_SMAP && v.zones[i].row >= 16) pick = (int)i;   // (a tile of the third section)
+    if (pick >= 0)
+    {
+        std::string name = v.zones[pick].name;
+        uint32_t h = screen_hash();
+        act(pick, TESS_ZA_CLICK, 0, 40);
+        CHECK(count(TESS_ZONE_SMAP) == 0 && screen_hash() != h, "a tile clicked opens its page (%s), the map closed",
+              name.c_str());
+    }
+    else
+        dump("smap");
+    tap(B_HOME);
+    CHECK(v.sheet == 1, "HOME: the view says the page has a sheet (OK held)");
+    tess_core_track_select(0);
+    run(20);
+}
 static void hosted_words()   // inside a DAW the MIDI page's input is the DAW's, CLK's INT the DAW's (TESS_HOSTED)
 {
     tap(B_HOME);
@@ -1197,6 +1224,7 @@ int main(int argc, char **argv)
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
+    smap();
     hosted_words();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);

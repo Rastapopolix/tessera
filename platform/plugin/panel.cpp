@@ -394,6 +394,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
     }
     typing_ = v.typing != 0;
     closable_ = v.closable != 0;
+    sheet_ = v.sheet != 0;
     view_hover = v.hover;
     view_help.assign(v.hover_help, strnlen(v.hover_help, sizeof v.hover_help));
     track_now = (int)v.track;
@@ -1410,6 +1411,9 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         }
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
+    for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
+        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine))
+            c.ptext_c(b.x + b.w / 2, b.y + b.h + 6, "HOLD: MORE", 1, T_YEL);
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
     for (size_t i = 0; i < files.size(); i++)
