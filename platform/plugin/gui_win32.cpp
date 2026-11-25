@@ -44,7 +44,7 @@ class GuiWin32 : public Gui
     Panel panel;
     int wheel_acc = 0;   // (WM_MOUSEWHEEL's deltas not yet a notch)
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
-    int pct = 100;          // SIZE 100 / 125 / 150 / 200 %: the panel drawn at 1:1, stretched to the window
+    int pct = 100;          // SIZE in % (75 to 200): the panel drawn at 1:1, stretched to the window
     int pw = Panel::W;      // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
     std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
@@ -266,7 +266,7 @@ class GuiWin32 : public Gui
         bi.bmiHeader.biPlanes = 1;
         bi.bmiHeader.biBitCount = 32;
         bi.bmiHeader.biCompression = BI_RGB;
-        // 100 %: as it is; 200 %: each pixel doubled; 125, 150 %: GDI's HALFTONE, each pixel the mean of what it covers
+        // 100 %: as it is; 200 %: each pixel doubled; any other: GDI's HALFTONE, each pixel the mean of what it covers
         bool soft = pct % 100 != 0;
         SetStretchBltMode(dc, soft ? HALFTONE : COLORONCOLOR);
         if (soft) SetBrushOrgEx(dc, 0, 0, nullptr);
@@ -300,7 +300,7 @@ class GuiWin32 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n < 100 || n > 200)
+        if (n < Panel::SIZE_MIN || n > Panel::SIZE_MAX)
             return;
         pct = n;
         resize();

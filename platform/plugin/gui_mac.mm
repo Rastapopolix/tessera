@@ -74,10 +74,10 @@ class GuiMac : public Gui
     CGColorSpaceRef rgb = nullptr;
     CGContextRef bitmap = nullptr;   // over px
     double wheel_acc = 0;            // a trackpad's scrolling, not yet a whole notch
-    int pct = 100;                   // SIZE 100 / 125 / 150 / 200 %: the layer stretches the 1:1 picture
+    int pct = 100;                   // SIZE in % (75 to 200): the layer stretches the 1:1 picture
     void set_scale(int n) override
     {
-        if (n < 100 || n > 200)
+        if (n < Panel::SIZE_MIN || n > Panel::SIZE_MAX)
             return;
         pct = n;
         resize();

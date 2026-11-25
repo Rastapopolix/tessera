@@ -40,26 +40,29 @@ class Panel
     static constexpr int W = 1000, H = 624, W_EXPANDED = 1500, W_MAX = 1500;
     static int width_of(bool expanded) { return expanded ? W_EXPANDED : W; }
     int width() const { return width_of(expanded()); }
-    /* the window's size: SIZE in % (TESSERA's menu): 100, 150 or 200 in FM-1 mode, 100 or 125 in EXPANDED (2250 px would
-     * not fit a 1080p screen); size_fit: the nearest of those to pct. The panel draws at 1:1; a window shows it pct /
-     * 100 times larger and hands the mouse in at 1:1 (x * 100 / pct) */
+    /* the window's size: SIZE in %, any whole number from SIZE_MIN to SIZE_MAX (EXPANDED: to SIZE_MAX_EXPANDED, 2250 px
+     * wide); TESSERA's menu has presets, a host's frame can be dragged to any size between; size_fit: pct held to the
+     * mode's range. The panel draws at 1:1; a window shows it pct / 100 times as large and hands the mouse in at 1:1
+     * (x * 100 / pct) */
+    static constexpr int SIZE_MIN = 75, SIZE_MAX = 200, SIZE_MAX_EXPANDED = 150;
     static int size_fit(int pct, bool expanded)
     {
-        if (expanded) return pct >= 113 ? 125 : 100;
-        return pct >= 175 ? 200 : pct >= 125 ? 150 : 100;
+        const int hi = expanded ? SIZE_MAX_EXPANDED : SIZE_MAX;
+        return pct < SIZE_MIN ? SIZE_MIN : pct > hi ? hi : pct;
     }
-    /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, 200 % each pixel doubled, 125 and 150 % each
-     * window pixel the mean of the 1:1 pixels under its quarter points (the 1-bit lines stay even, a little soft) */
+    /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, any other each window pixel the mean of the
+     * 1:1 pixels under its quarter points (200 %: each pixel doubled; the 1-bit lines stay even, a little soft) */
     static void scale(const uint32_t *px, uint32_t *out, int w, int pct);
     /* MODE (TESSERA's menu): FM-1 or EXPANDED, as the instance has it (set_expanded), and a pick asks
      * (take_mode_request: 1 EXPANDED, 0 FM-1, -1 none). Only TESSERA's shell is EXPANDED: an FM-1 shell is FM-1 mode */
     void set_expanded(bool on) { if (on != expanded_) { expanded_ = on; layout(); } }
     bool expanded() const { return expanded_ && native(); }
     int take_mode_request() { int r = mode_req; mode_req = -1; return r; }
-    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: 100, 125, 150 or
-     * 200, -1 none) */
+    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: one of the presets
+     * 75, 100, 150, 200 or EXPANDED's 75, 100, 125, 150; -1 none) */
     void set_size_pct(int pct) { size_now = pct; }
     int take_size_request() { int r = size_req; size_req = -1; return r; }
+    int size_seg_at(int x) const;   // SIZE's row: a preset or the size now, -1 none
     Panel();
     /* the whole window into px (width() x H, 0xAARRGGBB, top row first); EXPANDED: the TRACKS screen from t2 (none:
      * black) */
@@ -201,7 +204,6 @@ class Panel
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none
     int size_now = 100, size_req = -1;
-    int size_seg_at(int x) const;   // SIZE's row: 100, 125, 150, 200, -1 none
     int menu_sub = 0, menu_hover = -1, sub_hover = -1;   // menu_sub: 0 none, 1 SHELL's list, 2 INK's swatches
     int menu_row_at(int x, int y) const;
     int sub_at(int x, int y) const;

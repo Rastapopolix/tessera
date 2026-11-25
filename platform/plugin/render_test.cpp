@@ -782,12 +782,15 @@ int main(int argc, char **argv)
                 if (all) XDestroyImage(all);
             }
             if (img) XDestroyImage(img);
-            // SIZE: the host sets 200 % (its frame dragged near 2000 wide: adjust_size snaps), then 100 % again
+            // SIZE: the host's frame dragged to 1950 wide (adjust_size: 195 %, the panel's aspect), then 100 % again; too
+            // small a frame: 75 %
             {
-                uint32_t aw = 1950, ah = 1200, gw = 0, gh = 0;
-                CHECK(gui->can_resize(p) && gui->adjust_size(p, &aw, &ah) && aw == 2000 && ah == 1248,
-                      "a frame dragged to 1950 x 1200 snaps to 200 %% (%ux%u)", aw, ah);
-                CHECK(gui->set_size(p, aw, ah) && gui->get_size(p, &gw, &gh) && gw == 2000 && gh == 1248, "the window at 200 %%");
+                uint32_t aw = 1950, ah = 1200, gw = 0, gh = 0, sw = 600, sh = 300;
+                CHECK(gui->can_resize(p) && gui->adjust_size(p, &sw, &sh) && sw == 750 && sh == 468,
+                      "a frame dragged to 600 x 300 holds at 75 %% (%ux%u)", sw, sh);
+                CHECK(gui->can_resize(p) && gui->adjust_size(p, &aw, &ah) && aw == 1950 && ah == 1216,
+                      "a frame dragged to 1950 x 1200 keeps the aspect at 195 %% (%ux%u)", aw, ah);
+                CHECK(gui->set_size(p, aw, ah) && gui->get_size(p, &gw, &gh) && gw == 1950 && gh == 1216, "the window at 195 %%");
                 for (int i = 0; i < 4; i++) { for (int b = 0; b < 3; b++) p->process(p, &proc); tim->on_timer(p, 0); }
                 Window root_r, parent_r, *kids = nullptr;
                 unsigned nk = 0, cw = 0, ch = 0, bw, dp;
@@ -795,9 +798,9 @@ int main(int argc, char **argv)
                 XQueryTree(d, parent, &root_r, &parent_r, &kids, &nk);
                 if (nk) XGetGeometry(d, kids[0], &root_r, &cx, &cy, &cw, &ch, &bw, &dp);
                 if (kids) XFree(kids);
-                std::printf("size: the window %ux%u at 200 %%\n", cw, ch);
-                CHECK(cw == 2000 && ch == 1248, "the plugin's X window at 200 %% (%ux%u)", cw, ch);
-                CHECK(!gui->set_size(p, 1234, 567), "a size not one of the three refused");
+                std::printf("size: the window %ux%u at 195 %%\n", cw, ch);
+                CHECK(cw == 1950 && ch == 1216, "the plugin's X window at 195 %% (%ux%u)", cw, ch);
+                CHECK(!gui->set_size(p, 1234, 567), "a size not at the panel's aspect refused");
                 CHECK(gui->set_size(p, 1000, 624), "back to 100 %%");
             }
             // a knob turned in the window (MASTER, dragged up): its changes between a gesture's begin and end, so the

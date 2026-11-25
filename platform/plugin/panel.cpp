@@ -1159,11 +1159,20 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
-// SIZE's choices, right to left (0: no more): FM-1 mode 200 150 100, EXPANDED 125 100
-int size_choice(bool expanded, int i)
+// SIZE's choices, right to left: FM-1 mode's presets 200 150 100 75, EXPANDED's 150 125 100 75, and last (leftmost)
+// the size now when it is none of those (a frame dragged to it); into out, how many
+int size_choices(bool expanded, int now, int *out)
 {
-    static const int FM1[3] = {200, 150, 100}, EXP[3] = {125, 100, 0};
-    return i < 0 || i > 2 ? 0 : expanded ? EXP[i] : FM1[i];
+    static const int FM1[4] = {200, 150, 100, 75}, EXP[4] = {150, 125, 100, 75};
+    int n = 0;
+    bool listed = false;
+    for (int i = 0; i < 4; i++)
+    {
+        out[n++] = expanded ? EXP[i] : FM1[i];
+        listed |= out[n - 1] == now;
+    }
+    if (!listed && now > 0) out[n++] = now;
+    return n;
 }
 // LISTEN's < value >: each one's left and right, from SEG_RIGHT leftwards
 const int LISTEN_SEG[3][2] = {{108, 136}, {32, 104}, {0, 28}};
@@ -1387,15 +1396,17 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             seg("EXPANDED", expanded_, true);
             seg("FM-1", !expanded_, true);
         }
-        else if (r == ROW_SIZE)   // the window's size (EXPANDED: 100 or 125)
-            for (int i = 0; i < 3; i++)
+        else if (r == ROW_SIZE)   // the window's size: the mode's presets (and the size now, if none of them)
+        {
+            int ch[5], n = size_choices(expanded_, size_now, ch);
+            for (int i = 0; i < n; i++)
             {
-                int pct = size_choice(expanded_, i);
-                if (!pct) break;
+                int pct = ch[i];
                 char t[8];
                 std::snprintf(t, sizeof t, "%d", pct);
                 seg(t, size_now == pct, true);
             }
+        }
         else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
         {
             seg("ON", fm1_on, true);
@@ -1703,7 +1714,7 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
-    if (r == ROW_SIZE)   // 100, 150 or 200; EXPANDED 100 or 125 (elsewhere on the row: nothing)
+    if (r == ROW_SIZE)   // a preset (the size now: nothing to ask; elsewhere on the row: nothing)
     {
         int pct = size_seg_at(x);
         if (pct > 0 && pct != size_now)
@@ -1722,13 +1733,13 @@ bool Panel::menu_click(int x, int y)
 
 int Panel::size_seg_at(int x) const
 {
-    int right = SEG_RIGHT;
-    for (int i = 0; i < 3 && size_choice(expanded_, i); i++)   // (right to left, as drawn)
+    int right = SEG_RIGHT, ch[5], n = size_choices(expanded_, size_now, ch);
+    for (int i = 0; i < n; i++)   // (right to left, as drawn)
     {
         char t[8];
-        std::snprintf(t, sizeof t, "%d", size_choice(expanded_, i));
+        std::snprintf(t, sizeof t, "%d", ch[i]);
         int l = right - seg_w(t);
-        if (x >= l && x < right) return size_choice(expanded_, i);
+        if (x >= l && x < right) return ch[i];
         right = l - 4;
     }
     return -1;
