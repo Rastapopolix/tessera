@@ -378,6 +378,14 @@ static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels
     for (uint32_t i = 0; i < sc.w * sc.h; i++) h = (h ^ sc.pixels[i]) * 16777619u;
     return h;
 }
+static void hosted_words()   // inside a DAW the MIDI page's input is the DAW's, CLK's INT the DAW's (TESS_HOSTED)
+{
+    tap(B_HOME);
+    int i = -1;
+    for (int k = 0; k < 16 && (i = find("MIDI", TESS_ZONE_KNOB)) < 0; k++) tap(B_GLO);
+    CHECK(i >= 0 && !std::strcmp(v.zones[i].value, "DAW"), "GLO's MIDI page: the input is DAW (%s)", i >= 0 ? v.zones[i].value : "-");
+    tap(B_HOME);
+}
 static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel scrolls (down, then back up)
 {
     tap(B_HOME);
@@ -1098,6 +1106,7 @@ int main(int argc, char **argv)
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
+    hosted_words();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;
