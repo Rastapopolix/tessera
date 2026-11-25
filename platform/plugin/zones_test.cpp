@@ -426,6 +426,23 @@ static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns
         i = find("CHORD 1", TESS_ZONE_CHORD);
         CHECK(i >= 0 && c1 != v.zones[i].value, "the wheel turns the first chord's root (%s -> %s)", c1.c_str(),
               i >= 0 ? v.zones[i].value : "?");
+        if (const char *shot = std::getenv("CHORD_PPM"))   // (a picture of the cards, to look at)
+        {
+            tess_screen_t sc;
+            tess_core_screen(&sc);
+            if (FILE *f = std::fopen(shot, "wb"))
+            {
+                std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+                for (uint32_t k = 0; k < sc.w * sc.h; k++)
+                {
+                    uint16_t p = sc.pixels[k];
+                    unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                            (unsigned char)((p & 31) * 255 / 31)};
+                    std::fwrite(rgb, 1, 3, f);
+                }
+                std::fclose(f);
+            }
+        }
         act(find("+", TESS_ZONE_CHORD), TESS_ZA_CLICK);
         CHECK(count(TESS_ZONE_CHORD) == n0 + 1 || (n0 == 8 && count(TESS_ZONE_CHORD) == 8), "+ adds a chord (%d -> %d)",
               n0, count(TESS_ZONE_CHORD));
