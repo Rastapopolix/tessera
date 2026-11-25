@@ -1878,7 +1878,7 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.7.5", "product": "FM-1_837", "pkg": {"dual": "../../firmware/tessera-3.7.5.fwsc", "single": "../../firmware/tessera-3.7.5-1core.fwsc"}, "beta": null, "nightly": null, "synth": null};
+const meta = {"version": "3.7.5", "product": "FM-1_837", "pkg": {"dual": "../../firmware/tessera-3.7.5.fwsc", "single": "../../firmware/tessera-3.7.5-1core.fwsc"}, "beta": {"version": "3.7.6-beta1", "product": "FM-1_837", "branch": "develop", "commit": "7570dddb78dc663d0e175968e7a322ea1271b184", "builtAt": "2026-11-25T22:49:34Z", "pkg": {"dual": "../../firmware/tessera-3.7.6-beta1.fwsc", "single": "../../firmware/tessera-3.7.6-beta1-1core.fwsc"}, "notes": [["Please try", ["A project from 3.7.6 loads and plays the same."]]], "sim": "../sim-beta/", "editor": "../editor-beta/"}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {
