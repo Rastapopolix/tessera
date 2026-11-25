@@ -78,7 +78,8 @@ static void ps_fav(void) { preset_mark(!preset_favorite()); }
 static void ps_undo(void) { undo_step(0); }
 static const sheet_row_t SHEET_SOUND[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
-    {"Undo last load", 0, 0, ps_undo, 0}};
+    {"Undo last load", 0, 0, ps_undo, 0}, {"Page map", 0, 0, smap_open, 0}};   /* (the map: an EDIT page's only,
+                                                         * page_sheet_open; EDIT itself turns the pages, Theo 2026-11-26) */
 /* the song's (SONG) */
 static int ps_song_free(void)
 {
@@ -523,7 +524,8 @@ static void page_sheet_open(void)
     switch (page_sheet()) {
     case 1:
         sound_name(TSEL, nm);
-        sheet_open(nm[0] ? nm : "Sound", ENGINES[eng_idx(TSEL->eng_req)]->name, SHEET_SOUND, NELEM(SHEET_SOUND));
+        sheet_open(nm[0] ? nm : "Sound", ENGINES[eng_idx(TSEL->eng_req)]->name, SHEET_SOUND,
+                   NELEM(SHEET_SOUND) - !sec_on());     /* (Page map: on an EDIT page of an engine in sections) */
         break;
     case 2:
         fmt_int(nm, chain_config.count);
