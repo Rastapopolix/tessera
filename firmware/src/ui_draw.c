@@ -1922,13 +1922,13 @@ static int own_screen(void)                             /* a page drawn whole by
 static int foot_tabs_on(void)
 {
     uint32_t k = pv_kind(), g = cur_page()->graph;
-    if (ui.home || own_screen() || ((slot_kind() || list_on()) && !MELODEE_LOOK) || motion_page())
+    if (ui.home || own_screen() || ((slot_kind() || list_on() || motion_page()) && !MELODEE_LOOK))
         return 0;                                       /* (Mono: a slot page has its family's tabs too, as its
                                                          * neighbours, PROJECT / USER / STORE and the lists: Theo
-                                                         * 2026-11-24) */
+                                                         * 2026-11-24; MOTION too, 2026-11-26) */
     if (k == PV_NONE)
         return !(g == GR_ROLL && (!grid_on() || live_rec_sel()));
-    return k == PV_CURVE || k == PV_RINGS || k == PV_FADERS || k == PV_NOTES || k == PV_GRID;
+    return k == PV_CURVE || k == PV_RINGS || k == PV_FADERS || k == PV_NOTES || k == PV_GRID || (MELODEE_LOOK && k == PV_CORDS);
 }
 /* the page (or Stage): its own screen, the redesign's, else its cards, panel and footer */
 static void draw_page(void)
