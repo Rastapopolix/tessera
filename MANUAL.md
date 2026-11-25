@@ -138,7 +138,8 @@ them. Every one starts OFF, and you can use any of them alone.
 <p><a href="https://youtu.be/md3v8T15dVg"><img src="assets/guides/e01-pages.png" width="240" alt="Video: Find your way around"></a> <a href="https://youtu.be/tCmJ-fns_dY"><img src="assets/guides/r-fx.png" width="240" alt="Video: FX: inserts and sends"></a></p> <!-- guide videos -->
 
 Tap a button to reach its pages; tap again to step through them (after the last, the first again), or turn **SELECT**
-(it stops at the first and the last page). Coming back from another
+(it stops at the first and the last page). Every page shows its group's tabs at the bottom, the one you are on
+inverted. Coming back from another
 button, it opens the page you last used there (SAVE always opens USER, for the quick save). The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.
 

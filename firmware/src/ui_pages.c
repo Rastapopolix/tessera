@@ -80,7 +80,7 @@ static int cu_scope_held(void);                         /* (ui_input.c) */
 static void pv_mod_chips(void)
 {
     uint32_t kind = pv_kind();
-    if (kind != PV_CORDS && kind != PV_MOD)
+    if ((kind != PV_CORDS || MELODEE_LOOK) && kind != PV_MOD)   /* (Mono's MODS: no chips, its tabs) */
         return;
     col_style = CS_CHIP;
     pv_chip_y = 220;
@@ -1069,10 +1069,15 @@ static void pv_draw(void)
         cu_rows();
         cu_leds();
         col_style = CS_CHIP;
-        pv_chip_y = 220;
-        draw_columns();
+        pv_chip_y = LOOK(220, -1);                      /* (Mono: no chips, the picked row says it all; the page tabs */
+        draw_columns();                                 /* in their place, as every page: Theo 2026-11-26) */
         pv_chip_y = PV_CHIP_Y;
         col_style = CS_CARD;
+#if MELODEE_LOOK
+        if (ui.force)
+            mo_foot_line();
+        pv_sound();
+#endif
         return;
     }
 #if !MELODEE_LOOK                                       /* (MOD: hidden for MODS, ui.c page_visible) */

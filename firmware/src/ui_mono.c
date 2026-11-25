@@ -3772,6 +3772,8 @@ static void mo_four(char *d, const char *s)            /* four characters: a num
 static void mo_chip(uint32_t c, const char *val, const char *unit, uint16_t vc, int hot, int32_t y)
 {
     char v[24], d[8];
+    if (y < 0)                                          /* (MODS: none, its page tabs there) */
+        return;
     str_cpy(v, val, sizeof v);
     if (str_len(v) + str_len(unit) < sizeof v) str_cpy(v + str_len(v), unit, sizeof v - str_len(v));
     mo_four(d, v);
@@ -3876,7 +3878,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
     if (!ui.force && sig == mo_br_sig)
         return;
     mo_br_sig = sig;
-    first = (uint32_t)clamp((int32_t)m - 5, 0, (int32_t)LM_N - 10);
+    first = (uint32_t)clamp((int32_t)m - 4, 0, (int32_t)LM_N - 9);
     for (s = 0; s < 2u; s++) {
         int32_t r;
         cv_begin(240, 120, MO_BG);
@@ -3904,7 +3906,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
             }
         }
         mo_hl(0, 8, 120, MO_INK);
-        for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++) {   /* LIST: ten rows */
+        for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++) {    /* LIST: nine rows */
             uint32_t i = first + (uint32_t)r;
             int32_t y = 12 + r * 9;
             mo_ascii(a, browser_list_name(i), sizeof a);
@@ -3913,7 +3915,7 @@ static void mo_browser(uint32_t cur, uint32_t total)
                 mo_fill(0, y - 1, 44, 9, MO_HOT);               /* (the row picked: as every list's, MOSAIC white) */
             mo_text(b, 2, y, i == m ? MO_BG : i < LM_CAT || i >= LM_ENG ? MO_INK : MO_DIM);
         }
-        mo_vl(46, 11, 96, MO_DIM);
+        mo_vl(46, 11, 85, MO_DIM);
         if (!total) {
             mo_textc(m == LM_FAV ? "NO FAVES" : m == LM_RECENT ? "NONE YET" : "NO SOUNDS", 83, 48, MO_DIM);
         } else {
@@ -3945,8 +3947,8 @@ static void mo_browser(uint32_t cur, uint32_t total)
                 mo_cut(e, a, (uint32_t)(room < 0 ? 0 : room > 4 ? 4 : room));
                 mo_text(e, 51, 52, MO_DIM);
             }
-            mo_vl(119, 11, 96, MO_DIM);                 /* the scroll bar: the place */
-            mo_fill(118, 11 + (total > 1u ? (int32_t)at * 86 / (int32_t)(total - 1u) : 0), 2, 10,
+            mo_vl(119, 11, 85, MO_DIM);                 /* the scroll bar: the place */
+            mo_fill(118, 11 + (total > 1u ? (int32_t)at * 75 / (int32_t)(total - 1u) : 0), 2, 10,
                     out ? MO_DIM : MO_INK);
             if (badge) {                                /* a fast turn: its acceleration */
                 b[0] = 'X';
@@ -3955,20 +3957,21 @@ static void mo_browser(uint32_t cur, uint32_t total)
                 mo_text(b, 113 - mo_tw(b), 12, MO_BG);
             }
         }
-        mo_hl(0, 108, 120, MO_INK);                     /* the foot */
-        if (fav) mo_inv("* FAV", 2, 111);
-        else mo_text("* FAV", 2, 111, MO_DIM);
-        mo_box(62, 110, 28, 10, back ? MO_INK : MO_DIM);
-        mo_textc("BACK", 76, 111, back ? MO_INK : MO_DIM);
-        mo_fill(93, 110, 27, 10, MO_INK);
-        mo_textc("OK", 106, 111, MO_BG);
+        mo_hl(0, 98, 120, MO_INK);                      /* the foot, over the page tabs */
+        if (fav) mo_inv("* FAV", 2, 100);
+        else mo_text("* FAV", 2, 100, MO_DIM);
+        mo_box(62, 99, 28, 10, back ? MO_INK : MO_DIM);
+        mo_textc("BACK", 76, 100, back ? MO_INK : MO_DIM);
+        mo_fill(93, 99, 27, 10, MO_INK);
+        mo_textc("OK", 106, 100, MO_BG);
+        mo_foot();                                      /* (the page tabs, as every page: Theo 2026-11-26) */
         if (!s) {                                       /* (zones: the two lists' knobs, BACK and OK) */
             UZ(uz_begin(UZ_G_SIDES));
             UZ(uz_begin(UZ_G_KEYS));
 #if TESS_HAS_POINTER
             uz_begin(UZ_G_PIC);                         /* (a LIST name or a sound: a click turns its knob to it; a
                                                          * sound's double-click also OK, tess_core.c) */
-            for (r = 0; r < 10 && first + (uint32_t)r < LM_N; r++)
+            for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)
                 if (first + (uint32_t)r != m)
                     uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
                             "LIST", browser_list_name(first + (uint32_t)r));
@@ -3984,11 +3987,11 @@ static void mo_browser(uint32_t cur, uint32_t total)
                         "SOUND", r ? (nm[0] ? nm : tag) : "");
             }
 #endif
-            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 97, EN_K1, -1, 0, "LIST", ""));
-            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 97, EN_K2, -1, 0, "SOUND", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, 46, 86, EN_K1, -1, 0, "LIST", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 47, 10, 73, 86, EN_K2, -1, 0, "SOUND", ""));
             if (back)
-                UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
-            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+                UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 99, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 99, 27, 10, -1, -1, B_OCTUP, "OK", ""));
         }
         cv_oy = 0;
         cv_blit(0, s * 120u);
@@ -4388,17 +4391,17 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
         }
         mo_hl(0, 8, 120, MO_INK);
         for (f = 0; f <= SCALE_FAM_USER; f++) {         /* the families (8 px rows: eleven above the foot) */
-            int32_t y = 12 + (int32_t)f * 8;
+            int32_t y = 11 + (int32_t)f * 8;
             if (f == ui.scale_family)
                 mo_fill(0, y - 1, 44, 8, MO_INK);
             mo_text(FAM[f], 2, y, f == ui.scale_family ? MO_BG : MO_INK);
         }
-        mo_vl(46, 11, 96, MO_DIM);
+        mo_vl(46, 10, 88, MO_DIM);
         if (!total || rank >= total)
             mo_textc(!total ? (ui.scale_family == SCALE_FAMILIES + 1u ? "NO FAVES" :
                                ui.scale_family == SCALE_FAM_USER ? "NONE SENT" : "NO SCALES") : "NOT HERE", 83, 48,
                      MO_DIM);
-        for (d = -2; d <= 3 && total && rank < total; d++) {
+        for (d = -2; d <= 2 && total && rank < total; d++) {   /* (two below: the foot over the tabs) */
             int32_t at = (int32_t)rank + d;
             uint32_t id;
             if (at < 0 || at >= (int32_t)total)
@@ -4428,23 +4431,24 @@ static void mo_scales(uint32_t scale, uint32_t total, uint32_t rank, uint32_t fa
             }
         }
         if (total > 1u) {                               /* the scroll bar: the place */
-            mo_vl(119, 11, 96, MO_DIM);
-            mo_fill(118, 11 + (int32_t)rank * 86 / (int32_t)(total - 1u), 2, 10, MO_INK);
+            mo_vl(119, 11, 85, MO_DIM);
+            mo_fill(118, 11 + (int32_t)rank * 75 / (int32_t)(total - 1u), 2, 10, MO_INK);
         }
-        mo_hl(0, 108, 120, MO_INK);                     /* the foot */
-        if (scale_pick_fav(scale)) mo_inv("* FAV", 2, 111);
-        else mo_text("* FAV", 2, 111, MO_DIM);
-        mo_box(62, 110, 28, 10, MO_INK);
-        mo_textc("BACK", 76, 111, MO_INK);
-        mo_fill(93, 110, 27, 10, MO_INK);
-        mo_textc("OK", 106, 111, MO_BG);
+        mo_hl(0, 98, 120, MO_INK);                      /* the foot, over the page tabs */
+        if (scale_pick_fav(scale)) mo_inv("* FAV", 2, 100);
+        else mo_text("* FAV", 2, 100, MO_DIM);
+        mo_box(62, 99, 28, 10, MO_INK);
+        mo_textc("BACK", 76, 100, MO_INK);
+        mo_fill(93, 99, 27, 10, MO_INK);
+        mo_textc("OK", 106, 100, MO_BG);
+        mo_foot();                                      /* (the page tabs, as every page: Theo 2026-11-26) */
         if (!s) {                                       /* (zones: the families' knob, the scales', BACK and OK) */
             UZ(uz_begin(UZ_G_SIDES));
             UZ(uz_begin(UZ_G_KEYS));
-            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, SC_SIDE_W / 2, 97, EN_K1, -1, 0, "FAMILY", ""));
-            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, SC_SIDE_W / 2 + 1, 10, 119 - SC_SIDE_W / 2, 97, EN_K2, -1, 0, "SCALE", ""));
-            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 110, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
-            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 110, 27, 10, -1, -1, B_OCTUP, "OK", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, 0, 10, SC_SIDE_W / 2, 86, EN_K1, -1, 0, "FAMILY", ""));
+            UZ(uz_add(UZ_G_SIDES, UZ_KNOB, SC_SIDE_W / 2 + 1, 10, 119 - SC_SIDE_W / 2, 86, EN_K2, -1, 0, "SCALE", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 62, 99, 28, 10, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 93, 99, 27, 10, -1, -1, B_OCTUP, "OK", ""));
         }
         cv_oy = 0;
         cv_blit(0, s * 120u);
