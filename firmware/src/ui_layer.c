@@ -439,13 +439,13 @@ static const char W_NOTE[16];
 static int glo_sounding(uint32_t t)
 {
     uint32_t warn = 0, out = tessera_entries_get(&warn, 0);
-    if (((warn | mute_waiting()) >> t) & 1u) return (fm1_ms / 125u) & 1u;   /* (Entries or a waiting mute key changes it
+    if (((warn | mute_waiting()) >> t) & 1u) return land_calm() || ((fm1_ms / 125u) & 1u);   /* (Entries or a waiting mute key changes it
                                                                             * on the next line: a quick blink) */
     return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
 }
 static uint32_t layer_leds(void)
 {
-    uint32_t k, m = 0, blink = ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
+    uint32_t k, m = 0, blink = !land_calm() && ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
     uint32_t mask = scale_mask(TSEL), root = (uint32_t)TSEL->p[P_ROOT] % 12u;
     for (k = 0; k < 27u; k++) {
         uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;

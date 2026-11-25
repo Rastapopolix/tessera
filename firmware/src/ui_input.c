@@ -272,6 +272,10 @@ static const uint8_t LIGHTS_MASK[LIGHTS_N] = {0, 7, 3, 1, 0, 3};   /* the dim ke
 static const uint8_t BREATH[8] = {0, 1, 3, 7, 0xFF, 7, 3, 1};
 static uint32_t breath_on(void) { return BREATH[(fm1_ms / 125u) & 7u] != 0xFFu; }
 
+/* LANDSCAPE (as itself or IDLE's), GLO not held: its keys calm, for long ambient sets (a user's request on 3.7.5): no
+ * blinking, the tracks' black keys at the LIGHTS level (dark at OFF), only what is engaged (a solo, FILL, HOLD) bright */
+static int land_calm(void) { return !ui.layer && mixer_live() && cur_page()->graph == GR_LAND; }
+
 static void ui_leds(void)
 {
     uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0}, nb[FM1_NCOL] = {0}, nw[FM1_NCOL] = {0};
@@ -313,7 +317,7 @@ static void ui_leds(void)
     k = oct_leds();
     led_put(nl, panel.btn[B_OCTDN], (int)(k & 1u));
     led_put(nl, panel.btn[B_OCTUP], (int)(k >> 1));
-    play = !pattern_keys_on() && !(name_on() && !ui.menu) && !ui.layer && !grid_on() && !awake_entry_on();
+    play = !pattern_keys_on() && !(name_on() && !ui.menu) && !ui.layer && !grid_on() && !awake_entry_on() && !land_calm();
     c = pattern_keys_on() ? pattern_leds(&pdim, &pbr) : name_on() && !ui.menu ? name_leds() : ui.layer || mixer_live() ? layer_leds() :
         grid_on() ? grid_leds() : awake_entry_on() ? awake_leds() : fm1_in.notes & ~kb_layer;   /* the patterns, NAME's keys, the map, the grid, the keys held */
 #if MELODEE_SLICE
@@ -322,6 +326,10 @@ static void ui_leds(void)
 #endif
     for (k = 0; k < 27u; k++) {
         uint32_t lv = play ? play_key_led(TSEL, k) : KL_OFF;   /* playing: the layout, MIDI's notes too (LIGHTS) */
+        if (((c >> k) & 1u) && key_black(k) && land_calm()) {
+            c &= ~(1u << k);                            /* (LANDSCAPE: a track's key dim) */
+            lv = KL_DIM;
+        }
         led_put(nl, 14u + k, (int)(((c >> k) & 1u) || lv == KL_ON));
         led_put(nd, 14u + k, lv == KL_DIM && lights != LIGHTS_OFF);
         led_put(nb, 14u + k, (int)((pdim >> k) & 1u));  /* the patterns holding something: selectable, so lit with
