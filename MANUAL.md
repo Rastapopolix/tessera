@@ -137,7 +137,8 @@ them. Every one starts OFF, and you can use any of them alone.
 
 <p><a href="https://youtu.be/md3v8T15dVg"><img src="assets/guides/e01-pages.png" width="240" alt="Video: Find your way around"></a> <a href="https://youtu.be/tCmJ-fns_dY"><img src="assets/guides/r-fx.png" width="240" alt="Video: FX: inserts and sends"></a></p> <!-- guide videos -->
 
-Tap a button to reach its pages; tap again (or turn **SELECT**) to step through them. The tables say what each page
+Tap a button to reach its pages; tap again (or turn **SELECT**) to step through them. Coming back from another
+button, it opens the page you last used there (SAVE always opens USER, for the quick save). The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.
 
 **HOME** (hold it for the menu)
@@ -318,7 +319,8 @@ Plucks ring out by themselves, so generators on all three melodic tracks stay wi
 
 <p align="center"><img src="assets/gallery/home.png" alt="HOME: four track columns (REC on track 1, the sound names, the engine, pattern P1, a small step grid and the level -4 dB), the tempo 124 at the top and a waveform along the bottom" width="320"> <img src="assets/gallery/mixer.png" alt="MIXER: four track columns, each with a level knob and dB value, a pan knob and value, and a MUTE box (tracks 3 and 4 muted); MUTE, SOLO and FILL along the bottom" width="320"></p>
 
-**MIXER** (tap GLO) is the four tracks as a mixer, and GLO's first page.
+**MIXER** (tap GLO) is the four tracks as a mixer, and GLO's first page (GLO reopens the GLO page you last used: tap
+it until MIXER comes round).
 
 | Control | What it does on MIXER |
 |---|---|

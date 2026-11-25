@@ -45,7 +45,7 @@ static void run(int blocks)   // 10 ms blocks
 }
 static void tap(int b)
 {
-    tess_core_buttons(1u << b);
+    tess_core_buttons(1u << b | TESS_BTN_POINTER);   // (the window's: a mouse's click)
     run(5);
     tess_core_buttons(0);
     run(20);
@@ -283,10 +283,54 @@ static int find_strip(uint32_t kind, const char *track, const char *value)
             return (int)i;
     return -1;
 }
+static std::string tab_now()   // the footer's tab of the page on the screen
+{
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) return v.zones[i].value;
+    return "";
+}
+static void glo_clicks()   // GLO clicked twice quickly by the mouse: two pages, no LOCK; held by it: the layer stays open
+{
+    tap(B_HOME);
+    tap(B_GLO);
+    std::string a = tab_now();
+    tap(B_GLO);
+    std::string b = tab_now();
+    CHECK(!a.empty() && !b.empty() && a != b, "GLO clicked twice quickly: the next page (%s, then %s)", a.c_str(), b.c_str());
+    tap(B_HOME);
+    tap(B_GLO);
+    CHECK(tab_now() == b, "GLO again from HOME: the GLO page last used (%s, now %s)", b.c_str(), tab_now().c_str());
+    tap(B_HOME);
+    tess_core_buttons(1u << B_GLO);   // (an FM-1's panel: tapped twice quickly, the LOCK)
+    run(5);
+    tess_core_buttons(0);
+    run(10);
+    tess_core_buttons(1u << B_GLO);
+    run(5);
+    tess_core_buttons(0);
+    run(20);
+    CHECK(v.key_long[0][0], "an FM-1's GLO tapped twice quickly: LOCK, the layer's keys (%s)", v.key_long[0]);
+    tap(B_GLO);
+    CHECK(!v.key_long[0][0], "..GLO again: closed (%s)", v.key_long[0]);
+    tess_core_buttons(1u << B_GLO);   // (an FM-1's GLO held, let go: closed)
+    run(100);
+    tess_core_buttons(0);
+    run(20);
+    CHECK(!v.key_long[0][0], "an FM-1's GLO held and let go: the layer closes (%s)", v.key_long[0]);
+    tap(B_HOME);
+    tess_core_buttons(1u << B_GLO | TESS_BTN_POINTER);   // held a second by the mouse, let go: open still
+    run(100);
+    tess_core_buttons(0);
+    run(20);
+    CHECK(v.key_long[0][0], "GLO held by the mouse and let go: the layer stays open (%s)", v.key_long[0]);
+    tap(B_GLO);
+    CHECK(!v.key_long[0][0], "..clicked again: closed (%s)", v.key_long[0]);
+    tap(B_HOME);
+}
 static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE and SOLO
 {
     tap(B_HOME);
-    for (int i = 0; i < 8 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
+    for (int i = 0; i < 16 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
     uint32_t lvl = pid_named("LEVEL"), pan = pid_named("PAN"), mute = pid_named("MUTE");
     int l2 = find_strip(TESS_ZONE_LEVEL, "T2", "LEVEL"), p2 = find_strip(TESS_ZONE_PAN, "T2", "PAN"),
         m2 = find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO");
@@ -610,6 +654,7 @@ static void ux_round()   // beta7: a click away, the tempo, TRACKS' double-click
         CHECK(tess_core_bpm() == 120, "a double-click: 120 (%u)", tess_core_bpm());
     }
     tap(B_GLO);   // (MIXER: a screen of its own, its header with the tempo; a page of four values has no room for it)
+    for (int i = 0; i < 16 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);   // (GLO reopens its last page)
     t = find("TEMPO", TESS_ZONE_TEMPO);
     CHECK(t >= 0, "MIXER's header: a TEMPO zone too");
     // TRACKS (EXPANDED): a row double-clicked opens that track's EDIT page
@@ -933,6 +978,7 @@ int main(int argc, char **argv)
     CHECK(count(TESS_ZONE_TRACK) == 4, "HOME: a zone a track (%d)", count(TESS_ZONE_TRACK));
     sheet_track();
     tabs();
+    glo_clicks();
     help_close();
     ux_round();
     slot_tabs();
