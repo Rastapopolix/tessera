@@ -175,9 +175,10 @@ class GuiWin32 : public Gui
                 return 0;
             }
             if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 &&
-                (wp == 'C' || wp == 'V' || wp == 'R') &&
+                (wp == 'C' || wp == 'V' || wp == 'R' || wp == 'M') &&
                 g->panel.shortcut((wp == 'V' || wp == 'R') && GetKeyState(VK_SHIFT) < 0 ? (char)(wp + 32) : (char)wp))
-                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone; Ctrl+R DICE, + Shift MUTATE)
+                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone; Ctrl+R DICE, + Shift MUTATE;
+                           // Ctrl+M the page map)
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;

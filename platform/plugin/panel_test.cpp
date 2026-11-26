@@ -1704,6 +1704,25 @@ int main(int argc, char **argv)
         const tess_zone_t *k1 = q.knob_zone(3);
         CHECK(k1 && k1->value[0], "FX 1: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
         if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
+        {   // the page map (G11): Ctrl+M opens it, a page clicked goes there and shuts it
+            CHECK(q.shortcut('M') && q.map_shown(), "Ctrl+M: the page map");
+            frames(1);
+            if (!out.empty()) ppm(out + "/30c_page_map.ppm", px);
+            int mx = 0, my = 0;
+            CHECK(q.map_place(TESS_SEC_PIECE, "LANDSCAPE", mx, my), "the map: PIECE's LANDSCAPE on it");
+            q.down(mx, my);
+            q.up(mx, my);
+            run(q, 0.3);
+            frames(1);
+            CHECK(!q.map_shown() && v.map_sec == TESS_SEC_PIECE && !std::strcmp(v.map_name[TESS_SEC_PIECE][v.map_at], "LANDSCAPE"),
+                  "LANDSCAPE clicked: its page, the map shut (%d %d)", v.map_sec, v.map_at);
+            CHECK(q.shortcut('M') && q.map_shown() && !q.key(0x01, true) && !q.map_shown(), "Esc shuts the map");
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+        }
         if (!out.empty())   // SETUP: its first page SETTINGS, the menu's list over SETUP's tabs
         {
             tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_SETUP));

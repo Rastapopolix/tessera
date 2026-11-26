@@ -808,6 +808,19 @@ static void cs_open(uint32_t s)
     page_entered();
     ui.via = (uint8_t)fam_grp(PAGES[ui.page].fam);
 }
+/* the page map (tess_core.c TESS_ZONE_MAP): section s's page k, as its button would show it */
+static void cs_go(uint32_t s, uint32_t k)
+{
+    uint8_t pg[NPAGES];
+    uint32_t n = s < UI_SEC_N ? cs_pages(s, pg) : 0u;
+    if (k >= n) return;
+    ui.page = pg[k];
+    cs_last[s] = ui.page;
+    ui.fam_last[fam_grp(PAGES[ui.page].fam)] = ui.page;
+    ui.home = 0;
+    page_entered();
+    ui.via = (uint8_t)fam_grp(PAGES[ui.page].fam);
+}
 #endif
 /* the ENV / LFO whose pages SELECT turns (fam_pages) on an engine with its own (native_titles); 0: the page's family's
  * (in_fam). From EDIT the engine's own pages are EDIT's. The sections on: the page's section (FAM_CS + it) */

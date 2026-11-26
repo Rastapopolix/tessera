@@ -378,6 +378,7 @@ bool v_key(id self, NSEvent *e, bool down)
         bool shift = e.modifierFlags & NSEventModifierFlagShift;
         char c = m == NSEventModifierFlagCommand && e.keyCode == 15  ? (shift ? 'r' : 'R')   // (DICE, MUTATE)
                  : m == NSEventModifierFlagCommand && e.keyCode == 8 ? 'C'
+                 : m == NSEventModifierFlagCommand && e.keyCode == 46 ? 'M'   // (the page map)
                  : m == NSEventModifierFlagCommand && e.keyCode == 9 ? (shift ? 'v' : 'V')
                  : m == NSEventModifierFlagOption && e.keyCode == 126 ? '^'
                  : m == NSEventModifierFlagOption && e.keyCode == 125 ? '_'
