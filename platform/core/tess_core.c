@@ -1187,7 +1187,7 @@ void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
     _Static_assert(TESS_TRACKS_W == T2_W_MAX && TESS_TRACKS_H == T2_H_MAX && TESS_TRACKS_ZONES == T2_ZONES,
                    "tess_core.h's TRACKS sizes are ui_tracks.c's");
     _Static_assert(TESS_ZONE_MUTE == T2_Z_MUTE && TESS_ZONE_SOLO == T2_Z_SOLO && TESS_ZONE_LEVEL == T2_Z_LEVEL &&
-                   TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
+                   TESS_ZONE_PAN == T2_Z_PAN && TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
     tracks_draw((int32_t)(w < 1u ? 1u : w), (int32_t)(h < 1u ? 1u : h), (fm1_ms / 250u) & 1u);
     v->w = (uint32_t)t2_w, v->h = (uint32_t)t2_h;
     for (i = 0; i < v->w * v->h; i++)                  /* (drawn as RGB565 already: no LCD byte order here) */
@@ -1234,9 +1234,14 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
 #endif
     } else if ((z->kind == TESS_ZONE_MUTE || z->kind == TESS_ZONE_SOLO) && click) {
         core_mute_solo(z->kind, tr);
-    } else if (z->kind == TESS_ZONE_LEVEL && !click && n) {
-        int32_t v = (trk[tr].p[P_LEVEL] & 127) + n;
-        pid_set(P_LEVEL, tr, v < 0 ? 0 : v > 127 ? 127 : v);
+    } else if (z->kind == TESS_ZONE_LEVEL || z->kind == TESS_ZONE_PAN) {   /* (the level, a send, PAN: turned; a
+                                                                            * double-click its default) */
+        uint32_t p = z->kind == TESS_ZONE_PAN ? (uint32_t)P_PAN : z->role >= 0 && z->role < (int)FX_SLOTS ?
+                     (uint32_t)P_FXSEND + (uint32_t)z->role : (uint32_t)P_LEVEL;
+        int32_t v = trk[tr].p[p] + n;
+        if (action == TESS_ZA_DOUBLE) v = TP[p].def;
+        else if (click || !n) return;
+        pid_set(p, tr, v < TP[p].min ? TP[p].min : v > TP[p].max ? TP[p].max : v);
     }
     ui.force = 1;
 #else
