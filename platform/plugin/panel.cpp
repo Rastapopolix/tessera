@@ -1143,7 +1143,10 @@ bool Panel::down(int x, int y)
         if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
         {
             file_held = (int)i;
-            file_req = files[i].action;
+            if (files[i].action == FILE_MIDI)   // (asked when let go or dragged: move, up)
+                midi_press = true, midi_x0 = x, midi_y0 = y;
+            else
+                file_req = files[i].action;
             hit = true;
         }
     if (!native() && x >= usb.x && x < usb.x + usb.w && y >= usb.y && y < usb.y + usb.h)
@@ -1199,6 +1202,12 @@ bool Panel::move(int x, int y)
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
+    if (midi_press && std::abs(x - midi_x0) + std::abs(y - midi_y0) >= 8)   // MIDI dragged off: the clip, to drop
+    {
+        midi_press = false;
+        file_req = FILE_MIDI_DRAG;
+        return true;
+    }
     if (drag == ZONE2)   // TRACKS' tempo: a detent every 8 px; MIXER's faders and sends every 2, PAN every 3 (Shift:
     {                    // four times as far)
         int step = (drag_zone.kind == TESS_ZONE_TEMPO ? 8 : drag_zone.kind == TESS_ZONE_PAN ? 3 : 2) * (mod_fine ? 4 : 1);
@@ -1399,6 +1408,9 @@ bool Panel::up(int x, int y)
     if (drag == ZONE && zone_still) { zone_act(drag_zone, TESS_ZA_CLICK, 0); ch = true; }   // (a help card's text, a
     zone_still = false;                                                                       // knob's column: a click)
     drag = NONE;
+    if (midi_press)   // MIDI let go where pressed: the clip saved
+        file_req = FILE_MIDI, ch = true;
+    midi_press = false;
     file_held = bank_held = -1;
     return ch;
 }
