@@ -329,17 +329,32 @@ static void glo_hold_pass(void)
     tessera.hold = (lys.hold & (LH_KEY | LH_LATCH)) != 0u;
 }
 
+/* GLO's track keys: key k's track (its black key mutes it, its white key solos it), NTRK = none. Four tracks at a
+ * time: the lower octave's F#3..C#4 / F3..B3, the bank on screen. Eight (the plugin, Cosmati audit I2): the lower
+ * octave's for T1-T4 and the upper octave's F#4..C#5 / G4..C5 for T5-T8, whichever bank is on screen */
+static uint32_t glo_key_trk(uint32_t k)
+{
+    uint32_t p = key_place(k);
+#if CORE_TRACKS > 4
+    uint32_t up = key_black(k) ? 5u : 8u;
+    if (p < 4u) return p;
+    return p >= up && p < up + 4u ? 4u + p - up : (uint32_t)NTRK;
+#else
+    return p < UI_NT ? UI_BASE + p : (uint32_t)NTRK;
+#endif
+}
+
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
-    uint32_t p = key_place(k);
+    uint32_t p = key_place(k), t = glo_key_trk(k);
     glo_map_back();
 
     if (l == LAYER_GLO) {
-        if (key_black(k)) {
-            if (p < UI_NT) mute_press(UI_BASE + p, 0);   /* (MENU MUTES: now, or on the next bar / phrase) */
-        } else if (p < UI_NT) {
-            lys.solo |= 1u << k;                        /* (layer_masks: track_solo while held) */
+        if (t < NTRK) {
+            if (key_black(k)) mute_press(t, 0);         /* (MENU MUTES: now, or on the next bar / phrase) */
+            else lys.solo |= 1u << k;                   /* (layer_masks: track_solo while held) */
+        } else if (key_black(k)) {                     /* (the other black keys: nothing) */
         } else if (p == 4u) {
             mute_press(0, 1);
         } else if (p == 5u) {
@@ -371,7 +386,7 @@ static void layer_keys(uint32_t keys)
     glo_hold_pass();
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)
-            s |= 1u << (UI_BASE + key_place(k));
+            s |= 1u << glo_key_trk(k);
 #if TESS_SCR_COUNT > 1
     s |= solo_latch;                                    /* (the TRACKS page's S: latched, ui_tracks.c) */
 #endif
@@ -450,15 +465,17 @@ static int glo_sounding(uint32_t t)
                                                                             * on the next line: a quick blink) */
     return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
 }
+/* (MIXER, PERF with LIGHTS OFF, GLO not held: no can-be-pressed blink, the states alone; LANDSCAPE: ui_input.c land_calm) */
 static uint32_t layer_leds(void)
 {
-    uint32_t k, m = 0, blink = !land_calm() && ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
+    uint32_t k, m = 0, blink = !land_calm() && !(!ui.layer && mixer_live() && settings_lights % LIGHTS_N == LIGHTS_OFF) &&
+                                ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
     uint32_t mask = scale_mask(TSEL), root = (uint32_t)TSEL->p[P_ROOT] % 12u;
     for (k = 0; k < 27u; k++) {
-        uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;
+        uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e, t = glo_key_trk(k);
         if (l == LAYER_GLO) {
-            on = b ? p < UI_NT && glo_sounding(UI_BASE + p) :
-                 p < UI_NT ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 5u ? tessera.hold | blink :
+            on = b ? t < NTRK && glo_sounding(t) :
+                 t < NTRK ? ((lys.solo >> k) & 1u) | blink : p == 4u ? blink : p == 5u ? tessera.hold | blink :
                  p == 6u ? ((lys.fill >> k) & 1u) | blink :
                  p == 7u && !song.g[G_CLOCK] && blink;
         } else if (l == LAYER_SCL) {                    /* the root lit, the scale's notes blink */
@@ -652,7 +669,7 @@ static void mo_layer(uint32_t l)
     if (l == LAYER_GLO)
         sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
                tessera.hold * 11u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (uint32_t)(trk[UI_BASE].p[P_MUTE] | trk[UI_BASE + 1u].p[P_MUTE] << 1 | trk[UI_BASE + 2u].p[P_MUTE] << 2 | trk[UI_BASE + 3u].p[P_MUTE] << 3) * 131u +
                (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
@@ -672,7 +689,7 @@ static void mo_layer(uint32_t l)
                 n[0] = (char)('1' + UI_BASE + c), n[1] = ' ';
                 bnote(n + 2, c);
                 mo_lcell((int32_t)c, 52, "MUTE", n, (trk[UI_BASE + c].p[P_MUTE] != 0) ^ ((mute_waiting() >> (UI_BASE + c)) & (fm1_ms / 250u) & 1u), 0, 1);
-                n[2] = W_NOTE[c], n[3] = 0;
+                n[2] = W_NOTE[c + 2u * UI_BASE], n[3] = 0;   /* (T5-T8: the upper octave, G..C; glo_key_trk) */
                 mo_lcell((int32_t)c, 71, "SOLO", n, (track_solo >> (UI_BASE + c)) & 1u, 0, 1);
             }
             mo_lcell(0, 90, "ALL", "C", 0, 0, 0);
@@ -806,7 +823,7 @@ static void draw_layer(void)
     }
     if (l == LAYER_GLO)
         sig += track_solo * 31u + (uint32_t)song.g[G_CLOCK] * 5u + (uint32_t)(seq_fill | seq_fill_mod) * 7u +
-               (uint32_t)(trk[0].p[P_MUTE] | trk[1].p[P_MUTE] << 1 | trk[2].p[P_MUTE] << 2 | trk[3].p[P_MUTE] << 3) * 131u +
+               (uint32_t)(trk[UI_BASE].p[P_MUTE] | trk[UI_BASE + 1u].p[P_MUTE] << 1 | trk[UI_BASE + 2u].p[P_MUTE] << 2 | trk[UI_BASE + 3u].p[P_MUTE] << 3) * 131u +
                (mute_waiting() ? 1u + ((fm1_ms / 250u) & 1u) : 0u) * 4099u;   /* (a waiting mute blinks) */
     else if (l == LAYER_SCL)
         sig += (uint32_t)TSEL->p[P_SCALE] * 31u;
