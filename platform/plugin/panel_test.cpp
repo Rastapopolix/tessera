@@ -1417,6 +1417,48 @@ int main(int argc, char **argv)
             tess_core_track_select(3);   // (as the checks before left it)
             run(e, 0.2);
         }
+        {   // G7: A / B in EXPANDED's header: a click asks for A, a right-click stores B, MORPH dragged asks its place
+            e.take_snap_request();
+            tess_core_view(&v);
+            tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+            e.draw(wide.data(), v, &t2);
+            int bx = -1, m0 = -1, m1 = -1;
+            for (int x = 800; x < Panel::W_EXPANDED; x++)
+            {
+                int p = e.snap_part_at(x, 24);
+                if (p == 1 && bx < 0) bx = x;
+                if (p == 2 && m0 < 0) m0 = x;
+                if (p == 2) m1 = x;
+            }
+            CHECK(e.snap_part_at(842 + 17, 24) == 0 && bx > 0 && m0 > 0 && e.skin_switch_x() > bx + 34,
+                  "G7: A, MORPH and B in the header, left of the skin's switch (B %d, switch %d)", bx, e.skin_switch_x());
+            e.down(842 + 17, 24), e.up(842 + 17, 24);
+            Panel::SnapRequest r = e.take_snap_request();
+            CHECK(r.what == Panel::SNAP_CLICK && r.slot == 0, "a click on A: A asked for (%d %d)", r.what, r.slot);
+            e.latch(bx + 17, 24);
+            r = e.take_snap_request();
+            CHECK(r.what == Panel::SNAP_STORE && r.slot == 1, "a right-click on B: stored in B (%d %d)", r.what, r.slot);
+            e.down((m0 + m1) / 2, 24), e.up((m0 + m1) / 2, 24);
+            CHECK(e.take_snap_request().what == Panel::SNAP_NONE, "MORPH with A or B empty: nothing asked");
+            Panel::SnapState st;
+            st.has[0] = st.has[1] = true, st.active = 0;
+            e.set_snaps(st);
+            const int rail0 = 842 + 34 + 92, rail1 = bx - 10;
+            e.down(rail0, 24);
+            r = e.take_snap_request();
+            CHECK(r.what == Panel::SNAP_MORPH && r.value == 0, "MORPH pressed at its A end: 0 (%d)", r.value);
+            for (int i = 1; i <= 6; i++) e.move(rail0 + (rail1 - rail0) * i / 12, 24);
+            r = e.take_snap_request();
+            CHECK(r.what == Panel::SNAP_MORPH && r.value >= 45 && r.value <= 55, "..dragged half way: about 50 (%d)", r.value);
+            e.up(rail0 + (rail1 - rail0) / 2, 24);
+            st.active = -1, st.morph = r.value;
+            e.set_snaps(st);
+            e.draw(wide.data(), v, &t2);
+            int handle = 0;
+            for (int x = rail0; x < rail1; x++) handle += wide[24 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
+            CHECK(handle >= 6, "MORPH's handle drawn (%d)", handle);
+            if (!out.empty()) ppm(out + "/16d_ab.ppm", wide, Panel::W_EXPANDED);
+        }
         e.set_shell(1);
         CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());
         e.set_shell(0);

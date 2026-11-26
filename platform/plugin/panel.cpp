@@ -985,6 +985,22 @@ bool Panel::down(int x, int y)
         }
         return false;
     }
+    switch (snap_part_at(x, y))   // A / B (EXPANDED's header)
+    {
+    case 0: case 1:
+        drag = NONE;
+        snap_req = {mod_fine ? SNAP_STORE : SNAP_CLICK, snap_part_at(x, y), 0};   // (Shift-click: stored, as a right-click)
+        input.changed = true;
+        return true;
+    case 2:
+        if (!snaps.has[0] || !snaps.has[1]) { note("MORPH: STORE A AND B FIRST (RIGHT-CLICK)"); return true; }
+        drag = SNAP_DRAG;
+        snaps.morph = snap_value(x), snaps.active = -1;
+        snap_req = {SNAP_MORPH, 0, snaps.morph};
+        input.changed = true;
+        return true;
+    default: break;
+    }
     switch (gen_part_at(x, y))   // GENERATE's strip
     {
     case GP_BUTTON:
@@ -1261,6 +1277,15 @@ bool Panel::move(int x, int y)
         if (n) { acc -= n * step; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
         return false;
     }
+    if (drag == SNAP_DRAG)   // MORPH: its value follows the mouse, asked each time it changes
+    {
+        int m = snap_value(x);
+        if (m == snaps.morph) return false;
+        snaps.morph = m;
+        snap_req = {SNAP_MORPH, 0, m};
+        input.changed = true;
+        return true;
+    }
     if (drag == SOUND || drag == CORD)   // a browser's sound, a MATRIX cell on its way: past 5 px it follows the mouse
     {
         if (!sound_live && std::abs(x - roll_x0) < 5 && std::abs(y - roll_y0) < 5) return false;
@@ -1370,6 +1395,12 @@ bool Panel::latch(int x, int y)
     if (ctx_kind || entry_on)   // (a menu or a value's box open: a right-click shuts it)
     {
         ctx_kind = 0, entry_on = false;
+        return true;
+    }
+    if (int sp = snap_part_at(x, y); sp == 0 || sp == 1)   // A / B right-clicked: the project stored there
+    {
+        snap_req = {SNAP_STORE, sp, 0};
+        input.changed = true;
         return true;
     }
     int zi = zone_at(x, y);
@@ -1788,6 +1819,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     }
 
     draw_gen(px);
+    draw_snaps(px);
     if (!menu_open)
         return;
 
@@ -2005,6 +2037,56 @@ void Panel::gen_var_step(int n)
     if (v == gen.variation) return;
     gen.variation = v;
     gen_ask(GEN_SET);
+}
+
+// ---- A / B (Cosmati audit G7): EXPANDED's header, between GENERATE's strip and the skin's switch: A, MORPH's word and
+// its rail, B (B's right edge 12 px left of the switch, so a longer version text moves it)
+namespace
+{
+const int SN_Y = 10, SN_H = 28, SA_X = 842, SN_W = 34, SM_X = SA_X + SN_W + 92;   // (MORPH's word in the 92)
+}
+int Panel::snap_b_x() const { return (skin_x > 0 ? skin_x : width() - 180) - 12 - SN_W; }
+int Panel::snap_part_at(int x, int y) const
+{
+    if (!native() || !expanded() || y < SN_Y || y >= SN_Y + SN_H)
+        return -1;
+    int bx = snap_b_x();
+    if (x >= SA_X && x < SA_X + SN_W) return 0;
+    if (x >= bx && x < bx + SN_W) return 1;
+    if (x >= SA_X + SN_W && x < bx) return 2;
+    return -1;
+}
+int Panel::snap_value(int x) const
+{
+    int w = snap_b_x() - 10 - SM_X;
+    int v = w > 0 ? (x - SM_X) * 100 / w : 0;
+    return v < 0 ? 0 : v > 100 ? 100 : v;
+}
+void Panel::draw_snaps(uint32_t *px)
+{
+    if (!native() || !expanded())
+        return;
+    Canvas c{px, width()};
+    int bx = snap_b_x();
+    for (int k = 0; k < 2; k++)   // A, B: stored in the word colour, the one shown filled yellow; empty, dim
+    {
+        int x = k ? bx : SA_X;
+        bool on = snaps.active == k, has = snaps.has[k];
+        uint32_t edge = on ? T_YEL : has ? T_WORD : T_DIM;
+        nbox(c, x, SN_Y, SN_W, SN_H, edge, on ? T_YEL : T_BODY);
+        const char *t = k ? "B" : "A";
+        c.ptext(x + (SN_W - Canvas::ptext_w(t, 2)) / 2, SN_Y + 8, t, 2, on ? T_BLACK : has ? T_WORD : T_DIM);
+    }
+    bool both = snaps.has[0] && snaps.has[1];
+    uint32_t ink = both ? T_WORD : T_DIM;
+    int ly = SN_Y + SN_H / 2 - 1, w = bx - 10 - SM_X;
+    c.ptext(SA_X + SN_W + 12, SN_Y + 8, "MORPH", 2, ink);
+    if (w < 20) return;
+    c.box(SM_X, ly, w, 2, ink);   // the rail, its ends, the handle where MORPH is
+    c.box(SM_X, ly - 5, 2, 12, ink);
+    c.box(SM_X + w - 2, ly - 5, 2, 12, ink);
+    if (both && snaps.morph >= 0)
+        c.box(SM_X + w * snaps.morph / 100 - 4, SN_Y + 2, 8, SN_H - 4, T_YEL);
 }
 
 void Panel::draw_gen(uint32_t *px)

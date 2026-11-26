@@ -204,6 +204,16 @@ class Panel
     enum { GEN_NONE, GEN_MAKE, GEN_SWAP, GEN_RECALL, GEN_SET };
     struct GenRequest { int what = GEN_NONE, style = 0, variation = 100, dir = 0; };
     struct GenState { int style = 0, variation = 100, at = -1, made = 0; uint32_t seed = 0; bool before = false; };
+    /* A / B (Cosmati audit G7; EXPANDED's header, right of GENERATE's strip): two whole-project snapshots and MORPH
+     * between them. A click on A or B: that one (the one shown kept first, so each keeps its edits; an empty one takes
+     * the project as it is); a right-click: the project stored there; MORPH (both stored) dragged 0..100: the settings
+     * blended from A's to B's (the notes stay). set_snaps shows what the instance has; a press asks (take_snap_request) */
+    struct SnapState { bool has[2] = {false, false}; int active = -1, morph = -1; };
+    enum { SNAP_NONE, SNAP_CLICK, SNAP_STORE, SNAP_MORPH };
+    struct SnapRequest { int what = SNAP_NONE, slot = 0, value = 0; };
+    void set_snaps(const SnapState &s) { if (drag != SNAP_DRAG) snaps = s; }
+    SnapRequest take_snap_request() { SnapRequest r = snap_req; snap_req = SnapRequest{}; return r; }
+    int snap_part_at(int x, int y) const;   // 0 A, 1 B, 2 MORPH; -1 none
     void set_gen_styles(const std::vector<std::string> &names) { gen_names = names; }
     bool gen_known() const { return gen_names_asked; }
     void gen_asked() { gen_names_asked = true; }
@@ -233,6 +243,11 @@ class Panel
     void gen_style_step(int n);
     void gen_var_step(int n);
     void draw_gen(uint32_t *px);
+    void draw_snaps(uint32_t *px);
+    SnapState snaps;
+    SnapRequest snap_req;
+    int snap_value(int x) const;
+    int snap_b_x() const;
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     void layout();
     void key_words();
@@ -317,7 +332,7 @@ class Panel
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag
-    enum { NONE, KNOB, BUTTON, KEY, ZONE, ZONE2, GEN_BUTTON, GEN_VAR, SOUND, CORD } drag = NONE;
+    enum { NONE, KNOB, BUTTON, KEY, ZONE, ZONE2, GEN_BUTTON, GEN_VAR, SOUND, CORD, SNAP_DRAG } drag = NONE;
     bool sound_live = false;   // (a browser's sound, or a MATRIX cell, dragged past 5 px: on its way to a TRACKS row, a cell)
     void sound_draw(uint32_t *px);
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0, acc_y = 0;

@@ -70,6 +70,9 @@ struct GuiLink
     /* TRACK (TESSERA's menu, Ctrl+C / Ctrl+V ..; on the host's main thread): what (Panel::TR_*) done to track; what to
      * show under the keys */
     virtual std::string track_do(int what, int track) { (void)what; (void)track; return ""; }
+    /* A / B (Panel::SnapState): what the instance has; a press (Panel::SNAP_*): what to show */
+    virtual Panel::SnapState snap_state() { return {}; }
+    virtual std::string snap_do(int what, int slot, int value) { (void)what, (void)slot, (void)value; return ""; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
     // LISTEN: the MIDI channel whose notes set the key and GENERATE (listen.h), 0 off; this instance's
     virtual int listen_channel() { return 0; }
@@ -149,6 +152,14 @@ inline void gui_gen_tick(Panel &panel, GuiLink *link)
             panel.note(said);
     }
     panel.set_gen(link->gen_state());
+    Panel::SnapRequest sr = panel.take_snap_request();   // (A / B, MORPH)
+    if (sr.what != Panel::SNAP_NONE)
+    {
+        std::string said = link->snap_do(sr.what, sr.slot, sr.value);
+        if (!said.empty())
+            panel.note(said);
+    }
+    panel.set_snaps(link->snap_state());
     Panel::TrackRequest t = panel.take_track_request();   // (TRACK: copy, paste, move)
     if (t.what != Panel::TR_NONE)
     {
