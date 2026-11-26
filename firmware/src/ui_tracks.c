@@ -117,7 +117,7 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
     uint32_t solo = (track_solo >> k) & 1u, len = (uint32_t)t->p[P_SLEN], n = compact ? 8u : 16u, i;
     uint32_t ph = song.playing && t->seq_idx < len ? t->seq_idx : 0xFFFFu, first = ph < len ? ph / n * n : 0u;
     uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
-    int32_t sx = compact ? 56 : 90, ty = y + (rh - 7) / 2, lx = compact ? 127 : 217;
+    int32_t sx = compact ? 56 : 88, ty = y + (rh - 7) / 2, lx = compact ? 127 : 217;
     char b[16], nm[8], lv[8];
     b[0] = (char)('1' + k), b[1] = 0;
     if (sel) {
@@ -148,7 +148,8 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
     t2_text(b, compact ? 40 : 74, ty, ink);
     for (i = 0; i < n; i++) {                           /* the steps of the window the playhead is in */
         uint32_t si = first + i;
-        int32_t x = sx + (int32_t)i * (compact ? 6 : 7) + (compact ? 0 : (int32_t)(i / 4u)), cy = y + rh / 2;
+        int32_t x = sx + (int32_t)i * 6 + (compact ? 0 : 2 * (int32_t)(i / 4u)), cy = y + rh / 2;   /* (16: a clear
+                                                                 * gap before the level, "-INF" too) */
         if (si >= len)
             break;
         if (step_on(&seq_steps(t)[si % NSTEP])) t2_fill(x, cy - 3, 5, 6, ink);
@@ -196,7 +197,7 @@ static void t2_strip(uint32_t k, int32_t x, uint32_t blink)
     int32_t fh, pan = t->p[P_PAN], cx = x + 15;
     char b[16], nm[8], lv[8];
     b[0] = (char)('1' + k), b[1] = 0;                   /* the head: number, role */
-    if (sel) t2_box(x + 1, 13, 28, 91, MO_TRK(k));
+    if (sel) t2_box(x + 1, 13, 28, 93, MO_TRK(k));   /* (round M and S too, a clear cell under them) */
     if (sel) t2_inv(b, cx - 2, 15, MO_TRK(k), MO_BG);
     else t2_text(b, cx - 2, 15, ink);
     t2_role(k, nm);
@@ -277,12 +278,12 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
         for (k = 0; k < NTRK; k++)                      /* the rows */
             t2_row(k, 14 + (int32_t)k * 11, 11, 0, blink);
     }
-    t2_fill(0, 105, 240, 1, MO_DIM);                    /* the selected track's sound; the hint */
+    t2_fill(0, 107, 240, 1, MO_DIM);                    /* the selected track's sound; the hint */
     b[0] = 'T', b[1] = (char)('1' + song.sel % NTRK), b[2] = ' ';
     trk_short_name(song.sel % NTRK, b + 3);
-    t2_text(b, 4, 109, MO_INK);
+    t2_text(b, 4, 111, MO_INK);
 #if TESS_HAS_POINTER
-    t2_textr(mixer ? "DRAG A FADER, CLICK M OR S" : "CLICK A ROW TO SELECT", 236, 109,
+    t2_textr(mixer ? "DRAG A FADER, CLICK M OR S" : "CLICK A ROW TO SELECT", 236, 111,
              MO_DIM);
 #endif
 }

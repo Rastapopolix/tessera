@@ -1820,10 +1820,10 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.key_dim & bit)   // (out of the scale, G10: faded into the body)
             border = mix(T_BODY, T_DIM, 0.45), fill = natural ? mix(T_BODY, T_BLACK, 0.5) : mix(T_BODY, T_DIM, 0.35);
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
-        if (led)
+        if (led)   // (as far from the key's top as from its sides)
         {
             int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
-            c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
+            c.box(k.cx - lw / 2, k.cy - kh / 2 + (kw - lw) / 2, lw, lh, led);
         }
         if (v.key_root & bit)   // the scale's root: a dot near the key's foot
         {
@@ -2636,10 +2636,14 @@ void Panel::draw_hover(uint32_t *px)
     const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
     const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
     int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
-    c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
-    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
+    {   // the outline a pixel outside the zone, and only on the screen's black: never over a line, a box or a letter
+        const int x0 = ox + z.x - 1, y0 = oy + z.y - 1, x1 = ox + z.x + z.w, y1 = oy + z.y + z.h, W = width();
+        auto dot = [&](int x, int y) {
+            if (x >= 0 && y >= 0 && x < W && y < H && (px[y * W + x] & 0xFFFFFFu) == 0) px[y * W + x] = YEL;
+        };
+        for (int x = x0; x <= x1; x++) dot(x, y0), dot(x, y1);
+        for (int y = y0; y <= y1; y++) dot(x0, y), dot(x1, y);
+    }
     if (!z.name[0] && !z.value[0]) return;
     if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
     // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;

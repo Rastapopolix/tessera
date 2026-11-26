@@ -1945,7 +1945,8 @@ int main(int argc, char **argv)
     while (k0 < (int)v.zone_count && v.zones[k0].kind != TESS_ZONE_KNOB) k0++;
     bool order = (int)v.zone_count >= k0 + 4;
     for (int i = 0; i < 4 && order; i++)
-        order = v.zones[k0 + i].role == 3 + i && v.zones[k0 + i].x == 60 * i && v.zones[k0 + i].w == 60 && v.zones[k0 + i].name[0];
+        order = v.zones[k0 + i].role == 3 + i && v.zones[k0 + i].x <= 60 * i && v.zones[k0 + i].x + v.zones[k0 + i].w >= 60 * i + 60 &&
+                v.zones[k0 + i].w <= 72 && v.zones[k0 + i].name[0];   // (a column, wider by a value's box)
     CHECK(order, "FX: KNOB 1..4 left to right, a column each, named");
     tess_zone_t mix = v.zones[k0 + 1];
     std::string was = mix.value;
