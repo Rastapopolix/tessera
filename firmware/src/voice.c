@@ -746,6 +746,10 @@ static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 #endif
     if (!entries_note(t, note) || cord_play_shut((uint32_t)(t - trk)))   /* (PLAY shut by its mods: cord.c) */
         return;
+#if TESS_FLOURISH
+    if (vel && (fl_shut >> ((uint32_t)(t - trk) % NTRK) & 1u))   /* (FLOURISH's DROP: no sound, the generator moves on) */
+        return;
+#endif
     vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */
     land_note(t, note, vel);
     midi_out_on(t, note, entries_vel(t, vel));         /* (only MIDI OUT's: the voice's level fades in the mix) */

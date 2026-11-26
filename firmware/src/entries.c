@@ -177,6 +177,10 @@ static uint32_t et_mask(uint32_t role)                /* the tracks of a role */
         if (et_role(tr) == role) m |= 1u << tr;
     return m;
 }
+uint32_t tessera_role(uint32_t tr) { return et_role(tr); }   /* (seq_sub.c's FLOURISH: ET_BASS, ET_RHYTHM, ...) */
+#if TESS_FLOURISH
+_Static_assert(ET_BASS == FL_ROLE_BASS && ET_RHYTHM == FL_ROLE_RHYTHM, "seq_sub.c's FLOURISH reads the roles by number");
+#endif
 #if TESSERA_TRACKS > 4
 /* ---- dub FORMs (Tessadub in Cosmati, step 3; an 8-track build's): a pick that writes the CHAIN (FORM, PHRASE, REPEATs,
  * WANDER 0) and ENTRIES (AMOUNT, DWELL, STYLE, the arrangement grid) for one of five dub structures (tessera-notes

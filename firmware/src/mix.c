@@ -333,7 +333,8 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
     if(fx_send_on && fx_bus_separate)for(uint32_t slot=0;slot<FX_SLOTS-1u;slot++){
         uint32_t amount=(uint32_t)t->p[P_FXSEND2+slot];
 #if TESS_DUB
-        if((dub_throw>>(uint32_t)(t-trk)&1u) && (dub_slots>>(slot+1u)&1u))amount=127u;   /* (THROW: fx.c dub_slots) */
+        if(((dub_throw|DUB_FL_THROW)>>(uint32_t)(t-trk)&1u) && (dub_slots>>(slot+1u)&1u))amount=127u;   /* (THROW,
+                                                                     * FLOURISH's ECHO: fx.c dub_slots) */
 #endif
         fx_extra_gain[slot]=(amount+(amount==127u))*512u;extra|=amount;
     }
