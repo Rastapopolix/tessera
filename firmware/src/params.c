@@ -589,8 +589,8 @@ static const page_t PAGES[] = {
     {"EDIT 2", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E4, P_E5, P_E6, P_E7}},
     {"DRUM SOUND",FAM_EDIT,SC_DRUM,GR_NONE,{0,1,2,3}},
     {"DRUM MIX",FAM_EDIT,SC_DRUM,GR_NONE,{0,4,255,255}},
-    /* FM6 only (page_visible): the patch as the DX7 has it, its operators (PRESETS picks one), the functions */
-    {"STORE", FAM_EDIT, SC_FM6, GR_FMSTORE, {0, 1, 2, 3}},   /* SLOT STORE SEND INIT (ui_input.c act_do) */
+    /* FM6 only (page_visible): the patch as the DX7 has it, its operators (PRESETS picks one), the functions; its
+     * STORE after VOICE, last (Theo 2026-11-26) */
     {"ALGO", FAM_EDIT, SC_FM6, GR_NONE, {FP_ALG, FP_FB, FP_OKS, FP_TRNSP}},
     {"FREQ", FAM_EDIT, SC_FMOP, GR_NONE, {FP_FC, FP_FF, FP_DET, FP_MODE}},
     {"OUT", FAM_EDIT, SC_FMOP, GR_NONE, {FP_OL, FP_KVS, FP_AMS, FP_OP}},
@@ -638,6 +638,8 @@ static const page_t PAGES[] = {
     {"VOICE", FAM_EDIT, SC_TRACK, GR_NONE, {P_VOICE, P_GLIDE, P_GLMODE, P_PRIO}},
     {"VOICE 2", FAM_EDIT, SC_TRACK, GR_NONE, {P_ALLOC, P_DETUNE, P_PAN, P_MUTE}},
     {"VOICE 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_SPRD, 0xFF, 0xFF, 0xFF}},
+    {"STORE", FAM_EDIT, SC_FM6, GR_FMSTORE, {0, 1, 2, 3}},   /* FM6 only: SLOT STORE SEND INIT (ui_input.c act_do); the
+                                                          * EDIT pages' last, as the map's Store row */
     /* GLO (review 2026-11-13; LANDSCAPE moved 2026-11-14): the pages to play with first (MIXER, PERF: their keys
      * are the GLO layer's, ui_layer.c mixer_live), then the long form (PIECE, CHAIN, ENTRIES, LANDSCAPE: its own
      * keys stay live wherever it sits), the device's setup last (SYSTEM, MIDI IN, MIDI OUT). Only the order of this
