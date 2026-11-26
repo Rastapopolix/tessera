@@ -203,6 +203,13 @@ class GuiX11 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MANUAL)   // (MANUAL in the menu: the manual's page in the browser, through xdg-open)
+        {
+            std::string cmd = std::string("xdg-open '") + Panel::manual_url() + "' >/dev/null 2>&1 &";
+            if (std::system(cmd.c_str()) != 0)
+                panel.note("NO BROWSER: OPEN RASTAPOLIX.GITHUB.IO/TESSERA/COSMATI");
+            return;
+        }
         if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
         {                                                                // MIDI; dragged too: no drag out of an X11 window yet)
             panel.note(link->export_midi());

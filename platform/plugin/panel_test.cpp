@@ -664,6 +664,12 @@ int main(int argc, char **argv)
         q.down(300, oy);   // STEREO
         q.up(300, oy);
         CHECK(q.take_outs_request() == 0, "OUTPUTS STEREO asks for stereo");
+        // MANUAL: a click asks the window to open the Cosmati manual's page, and shuts the menu
+        int my = 46 + 10 + 11 * 36 + 3 * 18 + 22 + 18;   // (row_y(ROW_MANUAL)'s middle)
+        q.down(100, my), q.up(100, my);
+        CHECK(q.take_file_request() == Panel::FILE_MANUAL && !q.menu_shown(), "MANUAL asks FILE_MANUAL, the menu shut");
+        CHECK(std::string(Panel::manual_url()).find("/cosmati/") != std::string::npos, "the manual's page is /cosmati/");
+        q.down(100, 25), q.up(100, 25);   // (the menu again, for LISTEN)
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
         int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
