@@ -389,7 +389,7 @@ int main(int argc, char **argv)
                 screen += px[(44 + 8 + y) * Panel::W + 292 + 8 + x] == (0xFF000000u | r << 16 | g << 8 | b);
             }
         CHECK(screen == TESS_SCREEN * TESS_SCREEN, "the screen at 1:1 inside the hairline (%d)", screen);
-        q.down(552 + 6 * 62 + 45, 174 + 20);   // MIX, the sections' seventh (TESSERA's own buttons)
+        q.down(566 + 1 * 84 + 37, 236 + 20);   // MIX, the second row's second (TESSERA's own buttons)
         CHECK(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX), "MIX held where TESSERA draws it");
         q.up(0, 0);
         CHECK(!(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX)), "MIX let go");
@@ -663,17 +663,17 @@ int main(int argc, char **argv)
         CHECK(!q.menu_shown(), "Esc shuts the menu");
         // a right-click latches a button or key (a section: the FM-1 button it stands for, PIECE's GLO): GLO held
         // while FX is clicked, then let go; Esc lets every latch go
-        const int glo_x = 552 + 5 * 62 + 30, fx_x = 552 + 3 * 62 + 20, by = 174 + 20;
+        const int glo_x = 566 + 30, gy = 236 + 20, fx_x = 566 + 3 * 84 + 20, by = 174 + 20;   // (PIECE: row 2's first)
         const uint32_t fx_b = TESS_BTN_SECTION(TESS_SEC_FX);
-        CHECK(q.latch(glo_x, by) && (q.input.buttons & (1u << 5)), "a right-click on PIECE latches GLO");
+        CHECK(q.latch(glo_x, gy) && (q.input.buttons & (1u << 5)), "a right-click on PIECE latches GLO");
         q.down(fx_x, by);
         CHECK((q.input.buttons & fx_b) && (q.input.buttons & (1u << 5)), "FX clicked with GLO latched: both held");
         q.up(fx_x, by);
         CHECK(!(q.input.buttons & fx_b) && (q.input.buttons & (1u << 5)), "FX let go, GLO still held");
-        CHECK(q.latch(glo_x, by) && !(q.input.buttons & (1u << 5)), "a second right-click lets GLO go");
-        q.latch(glo_x, by);
-        CHECK(q.down(glo_x, by) && !(q.input.buttons & (1u << 5)), "a click on a latched button lets it go");
-        q.up(glo_x, by);
+        CHECK(q.latch(glo_x, gy) && !(q.input.buttons & (1u << 5)), "a second right-click lets GLO go");
+        q.latch(glo_x, gy);
+        CHECK(q.down(glo_x, gy) && !(q.input.buttons & (1u << 5)), "a click on a latched button lets it go");
+        q.up(glo_x, gy);
         const int c4x = 36 + 12 + (int)(7.5 * ((928 - 24) / 16)), c4y = 332 + 192;
         CHECK(q.latch(c4x, c4y) && q.input.keys, "a right-click latches a key");
         CHECK(q.key(0x01, true) && !q.input.keys && !q.input.buttons, "Esc lets every latch go");

@@ -202,7 +202,7 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
 const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 60;   // (60: SCALE, SOUND, SHAPE at full size)
 const int XS_X = 1072, XS_STEP = 84, XS_W = 74;   // (EXPANDED's sections: five a row, room round the words)
-const int TB_X = 380, TB_Y = 8, TB_W = 66, TB_H = 30, TB_STEP = 74;   // (PLAY, REC, SAVE in the title bar)
+const int TR_Y = 292, TR_H = 32;   // (under the sections: SAVE, PLAY, REC)
 // TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
@@ -254,7 +254,7 @@ void Panel::layout()
         buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)   KEY: F1"});
         // the sections (Theo 2026-11-26, COSMATI_AUDIT C3a): a button each for what the pages do, the FM-1's eight
         // that shared them gone (tess_core_key_words: the core's sections, TESS_BTN_SECTION); HOME, SAVE, PLAY, REC
-        // the FM-1's. Seven a row (EXPANDED and FM-1 size alike); the card: what is behind it and its key (panel.h key)
+        // the FM-1's. Five a row, HOME the tenth, SAVE / PLAY / REC in a slim row under them (EXPANDED and FM-1 size alike); the card: what is behind it and its key (panel.h key)
         // a section's right-click latches the FM-1 button it stands for (the FM-1's held gestures: GLO + a key ..)
         static const struct { int bit; const char *face, *card; int hold; } SEC[2][5] = {
             {{SEC_BIT + TESS_SEC_GEN, "GEN", "GENERATOR, NOTES, ARP, PATTERN   KEY: 1   RIGHT-CLICK: SEQ HELD", B_SEQ},
@@ -272,11 +272,11 @@ void Panel::layout()
             for (int i = 0; i < 5; i++)
                 buttons.push_back({sx + i * sstep, 174 + r * 62, sw, 48, SEC[r][i].bit, SEC[r][i].face, nullptr,
                                    SEC[r][i].card, SEC[r][i].hold});
-        // the transport and SAVE in the title bar, as an app's (Theo 2026-11-26: the sections given room)
-        buttons.push_back({TB_X, TB_Y, TB_W, TB_H, B_PLAY, "PLAY", nullptr,
+        // under them a slim row: SAVE, then PLAY and REC at the right (Theo 2026-11-26: the sections given room)
+        buttons.push_back({sx, TR_Y, sw, TR_H, B_SAVE, "SAVE", nullptr, "KEY: -"});
+        buttons.push_back({sx + 3 * sstep, TR_Y, sw, TR_H, B_PLAY, "PLAY", nullptr,
                            standalone_ ? "KEY: SPACE" : "THE DAW'S TRANSPORT RUNS IT TOO"});
-        buttons.push_back({TB_X + TB_STEP, TB_Y, TB_W, TB_H, B_REC, "REC", nullptr, "KEY: ="});
-        buttons.push_back({TB_X + 2 * TB_STEP, TB_Y, TB_W, TB_H, B_SAVE, "SAVE", nullptr, "KEY: -"});
+        buttons.push_back({sx + 4 * sstep, TR_Y, sw, TR_H, B_REC, "REC", nullptr, "KEY: ="});
         const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
         buttons.push_back({KEYBED[0], oy - 5 - OCT_H, OCT_W, OCT_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP   KEY: PAGE UP"});
         buttons.push_back({KEYBED[0], oy + 5, OCT_W, OCT_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN   KEY: PAGE DOWN"});
