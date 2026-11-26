@@ -8,6 +8,7 @@
  * Platform-independent: gui_win32.cpp / gui_x11.cpp give it pixels and the mouse. Not thread-safe: the GUI thread only. */
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -254,6 +255,28 @@ class Panel
     void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
+    // the page map (Cosmati audit G11): Ctrl+M or a click on the screen's title opens it over the panel, each section's
+    // pages by name (the view's map_*), the shown one lit; a click goes there, Esc or a click outside closes it
+    bool map_open = false;
+    int map_hover = -1;   // (map_rects' index under the mouse)
+    struct MapRect { int x, y, w, h, sec, at; };
+    std::vector<MapRect> map_rects;
+    uint8_t map_n[TESS_SEC_N] = {}, map_sec = TESS_SEC_N, map_at = 0;
+    char map_name[TESS_SEC_N][16][12] = {};
+    void draw_map(uint32_t *px);
+    bool map_click(int x, int y);
+  public:
+    bool map_shown() const { return map_open; }
+    void map_toggle() { map_open = !map_open && map_has(); map_hover = -1; }
+    bool map_has() const { for (int s = 0; s < TESS_SEC_N; s++) if (map_n[s]) return true; return false; }
+    // (tests) where the map last drew section sec's page named name: its middle, false if not there
+    bool map_place(int sec, const char *name, int &x, int &y) const
+    {
+        for (const MapRect &r : map_rects)
+            if (r.sec == sec && !std::strcmp(map_name[sec][r.at], name)) { x = r.x + r.w / 2, y = r.y + r.h / 2; return true; }
+        return false;
+    }
+  private:
     bool typing_ = false;   // the view's: NAME open
     bool mod_type = false, mod_fine = false, mod_alt = false;   // (set_mods)
     int roll_way = 0, roll_x0 = 0, roll_y0 = 0, paint_x = 0;   // (a drag on NOTES' steps: which way, from where)

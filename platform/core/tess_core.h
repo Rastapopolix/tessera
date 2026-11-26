@@ -150,6 +150,9 @@ enum { TESS_ZONE_CHORD = 18 };
  * (0..7), or 0x100 + the letter for its head. CLICK: the cell's next kind, AUTO IN OUT FADE round (a head: every
  * track's cell in that letter, as its first track's next); HELP (a right-click): AUTO again (a head: the column) */
 enum { TESS_ZONE_EGRID = 19 };
+/* MAP: a page on the page map (Cosmati audit G11; a front end's own picture of tess_view_t's map_*, not drawn by the
+ * core): role the section (TESS_SEC_*), row the page's place in it. CLICK: that page (a menu, a dialog closed first) */
+enum { TESS_ZONE_MAP = 21 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -242,6 +245,11 @@ typedef struct {
      * key_chord: the chord the CHORD track plays now ("Am7"; "" none) */
     uint32_t key_dim, key_root;
     char key_chord[12];
+    /* the page map (Cosmati audit G11; with the section buttons on, else map_n all 0): section s's pages in order,
+     * map_n[s] of them (at most 16), each one's name ("LANDSCAPE", an engine's own page title); the page shown,
+     * section map_sec (TESS_SEC_N: none, HOME) at place map_at. TESS_ZONE_MAP goes to one */
+    uint8_t map_n[TESS_SEC_N], map_sec, map_at;
+    char map_name[TESS_SEC_N][16][12];
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

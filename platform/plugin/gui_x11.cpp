@@ -287,6 +287,7 @@ class GuiX11 : public Gui
                     bool ctrl = e.xkey.state & ControlMask, alt = e.xkey.state & Mod1Mask, shift = e.xkey.state & ShiftMask;
                     char c = ctrl && !alt && ks == XK_r   ? (shift ? 'r' : 'R')   // (DICE, MUTATE)
                              : ctrl && !alt && ks == XK_c ? 'C'
+                             : ctrl && !alt && ks == XK_m ? 'M'   // (the page map)
                              : ctrl && !alt && ks == XK_v ? (shift ? 'v' : 'V')
                              : alt && !ctrl && ks == XK_Up   ? '^'
                              : alt && !ctrl && ks == XK_Down ? '_'

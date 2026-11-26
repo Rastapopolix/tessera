@@ -381,6 +381,10 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     }
     zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
     locked = v.locked, dice_back = v.dice_back != 0;
+    std::memcpy(map_n, v.map_n, sizeof map_n);
+    std::memcpy(map_name, v.map_name, sizeof map_name);
+    map_sec = v.map_sec, map_at = v.map_at;
+    if (map_open && !map_has()) map_open = false;   // (the sections gone: an FM-1 shell)
     if (expanded() && t2 && t2->w == TESS_TRACKS_W)
         zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
                                                                                           : (uint32_t)TESS_TRACKS_ZONES));
@@ -401,6 +405,11 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
                             int x = ox + zones[i].x + zones[i].w - 9 + c, y = oy + zones[i].y + 2 + r;
                             if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = 0xFFFFD020u;
                         }
+    }
+    if (map_open)   // the page map over everything
+    {
+        draw_map(px);
+        return;
     }
     if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
     if (ctx_kind == CTX_VALUE && zone_like(ctx_zone) < 0) ctx_kind = 0;
@@ -832,6 +841,11 @@ bool Panel::key(int code, bool down)
                                         SEC_BIT + 6, SEC_BIT + 7, SEC_BIT + 8, B_HOME, B_SAVE, B_REC};
         for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = SEC_KEY[i];
     }
+    if (code == 0x01 && map_open)    // Esc: the page map shut
+    {
+        if (down) map_open = false;
+        return false;
+    }
     if (code == 0x01 && ctx_kind)    // Esc: a right-click's menu shut
     {
         if (down) ctx_kind = 0;
@@ -905,6 +919,13 @@ bool Panel::shortcut(char c)
         note(said);
         return true;
     }
+    if (c == 'M')   // Ctrl+M: the page map (Cosmati audit G11)
+    {
+        if (typing()) return false;
+        bool was = map_open;
+        map_toggle();
+        return was || map_open;
+    }
     static const char TR_KEYS[] = "CVv^_";
     if (const char *k = c ? std::strchr(TR_KEYS, c) : nullptr)   // TRACK's: not while NAME takes the keys
     {
@@ -950,6 +971,11 @@ bool Panel::down(int x, int y)
     last_x = x;
     last_y = y;
     acc = acc_y = 0;
+    if (map_open)   // the page map: a page goes there, anywhere else shuts it
+    {
+        drag = NONE;
+        return map_click(x, y);
+    }
     if (ctx_kind)   // the right-click's menu: a row does its job, anywhere else shuts it
     {
         int r = ctx_row_at(x, y);
@@ -970,6 +996,13 @@ bool Panel::down(int x, int y)
     {
         drag = NONE;
         return menu_click(x, y);
+    }
+    if (native() && map_has() && x >= SCREEN_X && x < SCREEN_X + SCREEN_S && y >= SCREEN_Y &&
+        y < SCREEN_Y + SCREEN_S / 32 + 18 && zone_at(x, y) < 0)   // the screen's title: the page map (G11)
+    {
+        drag = NONE;
+        map_toggle();
+        return true;
     }
     if (native() && skin_x > 0 && x >= skin_x - 2 && x < skin_x + 18 && y >= 12 && y < 36)   // the sun / moon: the other skin
     {
@@ -1233,6 +1266,19 @@ bool Panel::down(int x, int y)
 
 bool Panel::move(int x, int y)
 {
+    if (map_open)   // the page map: the page under the mouse lit
+    {
+        int h = -1;
+        for (size_t i = 0; i < map_rects.size(); i++)
+        {
+            const MapRect &r = map_rects[i];
+            if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) h = (int)i;
+        }
+        last_x = x, last_y = y;
+        if (h == map_hover) return false;
+        map_hover = h;
+        return true;
+    }
     if (ctx_kind)   // a right-click's menu: the row under the mouse lit
     {
         ctx_hover = ctx_row_at(x, y);
@@ -2592,6 +2638,76 @@ void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
 {
     input.zones.push_back({z, action, n});
     input.changed = true;
+}
+
+// the page map (Cosmati audit G11): a card over the panel, a block a section (its name, then its pages, a column of 11
+// at most, more in a second), GEN .. SHAPE on the first row, PIECE .. SETUP on the second; the shown page inverted, the
+// one under the mouse outlined. In the shell's inks (DAY: paper, amber, dark words)
+void Panel::draw_map(uint32_t *px)
+{
+    static const char *const SEC[TESS_SEC_N] = {"GEN", "SOUND", "MOD", "FX", "SHAPE", "PIECE", "MIX", "SCALE", "SETUP"};
+    Canvas c{px, width()};
+    const bool nat = native();
+    const uint32_t BG = nat ? T_BLACK : 0xFF000000u, HOT = nat ? T_YEL : 0xFFFFD020u, WORD = nat ? T_WORD : 0xFFB9B2A0u,
+                   DIM = nat ? T_DIM : 0xFF3B3007u;
+    const int ROWS = 11, LH = 20, CW = 150, HEAD = 30, PAD = 16;
+    auto cols = [&](int s) { return map_n[s] > ROWS ? 2 : 1; };
+    int rw[2] = {0, 0}, rn[2] = {1, 1};   // (each row of blocks as wide as its columns, as tall as its longest)
+    for (int s = 0; s < TESS_SEC_N; s++)
+    {
+        rw[s >= 5] += cols(s) * CW;
+        int n = map_n[s] > ROWS ? ROWS : map_n[s];
+        if (n > rn[s >= 5]) rn[s >= 5] = n;
+    }
+    const int rh0 = HEAD + rn[0] * LH + 12, rh1 = HEAD + rn[1] * LH;
+    int w = (rw[0] > rw[1] ? rw[0] : rw[1]) + 2 * PAD, h = 44 + rh0 + rh1 + PAD, W = width();
+    int x0 = (W - w) / 2, y0 = (H - h) / 2;
+    if (x0 < 4) x0 = 4;
+    if (y0 < 4) y0 = 4;
+    c.box(x0, y0, w, h, BG);
+    c.box(x0, y0, w, 2, HOT), c.box(x0, y0 + h - 2, w, 2, HOT);
+    c.box(x0, y0, 2, h, HOT), c.box(x0 + w - 2, y0, 2, h, HOT);
+    c.ptext(x0 + PAD, y0 + 12, "PAGES", 2, HOT);
+    const char *hint = "CLICK A PAGE   ESC: CLOSE";
+    c.ptext(x0 + w - PAD - Canvas::ptext_w(hint, 2), y0 + 12, hint, 2, WORD);
+    map_rects.clear();
+    int x = x0 + PAD, y = y0 + 44;
+    for (int s = 0; s < TESS_SEC_N; s++)
+    {
+        if (s == 5) x = x0 + PAD, y += rh0;
+        c.ptext(x + 4, y, SEC[s], 2, s == map_sec ? HOT : WORD);
+        c.box(x + 4, y + 18, cols(s) * CW - 16, 1, DIM);
+        for (int k = 0; k < map_n[s]; k++)
+        {
+            int cx = x + (k / ROWS) * CW, cy = y + HEAD + (k % ROWS) * LH;
+            const bool on = s == map_sec && k == map_at, hov = (int)map_rects.size() == map_hover;
+            if (on) c.box(cx, cy - 3, CW - 12, LH - 2, HOT);
+            else if (hov)
+            {
+                c.box(cx, cy - 3, CW - 12, 1, HOT), c.box(cx, cy + LH - 6, CW - 12, 1, HOT);
+                c.box(cx, cy - 3, 1, LH - 2, HOT), c.box(cx + CW - 13, cy - 3, 1, LH - 2, HOT);
+            }
+            c.ptext(cx + 4, cy + 1, map_name[s][k], 2, on ? BG : hov ? HOT : WORD);
+            map_rects.push_back({cx, cy - 3, CW - 12, LH - 2, s, k});
+        }
+        x += cols(s) * CW;
+    }
+}
+
+bool Panel::map_click(int x, int y)
+{
+    for (const MapRect &r : map_rects)
+        if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)
+        {
+            tess_zone_t z{};
+            z.kind = TESS_ZONE_MAP, z.role = (int8_t)r.sec, z.row = (int16_t)r.at;
+            zone_act(z, TESS_ZA_CLICK, 0);
+            break;
+        }
+    map_open = false;
+    map_hover = -1;
+    input.changed = true;
+    return true;
 }
 
 // the zone under the mouse (or being dragged): a hairline round it on the screen, and under the screen a card with its

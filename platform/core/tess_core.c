@@ -90,7 +90,7 @@ void tess_core_boot(void)
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
 _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
 enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION,
-       ZQ_FINE };
+       ZQ_FINE, ZQ_MAP };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -159,6 +159,16 @@ static void zq_run(void)
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
                                                        * picker (as the FM-1's buttons, which those take) */
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
+        ui.force = 1;
+        break;
+    case ZQ_MAP:                                      /* the page map: a section's page (arg: section * 16 + place); the
+                                                       * menu's list closed first (not HOME), not over a dialog, a picker */
+        if (ui.menu == 1) {
+            settings_save();
+            ui.menu = 0;
+            menu_cols = 0;
+        }
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_go(arg >> 4, arg & 15u);
         ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
@@ -563,6 +573,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     }
     if (action == TESS_ZA_DROP) {                     /* (a drag let go: wherever the screen is now) */
         roll_drop();
+        return;
+    }
+    if (z && z->kind == TESS_ZONE_MAP) {              /* the page map (the front end's own, no zone of the screen's):
+                                                       * that section's page */
+        if (action == TESS_ZA_CLICK && z->role >= 0 && z->role < TESS_SEC_N && z->row >= 0 && z->row < 16)
+            zq_put(ZQ_MAP, (uint32_t)z->role * 16u + (uint32_t)z->row, 1);
         return;
     }
     if (!z || !zone_live(z))
@@ -1396,11 +1412,32 @@ void tess_core_view(tess_view_t *v)
     for (i = 0; i < TESS_KEYS; i++)
         key_legend(i, v->key_short[i], v->key_long[i]);
     key_scale(v);
+    {   /* the page map (G11): each section's pages by name, the one shown */
+        uint8_t pg[NPAGES];
+        uint32_t s, k, n;
+        v->map_sec = TESS_SEC_N, v->map_at = 0;
+        for (s = 0; s < TESS_SEC_N; s++) {
+            n = ui_csec ? cs_pages(s, pg) : 0u;
+            if (n > 16u) n = 16u;
+            v->map_n[s] = (uint8_t)n;
+            for (k = 0; k < n; k++) {
+#if MELODEE_LOOK
+                const char *t = mo_title(&PAGES[pg[k]]);
+#else
+                const char *t = PAGES[pg[k]].title;
+#endif
+                str_cpy(v->map_name[s][k], t, sizeof v->map_name[s][k]);
+                if (pg[k] == ui.page && !ui.home && !ui.menu) v->map_sec = (uint8_t)s, v->map_at = (uint8_t)k;
+            }
+        }
+    }
 #else
     for (i = 0; i < TESS_KEYS; i++)
         v->key_short[i][0] = v->key_long[i][0] = 0;
     v->key_dim = v->key_root = 0;
     v->key_chord[0] = 0;
+    memset(v->map_n, 0, sizeof v->map_n);
+    v->map_sec = TESS_SEC_N, v->map_at = 0;
 #endif
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;
