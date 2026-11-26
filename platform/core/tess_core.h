@@ -110,7 +110,7 @@ void tess_core_screen(tess_screen_t *s);
  * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
  * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
-enum { TESS_ZONES = 48 };
+enum { TESS_ZONES = 64 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
        TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK, TESS_ZONE_POINT };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
                                             * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
@@ -134,6 +134,10 @@ enum { TESS_ZONE_SMAP = 17 };
  * or the progression's length for the "+" card after it. TURN or WHEEL n: that chord's root n scale degrees up (- down);
  * CLICK on "+": a chord more (a fourth above the last); HELP (a right-click) on a card: that chord gone (one stays) */
 enum { TESS_ZONE_CHORD = 18 };
+/* EGRID: a cell of ENTRIES' arrangement grid (an 8-track build's ENTRIES page); row: the FORM letter * 16 + the track
+ * (0..7), or 0x100 + the letter for its head. CLICK: the cell's next kind, AUTO IN OUT FADE round (a head: every
+ * track's cell in that letter, as its first track's next); HELP (a right-click): AUTO again (a head: the column) */
+enum { TESS_ZONE_EGRID = 19 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;

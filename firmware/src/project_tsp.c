@@ -22,6 +22,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_CH_QUAL
        TSP_CHQUAL,
 #endif
+#if CORE_TRACKS > 4
+       TSP_EGRID = 51,                                /* (50: TSP_CHQUAL, ROADMAP's claim) */
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -83,7 +86,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * only when one WHEN is not OFF; none: OFF, +2 ST;
                                               * TSP_CHQUAL (an 8-track build's only: the FM-1 skips it): each
                                               * track's CHORD USER qualities, GEN_CH_USER_N bytes a track (0 AUTO,
-                                              * else a CH_*), written only when one is not AUTO; none: AUTO */
+                                              * else a CH_*), written only when one is not AUTO; none: AUTO;
+                                              * TSP_EGRID (an 8-track build's only: the FM-1 skips it): ENTRIES'
+                                              * arrangement grid, FORM letter A, B, C's cells as a u16 each (2 bits
+                                              * a track, entries.c ET_G_*), written only when one is not AUTO;
+                                              * none: every cell AUTO */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -96,6 +103,9 @@ _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRAN
 _Static_assert(TSP_CHQUAL == 50, "the parts' numbers are stored: never renumbered");
 #define TSP_CHQUAL_BYTES (TESSERA_TRACKS * GEN_CH_USER_N)
 _Static_assert(TSP_CHQUAL_BYTES <= 255u, "TSP_PLAIN's at: a byte");
+#endif
+#if CORE_TRACKS > 4
+_Static_assert(TSP_EGRID == 51 && sizeof tessera.et_grid == 6u, "the parts' numbers are stored: never renumbered");
 #endif
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -606,6 +616,11 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             }
 #endif
 #if CORE_TRACKS > 4
+        if (tessera.et_grid[0] | tessera.et_grid[1] | tessera.et_grid[2]) {   /* (ENTRIES' grid: only when a cell */
+            tsp_begin(&w, TSP_EGRID, 1);                                     /* is not AUTO) */
+            for (t = 0; t < 3u; t++) tsp_u16(&w, tessera.et_grid[t]);
+            tsp_end(&w);
+        }
         xtrk_put(&w);                                  /* (tracks 5..8, and 1..4's references past 4) */
 #endif
     }
@@ -706,6 +721,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
     {TSP_CCN, 119u, 0, CORD_MAX, CORD_MAX},
 #if TESS_CH_QUAL
     {TSP_CHQUAL, CH_N - 1u, 0, TSP_CHQUAL_BYTES, TSP_CHQUAL_BYTES},
+#endif
+#if CORE_TRACKS > 4
+    {TSP_EGRID, 255u, 0, 6u, 6u},
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1039,6 +1057,8 @@ static void tsp_restore(const uint8_t *raw)
         else memset(tessera.chord[t].uq, 0, GEN_CH_USER_N);
 #endif
 #if CORE_TRACKS > 4
+    for (t = 0; t < 3u; t++)                           /* (ENTRIES' grid; none saved: every cell AUTO) */
+        tessera.et_grid[t] = (uint16_t)(tsp_seen.at[TSP_EGRID] ? tsp_u16_at(raw + tsp_seen.at[TSP_EGRID] + 2u * t) : 0u);
     {   /* tracks 5..8, and 1..4's references past 4 (the part found again: a tsp_valid since, of another record,
          * may have run between) */
         uint32_t pos = TSP_HEAD, n = tsp_u16_at(raw + 8), at = 0, len = 0;

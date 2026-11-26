@@ -10,14 +10,15 @@
  *   "TTK1", version, NTRK, the track copied, u16 body length, the body; FOLLOW, BRANCH TO, LOGIC WITH, QUAD LINK,
  *   SECTION PC (0/1); the mods onto it: a count, then each one's SRC, SRC TRACK, DST, AMOUNT, OFFSET, UNI, HOLD clock,
  *   SCALE (0/1), CC number; the timed notes: a u16 count, then each one (its owner's track left out); the motion: a
- *   count, each event's place (its step), parameter, value (u16) and pattern, then MOTION on (0/1).
+ *   count, each event's place (its step), parameter, value (u16) and pattern, then MOTION on (0/1); its CHORD USER
+ *   qualities (GEN_CH_USER_N bytes, gen.h uq) and its cells of ENTRIES' grid (a byte: letter A's 2 bits low).
  * A paste of the TRACK keeps the target's MIDI OUT channel and the mods' and references' track numbers (Theo
  * 2026-11-26: a pasted track's mods that point at other tracks keep their numbers); one of the SOUND alone changes
  * what a user preset load does (the engine and the parameters param_kept leaves, the FM6, ORACLE and DRUM patches).
  * A swap moves two tracks whole and renumbers every reference to them, so the piece plays on as before. */
 
 #if CORE_TRACKS > 4
-#define TT_VER 1u
+#define TT_VER 2u                                        /* (2: the qualities and the grid's cells) */
 #define TT_HEAD 9u                                       /* "TTK1", version, NTRK, the track, u16 body length */
 #define TT_CORD 9u                                       /* a mod's bytes */
 #define TT_MOT 5u                                        /* a motion event's bytes */
@@ -55,6 +56,19 @@ static int tt_cord_onto(const cord_t *c, uint32_t t)
     const cord_dest_t *d = cord_dest(c->dst);
     return !cord_empty(c) && d && d->kind < CK_GLOBAL && c->dst_trk == t &&
            !(c->dst >= CD_M1_AMT && c->dst <= CD_M16_AMT);
+}
+
+/* track t's cells of ENTRIES' arrangement grid, a byte (letter A low); and set from one */
+static uint32_t tt_cells(uint32_t t)
+{
+    uint32_t s, c = 0;
+    for (s = 0; s < 3u; s++) c |= (tessera.et_grid[s] >> (2u * t) & 3u) << (2u * s);
+    return c;
+}
+static void tt_cells_set(uint32_t t, uint32_t c)
+{
+    for (uint32_t s = 0; s < 3u; s++)
+        tessera.et_grid[s] = (uint16_t)((tessera.et_grid[s] & ~(3u << (2u * t))) | (c >> (2u * s) & 3u) << (2u * t));
 }
 
 static uint32_t tt_owner_trk(const recorded_note_t *r) { return (uint32_t)(r->owner & REC_OWNER_MASK) / NPAT; }
@@ -108,12 +122,16 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
         }
     out[pos++] = (uint8_t)(track < 4u && ((motion.on >> track) & 1u));
     motion_unguard(f);
+    TT_ROOM(GEN_CH_USER_N + 1u);
+    memcpy(out + pos, tessera.chord[track].uq, GEN_CH_USER_N);
+    pos += GEN_CH_USER_N;
+    out[pos++] = (uint8_t)tt_cells(track);
 #undef TT_ROOM
     return pos;
 }
 
 /* a copy's parts: its body, the rest after it; 1 a copy this build reads (every part checked but the body's own) */
-typedef struct { const uint8_t *body, *refs, *cords, *recs, *mot; uint32_t blen, ncord, nrec, nmot; } tt_parts_t;
+typedef struct { const uint8_t *body, *refs, *cords, *recs, *mot, *more; uint32_t blen, ncord, nrec, nmot; } tt_parts_t;
 static int tt_parse(const uint8_t *in, uint32_t len, tt_parts_t *q)
 {
     const uint8_t *p, *e = in + len;
@@ -156,6 +174,12 @@ static int tt_parse(const uint8_t *in, uint32_t len, tt_parts_t *q)
         if (p[0] >= NSTEP || p[1] >= P_COUNT || p[4] >= NPAT) return 0;
     if (p[0] > 1u) return 0;
     p++;
+    TT_NEED(GEN_CH_USER_N + 1u);
+    q->more = p;
+    for (i = 0; i < GEN_CH_USER_N; i++)
+        if (p[i] >= CH_N) return 0;
+    if (p[GEN_CH_USER_N] >> 6) return 0;
+    p += GEN_CH_USER_N + 1u;
 #undef TT_NEED
     return p == e;
 }
@@ -187,6 +211,8 @@ static void tt_paste_track(const tt_parts_t *q, uint32_t t)
     tessera.quad[t].link = (uint8_t)(r[3] & ~(1u << t));
     tessera.sec_pc = (uint8_t)((tessera.sec_pc & ~(1u << t)) | (uint32_t)r[4] << t);
     TESS_IRQ_OFF();
+    memcpy(tessera.chord[t].uq, q->more, GEN_CH_USER_N);
+    tt_cells_set(t, q->more[GEN_CH_USER_N]);
     tt_cords_off(t);
     for (i = at = 0; i < q->ncord; i++) {                /* (no free cord left: the rest left out) */
         const uint8_t *c = q->cords + i * TT_CORD;
@@ -292,6 +318,17 @@ uint32_t tess_core_track_swap(uint32_t a, uint32_t b)
         tessera.evolve[b].follow = fa; tessera.evolve[b].br_to = ba; tessera.evolve[b].lg_with = ga; tessera.quad[b].link = qa;
     }
     tessera.sec_pc = (uint8_t)tt_swapbit(tessera.sec_pc, a, b);
+    {                                                    /* (CHORD USER's qualities, ENTRIES' grid cells) */
+        uint8_t uq[GEN_CH_USER_N];
+        uint32_t ca = tt_cells(a), cb = tt_cells(b);
+        TESS_IRQ_OFF();
+        memcpy(uq, tessera.chord[a].uq, sizeof uq);
+        memcpy(tessera.chord[a].uq, tessera.chord[b].uq, sizeof uq);
+        memcpy(tessera.chord[b].uq, uq, sizeof uq);
+        tt_cells_set(a, cb);
+        tt_cells_set(b, ca);
+        TESS_IRQ_ON();
+    }
     for (t = 0; t < NTRK; t++) {                         /* (every reference to a or b: the other) */
         tessera_evolve_t *ev = &tessera.evolve[t];
         ev->follow = tt_swap1(ev->follow, a, b); ev->br_to = tt_swap1(ev->br_to, a, b); ev->lg_with = tt_swap1(ev->lg_with, a, b);

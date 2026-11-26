@@ -2015,10 +2015,72 @@ static void mo_pic_perf(void)
 }
 /* ENTRIES: a row a track: its number, its role (AUTO's guess, marked *), IN / OUT / MUTE, its level as
  * a bar; a row about to change on the next line blinks; off: dim */
+#if TESSERA_TRACKS > 4
+/* ENTRIES, 8 tracks: the arrangement grid, tracks 1..4 on the left, 5..8 on the right: a track's number (dim while out
+ * or muted, blinking before a change, its level under it), then its cells for FORM letters A, B, C (entries.c: AUTO
+ * the letter, IN filled, OUT an empty box, FADE half filled); under them the letters' heads (the one playing bright;
+ * a click there: the whole column). The ROLEs: OCT- held, as on the FM-1 */
+static void mo_pic_egrid(void)
+{
+    static const char *const CELL[4] = {"AUTO", "IN", "OUT", "FADE"};
+    uint8_t role[TESSERA_TRACKS];
+    uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u || et_grid_on(),
+             blink = (fm1_ms / 125u) & 1u, now = 3u, s, half;
+    if (song.playing) {                               /* (the letter playing: the CHAIN page's; FORM OFF: A's) */
+        uint8_t seq[4];
+        uint32_t pos, left;
+        now = tessera_chain_get(seq, &pos, &left) ? seq[pos & 3u] : 0u;
+    }
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_PIC);
+#endif
+    for (uint32_t k = 0; k < TESSERA_TRACKS; k++) {
+        int32_t x0 = k < 4u ? 4 : 64, y = 54 + (int32_t)(k & 3u) * 10;
+        char n[3] = {'T', (char)('1' + k), 0};
+        uint16_t ink = trk[k].p[P_MUTE] || (out >> k & 1u) || ((warn >> k & 1u) && blink) ? mo_tdim(k) : MO_TRK(k);
+        mo_text(n, x0, y, ink);
+        if (on && song.playing) mo_hl(x0, y + 8, 11 * entry_gain[k] / 32768, MO_TRK(k));
+        for (s = 0; s < ET_G_SECS; s++) {
+            uint32_t c = tessera.et_grid[s] >> (2u * k) & 3u;
+            int32_t x = x0 + 15 + (int32_t)s * 14;
+            char h[2] = {(char)('A' + s), 0};
+            if (c == ET_G_IN) mo_fill(x, y - 1, 12, 9, MO_TRK(k)), mo_textc(h, x + 6, y, MO_BG);
+            else if (c == ET_G_FADE) mo_box(x, y - 1, 12, 9, MO_TRK(k)), mo_fill(x, y + 4, 12, 4, MO_TRK(k));
+            else if (c == ET_G_OUT) mo_box(x, y - 1, 12, 9, mo_tdim(k));
+            else mo_textc(h, x + 6, y, MO_DIM);
+#if TESS_HAS_POINTER
+            {
+                char nm[16] = "T1 SECTION A";
+                nm[1] = (char)('1' + k), nm[11] = h[0];
+                uz_add(UZ_G_PIC, UZ_EGRID, x, y - 1, 12, 9, -1, -1, (int32_t)(s * 16u + k), nm, CELL[c]);
+            }
+#endif
+        }
+    }
+    for (half = 0; half < 2u; half++)                  /* (the heads, under each half) */
+        for (s = 0; s < ET_G_SECS; s++) {
+            char h[2] = {(char)('A' + s), 0};
+            int32_t x = (half ? 64 : 4) + 15 + (int32_t)s * 14;
+            mo_hl(x, 94, 12, s == now ? MO_INK : MO_DIM);
+            mo_textc(h, x + 6, 96, s == now ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+            {
+                char nm[16] = "SECTION A";
+                nm[8] = h[0];
+                uz_add(UZ_G_PIC, UZ_EGRID, x, 94, 12, 9, -1, -1, 0x100 + (int32_t)s, nm, "ALL TRACKS");
+            }
+#endif
+        }
+}
+#endif
 static void mo_pic_entries(void)
 {
     uint8_t role[TESSERA_TRACKS];
     uint32_t warn = 0, out = tessera_entries_get(&warn, role), on = tessera.et_amount != 0u, blink = (fm1_ms / 125u) & 1u;
+#if TESSERA_TRACKS > 4
+    mo_pic_egrid();                                   /* (8 tracks: every track, and the arrangement grid) */
+    return;
+#endif
     for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
         int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         char n[3] = {'T', (char)('1' + k), 0}, b[12];
