@@ -345,7 +345,10 @@ sets it.</li>
 </table>
 <h3 id="every-page-and-why-you-would-use-it">Every page, and why you would use it</h3>
 <div class="videos"><figure><a class="play" href="https://youtu.be/md3v8T15dVg" data-video="md3v8T15dVg" aria-label="Play the video: Find your way around"><img src="../media/guides/e01-pages.png" alt="" width="640" height="360" loading="lazy"></a><figcaption>Find your way around</figcaption></figure><figure><a class="play" href="https://youtu.be/tCmJ-fns_dY" data-video="tCmJ-fns_dY" aria-label="Play the video: FX: inserts and sends"><img src="../media/guides/r-fx.png" alt="" width="640" height="360" loading="lazy"></a><figcaption>FX: inserts and sends</figcaption></figure></div>
-<p>Tap a button to reach its pages; tap again (or turn <strong>SELECT</strong>) to step through them. The tables say what each page
+<p>Tap a button to reach its pages; tap again to step through them (after the last, the first again), or turn <strong>SELECT</strong>
+(it stops at the first and the last page). Every page shows its group's tabs at the bottom, the one you are on
+inverted. Coming back from another
+button, it opens the page you last used there (SAVE always opens USER, for the quick save). The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.</p>
 <p><strong>HOME</strong> (hold it for the menu)</p>
 <table>
@@ -525,7 +528,8 @@ sound pluck, swell or sustain.</em></p>
 </tr>
 </tbody>
 </table>
-<p><strong>EDIT</strong>: the sound's own pages (<a href="#sounds">Sounds</a>). Tap EDIT again for a map of them. <em>Use it to design or adjust a
+<p><strong>EDIT</strong>: the sound's own pages (<a href="#sounds">Sounds</a>). Tap EDIT again for the next one; the sound's sheet (hold OCT+)
+has a map of them. <em>Use it to design or adjust a
 sound; save it to USER from SAVE.</em></p>
 <p><strong>FX</strong>: the insert and send effects (ECHO, SYNC ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
 how far a cord moves the knob you turn (<a href="#mod-shortcut">Mod shortcut</a>). <em>Use it for space, colour, and the quickest way to make a mod.</em></p>
@@ -788,7 +792,7 @@ second job. You rarely need more than HOME, SEQ, LFO and GLO to start.</p>
 </tr>
 <tr>
 <td><strong>EDIT</strong></td>
-<td>The sound's EDIT pages; on an EDIT page, the map</td>
+<td>The sound's EDIT pages (the map of them: Page map on the sound's sheet)</td>
 <td>With OCT- / OCT+: undo / redo</td>
 </tr>
 <tr>
@@ -854,7 +858,8 @@ the ones in time order go slow to fast. Only long lists (a mod's source and dest
 pick from.</li>
 </ul>
 <p align="center"><img src="../media/gallery/home.png" alt="HOME: four track columns (REC on track 1, the sound names, the engine, pattern P1, a small step grid and the level -4 dB), the tempo 124 at the top and a waveform along the bottom" width="320"> <img src="../media/gallery/mixer.png" alt="MIXER: four track columns, each with a level knob and dB value, a pan knob and value, and a MUTE box (tracks 3 and 4 muted); MUTE, SOLO and FILL along the bottom" width="320"></p>
-<p><strong>MIXER</strong> (tap GLO) is the four tracks as a mixer, and GLO's first page.</p>
+<p><strong>MIXER</strong> (tap GLO) is the four tracks as a mixer, and GLO's first page (GLO reopens the GLO page you last used: tap
+it until MIXER comes round).</p>
 <table>
 <thead>
 <tr>
@@ -1080,10 +1085,6 @@ a mod, REC held to keep what a generator played, and EDIT held with OCT- to undo
 <td>Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back.</td>
 </tr>
 <tr>
-<td>Tap <strong>GLO</strong> or <strong>SEL</strong> twice quickly</td>
-<td>Locks its Quick SET open on the page you were on, so you need not hold the button: the header says <strong>[GLO] LOCK</strong> (or <strong>[SEL] LOCK</strong>), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working).</td>
-</tr>
-<tr>
 <td><strong>GLO</strong> + <strong>E4</strong> (on MIXER, PERF or LANDSCAPE, E4)</td>
 <td>Holds <a href="#a-steps-condition-and-fill">FILL</a> for the steps whose condition is FILL or !FILL.</td>
 </tr>
@@ -1136,7 +1137,7 @@ a mod, REC held to keep what a generator played, and EDIT held with OCT- to undo
 <td>Opens the picked mod in MODS.</td>
 </tr>
 <tr>
-<td><strong>EDIT</strong> on an EDIT page</td>
+<td><strong>OCT+</strong> held on an EDIT page, <strong>Page map</strong></td>
 <td>The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page.</td>
 </tr>
 <tr>
@@ -1548,9 +1549,9 @@ layer by layer.</p>
 <li><strong>EDIT</strong> + <strong>REC</strong> (either first): <strong>CLEAR PATTERN?</strong> OCT+ clears it and REC stays on, so the next pass records a new
 take. With REC off, EDIT held undoes the clear.</li>
 <li><strong>EDIT</strong> held while recording erases as the steps pass.</li>
-<li><strong>EDIT</strong> tapped (not recording) deletes the note at the cursor with its ties. The cursor then moves on the way
-<strong>KNOB 1</strong> last turned it, right or left, so tap after tap clears a run either way. On a DRUM track's grid, the same
-for the step.</li>
+<li><strong>Delete note</strong> on the note's sheet (hold <strong>OCT+</strong> on it) deletes the note at the cursor with its ties. The cursor
+then moves on the way <strong>KNOB 1</strong> last turned it, right or left. On a DRUM track's grid, <strong>KNOB 3</strong> or the step's key
+takes a hit off. EDIT tapped here opens the EDIT pages, as everywhere.</li>
 <li><strong>OCT-</strong> / <strong>OCT+</strong> with REC on move the keys an octave down / up, as on HOME (both together: back to the middle). The
 header shows it (<strong>KEYS OCT +1</strong>). OCT+ held still opens the pattern's sheet.</li>
 </ul>
@@ -1740,7 +1741,7 @@ sections, <a href="#mods-the-modulation-cords">cords</a>, or separate projects.<
 </ul>
 <h4 id="patterns">PATTERNS</h4>
 <div class="videos"><figure><a class="play" href="https://youtu.be/AOdqlhFV_mI" data-video="AOdqlhFV_mI" aria-label="Play the video: Patterns"><img src="../media/guides/r-patterns.png" alt="" width="640" height="360" loading="lazy"></a><figcaption>Patterns</figcaption></figure></div>
-<p>Hold <strong>SEQ</strong> (or turn to its page). It shows a row per track, and a cell per pattern, 1 to 8:</p>
+<p>Tap <strong>SEQ</strong> until PATTERNS (or turn to it with SELECT). It shows a row per track, and a cell per pattern, 1 to 8:</p>
 <table>
 <thead>
 <tr>
@@ -3133,7 +3134,9 @@ PERF's macros.</p>
 <p><strong>GLO &gt; LANDSCAPE</strong> is a page to look at while the music plays: a night sea, drawn by the music. It has no settings,
 and the scene itself changes nothing.</p>
 <ul>
-<li><strong>The keys</strong> are MIXER's (mute, solo, FILL, tap).</li>
+<li><strong>The keys</strong> are MIXER's (mute, solo, FILL, tap), and their lights stay calm: nothing blinks, the playing tracks' black keys glow at the
+menu's <strong>LIGHTS</strong> level (dark at OFF), and only what you switch on (a solo, FILL, HOLD) is bright. Hold <strong>GLO</strong> for
+the usual blinking map.</li>
 <li><strong>KNOB 1 to 4</strong> are PERF's <strong>MACRO 1 to 4</strong>, so you can thin the music or make a big move and watch the sea answer.
 A macro being turned shows large across the foot (whatever LARGE VALUE is set to; there are no columns here), and
 the screen reader says it.</li>
@@ -4693,7 +4696,7 @@ Turning the knob glides too.</li>
 <li><strong>SYNC ECHO</strong> is ECHO on the beat: its TIME is a note value (1/32, 16T, 1/16, 8T, 16D, 1/8, 4T, 8D, 1/4, 2T, 4D,
 1/2, 2D, 1/1; T a triplet, D dotted), a knob step each, at the tempo playing (BPM, a MIDI clock, a TEMPO mod). It
 follows a tempo change by gliding, as ECHO's TIME does. On the FM-1 the echo holds up to 371 ms: a longer note value
-halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin holds about 3 s. Older firmware, without
+halves until it fits (a 1/4 at 120 BPM repeats on the 1/8s). The plugin (Cosmati) holds about 3 s. Older firmware, without
 SYNC ECHO, plays it as DRIVE.</li>
 <li><strong>REVERB</strong> changes SIZE a sample at a time.</li>
 <li>The <strong>send effects'</strong> mods are the project's, not a track's, so <a href="#matrix">MATRIX</a> leaves them out.</li>
@@ -5767,7 +5770,8 @@ ORACLE, VINTAGE gives each voice its own slight drift.</p>
 <a href="#sounds">MANUAL</a></p>
 <p><strong>DRUNK</strong>. A direction <strong>(3.5)</strong>: a random walk, a step forward or back at a time. Follows the SEED.</p>
 <h3 id="e">E</h3>
-<p><strong>EDIT</strong>. The button for the sound's own pages. Tap it again for the map of them.</p>
+<p><strong>EDIT</strong>. The button for the sound's own pages. Tap it again for the next one; Page map on the sound's sheet shows
+them all.</p>
 <p><strong>ENERGY</strong>. A project-wide slow tide from sparse and quiet to full and loud, with occasional rests. DEPTH sets how
 much it moves each track. Off at 0. <a href="#energy">MANUAL</a></p>
 <p><strong>ENTRIES</strong>. Tracks drop out and come back in on phrase lines, like a band arranging itself, in an order set by each
