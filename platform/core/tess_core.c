@@ -1335,6 +1335,35 @@ static void key_legend(uint32_t k, char *sh, char *lg)
         key_put(sh, lg, !d ? "R" : in ? "IN" : "-", b, !d ? " ROOT" : in ? " IN: TAKE OUT" : " OUT: ADD");
     }
 }
+
+/* the keys and the scale (Cosmati audit G10): where the keys play the selected track's notes, the ones that give no new
+ * note in its scale dim and the root's marked (tess_view_t.key_dim / key_root); the CHORD track's chord named */
+static void key_scale(tess_view_t *v)
+{
+    const track_t *t = TSEL;
+    const engine_t *e = ENGINES[eng_idx(t->eng_req)];
+    uint32_t k, n, mask, last = KB_SILENT, pcs = tessera_chord_pcs(), r = tessera_chord_root() % 12u;
+    v->key_dim = v->key_root = 0;
+    v->key_chord[0] = 0;
+    if (pcs)
+        chord_name(v->key_chord, r, ((pcs >> r) | (pcs << (12u - r))) & 0xFFFu);
+    for (k = 0; k < TESS_KEYS; k++)
+        if (v->key_short[k][0])
+            return;                                     /* (the keys have jobs on this page) */
+    if (name_on() || layer_held() || mixer_live() || pattern_keys_on() || awake_entry_on() || ch_user_entry_on() ||
+        gr_layer_on() || song.grid == 1u || uscale_edit() || micro_active(t) || (e->keys && e->keys(t, 0) >= 0))
+        return;
+    mask = scale_mask(t);
+    for (k = 0; k < TESS_KEYS; k++) {
+        n = kb_map(t, k);
+        if (n == KB_SILENT || n == last || !((mask >> ((n + 120u - (uint32_t)t->p[P_ROOT]) % 12u)) & 1u))
+            v->key_dim |= 1u << k;
+        else if ((n + 120u - (uint32_t)t->p[P_ROOT]) % 12u == 0u)
+            v->key_root |= 1u << k;
+        if (n != KB_SILENT)
+            last = n;
+    }
+}
 #endif
 void tess_core_view(tess_view_t *v)
 {
@@ -1368,9 +1397,12 @@ void tess_core_view(tess_view_t *v)
 #if TESS_HAS_POINTER
     for (i = 0; i < TESS_KEYS; i++)
         key_legend(i, v->key_short[i], v->key_long[i]);
+    key_scale(v);
 #else
     for (i = 0; i < TESS_KEYS; i++)
         v->key_short[i][0] = v->key_long[i][0] = 0;
+    v->key_dim = v->key_root = 0;
+    v->key_chord[0] = 0;
 #endif
     v->screen_draws = (uint32_t)host_sent;
     v->playing = song.playing;

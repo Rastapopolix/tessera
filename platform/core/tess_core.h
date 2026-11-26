@@ -236,6 +236,12 @@ typedef struct {
     int16_t knob_at[4], knob_mod[4];
     uint64_t locked;                 /* bit i: zones[i]'s parameter is LOCKed (TESS_ZA_LOCK) */
     uint32_t dice_back;              /* 1: a DICE or MUTATE can be put back (TESS_ZA_DICE -1) */
+    /* the keys and the scale (Cosmati audit G10; a build with TESS_HAS_POINTER, else 0 and ""): where the keys play
+     * the selected track's notes (no job on the page, not a drum kit's map), key_dim bit k: key k gives no new note in
+     * its scale (silent, out of key, or the note the key below it gives); key_root bit k: it plays the scale's root.
+     * key_chord: the chord the CHORD track plays now ("Am7"; "" none) */
+    uint32_t key_dim, key_root;
+    char key_chord[12];
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

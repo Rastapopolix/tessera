@@ -366,6 +366,13 @@ struct Tessera : GuiLink
     std::vector<uint8_t> snaps_state();
     bool snaps_load(const uint8_t *b, uint32_t len);
     std::string gen_seed(uint32_t seed, int style = -1);
+    /* toasts (Cosmati audit G9): what happened out of the window's view (a preset the DAW loaded, the DAW's state put
+     * back, LISTEN's GENERATE), for the window's next tick; one not taken in 2 s is dropped (no window open) */
+    std::mutex toast_lock;
+    std::string toast_text;
+    std::chrono::steady_clock::time_point toast_at;
+    void toast(const std::string &text);
+    std::string take_toast() override;
 };
 
 Tessera *self(const clap_plugin_t *p) { return static_cast<Tessera *>(p->plugin_data); }
@@ -519,7 +526,7 @@ std::string Tessera::export_midi()
         return "NO DOCUMENTS FOLDER FOR THE CLIP";
     if (!projfile::write_file((std::filesystem::u8path(dir) / std::filesystem::u8path(file)).u8string(), f))
         return "CANNOT WRITE THE CLIP";
-    return "CLIP SAVED IN DOCUMENTS/TESSERA/MIDI";
+    return "CLIP SAVED: " + file;   // (in Documents/Tessera/MIDI)
 }
 
 // MIDI dragged off: the clip in the system's temporary folder (Tessera/), for the window's drag into a DAW (which
@@ -614,6 +621,22 @@ std::string Tessera::gen_seed(uint32_t seed, int style)
     if (gen_made.size() > GEN_KEEP) gen_made.erase(gen_made.begin());
     gen_at = (int)gen_made.size() - 1;
     return gen_made.size() == 1 ? "HOLD GENERATE FOR BEFORE" : "";   // (the strip shows the style and the seed)
+}
+
+void Tessera::toast(const std::string &text)
+{
+    std::lock_guard<std::mutex> g(toast_lock);
+    toast_text = text, toast_at = std::chrono::steady_clock::now();
+}
+
+std::string Tessera::take_toast()
+{
+    std::lock_guard<std::mutex> g(toast_lock);
+    std::string r;
+    if (!toast_text.empty() && std::chrono::steady_clock::now() - toast_at < std::chrono::seconds(2))
+        r = toast_text;
+    toast_text.clear();
+    return r;
 }
 
 // TRACK's copy: one for every Cosmati in this process (a track copied in one pastes into another; the copies are the
@@ -1839,6 +1862,8 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));
     if (hp && hp->rescan)
         hp->rescan(t->host, CLAP_PARAM_RESCAN_VALUES);   // (the project's settings: the host reads them again)
+    if (ok)
+        t->toast("SONG PUT BACK BY THE DAW");   // (its undo or redo; a song opening has no window to show it)
     return ok;
 }
 const clap_plugin_state_t state = {st_save, st_load};
@@ -1868,6 +1893,11 @@ bool pl_from_location(const clap_plugin_t *p, uint32_t kind, const char *locatio
     }
     t->gen_before = false;
     t->changed_by_file("PRESET");   // (the DAW's undo: the preset loaded as one step)
+    std::string name;   // (the toast: a demo's name, or the file's)
+    if (location) name = std::filesystem::u8path(location).stem().u8string();
+    else for (size_t i = 0; i < presets::demo_count(); i++)
+        if (load_key && !std::strcmp(load_key, presets::demo_key(i))) name = presets::demo_name(i);
+    t->toast(name.empty() ? "PRESET LOADED" : "LOADED " + name);
     if (hpl && hpl->loaded) hpl->loaded(t->host, kind, location, load_key);
     return true;
 }
@@ -2095,7 +2125,13 @@ void p_on_main_thread(const clap_plugin_t *p)
 {
     auto *t = self(p);
     if (uint64_t g = t->listen_gen.exchange(0))   // (a note under SPLIT on the LISTEN channel: GENERATE)
-        t->gen_seed((uint32_t)g, (int)(g >> 32) - 1);
+    {
+        std::string said = t->gen_seed((uint32_t)g, (int)(g >> 32) - 1);
+        int st = t->gen_style;
+        t->toast(!said.empty() && said != "HOLD GENERATE FOR BEFORE" ? said
+                 : st >= 0 && st < (int)t->core->gen_styles() ? std::string("LISTEN: ") + t->core->gen_style((uint32_t)st)
+                                                               : std::string("LISTEN: GENERATED"));
+    }
     if (!t->text_stale.exchange(false))
         return;
     auto *hp = static_cast<const clap_host_params_t *>(t->host->get_extension(t->host, CLAP_EXT_PARAMS));

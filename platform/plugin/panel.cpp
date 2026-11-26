@@ -197,6 +197,9 @@ const int WHITE_K[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 2
 const int BLACK_K[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
 const int BLACK_AFTER[11] = {0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14};
 const int SCREEN_X = 292, SCREEN_Y = 44, SCREEN_S = 256;
+// the row under the screen (a hover card, a toast): between the screen's edge (its last row SCREEN_Y + SCREEN_S - 1) and
+// the dotted line over the keys (KEYBED's top, 332), 2 px clear of each
+const int UNDER_Y = SCREEN_Y + SCREEN_S + 2, UNDER_H = 332 - 2 - UNDER_Y;
 const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window less 72, Panel::kb_w)
 // EXPANDED: the TRACKS screen beside the FM-1's (its frame as the FM-1's: 8 px round 480 x 240), and KNOB 1..4 and the
 // twelve buttons right of it
@@ -365,7 +368,7 @@ void Panel::note(const std::string &text)
     note_text.clear();
     for (char ch : text)   // (the Mono face: capitals)
         note_text += ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
-    note_frames = 150;     // (5 s at the window's 30 frames a second)
+    note_frames = NOTE_FRAMES;
 }
 
 void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
@@ -897,6 +900,9 @@ bool Panel::shortcut(char c)
         tess_zone_t z{};
         if (c == 'r') z.kind = TESS_ZONE_TRACK, z.row = (int16_t)track_now;
         zone_act(z, TESS_ZA_DICE, c == 'r' ? MUTATE_PCT : 0);
+        char said[24];
+        std::snprintf(said, sizeof said, c == 'r' ? "MUTATED T%d" : "DICED THE PAGE", track_now + 1);
+        note(said);
         return true;
     }
     static const char TR_KEYS[] = "CVv^_";
@@ -1511,6 +1517,8 @@ bool Panel::wheel(int x, int y, int notches)
         return true;
     }
     int zi = zone_at(x, y);
+    if (zi >= 0 && notches && zones[zi].kind == TESS_ZONE_TAB)   // the footer's tabs: the pages, as sideways (down: on)
+        return hwheel(-notches);
     if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
         const tess_zone_t &zw = zones[zi];
@@ -1692,12 +1700,15 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             uint32_t r = (p >> 11 & 31) * 255 / 31, g = (p >> 5 & 63) * 255 / 63, b = (p & 31) * 255 / 31;
             px[(SCREEN_Y + inset + y) * PW + SCREEN_X + inset + x] = 0xFF000000u | r << 16 | g << 8 | b;
         }
+    const bool toast = note_frames > 0;   // (a toast in the row under the screen, in place of its words: G9)
     char cap[8];
     std::snprintf(cap, sizeof cap, "T%d", track_now + 1);
-    c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
+    if (!toast)
+        c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
     if (expanded())   // EXPANDED: PAGE under the page; TRACKS beside it, 1-8 (or 1-4) under it
     {
-        c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w("PAGE", 2), SCREEN_Y + SCREEN_S + 8, "PAGE", 2, T_WORD);
+        if (!toast)
+            c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w("PAGE", 2), SCREEN_Y + SCREEN_S + 8, "PAGE", 2, T_WORD);
         nbox(c, T2_X, T2_Y, T2_W, T2_H, T_DIM, T_BODY);
         c.box(T2_X + T2_IN, T2_Y + T2_IN, TESS_TRACKS_W, TESS_TRACKS_H, T_BLACK);
         if (t2 && t2->w == TESS_TRACKS_W && t2->h == TESS_TRACKS_H)
@@ -1709,10 +1720,12 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
                     px[(T2_Y + T2_IN + y) * PW + T2_X + T2_IN + x] = 0xFF000000u | r << 16 | g << 8 | b;
                 }
         const char *all = tracks_ > 4 ? "1-8" : "1-4";
-        c.ptext(T2_X + 2, T2_Y + T2_H + 8, "TRACKS", 2, T_WORD);
-        c.ptext(T2_X + T2_W - 2 - Canvas::ptext_w(all, 2), T2_Y + T2_H + 8, all, 2, T_WORD);
+        if (!toast || Canvas::ptext_w(note_text.c_str(), 2) + 16 < T2_X - SCREEN_X)
+            c.ptext(T2_X + 2, T2_Y + T2_H + 8, "TRACKS", 2, T_WORD);
+        if (!toast || Canvas::ptext_w(note_text.c_str(), 2) + 16 < T2_X + T2_W - SCREEN_X - 40)
+            c.ptext(T2_X + T2_W - 2 - Canvas::ptext_w(all, 2), T2_Y + T2_H + 8, all, 2, T_WORD);
     }
-    else if (tracks_ > 4)
+    else if (tracks_ > 4 && !toast)
     {
         const char *bank = track_now & 4 ? "5-8" : "1-4";
         c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w(bank, 2), SCREEN_Y + SCREEN_S + 8, bank, 2, T_WORD);
@@ -1804,12 +1817,24 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.lit_keys & bit) border = T_YEL, led = T_YEL;
         else if (v.breath_keys & bit) border = T_YEL, led = mix(base, T_YEL, 0.6 * breath);
         else if (v.dim_keys & bit) border = T_YEL;
+        else if (v.key_dim & bit)   // (out of the scale, G10: faded into the body)
+            border = mix(T_BODY, T_DIM, 0.45), fill = natural ? mix(T_BODY, T_BLACK, 0.5) : mix(T_BODY, T_DIM, 0.35);
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
         if (led)
         {
             int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
             c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
         }
+        if (v.key_root & bit)   // the scale's root: a dot near the key's foot
+        {
+            int d = kw / 5 < 6 ? 6 : kw / 5;
+            c.box(k.cx - d / 2, k.cy + kh / 2 - d - 8, d, d, (input.keys & bit) ? T_BLACK : T_YEL);
+        }
+    }
+    if (v.key_chord[0])   // the CHORD track's chord, above OCT+ (G10)
+    {
+        c.ptext(KEYBED[0], KEYBED[1] + 18, "CHORD", 1, T_WORD);
+        c.ptext(KEYBED[0], KEYBED[1] + 32, v.key_chord, 3, T_YEL);
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
     for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
@@ -1832,11 +1857,17 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             nbox(c, b.x, b.y, b.w, b.h, T_YEL, lit ? T_YEL : T_BODY);
             c.ptext_c(b.x + b.w / 2, b.y + b.h / 2 - 7, b.face, 2, lit ? T_BLACK : T_YEL);
         }
-    if (note_frames > 0)
-    {
+    if (note_frames > 0)   // the toast: a lit tag under the screen (EXPANDED: it may run on under TRACKS), its last
+    {                      // third an outline
         note_frames--;
-        const FileButton &last = banked() ? banks[1] : files.back();
-        c.ptext(last.x + last.w + 16, last.y + last.h / 2 - 7, note_text.c_str(), 2, T_WORD);
+        int room = (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X;
+        std::string t = note_text;
+        while (!t.empty() && Canvas::ptext_w(t.c_str(), 2) + 12 > room)
+            t.pop_back();
+        int w = Canvas::ptext_w(t.c_str(), 2) + 12, y = UNDER_Y;
+        bool lit = note_frames > NOTE_FRAMES / 3;
+        nbox(c, SCREEN_X, y, w, UNDER_H, T_YEL, lit ? T_YEL : T_BODY);
+        c.ptext(SCREEN_X + 6, y + 7, t.c_str(), 2, lit ? T_BLACK : T_YEL);
     }
 
     draw_gen(px);
@@ -2511,7 +2542,7 @@ void Panel::ctx_do(int r)
         {
         case 0: zone_act(ctx_zone, TESS_ZA_HELP, 0); break;
         case 1: zone_act(ctx_zone, TESS_ZA_DOUBLE, 0); break;   // (a double-click: its default)
-        case 2: clip_value = ctx_zone.value; break;
+        case 2: clip_value = ctx_zone.value, note("COPIED " + clip_value); break;
         case 3:
         {
             PanelInput::Typed t{ctx_zone, {}};
@@ -2522,8 +2553,8 @@ void Panel::ctx_do(int r)
         case 4: zone_act(ctx_zone, TESS_ZA_RANDOM, 0); break;
         case 5: entry_on = true, entry_find = false, entry_zone = ctx_zone, entry_text.clear(); break;
         case 6: zone_act(ctx_zone, TESS_ZA_LOCK, 0); break;
-        case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0); break;
-        case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1); break;
+        case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0), note("DICED THE PAGE"); break;
+        case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1), note("PUT BACK"); break;
         default: break;
         }
     }
@@ -2534,6 +2565,9 @@ void Panel::ctx_do(int r)
         tess_zone_t z{};
         z.kind = TESS_ZONE_TRACK, z.row = (int16_t)ctx_track;
         zone_act(z, TESS_ZA_DICE, r == 6 ? MUTATE_PCT : -1);
+        char said[24];
+        std::snprintf(said, sizeof said, r == 6 ? "MUTATED T%d" : "PUT BACK T%d", ctx_track + 1);
+        note(said);
     }
     input.changed = true;
 }
@@ -2567,7 +2601,7 @@ void Panel::draw_hover(uint32_t *px)
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
     int z2 = zi < 0 && hover_in && drag == NONE ? zone2_at(hover_x, hover_y) : -1;   // (TRACKS, EXPANDED)
     int bi = zi < 0 && z2 < 0 && hover_in && drag == NONE && !(native() && menu_open) ? button_at(hover_x, hover_y) : -1;
-    if (bi >= 0 && buttons[bi].tip)   // a button of TESSERA's own: what it does, in a card over it
+    if (bi >= 0 && buttons[bi].tip && hover_help_)   // a button of TESSERA's own: what it does, in a card over it
     {
         Canvas c{px, width()};
         const Button &b = buttons[bi];
@@ -2582,7 +2616,7 @@ void Panel::draw_hover(uint32_t *px)
     }
     int ki = zi < 0 && z2 < 0 && bi < 0 && hover_in && drag == NONE && !(native() && menu_open) ? key_at(hover_x, hover_y)
                                                                                                  : -1;
-    if (ki >= 0 && key_long[keys[ki].k][0])   // a key with a job on this page: its meaning, in a card over it
+    if (ki >= 0 && key_long[keys[ki].k][0] && hover_help_)   // a key with a job on this page: its meaning, in a card over it
     {
         Canvas c{px, width()};
         const Key &k = keys[ki];
@@ -2607,21 +2641,25 @@ void Panel::draw_hover(uint32_t *px)
     c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
     c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
     if (!z.name[0] && !z.value[0]) return;
-    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large
+    if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
+    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;
+    // in the gap between the screen's edge and the dotted line over the keys, 2 px from each
     std::string name = z.name, value = z.value;
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
     if (input.key_words && z.kind == TESS_ZONE_KEY)   // (BACK / OK of its own: named as the screen names them)
         value = value == "OCT+" ? "OK" : value == "OCT-" ? "BACK" : value;
     int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
-    int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
-    int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
+    int w = nw + (vw ? vw + 14 : 0) + 20, h = UNDER_H;
+    int x = ox + z.x + z.w / 2 - w / 2, y = UNDER_Y;
+    if (native())   // (the row's words and a toast (G9) gone while the card is up, not cut short round it)
+        c.box(SCREEN_X, y, (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X, h, T_BODY);
     if (x < SX - 80) x = SX - 80;
     if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
     c.box(x, y, w, h, BLACK);
     c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
     c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
-    c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
-    if (vw) c.ptext(x + 10 + nw + 14, y + 7, value.c_str(), 3, YEL);
+    c.ptext(x + 10, y + 7, name.c_str(), 2, WORD);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, YEL);
     // HOVER HELP: resting half a second, the zone's help text in a box under the card (over the keys, never the screen)
     double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (!hover_help_ || z2 >= 0 || drag != NONE || view_help.empty() || now - hover_t < 0.5 ||
