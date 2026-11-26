@@ -187,6 +187,15 @@ enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_HITS };   /* (s
 #define GEN_CH_BARS 4u     /* BARS 0..3: 1/2, 1, 2, 4 bars a chord */
 #define GEN_CH_WALK_N 4u
 #define GEN_CH_USER_N 8u   /* USER's chords at most */
+/* USER's quality per chord (Cosmati's CHORD USER cards; the project's part TSP_CHQUAL): an 8-track build's (the plugin,
+ * Andamento); the FM-1 plays every USER chord as the track's SCL CHORD makes it */
+#ifndef TESS_CH_QUAL
+#if defined(CORE_TRACKS) && CORE_TRACKS > 4
+#define TESS_CH_QUAL 1
+#else
+#define TESS_CH_QUAL 0
+#endif
+#endif
 typedef struct {
     uint8_t  prog;        /* GEN_CH_*: the progression */
     uint8_t  bars;        /* 0..3: 1/2, 1, 2, 4 bars a chord */
@@ -200,6 +209,9 @@ typedef struct {
     uint16_t n;           /* the steps played since PLAY or the section's start */
     uint8_t  user[GEN_CH_USER_N];   /* USER's degrees, 0..6 */
     uint8_t  ulen;        /* USER's chords, 1..8 (0: one, the tonic) */
+#if TESS_CH_QUAL
+    uint8_t  uq[GEN_CH_USER_N];     /* USER's qualities: 0 AUTO (the track's CHRD), else a CHRD (chord.c CH_*) */
+#endif
     uint8_t  sk, sn;      /* this strike's place in the bar, the bar's strikes (MOVE WHEN: tessera.c) */
     uint8_t  slast;       /* 1: the chord's last strike before it changes */
     uint8_t  bar;         /* the bars since PLAY (WHEN RAND's draw) */

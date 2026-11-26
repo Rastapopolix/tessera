@@ -307,7 +307,13 @@ static void core_mute_solo(uint32_t kind, uint32_t tr)
 }
 #endif
 /* CHORD USER's progression edited a card at a time (TESS_ZONE_CHORD): the selected track's, when its generator is
- * CHORD on PROG USER */
+ * CHORD on PROG USER (a turn: its root; a click: its quality, where the build keeps one; "+": a chord more; a
+ * right-click: the chord taken) */
+#if TESS_CH_QUAL
+/* a card's click: AUTO (the track's CHRD), then these, round */
+static const uint8_t CH_QUAL_CYCLE[] = {0, CH_MAJ, CH_MIN, CH_DOM7, CH_MAJ7, CH_MIN7, CH_SUS2, CH_SUS4, CH_7SUS4,
+                                        CH_ADD9, CH_MAJ6, CH_POW};
+#endif
 static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
 {
     gen_chord_t *g;
@@ -323,11 +329,21 @@ static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
         g->user[0] = 0, g->ulen = 1;
     if ((action == TESS_ZA_TURN || action == TESS_ZA_WHEEL) && (uint32_t)slot < len && n)
         g->user[slot] = (uint8_t)(((int32_t)g->user[slot] + n % 7 + 7) % 7);
-    else if (action == TESS_ZA_CLICK && (uint32_t)slot == len && len < GEN_CH_USER_N)
+    else if (action == TESS_ZA_CLICK && (uint32_t)slot == len && len < GEN_CH_USER_N) {
         g->user[len] = (uint8_t)((g->user[len - 1u] + 3u) % 7u), g->ulen = (uint8_t)(len + 1u);
-    else if (action == TESS_ZA_HELP && (uint32_t)slot < len && len > 1u) {
-        for (i = (uint32_t)slot; i + 1u < len; i++)
+#if TESS_CH_QUAL
+        g->uq[len] = 0;                                 /* (AUTO: the track's CHRD) */
+    } else if (action == TESS_ZA_CLICK && (uint32_t)slot < len) {   /* (a card: its quality, the next one, round */
+        for (i = 0; i < sizeof CH_QUAL_CYCLE && CH_QUAL_CYCLE[i] != g->uq[slot]; i++) ;   /* to AUTO) */
+        g->uq[slot] = CH_QUAL_CYCLE[(i + 1u) % sizeof CH_QUAL_CYCLE];
+#endif
+    } else if (action == TESS_ZA_HELP && (uint32_t)slot < len && len > 1u) {
+        for (i = (uint32_t)slot; i + 1u < len; i++) {
             g->user[i] = g->user[i + 1u];
+#if TESS_CH_QUAL
+            g->uq[i] = g->uq[i + 1u];
+#endif
+        }
         g->ulen = (uint8_t)(len - 1u);
     }
     TESS_IRQ_ON();
