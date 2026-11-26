@@ -398,6 +398,19 @@ static void core_egrid(int32_t row, uint32_t action)
     if (s >= ET_G_SECS || tr >= TESSERA_TRACKS) return;
     g = tessera.et_grid[s];
     c = action == TESS_ZA_HELP ? ET_G_AUTO : ((g >> (2u * tr) & 3u) + 1u) & 3u;
+    if ((row & 0x100) && action == TESS_ZA_CLICK) {   /* (a head: AUTO IN OUT FADE, then DROP: the spine in, the rest
+                                                        * out, entries.c dub_drop_column; then AUTO) */
+        uint32_t d = dub_drop_column(), fade = 0;
+        for (k = 0; k < TESSERA_TRACKS; k++) fade |= (uint32_t)ET_G_FADE << (2u * k);
+        if (d && g == d) c = ET_G_AUTO;
+        else if (d && g == fade) {                    /* (every cell FADE: DROP next) */
+            TESS_IRQ_OFF();
+            tessera.et_grid[s] = (uint16_t)d;
+            TESS_IRQ_ON();
+            ui.force = 1;
+            return;
+        }
+    }
     for (k = 0; k < TESSERA_TRACKS; k++)
         if (k == tr || (row & 0x100))
             g = (g & ~(3u << (2u * k))) | c << (2u * k);

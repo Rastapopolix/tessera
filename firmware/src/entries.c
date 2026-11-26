@@ -177,6 +177,89 @@ static uint32_t et_mask(uint32_t role)                /* the tracks of a role */
         if (et_role(tr) == role) m |= 1u << tr;
     return m;
 }
+#if TESSERA_TRACKS > 4
+/* ---- dub FORMs (Tessadub in Cosmati, step 3; an 8-track build's): a pick that writes the CHAIN (FORM, PHRASE, REPEATs,
+ * WANDER 0) and ENTRIES (AMOUNT, DWELL, STYLE, the arrangement grid) for one of five dub structures (tessera-notes
+ * docs/design/TESSADUB.md section 4), folded onto three letters. A grid cell by the track's ROLE (AUTO's guess
+ * counted): the spine (BASS and RHYTHM, or ANCHOR) and the movers (HARMONY, MELODY); TURNS tracks follow AUTO. Only
+ * settings anyone can set by hand, so a piece from one behaves as any other: saved (the grid in TSP_EGRID), replayed
+ * the same from PLAY, every cell editable after. Nothing is drawn: the same pick, the same settings */
+enum { DF_A = ET_G_AUTO, DF_I = ET_G_IN, DF_O = ET_G_OUT, DF_F = ET_G_FADE };
+typedef struct {
+    const char *name;
+    uint8_t form, phrase, rep[4], amount, dwell, style;
+    uint8_t cell[ET_G_SECS][ET_ROLES];                /* [letter][role]: AUTO BASS RHYTHM HARMONY MELODY ANCHOR TURNS */
+} dub_form_t;
+static const dub_form_t DUB_FORMS[] = {
+    /* VERSION: the riddim (A, twice), a DROP to bass and drums (B), back, a break with the bass out (C): ABAC, 8 bars */
+    {"VERSION", 2, 1, {2, 1, 1, 1}, 40, 2, 0, {
+        {DF_A, DF_I, DF_I, DF_A, DF_A, DF_I, DF_A},
+        {DF_O, DF_I, DF_I, DF_O, DF_O, DF_I, DF_O},
+        {DF_O, DF_O, DF_I, DF_I, DF_O, DF_I, DF_O}}},
+    /* SHOWCASE: the vocal side with the melody leading (A, four phrases), then its dub, the melody out (B): AB */
+    {"SHOWCASE", 1, 1, {4, 4, 1, 1}, 30, 2, 1, {
+        {DF_A, DF_I, DF_I, DF_A, DF_I, DF_I, DF_A},
+        {DF_A, DF_I, DF_I, DF_A, DF_O, DF_I, DF_A},
+        {DF_A, DF_A, DF_A, DF_A, DF_A, DF_A, DF_A}}},
+    /* ROCKERS: the full groove (A), stripped to kick and bass (B), the features over bass and drums by turns (C): ABAC */
+    {"ROCKERS", 2, 1, {2, 1, 1, 2}, 50, 1, 0, {
+        {DF_I, DF_I, DF_I, DF_I, DF_I, DF_I, DF_A},
+        {DF_O, DF_I, DF_I, DF_O, DF_O, DF_I, DF_O},
+        {DF_A, DF_I, DF_I, DF_A, DF_A, DF_I, DF_A}}},
+    /* ROOTS: layers come in by role (A, ENTRIES), an echo breakdown with the drums out (B), back in: AABA, fading */
+    {"ROOTS", 4, 1, {2, 1, 2, 2}, 30, 2, 1, {
+        {DF_A, DF_A, DF_A, DF_A, DF_A, DF_I, DF_A},
+        {DF_O, DF_I, DF_O, DF_I, DF_O, DF_I, DF_O},
+        {DF_A, DF_A, DF_A, DF_A, DF_A, DF_A, DF_A}}},
+    /* STEPPERS: 16-bar blocks: the build (A, ENTRIES), the drop, everything in (B), a breakdown with no drums or bass
+     * (C), the drop again: ABCB */
+    {"STEPPERS", 3, 2, {1, 1, 1, 1}, 50, 1, 0, {
+        {DF_A, DF_A, DF_A, DF_A, DF_A, DF_I, DF_A},
+        {DF_I, DF_I, DF_I, DF_I, DF_I, DF_I, DF_I},
+        {DF_A, DF_O, DF_O, DF_I, DF_A, DF_O, DF_A}}},
+};
+#define DUB_FORM_N (sizeof DUB_FORMS / sizeof DUB_FORMS[0])
+uint32_t dub_form_count(void) { return DUB_FORM_N; }
+const char *dub_form_name(uint32_t n) { return n < DUB_FORM_N ? DUB_FORMS[n].name : ""; }
+/* dub FORM n onto the project (the CHAIN's and ENTRIES' settings, the grid by role); 0 if there is none such */
+int dub_form_apply(uint32_t n)
+{
+    const dub_form_t *d;
+    uint32_t tr, s, k, g[ET_G_SECS] = {0, 0, 0};
+    uint8_t role[TESSERA_TRACKS];
+    if (n >= DUB_FORM_N) return 0;
+    d = &DUB_FORMS[n];
+    if (!song.playing) {                              /* (stopped: AUTO's guess from the settings as they are now) */
+        memset(et.avg, 0, sizeof et.avg);
+        et_guess_all();
+    }
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) role[tr] = (uint8_t)et_role(tr);
+    for (s = 0; s < ET_G_SECS; s++)
+        for (tr = 0; tr < TESSERA_TRACKS; tr++) {
+            k = role[tr] < ET_ROLES ? role[tr] : 0u;
+            g[s] |= (uint32_t)d->cell[s][k] << (2u * tr);
+        }
+    TESS_IRQ_OFF();
+    tessera.fc_form = d->form;
+    tessera.fc_phrase = d->phrase;
+    tessera.fc_wander = 0;
+    for (k = 0; k < 4u; k++) tessera.fc_rep[k] = d->rep[k];
+    tessera.et_amount = d->amount;
+    tessera.et_dwell = d->dwell;
+    tessera.et_style = d->style;
+    for (s = 0; s < ET_G_SECS; s++) tessera.et_grid[s] = (uint16_t)g[s];
+    TESS_IRQ_ON();
+    return 1;
+}
+/* the grid's DROP column: the spine in (ANCHOR, or BASS and RHYTHM where there is none), every other track out */
+uint32_t dub_drop_column(void)
+{
+    uint32_t keep = et_mask(ET_ANCHOR), tr, g = 0;
+    if (!keep) keep = et_mask(ET_BASS) | et_mask(ET_RHYTHM);
+    for (tr = 0; tr < TESSERA_TRACKS; tr++) g |= (uint32_t)(keep >> tr & 1u ? ET_G_IN : ET_G_OUT) << (2u * tr);
+    return keep ? g : 0u;
+}
+#endif
 /* the tracks with something to play: a generator, or a STEP pattern with a note (or heard since PLAY) */
 static uint32_t et_present(void)
 {
