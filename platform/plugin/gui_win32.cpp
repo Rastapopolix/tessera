@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Theo Dainis */
 /* The plugin window on Windows (gui.h): a child window of the host's, a timer at ~30 Hz, the panel drawn into a DIB.
- * OPEN / SAVE under the keys use the system's file dialogs; a .tsp or a backup dropped on the window opens too. */
+ * OPEN / SAVE under the keys use the system's file dialogs; a .tsp or a backup dropped on the window opens too. MIDI
+ * dragged off is an OLE drag of the clip's file (a DAW's track or Explorer takes a copy). */
 #include "gui.h"
 
 #include <memory>
@@ -13,16 +14,47 @@
 #include <windowsx.h>
 #include <commdlg.h>
 #include <shellapi.h>
+#include <ole2.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include <string>
 #include <vector>
 
 #pragma comment(lib, "comdlg32.lib")
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "uuid.lib")
 
 namespace
 {
 const wchar_t *CLASS_NAME = L"TesseraPluginWindow";
+
+// the clip's drag (DoDragDrop): on while the left button is down, a drop when let go, Esc cancels; the system's cursors
+struct DropSource : IDropSource
+{
+    ULONG refs = 1;
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void **out) override
+    {
+        if (id == IID_IUnknown || id == IID_IDropSource)
+        {
+            *out = static_cast<IDropSource *>(this);
+            AddRef();
+            return S_OK;
+        }
+        *out = nullptr;
+        return E_NOINTERFACE;
+    }
+    ULONG STDMETHODCALLTYPE AddRef() override { return ++refs; }
+    ULONG STDMETHODCALLTYPE Release() override { return --refs; }   // (on the stack: the drag's own)
+    HRESULT STDMETHODCALLTYPE QueryContinueDrag(BOOL esc, DWORD keys) override
+    {
+        if (esc)
+            return DRAGDROP_S_CANCEL;
+        return keys & MK_LBUTTON ? S_OK : DRAGDROP_S_DROP;
+    }
+    HRESULT STDMETHODCALLTYPE GiveFeedback(DWORD) override { return DRAGDROP_S_USEDEFAULTCURSORS; }
+};
 extern "C" IMAGE_DOS_HEADER __ImageBase;   // this module (the class belongs to it, not to the host)
 
 class GuiWin32 : public Gui
@@ -93,6 +125,7 @@ class GuiWin32 : public Gui
         case WM_MOUSEMOVE:
             g->panel.set_mods((wp & MK_CONTROL) != 0, (wp & MK_SHIFT) != 0, GetKeyState(VK_MENU) < 0);
             g->input(g->panel.move(x, y));
+            g->drag_out();   // (MIDI dragged off: the clip's drag, until let go)
             return 0;
         case WM_LBUTTONUP:
             ReleaseCapture();
@@ -216,6 +249,41 @@ class GuiWin32 : public Gui
         return w;
     }
 
+    // MIDI dragged off (panel FILE_MIDI_DRAG): the clip as a file, the shell's data object for it (CF_HDROP and the rest
+    // a DAW or Explorer asks for), the system's drag until let go; the button let go after
+    void drag_out()
+    {
+        if (panel.peek_file_request() != Panel::FILE_MIDI_DRAG)
+            return;
+        panel.take_file_request();
+        std::string path, err = link->midi_drag_file(path);
+        ReleaseCapture();   // (the drag's own capture from here; WM_CAPTURECHANGED lets the panel's button go)
+        input(panel.up(-1, -1));
+        if (path.empty())
+        {
+            panel.note(err);
+            return;
+        }
+        HRESULT ole = OleInitialize(nullptr);   // (the host's thread: most have OLE on already, S_FALSE)
+        IShellItem *item = nullptr;
+        IDataObject *data = nullptr;
+        if (SUCCEEDED(SHCreateItemFromParsingName(wide(path).c_str(), nullptr, IID_PPV_ARGS(&item))) &&
+            SUCCEEDED(item->BindToHandler(nullptr, BHID_DataObject, IID_PPV_ARGS(&data))))
+        {
+            DropSource src;
+            DWORD effect = DROPEFFECT_NONE;
+            HRESULT r = DoDragDrop(data, &src, DROPEFFECT_COPY, &effect);
+            panel.note(r == DRAGDROP_S_DROP ? "CLIP DROPPED" : FAILED(r) ? "CANNOT DRAG THE CLIP" : "CLIP NOT DROPPED");
+        }
+        else
+            panel.note("CANNOT DRAG THE CLIP");
+        if (data) data->Release();
+        if (item) item->Release();
+        if (SUCCEEDED(ole))
+            OleUninitialize();
+        InvalidateRect(wnd, nullptr, FALSE);
+    }
+
     // OPEN or SAVE, if one was clicked: the system's dialog, then the instance opens or saves
     void files()
     {
@@ -234,8 +302,8 @@ class GuiWin32 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
-        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
-        {
+        if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
+        {                                                                // MIDI)
             panel.note(link->export_midi());
             return;
         }

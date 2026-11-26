@@ -1662,6 +1662,18 @@ uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text)
     char want[24], got[24], t[24];
     int32_t v, best = 0, num, x, bd = -1;
     int has_num;
+    if (z && text && z->kind == TESS_ZONE_CELL && !strcmp(z->name, "FIND")) {   /* the browser's FIND: the list keeps
+                                                                                 * the sounds named so (browse.c) */
+        uint32_t i;
+        if (ui.home || cur_page()->graph != GR_BROWSE)
+            return 1;
+        for (i = 0; text[i] && i + 1u < sizeof br_find; i++)
+            br_find[i] = text[i] >= 'a' && text[i] <= 'z' ? (char)(text[i] - 32) : text[i];
+        br_find[i] = 0;
+        brw.on = 0;                                   /* (a sound on its way: its place was in the list before) */
+        ui.force = 1;
+        return 0;
+    }
     if (!text || !tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable)
         return 1;
     tt_norm(text, want, sizeof want);

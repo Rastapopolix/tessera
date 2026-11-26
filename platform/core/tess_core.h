@@ -316,7 +316,8 @@ uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out
 /* ---- a value typed (the plugin: TESS_HAS_POINTER). zone_param: the parameter a screen zone turns (a value's column,
  * KNOB 1..4; MIXER's LEVEL, PAN, a send): 1 with its central ID and track, 0 none (a list's row, an action, a page's own
  * knob). zone_type: text typed for that zone ("440", "-6 dB", "1/8", "SAW", any case, spaces or not) sets it: a name or a
- * value as the screen shows it, else the value whose shown number is nearest. 0 set, 1 refused */
+ * value as the screen shows it, else the value whose shown number is nearest. 0 set, 1 refused. The browser's FIND cell
+ * (its count): the text filters the list to the sounds whose name has it, any case; "" shows them all again */
 uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *track);
 uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text);
 
