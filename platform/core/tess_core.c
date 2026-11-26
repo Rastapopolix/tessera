@@ -116,9 +116,10 @@ static void core_help(uint32_t k)
     uz_help_pin = 1;
     (void)help_knob(k & 3u, 0);
 }
-static int help_unpin(void)                           /* 1: a pinned card closed */
+static int help_unpin(void)                           /* 1: a help card closed: a pinned one, or one ARP held (or a
+                                                       * window's latched ARP) opened, which a click closes too */
 {
-    if (!uz_help_pin)
+    if (!uz_help_pin && !help.on)
         return 0;
     uz_help_pin = 0;
     if (help.on) {
@@ -202,6 +203,34 @@ static void zq_key(uint32_t b)                        /* a key tapped */
     zq_put(ZQ_PRESS, b, 1);
     zq_put(ZQ_RELEASE, b, 1);
 }
+/* a boxed value's column (ui_mono.c mo_cols MV_BOX: a choice, not a dial) clicked: the detents to its next value, from
+ * the last back to the first; 0 not a box (a dial: a click does nothing). A box with no parameter of the page's own
+ * (LOCK, ROLL): one detent on */
+static int32_t zone_box(int32_t role)
+{
+    int16_t *vp = 0;
+    const param_desc_t *d;
+    uint32_t c = (uint32_t)(role - EN_K1);
+    if (role < EN_K1 || role > EN_K4 || ui.home || ui.menu || ui.confirm || pop.on || ui.layer || !mo_vals[c].used ||
+        mo_vals[c].kind != MV_BOX)
+        return 0;
+    d = page_desc(cur_page(), c, &vp);
+    if (d && vp && d->max > d->min && *vp >= d->max)
+        return -(int32_t)(d->max - d->min) > -64 ? -(int32_t)(d->max - d->min) : -63;
+    return 1;
+}
+/* a column that names a key ("[OCT+]", "[OK]": mo_cols MV_KEY) clicked: that key (B_OCTUP / B_OCTDN), -1 none */
+static int32_t zone_box_key(int32_t role)
+{
+    uint32_t c = (uint32_t)(role - EN_K1);
+    const char *s;
+    if (role < EN_K1 || role > EN_K4 || ui.home || ui.menu || ui.confirm || pop.on || !mo_vals[c].used ||
+        mo_vals[c].kind != MV_KEY)
+        return -1;
+    s = mo_vals[c].s;
+    if (s[0] == 'B' || str_len(s) >= 4u && s[3] == '-') return B_OCTDN;   /* (BACK, OCT-) */
+    return B_OCTUP;                                                         /* (OK, OCT+) */
+}
 /* KNOB c+1's value back to its default (a double-click on its column): a page's own parameter only */
 static void zone_reset(int32_t role)
 {
@@ -277,6 +306,34 @@ static void core_mute_solo(uint32_t kind, uint32_t tr)
     ui.force = 1;
 }
 #endif
+/* CHORD USER's progression edited a card at a time (TESS_ZONE_CHORD): the selected track's, when its generator is
+ * CHORD on PROG USER */
+static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
+{
+    gen_chord_t *g;
+    uint32_t len, i;
+    if (song.sel >= TESSERA_TRACKS || tessera.mode[song.sel] != TESS_ENG_CHORD || slot < 0)
+        return;
+    g = &tessera.chord[song.sel];
+    if (g->prog != GEN_CH_USER)
+        return;
+    len = g->ulen ? g->ulen : 1u;
+    TESS_IRQ_OFF();
+    if (!g->ulen)                                       /* (none yet: the one, the tonic) */
+        g->user[0] = 0, g->ulen = 1;
+    if ((action == TESS_ZA_TURN || action == TESS_ZA_WHEEL) && (uint32_t)slot < len && n)
+        g->user[slot] = (uint8_t)(((int32_t)g->user[slot] + n % 7 + 7) % 7);
+    else if (action == TESS_ZA_CLICK && (uint32_t)slot == len && len < GEN_CH_USER_N)
+        g->user[len] = (uint8_t)((g->user[len - 1u] + 3u) % 7u), g->ulen = (uint8_t)(len + 1u);
+    else if (action == TESS_ZA_HELP && (uint32_t)slot < len && len > 1u) {
+        for (i = (uint32_t)slot; i + 1u < len; i++)
+            g->user[i] = g->user[i + 1u];
+        g->ulen = (uint8_t)(len - 1u);
+    }
+    TESS_IRQ_ON();
+    ui.force = 1;
+}
+
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
@@ -308,6 +365,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
         } else if (z->kind == TESS_ZONE_POINT && (z->row & 0x200) && zone_live(z)) {
             zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
+        } else if (z->kind == TESS_ZONE_CHORD) {
+            core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
             core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
@@ -337,6 +396,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_turn(z->role, n);
         } else if ((d = zone_two(z->role)) != 0) {
             zq_turn(z->role, d);                      /* (two values, FREE / NOTE, BI / UNI: each click the other) */
+        } else if (action == TESS_ZA_CLICK && (k = zone_box_key(z->role)) >= 0) {
+            zq_key((uint32_t)k);                      /* ("[OCT+]": the key it names, pressed) */
+        } else if (action == TESS_ZA_CLICK && (d = zone_box(z->role)) != 0) {
+            zq_turn(z->role, d);                      /* (a boxed value: the next one, round to the first) */
         } else if (action == TESS_ZA_DOUBLE) {
             zone_reset(z->role);
         }
@@ -393,9 +456,20 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         } else if (action == TESS_ZA_TURN && z->role >= 0) {
             zq_turn(z->role, (z->row & 1) ? -n : n);
         } else if (action == TESS_ZA_TURN_Y || action == TESS_ZA_TURN) {
-            if (z->vrole >= 0) zq_turn(z->vrole, n);
+            if (z->vrole >= 0) zq_turn(z->vrole, (z->row & 2) ? -n : n);   /* (row bit 1: up turns it down, a
+                                                                             * picture drawn with its values downward) */
             else if (z->role >= 0) zq_turn(z->role, (z->row & 1) ? -n : n);
         }
+        break;
+    case TESS_ZONE_OP:                                /* FM6's chart: an operator picked, or its pages opened */
+        if (z->row < 0 || z->row > 5 || (action != TESS_ZA_CLICK && action != TESS_ZA_DOUBLE)) break;
+        fm6_opsel = (uint8_t)z->row;
+        if (action == TESS_ZA_DOUBLE && sec_on()) {
+            sec_build();
+            for (k = 0; k < (int32_t)sec.n; k++)
+                if (sec.op[k] == (uint8_t)(z->row + 1)) { sec_go((uint32_t)k); break; }
+        }
+        ui.force = 1;
         break;
     case TESS_ZONE_PICK:                              /* MODS' SOURCE / DESTINATION: the mod's row first (KNOB 2), */
         d = z->row - uz_list.sel;                     /* then its knob: a click its picker, kept; a turn its value */
@@ -428,6 +502,19 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             break;
         }
         core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_CHORD:                             /* CHORD USER's cards: a root turned, a chord added or taken */
+        core_chord_user(z->row, action, n);
+        break;
+    case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
+        if (smap.on && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && z->row >= 0) {
+            sec_build();
+            if ((uint32_t)z->row / 8u < sec.n) {
+                smap.row = (uint8_t)(z->row / 8);
+                smap.col = (uint8_t)(z->row % 8);
+                smap_input(0, 0, 2u);
+            }
+        }
         break;
     case TESS_ZONE_TAB:                               /* the footer's tabs: that page (row: the pages from here) */
         if (action == TESS_ZA_CLICK)
@@ -1033,6 +1120,7 @@ void tess_core_view(tess_view_t *v)
     v->zone_count = 0;
     v->typing = 0;
     v->closable = 0;
+    v->sheet = 0;
 #if TESS_HAS_POINTER && !MELODEE_ACCESS
     v->hover = hover_z;
     str_cpy(v->hover_help, hover_txt, sizeof v->hover_help);
@@ -1061,7 +1149,8 @@ void tess_core_view(tess_view_t *v)
                 }
         v->zone_count = n;
         v->typing = name_on() ? 1u : 0u;
-        v->closable = !ui.confirm && ((uz_help_pin && help.on) || pop.on) ? 1u : 0u;
+        v->closable = !ui.confirm && (help.on || pop.on) ? 1u : 0u;
+        v->sheet = page_sheet() != 0u;
         v->zone_gen = uz_gen;
     }
 #endif

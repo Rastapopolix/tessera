@@ -13,7 +13,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **HOME** | The home page: four tracks, their sounds and knobs |
 | **HOME** held | The menu (held again: leaves it) |
 | **ALGORITHM** | Picks the track, on every page (MENU > TRACK KNOB LEFT swaps it with PRESETS) |
-| **SELECT** | The pages of the section shown, both ways; on HOME and MIXER the tempo |
+| **SELECT** | The pages of the section shown, both ways, stopping at the ends; on HOME and MIXER the tempo |
 | A page button again | That section's next page (from elsewhere most return to the page last used) |
 | **OCT-** (off HOME) | Back: closes a list, sheet, map or selection; a page opened from the map or MATRIX: back there; else nothing (HOME: the home page) |
 | **OCT+** (off HOME) | Enter: opens the row, slot, note or mod picked; does the action picked; else nothing (the sheet: held) |
@@ -32,14 +32,13 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | Tap (again: the next page) | Pages |
 |---|---|
 | **SEQ** | What plays: GEN, then STEP: NOTES (a DRUM track: NOTES, DRUM HIT). ARP: NOTES, ARP. A generator: PATTERN. All: TEMPO, PATTERNS, SONG |
-| **SEQ** held | PATTERNS |
 | **ARP** | How it is shaped. STEP: EVOLVE, TWEAK, TIMING. ARP: TWEAK (SWING, PROB, HOLD, ORDER: ARP with OCT- held). A generator: EVOLVE, FORM, TWEAK, TWEAK 2, LENGTH, TIMING, ENERGY |
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST; on FM6 then FM LFO; on ORACLE then LFO MOD, LFO ROUTE |
 | **ENV** | ENV, ENV DEST; on FM6 instead EG RATE, EG LVL, PITCH EG, PITCH LV; on ORACLE FILT ENV, AMP ENV |
 | **SEL** | SCALES, SCL, CHORD |
 | SCALES: **KNOB 1** to **USER** | Your own tunings: Scala files sent from the web editor (Projects > Tunings) |
 | **EDIT** | The sound's EDIT pages (ORACLE: MACRO, MACRO 2, OSC A, OSC B, OSC MIX, FILTER, POLY MOD, CHARACTER, ...) |
-| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
+| **OCT+** held on an EDIT page, Page map | The map of the sound's pages: KNOB 1 across, KNOB 2 rows (on the page last used in each), OCT+ opens (OCT- there: the map again), OCT- or EDIT closes |
 | **PRESETS** on an EDIT page | The next / previous section (FM6: Algo, OP1 to OP6, Pitch, LFO, Ctrl, Store) |
 | **FX** | The insert and send effects |
 | **GLO** | MIXER, PERF (MACRO 1 to 4, the project's mod sources), PIECE (the piece's LENGTH, SHAPE, END), CHAIN (the project's FORM, PHRASE, WANDER), ENTRIES (tracks out and back in), LANDSCAPE (the music as rain on water), SYSTEM (BUDGET: the shared voices; CPU), MIDI IN, MIDI OUT |
@@ -50,7 +49,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 
 | Do this | And this happens |
 |---|---|
-| **GLO** held | [GLO] SET over the page; tapped twice, [GLO] LOCK (no need to hold; tap again to close) |
+| **GLO** held | [GLO] SET over the page while held |
 | **GLO** + black keys F#3 G#3 A#3 C#4 | Mute / unmute track 1 to 4 (lit: sounding); MENU > MUTES BAR or PHRASE waits for it (blinking) |
 | **GLO** + white keys F3 G3 A3 B3 | Solo track 1 to 4 while the key is held |
 | **GLO** + C4 / F4 | Unmute all / tap the tempo (three taps or more; INT clock) |
@@ -62,7 +61,6 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | **SEL** + any key | ROOT: that key's note name (every melodic track while SCL > Key link is LINKED) |
 | **SEL** + KNOB 1 to 4 | ROOT, SCALE, CHRD, VOIC |
 | **GLO** / **SEL** + OCT- | Puts back what the layer changed since it opened |
-| **GLO** or **SEL** tapped twice | Locks the layer open; press it again to close |
 
 ## Knob holds
 
@@ -83,7 +81,7 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | A key + SELECT | That note's length |
 | **ENV** + SELECT or KNOB 1 | The cursor's note longer / shorter |
 | **SEL** + SELECT or KNOB 1 | Moves the note (ties, chord and velocity with it) |
-| **EDIT** tapped | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
+| **OCT+**, Delete note | Deletes the note and its ties; the cursor moves on the way KNOB 1 last turned |
 | **OCT+** | The note's sheet (length, velocity, chance, ratchet x1–x8, nudge ±/16, accumulate ±7, condition 1:2..8:8, FILL...); an empty step: NOTHING THERE |
 | **OCT+** + SELECT, KNOB 1 or 2 | Selects a run of notes; let go: the Selected notes sheet (move, copy, quantize, delete) |
 | **OCT-** | Clears the selection |
@@ -99,7 +97,6 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 | C#5 + white key | The hit's accent |
 | D#5 / F#5 | Page down / up (patterns over 16 steps) |
 | KNOB 1 to 4 | STEP, LANE, HIT, ACC |
-| **EDIT** | Clears the cursor step |
 | **OCT+** | The hit's sheet (accent, chance, ratchet, nudge, condition); an empty place: NOTHING THERE |
 
 ## Patterns
@@ -137,7 +134,6 @@ ARP, FX, LFO and OCT- on GEN work as soon as they are down. Page buttons act whe
 |---|---|
 | **SAVE** + REC | Saves the project to its slot (stops playback first) |
 | **SAVE** | USER, its Save sheet ready: OCT+ saves the sound |
-| **EDIT** on USER or PROJECT | Renames the slot |
 | **OCT+** on a PROJECT slot | Load, Save here, Rename, Boot, Erase |
 | GLO > MIDI OUT: **OCT-** held, **KNOB 1** to **4** | Each track's MIDI OUT TRANSPOSE, a semitone a click |
 | GLO > MIDI OUT: **OCT+** held | Its sheet: each track's SOUND (OFF: MIDI only) and DRUM MAP (GM, ROW) |

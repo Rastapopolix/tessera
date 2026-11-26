@@ -40,26 +40,29 @@ class Panel
     static constexpr int W = 1000, H = 624, W_EXPANDED = 1500, W_MAX = 1500;
     static int width_of(bool expanded) { return expanded ? W_EXPANDED : W; }
     int width() const { return width_of(expanded()); }
-    /* the window's size: SIZE in % (TESSERA's menu): 100, 150 or 200 in FM-1 mode, 100 or 125 in EXPANDED (2250 px would
-     * not fit a 1080p screen); size_fit: the nearest of those to pct. The panel draws at 1:1; a window shows it pct /
-     * 100 times larger and hands the mouse in at 1:1 (x * 100 / pct) */
+    /* the window's size: SIZE in %, any whole number from PCT_MIN to PCT_MAX (EXPANDED: to PCT_MAX_EXPANDED, 2250 px
+     * wide); TESSERA's menu has presets, a host's frame can be dragged to any size between; size_fit: pct held to the
+     * mode's range. The panel draws at 1:1; a window shows it pct / 100 times as large and hands the mouse in at 1:1
+     * (x * 100 / pct) */
+    static constexpr int PCT_MIN = 75, PCT_MAX = 200, PCT_MAX_EXPANDED = 150;
     static int size_fit(int pct, bool expanded)
     {
-        if (expanded) return pct >= 113 ? 125 : 100;
-        return pct >= 175 ? 200 : pct >= 125 ? 150 : 100;
+        const int hi = expanded ? PCT_MAX_EXPANDED : PCT_MAX;
+        return pct < PCT_MIN ? PCT_MIN : pct > hi ? hi : pct;
     }
-    /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, 200 % each pixel doubled, 125 and 150 % each
-     * window pixel the mean of the 1:1 pixels under its quarter points (the 1-bit lines stay even, a little soft) */
+    /* px (w x H) into out (w * pct / 100 x H * pct / 100): 100 % a copy, any other each window pixel the mean of the
+     * 1:1 pixels under its quarter points (200 %: each pixel doubled; the 1-bit lines stay even, a little soft) */
     static void scale(const uint32_t *px, uint32_t *out, int w, int pct);
     /* MODE (TESSERA's menu): FM-1 or EXPANDED, as the instance has it (set_expanded), and a pick asks
      * (take_mode_request: 1 EXPANDED, 0 FM-1, -1 none). Only TESSERA's shell is EXPANDED: an FM-1 shell is FM-1 mode */
     void set_expanded(bool on) { if (on != expanded_) { expanded_ = on; layout(); } }
     bool expanded() const { return expanded_ && native(); }
     int take_mode_request() { int r = mode_req; mode_req = -1; return r; }
-    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: 100, 125, 150 or
-     * 200, -1 none) */
+    /* SIZE (TESSERA's menu): what the window is (set_size_pct), and a pick asks (take_size_request: one of the presets
+     * 75, 100, 150, 200 or EXPANDED's 75, 100, 125, 150; -1 none) */
     void set_size_pct(int pct) { size_now = pct; }
     int take_size_request() { int r = size_req; size_req = -1; return r; }
+    int size_seg_at(int x) const;   // SIZE's row: a preset or the size now, -1 none
     Panel();
     /* the whole window into px (width() x H, 0xAARRGGBB, top row first); EXPANDED: the TRACKS screen from t2 (none:
      * black) */
@@ -72,6 +75,14 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
+    /* the wheel sideways (a tilt, a trackpad's swipe): the next page of the shown one's family (+ right), as its footer's
+     * tab or arrow clicked; none past the last or before the first (the family's button wraps, this stops). One page a
+     * call, and none within a quarter second of the last (one swipe, one page) */
+    bool hwheel(int notches);
+    /* the mouse's back (fwd false) and forward buttons, down and up: BACK and OK (the FM-1's OCT- and OCT+) */
+    bool side_button(bool fwd, bool down);
+    /* the screen's column a knob turns (role 3..6: KNOB 1..4; its name and value over the knob), none: nullptr */
+    const tess_zone_t *knob_zone(int role) const;
     /* a right-click (or Ctrl-click on a Mac): on the screen, a value's column or a list's row: its help card (TESS_ZA_HELP);
      * else a button or key latched, held until it is right-clicked or clicked again
      * (or Esc), so the mouse can play the FM-1's two-handed combos (GLO + a button, SEL + a key). true if changed */
@@ -115,6 +126,10 @@ class Panel
     void set_split(int note) { split_note = note; }
     int split() const { return split_note; }
     int take_split_request() { int r = split_req; split_req = -1; return r; }
+    /* OUTPUTS (TESSERA's menu): the track ports MONO or STEREO from the DAW's next load of the plugin (a click asks:
+     * take_outs_request 1 mono, 0 stereo, -1 none); live: this instance's ports */
+    void set_outs(bool mono, bool live) { outs_mono_ = mono, outs_live_ = live; }
+    int take_outs_request() { int r = outs_req; outs_req = -1; return r; }
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
@@ -129,11 +144,15 @@ class Panel
      * and asks for its ink (take_shell_request: the shell's index, -1 none); each shell's id (stored) and Mono ink
      * (MENU > COLOR's name) */
     static int shell_count();
+    static bool shell_native(int i);   // TESSERA's shell, NIGHT (0) or DAY (the last)
     static const char *shell_id(int i);
     static const char *shell_ink(int i);
     static int shell_by_id(const std::string &id);   // -1 if none
     void set_shell(int i);
     int shell() const { return shell_; }
+    bool native() const { return shell_native(shell_); }
+    bool day() const { return shell_ == shell_count() - 1; }   // TESSERA's shell's DAY skin (the last shell)
+    int skin_switch_x() const { return skin_x; }               // the header's sun / moon (its left edge)
     int take_shell_request() { int r = shell_req; shell_req = -1; return r; }
     /* the screen's inks (MENU > COLOR's choices, tess_core_ink_at): a row of swatches under the buttons, the one the
      * view has (tess_view_t.ink) ringed, its name while the mouse is on one. A click asks for that ink
@@ -191,7 +210,6 @@ class Panel
     void gen_var_step(int n);
     void draw_gen(uint32_t *px);
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
-    bool native() const { return shell_ == 0; }
     void layout();
     void key_words();
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
@@ -201,7 +219,6 @@ class Panel
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none
     int size_now = 100, size_req = -1;
-    int size_seg_at(int x) const;   // SIZE's row: 100, 125, 150, 200, -1 none
     int menu_sub = 0, menu_hover = -1, sub_hover = -1;   // menu_sub: 0 none, 1 SHELL's list, 2 INK's swatches
     int menu_row_at(int x, int y) const;
     int sub_at(int x, int y) const;
@@ -222,6 +239,7 @@ class Panel
     FileButton usb{};                  // the FM-1's shells: FM-1 USB, under the keys
     FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
     int tracks_ = 4, track_now = 0, bank_held = -1;
+    uint32_t hwheel_at = 0;            // the frame of the last sideways page step (hwheel; 0 none yet)
     bool banked() const { return tracks_ > 4 && !expanded(); }   // the 1-4 / 5-8 switch (EXPANDED: TRACKS shows all)
     int bank_at(int x, int y) const;
     int file_req = FILE_NONE, file_held = -1;
@@ -229,6 +247,7 @@ class Panel
     static constexpr int SWATCH_R = 9;
     static constexpr int SHELL_GAP = 14;   // (TESSERA's swatch apart from the FM-1's)
     int shell_ = 0, shell_req = -1, shell_hover = -1;
+    int skin_x = 0;                    // the sun / moon's left edge in the header (TESSERA's shell; 0 not drawn yet)
     void swatch_xy(int i, int &x, int &y) const;
     int swatch_at(int x, int y) const;
     static constexpr int INK_R = 7;
@@ -248,6 +267,8 @@ class Panel
     bool keys_on_ = true;
     int keys_req = -1;
     int listen_ch = 0, listen_last = 16, listen_req = -1, split_note = 48, split_req = -1;
+    bool outs_mono_ = false, outs_live_ = false;
+    int outs_req = -1;
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag
@@ -255,6 +276,7 @@ class Panel
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0, acc_y = 0;
     bool zone_still = false;
     bool closable_ = false;
+    bool sheet_ = false;     // the view's: the page has a sheet (OK held)
     bool standalone_ = false;
     bool hover_help_ = false;
     int hover_req = -1;

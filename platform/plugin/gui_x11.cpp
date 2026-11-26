@@ -69,7 +69,7 @@ class GuiX11 : public Gui
     Panel panel;
     std::vector<uint32_t> px = std::vector<uint32_t>(Panel::W_MAX * Panel::H);
     std::vector<uint32_t> out;   // the window's pixels at SIZE (Panel::scale)
-    int pct = 100;               // SIZE: 100, 125, 150, 200 %
+    int pct = 100;               // SIZE in % (75 to 200)
     int pw = Panel::W;           // the panel's width the window has (FM-1 or EXPANDED: panel.width())
     tess_view_t view{};
     std::unique_ptr<tess_tracks_t> tracks{new tess_tracks_t()};   // TRACKS (EXPANDED)
@@ -136,7 +136,7 @@ class GuiX11 : public Gui
     }
     void set_scale(int n) override
     {
-        if (n < 100 || n > 200)
+        if (n < Panel::PCT_MIN || n > Panel::PCT_MAX)
             return;
         pct = n;
         resize();
@@ -261,10 +261,16 @@ class GuiX11 : public Gui
                     changed |= panel.latch(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button4 || e.xbutton.button == Button5)
                     changed |= panel.wheel(at(e.xbutton.x), at(e.xbutton.y), e.xbutton.button == Button4 ? 1 : -1);
+                else if (e.xbutton.button == 6 || e.xbutton.button == 7)   // the wheel sideways: a page (7 right)
+                    changed |= panel.hwheel(e.xbutton.button == 7 ? 1 : -1);
+                else if (e.xbutton.button == 8 || e.xbutton.button == 9)   // back / forward: BACK, OK
+                    changed |= panel.side_button(e.xbutton.button == 9, true);
                 break;
             case ButtonRelease:
                 if (e.xbutton.button == Button1)
                     changed |= panel.up(at(e.xbutton.x), at(e.xbutton.y));
+                else if (e.xbutton.button == 8 || e.xbutton.button == 9)
+                    changed |= panel.side_button(e.xbutton.button == 9, false);
                 break;
             case MotionNotify:
                 changed |= panel.move(at(e.xmotion.x), at(e.xmotion.y));

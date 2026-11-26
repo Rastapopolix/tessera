@@ -2989,8 +2989,12 @@ int main(int argc, char **argv)
                             if ((EN[e] == ENGI_FM6 || EN[e] == ENGI_ORACLE) && FAMS[f] != FAM_SEQ)
                                 write_ppm(out, "YELLOW", name);
                         }
-                        if (w) page_scroll(1); else open_family(FAMS[f]);
-                        if (ui.page == first) break;
+                        {
+                            uint32_t was = ui.page;
+                            if (w) page_scroll(1); else open_family(FAMS[f]);
+                            if (ui.page == first || (w && ui.page == was)) break;   /* (the button wraps round, SELECT
+                                                                                     * stops at the last) */
+                        }
                     }
                     if (!w) fprintf(rep, "\n");
                     if (k + 1u != n0) {

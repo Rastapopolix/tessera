@@ -370,6 +370,18 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
+static void sheet_row(const char *label)   // the page's sheet (OCT+, tapped or held) and its row, double-clicked
+{
+    tap(B_OCTUP);
+    tess_core_view(&v);
+    if (find(label, TESS_ZONE_ROW) < 0) {
+        tap(B_OCTDN);
+        hold(B_OCTUP, 120);
+        tess_core_view(&v);
+    }
+    act(find(label, TESS_ZONE_ROW), TESS_ZA_DOUBLE, 0, 40);
+    tess_core_view(&v);
+}
 static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels)
 {
     tess_screen_t sc;
@@ -377,6 +389,95 @@ static uint32_t screen_hash()   // the screen as it is now (FNV-1a of its pixels
     uint32_t h = 2166136261u;
     for (uint32_t i = 0; i < sc.w * sc.h; i++) h = (h ^ sc.pixels[i]) * 16777619u;
     return h;
+}
+static void smap()   // EDIT's sections map (Page map on the sound's sheet, T3's FM6): a tile a page, a click opens it
+{
+    tess_core_track_select(2);
+    run(20);
+    tap(B_HOME);
+    tap(B_EDIT);
+    sheet_row("Page map");
+    int n = count(TESS_ZONE_SMAP);
+    CHECK(n >= 4, "the sections map: a zone a tile (%d)", n);
+    int pick = -1;
+    for (uint32_t i = 0; i < v.zone_count && pick < 0; i++)
+        if (v.zones[i].kind == TESS_ZONE_SMAP && v.zones[i].row >= 16) pick = (int)i;   // (a tile of the third section)
+    if (pick >= 0)
+    {
+        std::string name = v.zones[pick].name;
+        uint32_t h = screen_hash();
+        act(pick, TESS_ZA_CLICK, 0, 40);
+        CHECK(count(TESS_ZONE_SMAP) == 0 && screen_hash() != h, "a tile clicked opens its page (%s), the map closed",
+              name.c_str());
+    }
+    else
+        dump("smap");
+    tap(B_HOME);
+    CHECK(v.sheet == 1, "HOME: the view says the page has a sheet (OK held)");
+    tess_core_track_select(0);
+    run(20);
+}
+static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns its root, "+" adds one, a right-click takes it
+{
+    uint32_t mode = pid_named("GENERATOR MODE"), prog = pid_named("CHORD PROG");
+    int32_t was_mode = tess_core_param_get(mode, 3), was_prog = tess_core_param_get(prog, 3);
+    tess_core_track_select(3);
+    tess_core_param_set(mode, 3, 12);   // (CHORD)
+    tess_core_param_set(prog, 3, 7);    // (USER)
+    run(20);
+    tap(B_HOME);
+    int i = -1;
+    for (int k = 0; k < 6 && (i = find("CHORD 1", TESS_ZONE_CHORD)) < 0; k++) tap(B_SEQ);
+    CHECK(i >= 0, "GEN on a CHORD USER track: a zone a card (MODE %d PROG %d)", tess_core_param_get(mode, 3),
+          tess_core_param_get(prog, 3));
+    if (i >= 0)
+    {
+        int n0 = count(TESS_ZONE_CHORD);
+        std::string c1 = v.zones[i].value;
+        act(i, TESS_ZA_WHEEL, 1);
+        i = find("CHORD 1", TESS_ZONE_CHORD);
+        CHECK(i >= 0 && c1 != v.zones[i].value, "the wheel turns the first chord's root (%s -> %s)", c1.c_str(),
+              i >= 0 ? v.zones[i].value : "?");
+        if (const char *shot = std::getenv("CHORD_PPM"))   // (a picture of the cards, to look at)
+        {
+            tess_screen_t sc;
+            tess_core_screen(&sc);
+            if (FILE *f = std::fopen(shot, "wb"))
+            {
+                std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+                for (uint32_t k = 0; k < sc.w * sc.h; k++)
+                {
+                    uint16_t p = sc.pixels[k];
+                    unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                            (unsigned char)((p & 31) * 255 / 31)};
+                    std::fwrite(rgb, 1, 3, f);
+                }
+                std::fclose(f);
+            }
+        }
+        act(find("+", TESS_ZONE_CHORD), TESS_ZA_CLICK);
+        CHECK(count(TESS_ZONE_CHORD) == n0 + 1 || (n0 == 8 && count(TESS_ZONE_CHORD) == 8), "+ adds a chord (%d -> %d)",
+              n0, count(TESS_ZONE_CHORD));
+        int n1 = count(TESS_ZONE_CHORD);
+        act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_HELP);
+        CHECK(count(TESS_ZONE_CHORD) == n1 - 1 || n1 - 1 == 8, "a right-click takes a chord (%d -> %d)", n1,
+              count(TESS_ZONE_CHORD));
+    }
+    else
+        dump("chord user");
+    tess_core_param_set(mode, 3, was_mode);
+    tess_core_param_set(prog, 3, was_prog);
+    tap(B_HOME);
+    tess_core_track_select(0);
+    run(20);
+}
+static void hosted_words()   // inside a DAW the MIDI page's input is the DAW's, CLK's INT the DAW's (TESS_HOSTED)
+{
+    tap(B_HOME);
+    int i = -1;
+    for (int k = 0; k < 16 && (i = find("MIDI", TESS_ZONE_KNOB)) < 0; k++) tap(B_GLO);
+    CHECK(i >= 0 && !std::strcmp(v.zones[i].value, "DAW"), "GLO's MIDI page: the input is DAW (%s)", i >= 0 ? v.zones[i].value : "-");
+    tap(B_HOME);
 }
 static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel scrolls (down, then back up)
 {
@@ -427,16 +528,15 @@ static void reading()   // ABOUT and a long HELP card: a SCROLL zone; the wheel 
     CHECK(found, "a HELP card longer than the card: a SCROLL zone (SEQ's pages)");
     tap(B_HOME);
 }
-static void typing()   // NAME (SAVE > PROJECT, EDIT renames slot A): a computer keyboard types into it
+static void typing()   // NAME (SAVE > PROJECT, Rename on slot A's sheet): a computer keyboard types into it
 {
     tap(B_HOME);
     tap(B_SAVE);
     for (int i = 0; i < 6 && find("A", TESS_ZONE_ROW) < 0; i++) tap(B_SAVE);
     act(find("A", TESS_ZONE_ROW), TESS_ZA_CLICK, 0, 40);
     CHECK(!v.typing, "PROJECT: not typing");
-    tap(B_EDIT);
-    tess_core_view(&v);
-    CHECK(v.typing, "EDIT on PROJECT's slot A: NAME open, typing");
+    sheet_row("Rename");
+    CHECK(v.typing, "Rename on PROJECT's slot A: NAME open, typing");
     for (int i = 0; i < 14; i++) tess_core_text(TESS_TEXT_BACK);   // (the name it has: gone)
     for (const char *c = "dub sketch!7"; *c; c++) tess_core_text((uint8_t)*c);   // ('!' isn't in the set: left out)
     tess_core_text(TESS_TEXT_LEFT);
@@ -919,12 +1019,19 @@ static void roll()   // NOTES as a piano roll (batch 4): a click a note, a chord
     CHECK(p3b > 0 && p3b != p3 && kval("STEP").rfind("3/", 0) == 0, "a second click on step 3: a second note (%d, %d)", p3,
           p3b);
     {
-        int top = 0;
-        for (int cy = 66; cy < 92 && !top; cy++) if (lit(x3, cy)) top = cy;   // step 3's bar (its left edge: no tick)
-        CHECK(top > 0 && lit(x3 + 1, top - 2), "the chord's tick over step 3's bar (bar top row %d)", top);
-        rdo(2, top - 2, TESS_ZA_HELP);   // a right-click on the tick: that note gone
-        CHECK(top > 0 && !lit(x3 + 1, top - 2), "a right-click on the tick removes that note");
-        rdo(2, top - 2, TESS_ZA_CLICK);   // (a click there again: the step 3's notes: one more)
+        int top = 0, notch = 0;   // (a chord's notes at their own pitch: the lower one a notch cut in step 3's bar)
+        for (int cy = 60; cy < 92 && !top; cy++) if (lit(x3, cy)) top = cy;
+        for (int cy = top + 1; cy < 92 && top && !notch; cy++) if (lit(x3, cy) && !lit(x3 + 2, cy)) notch = cy;
+        CHECK(top > 0 && notch > top, "the chord's second note at its pitch, a notch in step 3's bar (top %d, notch %d)", top,
+              notch);
+        rdo(2, notch, TESS_ZA_HELP);   // a right-click on it: that note gone, the bar whole again
+        CHECK(notch > 0 && lit(x3 + 2, notch), "a right-click on the chord's note removes that note");
+        CHECK(midi_of(kval("PITCH")) == p3 || kval("STEP").rfind("3/", 0) == 0, "step 3 keeps its first note");
+        rdo(2, 82, TESS_ZA_CLICK);   // (the second note again, for the chord drag below)
+        rdo(2, 82, TESS_ZA_GRAB);   // a chord's note grabbed where it is drawn, dragged: that note, not the first
+        rdo(2, 82, TESS_ZA_TURN, -1);
+        CHECK(midi_of(kval("PITCH")) < p3b, "a chord's lower note dragged down: it moves (%d, then %s)", p3b,
+              kval("PITCH").c_str());
     }
 
     rdo(0, 90, TESS_ZA_GRAB);   // drag step 1's note up two rows
@@ -995,6 +1102,84 @@ static void tweak_marks()   // TWEAK's pictures: SHIFT's slider and FOLLOW's tra
     CHECK(find("T2", TESS_ZONE_CELL) >= 0, "TWEAK: FOLLOW's tracks, a cell each");
     tap(B_HOME);
 }
+static void beta10()   // beta10's mouse bugs: boxed values click, FM6's chart and EGs, FX FILTER's peak, PATTERNS' tabs,
+{                      // an ARP-held help card clicked away
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
+    run(50);
+    tap(B_HOME);
+    // FX FILTER (STILL TIDE's T3, FX 1): its peak, a marker: across CUT, up and down RES
+    act(find("T3", TESS_ZONE_TRACK), TESS_ZA_CLICK);
+    tap(B_FX);
+    int pk = find("CUT / RES", TESS_ZONE_POINT);
+    CHECK(pk >= 0, "FX FILTER: the peak, a marker");
+    if (pk >= 0)
+    {
+        std::string c0 = kval("CUT"), r0 = kval("RES");
+        act(pk, TESS_ZA_TURN_Y, 4);
+        CHECK(kval("RES") != r0 && kval("CUT") == c0, "the peak dragged up: RES moves, CUT stays (%s %s, then %s %s)",
+              c0.c_str(), r0.c_str(), kval("CUT").c_str(), kval("RES").c_str());
+        pk = find("CUT / RES", TESS_ZONE_POINT);
+        act(pk, TESS_ZA_TURN, -4);
+        CHECK(kval("CUT") != c0, "the peak dragged left: CUT moves (%s, then %s)", c0.c_str(), kval("CUT").c_str());
+    }
+    // a boxed value (FX SEND's MODE, CHAIN ..): a click the next one
+    {
+        int fx = reach(B_FX, "MODE", TESS_ZONE_KNOB, 8);
+        std::string t0 = fx >= 0 ? v.zones[fx].value : "";
+        act(fx, TESS_ZA_CLICK);
+        fx = find("MODE", TESS_ZONE_KNOB);
+        CHECK(fx >= 0 && t0 != v.zones[fx].value, "a click on a boxed value steps it (%s, then %s)", t0.c_str(),
+              fx >= 0 ? v.zones[fx].value : "?");
+        act(find("FX1", TESS_ZONE_TAB), TESS_ZA_CLICK);   // (FX opens on the page last used: FX 1 again for later)
+    }
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
+    run(50);
+    // FM6's chart (T3 plays FM6, TINE EP): an operator a zone; a double-click opens its pages, whose EG has corners
+    tap(B_HOME);
+    act(find("T3", TESS_ZONE_TRACK), TESS_ZA_CLICK);
+    int op = reach(B_EDIT, "OP 3", TESS_ZONE_OP, 6);
+    if (op < 0) dump("EDIT, T3");
+    CHECK(op >= 0 && count(TESS_ZONE_OP) == 6, "FM6's chart: an operator a zone (%d)", count(TESS_ZONE_OP));
+    if (op >= 0)
+    {
+        auto knobs = [&]() { std::string k; for (uint32_t i = 0; i < v.zone_count; i++) if (v.zones[i].kind == TESS_ZONE_KNOB) k += v.zones[i].name, k += "|"; return k; };
+        std::string was = knobs();
+        act(op, TESS_ZA_DOUBLE);
+        CHECK(knobs() != was, "a double-click on OP 3 opens its pages (%s, then %s)", was.c_str(), knobs().c_str());
+        for (int i = 0; i < 6 && find("R1", TESS_ZONE_POINT) < 0; i++)   // (its tabs, right: to EG RATE)
+            act(find(">", TESS_ZONE_TAB) >= 0 ? find(">", TESS_ZONE_TAB) : (int)v.zone_count - 1, TESS_ZA_CLICK);
+        int r1 = find("R1", TESS_ZONE_POINT);
+        if (r1 < 0) dump("OP 3's pages");
+        CHECK(r1 >= 0, "FM6's EG RATE: its corners, markers");
+        if (r1 >= 0)
+        {
+            std::string a = kval("R1");
+            act(r1, TESS_ZA_TURN, 3);   // (right: a longer segment, a slower rate)
+            CHECK(midi_of(a) < 0 && std::atoi(kval("R1").c_str()) < std::atoi(a.c_str()),
+                  "R1's corner dragged right: R1 down (%s, then %s)", a.c_str(), kval("R1").c_str());
+        }
+    }
+    // PATTERNS: the page tabs at its foot
+    tap(B_HOME);
+    bool pats = false;
+    for (int i = 0; i < 8 && !pats; i++) { tap(B_SEQ); pats = count(TESS_ZONE_CELL) >= 16; }
+    CHECK(pats && count(TESS_ZONE_TAB) >= 2, "PATTERNS: its page tabs, clickable (%d)", count(TESS_ZONE_TAB));
+    // a help card ARP held opened (a window's latched ARP): a click away closes it, ARP still held
+    tap(B_HOME);
+    tap(B_FX);
+    uint32_t page = screen_hash();
+    tess_core_buttons(1u << B_ARP);
+    run(5);
+    tess_core_enc(3, 1);
+    run(20);
+    CHECK(screen_hash() != page && v.closable, "ARP + KNOB 1: its help card, closable (%u)", v.closable);
+    tess_core_away();
+    run(20);
+    CHECK(screen_hash() == page, "a click away closes it, ARP still held");
+    tess_core_buttons(0);
+    run(20);
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -1013,6 +1198,10 @@ int main(int argc, char **argv)
     mouse2();
     points();
     tweak_marks();
+    beta10();
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
+    run(50);
+    tap(B_HOME);
     act(find("T3"), TESS_ZA_CLICK);
     CHECK(v.track == 2, "a click on T3 selects it (%u)", v.track);
 
@@ -1020,28 +1209,30 @@ int main(int argc, char **argv)
     tap(B_FX);
     dump("FX");
     CHECK(count(TESS_ZONE_KNOB) == 4, "FX: a zone a knob (%d)", count(TESS_ZONE_KNOB));
-    bool order = v.zone_count >= 4;
+    int k0 = 0;   // (the columns' zones: after a picture's marker, FX FILTER's peak, which a hit finds first)
+    while (k0 < (int)v.zone_count && v.zones[k0].kind != TESS_ZONE_KNOB) k0++;
+    bool order = (int)v.zone_count >= k0 + 4;
     for (int i = 0; i < 4 && order; i++)
-        order = v.zones[i].role == 3 + i && v.zones[i].x == 60 * i && v.zones[i].w == 60 && v.zones[i].name[0];
+        order = v.zones[k0 + i].role == 3 + i && v.zones[k0 + i].x == 60 * i && v.zones[k0 + i].w == 60 && v.zones[k0 + i].name[0];
     CHECK(order, "FX: KNOB 1..4 left to right, a column each, named");
-    tess_zone_t mix = v.zones[1];
+    tess_zone_t mix = v.zones[k0 + 1];
     std::string was = mix.value;
-    act(1, TESS_ZA_TURN, -2);
-    std::string turned = v.zones[1].value;
+    act(k0 + 1, TESS_ZA_TURN, -2);
+    std::string turned = v.zones[k0 + 1].value;
     CHECK(turned != was, "a turn of %s's zone moves it (%s, then %s)", mix.name, was.c_str(), turned.c_str());
-    act(1, TESS_ZA_DOUBLE);
-    std::string reset = v.zones[1].value;
-    act(1, TESS_ZA_DOUBLE);
-    CHECK(reset != turned && std::string(v.zones[1].value) == reset,
+    act(k0 + 1, TESS_ZA_DOUBLE);
+    std::string reset = v.zones[k0 + 1].value;
+    act(k0 + 1, TESS_ZA_DOUBLE);
+    CHECK(reset != turned && std::string(v.zones[k0 + 1].value) == reset,
           "a double-click puts %s's default back (%s, then %s, again %s)", mix.name, turned.c_str(), reset.c_str(),
-          v.zones[1].value);
-    tess_zone_t gone = v.zones[1];
+          v.zones[k0 + 1].value);
+    tess_zone_t gone = v.zones[k0 + 1];
     tap(B_HOME);
     tess_core_zone_do(&gone, TESS_ZA_TURN, 5);
     run(30);
     tap(B_FX);
-    CHECK(std::string(v.zones[1].value) == reset, "a zone no longer on the screen does nothing (%s, %s)", reset.c_str(),
-          v.zones[1].value);
+    CHECK(std::string(v.zones[k0 + 1].value) == reset, "a zone no longer on the screen does nothing (%s, %s)", reset.c_str(),
+          v.zones[k0 + 1].value);
 
     // ---- a list page: SCL (SCALES is SEL's first screen; OCT- its list)
     tap(B_SEL);
@@ -1098,6 +1289,9 @@ int main(int argc, char **argv)
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
+    smap();
+    chord_user();
+    hosted_words();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;

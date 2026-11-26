@@ -137,7 +137,9 @@ them. Every one starts OFF, and you can use any of them alone.
 
 <p><a href="https://youtu.be/md3v8T15dVg"><img src="assets/guides/e01-pages.png" width="240" alt="Video: Find your way around"></a> <a href="https://youtu.be/tCmJ-fns_dY"><img src="assets/guides/r-fx.png" width="240" alt="Video: FX: inserts and sends"></a></p> <!-- guide videos -->
 
-Tap a button to reach its pages; tap again (or turn **SELECT**) to step through them. Coming back from another
+Tap a button to reach its pages; tap again to step through them (after the last, the first again), or turn **SELECT**
+(it stops at the first and the last page). Every page shows its group's tabs at the bottom, the one you are on
+inverted. Coming back from another
 button, it opens the page you last used there (SAVE always opens USER, for the quick save). The tables say what each page
 lets you do and when you would want it. Follow a link for the full description.
 
@@ -193,7 +195,8 @@ sound pluck, swell or sustain.*
 | [USER scales](#your-own-scales-user1-to-user4) | Make up to four 12-note scales of your own on the keys. | No built-in scale is the one you hear. |
 | [Scala tunings](#your-own-tunings-scala-files) | Load your own microtonal tunings from the web editor. | You want to leave twelve-note tuning behind. |
 
-**EDIT**: the sound's own pages ([Sounds](#sounds)). Tap EDIT again for a map of them. *Use it to design or adjust a
+**EDIT**: the sound's own pages ([Sounds](#sounds)). Tap EDIT again for the next one; the sound's sheet (hold OCT+)
+has a map of them. *Use it to design or adjust a
 sound; save it to USER from SAVE.*
 
 **FX**: the insert and send effects (ECHO, SYNC ECHO, ROOM, REVERB, CHORUS, TAPE, PHASER, FILTER, DRIVE and more). Held, it sets
@@ -278,7 +281,7 @@ SAVE to save the project. *See [Saving](#saving-and-older-projects).*
 | **LFO** | MODS, MATRIX, LFO, LFO 2, ORGANIC, LFO DEST (an FM6 track: then FM LFO) | |
 | **ENV** | ENV, ENV DEST (an FM6 track: EG RATE, EG LVL, PITCH EG, PITCH LV) | On HOME, with OCT- / OCT+: the selected track an octave down / up (its TRN, up to ±24; both OCTs: 0) |
 | **SEL** | SCALES, SCL, CHORD | Quick SET: a key sets ROOT; KNOB 1 to 4 set ROOT, SCL, CHRD, VOIC |
-| **EDIT** | The sound's EDIT pages; on an EDIT page, the map | With OCT- / OCT+: undo / redo |
+| **EDIT** | The sound's EDIT pages (the map of them: Page map on the sound's sheet) | With OCT- / OCT+: undo / redo |
 | **FX** | The insert and send effects | The mod amount of any knob you turn |
 | **GLO** | MIXER, [PERF](#perf-four-macros), [PIECE](#piece-a-length-and-a-shape), [CHAIN](#chain-one-form-for-the-project), [ENTRIES](#entries-tracks-out-and-back-in), [LANDSCAPE](#landscape-rain-on-water), SYSTEM, MIDI IN, MIDI OUT | Quick SET: the black keys mute T1 to T4, the white keys solo while held, D4 holds the generators' line ([HOLD](#evolve)), E4 holds [FILL](#a-steps-condition-and-fill), KNOB 1 to 4 the levels, SELECT turns the tempo, F4 taps it, PRESETS browses the sounds; with PLAY, restart from the top |
 | **SAVE** | USER (ready to save the sound), PROJECT, PRESETS | Save the project to its slot (as SAVE + REC) |
@@ -430,7 +433,6 @@ key skips it.
 | Hold **OCT-** on GEN or TWEAK, turn **KNOB 1** | **RANDOM**: turn right and the page's knobs get new values, each inside its range (GEN: the generator's KNOB 2 to 4; TWEAK: SHIFT, DROP and HUMAN). The screen says **RANDOMIZED**. Turn left to put back the values from before the last turn (**PUT BACK**, once). KNOB 2 to 4 of this layer are the generator's own ([The GEN layer](#the-gen-layer)); on TWEAK, FOLLOW's HOW, RHYTHM and HOLD. MODE, the seed, FOLLOW, QUAD's LINK and CONSTELLATION's AUTO never change. A STEP or ARP track says **NO GENERATOR**. |
 | Turn **SELECT** on HOME or MIXER, or with **GLO** held | Sets the tempo (BPM), as SEQ > TEMPO does; F4 with GLO held taps it. With CLK on USB or TRS the tempo is the clock's, and a Song Position from it (a DAW's PLAY from mid-song) starts the steps, the ARP and the generators where that song is, as if they had played from the top. |
 | Turn **PRESETS** with **GLO** held, on any page | Browses the selected track's sounds as PRESETS does on HOME. The GLO map gives way to the sound: the track, the list and the place in it, the sounds before and after, the sound's name large and its engine (a fast turn: the name the knob will load when it stops, with its speed, X4). It stays while GLO is held; a GLO key or knob brings the map back. Without GLO, PRESETS keeps the page's own job (or does nothing), so a stray turn never changes the sound. GLO + OCT- does not put the sound back. |
-| Tap **GLO** or **SEL** twice quickly | Locks its Quick SET open on the page you were on, so you need not hold the button: the header says **[GLO] LOCK** (or **[SEL] LOCK**), and the keys and knobs are the layer's. Tap the button again to close it; any other page button, the menu or a dialog closes it too (PLAY, REC and OCT keep working). |
 | **GLO** + **E4** (on MIXER, PERF or LANDSCAPE, E4) | Holds [FILL](#a-steps-condition-and-fill) for the steps whose condition is FILL or !FILL. |
 | **GLO** + **D4** (on MIXER, PERF or LANDSCAPE, D4) | **HOLD**: while the key is held every generator keeps the line it is playing. EVOLVE and STEP EVOLVE skip their rounds, TURING plays as PROB 0, MARKOV and MORPH replay their phrase as LOCK 100 (at LOCK 0, the last pass they played), CONSTELLATION replays its loop and ATLAS keeps this bar's CHAOS. Let go and they carry on from where they are. Tap D4 twice to latch it (**HOLD LATCHED**), tap it again to let go (**HOLD OFF**). The GLO map's D cell and D4's light show it. Not saved. |
 | **GEN** on an AWAKE track, a white key | Picks that step: KNOB 1 sets its A, KNOB 2 its B. The same key lets it go. |
@@ -444,7 +446,7 @@ key skips it.
 | **MODS**, **OCT-** held + **KNOB 4** | Sets a GATE mod's threshold. |
 | **MODS**, hold **OCT-** | Shows the picked mod's scope: its move over time over its source (see [MODS](#mods-the-modulation-cords)). |
 | **MATRIX**, **OCT+** | Opens the picked mod in MODS. |
-| **EDIT** on an EDIT page | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
+| **OCT+** held on an EDIT page, **Page map** | The map of the sound's pages: KNOB 1 across a row, KNOB 2 between rows, OCT+ opens the page, OCT- or EDIT closes it. Any other page button leaves it for its page. |
 | **PLAY** | Every generator starts its random choices from the top of its seed, and TIDE and SWARM restart: with EVOLVE's EVERY off, a project plays the same way each time. |
 
 ---
@@ -699,9 +701,9 @@ QNT (TEMPO) snaps the take when it ends.
 - **EDIT** + **REC** (either first): **CLEAR PATTERN?** OCT+ clears it and REC stays on, so the next pass records a new
   take. With REC off, EDIT held undoes the clear.
 - **EDIT** held while recording erases as the steps pass.
-- **EDIT** tapped (not recording) deletes the note at the cursor with its ties. The cursor then moves on the way
-  **KNOB 1** last turned it, right or left, so tap after tap clears a run either way. On a DRUM track's grid, the same
-  for the step.
+- **Delete note** on the note's sheet (hold **OCT+** on it) deletes the note at the cursor with its ties. The cursor
+  then moves on the way **KNOB 1** last turned it, right or left. On a DRUM track's grid, **KNOB 3** or the step's key
+  takes a hit off. EDIT tapped here opens the EDIT pages, as everywhere.
 - **OCT-** / **OCT+** with REC on move the keys an octave down / up, as on HOME (both together: back to the middle). The
   header shows it (**KEYS OCT +1**). OCT+ held still opens the pattern's sheet.
 
@@ -833,7 +835,7 @@ unless **PAT GEN** is ON (EVOLVE page, hold **OCT-**, KNOB 3).
 
 <p><a href="https://youtu.be/AOdqlhFV_mI"><img src="assets/guides/r-patterns.png" width="240" alt="Video: Patterns"></a></p> <!-- guide videos -->
 
-Hold **SEQ** (or turn to its page). It shows a row per track, and a cell per pattern, 1 to 8:
+Tap **SEQ** until PATTERNS (or turn to it with SELECT). It shows a row per track, and a cell per pattern, 1 to 8:
 
 | On the screen | Means |
 |---|---|
@@ -3372,7 +3374,8 @@ ORACLE, VINTAGE gives each voice its own slight drift.
 
 ### E
 
-**EDIT**. The button for the sound's own pages. Tap it again for the map of them.
+**EDIT**. The button for the sound's own pages. Tap it again for the next one; Page map on the sound's sheet shows
+them all.
 
 **ENERGY**. A project-wide slow tide from sparse and quiet to full and loud, with occasional rests. DEPTH sets how
 much it moves each track. Off at 0. [MANUAL](#energy)
