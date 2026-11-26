@@ -351,6 +351,18 @@ struct Tessera : GuiLink
     void gen_pick(int style, int variation) override;
     Panel::GenState gen_state() override;
     std::string gen_make(const Piece &pc);
+    // A / B (Cosmati audit G7): two whole projects, and each one's settings (every settable parameter, each track's) for
+    // MORPH; the one shown (-1 none, or MORPH's blend), MORPH's place (-1 not used since). Saved in the DAW's state (TSNP)
+    struct SnapPV { uint16_t pid; uint8_t trk; int16_t v; };
+    struct Snap { std::vector<uint8_t> tsp; std::vector<SnapPV> pv; };
+    Snap snaps[2];
+    int snap_active = -1, snap_morph = -1;
+    std::mutex snap_lock;
+    Panel::SnapState snap_state() override;
+    std::string snap_do(int what, int slot, int value) override;
+    void snap_take(Snap &s);   // (core_lock held)
+    std::vector<uint8_t> snaps_state();
+    bool snaps_load(const uint8_t *b, uint32_t len);
     std::string gen_seed(uint32_t seed, int style = -1);
 };
 
@@ -677,6 +689,155 @@ void Tessera::host_undo(const char *what)
     auto *hu = static_cast<const clap_host_undo_t *>(host->get_extension(host, CLAP_EXT_UNDO));
     if (hu && hu->change_made)
         hu->change_made(host, what, nullptr, 0, false);   // (no delta: the host keeps the state from before)
+}
+
+// ---- A / B
+void Tessera::snap_take(Snap &sn)
+{
+    sn.tsp.assign(core->tsp_max(), 0);
+    sn.tsp.resize(core->save(sn.tsp.data(), (uint32_t)sn.tsp.size()));
+    sn.pv.clear();
+    uint32_t nt = core->tracks();
+    for (uint32_t n = 0, cnt = core->param_count(); n < cnt; n++)
+    {
+        tess_param_t in;
+        uint32_t pid = core->param_at(n, 0, &in);
+        if (pid == 0xFFFF || !in.settable)
+            continue;
+        for (uint32_t tr = 0; tr < (in.per_track ? nt : 1u); tr++)
+            sn.pv.push_back({(uint16_t)pid, (uint8_t)tr, (int16_t)core->param_get(pid, tr)});
+    }
+}
+
+Panel::SnapState Tessera::snap_state()
+{
+    std::lock_guard<std::mutex> g(snap_lock);
+    Panel::SnapState st;
+    st.has[0] = !snaps[0].tsp.empty(), st.has[1] = !snaps[1].tsp.empty();
+    st.active = snap_active, st.morph = snap_morph;
+    return st;
+}
+
+std::string Tessera::snap_do(int what, int slot, int value)
+{
+    const char *nm = slot ? "B" : "A";
+    if (slot < 0 || slot > 1)
+        return "";
+    std::lock_guard<std::mutex> s(snap_lock);
+    if (what == Panel::SNAP_STORE)
+    {
+        {
+            std::lock_guard<std::mutex> g(core_lock);
+            snap_take(snaps[slot]);
+        }
+        snap_active = slot, snap_morph = -1;
+        return std::string("STORED IN ") + nm;
+    }
+    if (what == Panel::SNAP_CLICK)
+    {
+        std::string said;
+        {
+            std::lock_guard<std::mutex> g(core_lock);
+            if (snap_active >= 0 && snap_active != slot)   // (the one shown keeps its edits)
+                snap_take(snaps[snap_active]);
+            if (snaps[slot].tsp.empty())
+            {
+                snap_take(snaps[slot]);   // (an empty one: the project as it is, A and B the same until edited)
+                const char *from = snap_active == 0 ? "A" : snap_active == 1 ? "B" : "THE PROJECT";
+                snap_active = slot, snap_morph = -1;
+                return std::string(nm) + ": A COPY OF " + from;
+            }
+            if (core->load(snaps[slot].tsp.data(), (uint32_t)snaps[slot].tsp.size()))
+                return std::string("COULD NOT RECALL ") + nm;
+        }
+        snap_active = slot, snap_morph = -1;
+        gen_before = false;
+        changed_by_file(slot ? "Recall B" : "Recall A");
+        return std::string(nm) + " RECALLED";
+    }
+    if (what == Panel::SNAP_MORPH)
+    {
+        const Snap &a = snaps[0], &b = snaps[1];
+        if (a.pv.empty() || b.pv.empty())
+            return "MORPH: STORE A AND B FIRST";
+        int x = value < 0 ? 0 : value > 100 ? 100 : value;
+        {
+            std::lock_guard<std::mutex> g(core_lock);
+            for (size_t i = 0, j = 0; i < a.pv.size(); i++)   // (the same order; one missing from B: passed over)
+            {
+                while (j < b.pv.size() && (b.pv[j].pid < a.pv[i].pid || (b.pv[j].pid == a.pv[i].pid && b.pv[j].trk < a.pv[i].trk)))
+                    j++;
+                if (j >= b.pv.size() || b.pv[j].pid != a.pv[i].pid || b.pv[j].trk != a.pv[i].trk)
+                    continue;
+                int32_t va = a.pv[i].v, vb = b.pv[j].v, v = va;
+                if (va == vb)
+                    continue;
+                char t[32] = {};   // (a choice shown as a word, SAW or an engine: no in-between, B's from halfway)
+                core->param_text(a.pv[i].pid, a.pv[i].trk, va, t, sizeof t);
+                bool number = (t[0] >= '0' && t[0] <= '9') || ((t[0] == '-' || t[0] == '+' || t[0] == '.') && t[1] >= '0' && t[1] <= '9');
+                v = number ? va + (int32_t)std::lround((vb - va) * x / 100.0) : x >= 50 ? vb : va;
+                if (v != core->param_get(a.pv[i].pid, a.pv[i].trk))
+                    core->param_set(a.pv[i].pid, a.pv[i].trk, v);
+            }
+            params_refresh();
+        }
+        snap_active = -1, snap_morph = x;
+        auto *hp = static_cast<const clap_host_params_t *>(host->get_extension(host, CLAP_EXT_PARAMS));
+        if (hp && hp->rescan)
+            hp->rescan(host, CLAP_PARAM_RESCAN_VALUES);
+        return "";
+    }
+    return "";
+}
+
+// the state's part: A's and B's projects and settings, the one shown, MORPH's place (empty: none stored)
+std::vector<uint8_t> Tessera::snaps_state()
+{
+    std::lock_guard<std::mutex> s(snap_lock);
+    std::vector<uint8_t> o;
+    if (snaps[0].tsp.empty() && snaps[1].tsp.empty())
+        return o;
+    auto u32 = [&](uint32_t v) { for (int k = 0; k < 4; k++) o.push_back((uint8_t)(v >> (8 * k))); };
+    for (const Snap &sn : snaps)
+    {
+        u32((uint32_t)sn.tsp.size());
+        o.insert(o.end(), sn.tsp.begin(), sn.tsp.end());
+        u32((uint32_t)sn.pv.size());
+        for (const SnapPV &e : sn.pv)
+            o.insert(o.end(), {(uint8_t)e.pid, (uint8_t)(e.pid >> 8), e.trk, (uint8_t)e.v, (uint8_t)((uint16_t)e.v >> 8)});
+    }
+    o.push_back((uint8_t)(int8_t)snap_active);
+    o.push_back((uint8_t)(int8_t)snap_morph);
+    return o;
+}
+bool Tessera::snaps_load(const uint8_t *b, uint32_t len)
+{
+    std::lock_guard<std::mutex> s(snap_lock);
+    Snap got[2];
+    uint32_t at = 0;
+    auto u32 = [&](uint32_t &v) {
+        if (at + 4 > len) return false;
+        v = b[at] | (uint32_t)b[at + 1] << 8 | (uint32_t)b[at + 2] << 16 | (uint32_t)b[at + 3] << 24;
+        at += 4;
+        return true;
+    };
+    for (Snap &sn : got)
+    {
+        uint32_t n;
+        if (!u32(n) || n > len - at)
+            return false;
+        sn.tsp.assign(b + at, b + at + n);
+        at += n;
+        if (!u32(n) || (uint64_t)n * 5 > len - at)
+            return false;
+        for (uint32_t i = 0; i < n; i++, at += 5)
+            sn.pv.push_back({(uint16_t)(b[at] | b[at + 1] << 8), b[at + 2], (int16_t)(uint16_t)(b[at + 3] | b[at + 4] << 8)});
+    }
+    if (at + 2 != len)
+        return false;
+    snaps[0] = std::move(got[0]), snaps[1] = std::move(got[1]);
+    snap_active = (int8_t)b[at], snap_morph = (int8_t)b[at + 1];
+    return true;
 }
 
 void Tessera::changed_by_file(const char *what)
@@ -1523,6 +1684,15 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
                 b.insert(b.begin() + len, ls, ls + 6);
                 len += 6;
             }
+            std::vector<uint8_t> ab = t->snaps_state();   // (A / B, Cosmati audit G7: after it all, only once stored)
+            if (!ab.empty())
+            {
+                uint32_t n = (uint32_t)ab.size();
+                const uint8_t tag[8] = {(uint8_t)n, (uint8_t)(n >> 8), (uint8_t)(n >> 16), (uint8_t)(n >> 24), 'T', 'S', 'N', 'P'};
+                b.insert(b.begin() + len, ab.begin(), ab.end());
+                b.insert(b.begin() + len + n, tag, tag + 8);
+                len += n + 8;
+            }
         }
     }
     if (!len)
@@ -1540,7 +1710,8 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
+    const uint32_t ab_max = 2 * (t->core->tsp_max() + 8 + 5 * t->core->param_count() * t->core->tracks()) + 2 + 8;
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size() + ab_max);
     uint32_t len = 0;
     for (;;)
     {
@@ -1556,6 +1727,20 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     bool ok;
     {
         std::lock_guard<std::mutex> g(t->core_lock);
+        bool ab = false;   // (A / B: the last part, once stored)
+        if (len >= 8 && !std::memcmp(&b[len - 4], "TSNP", 4))
+        {
+            uint32_t n = b[len - 8] | (uint32_t)b[len - 7] << 8 | (uint32_t)b[len - 6] << 16 | (uint32_t)b[len - 5] << 24;
+            if ((uint64_t)n + 8 > len || !t->snaps_load(b.data() + len - 8 - n, n))
+                return false;   // (not a state this build wrote)
+            len -= n + 8;
+            ab = true;
+        }
+        if (!ab)
+        {
+            std::lock_guard<std::mutex> sl(t->snap_lock);
+            t->snaps[0] = {}, t->snaps[1] = {}, t->snap_active = t->snap_morph = -1;
+        }
         int lc = 0, lsp = Listen::SPLIT;
         if (len >= 6 && !std::memcmp(&b[len - 6], "TLSN", 4) && b[len - 2] <= 16 && Listen::split_ok(b[len - 1]))
             lc = b[len - 2], lsp = b[len - 1], len -= 6;
