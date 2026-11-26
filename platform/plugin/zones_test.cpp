@@ -517,6 +517,14 @@ static void mixer8()   // MIXER on the TRACKS screen (Cosmati audit I1): a strip
     for (uint32_t i = 0; i < tv.zone_count; i++) pans += tv.zones[i].kind == TESS_ZONE_PAN;
     CHECK(!pans, "HOME: the rows again (%d PAN zones)", pans);
 }
+static void dub_forms()   // the dub FORMs (Tessadub step 3) by name, in the order panel.cpp's grid menu lists them
+{
+    if (tess_core_tracks() < 8) return;
+    static const char *const N[5] = {"VERSION", "SHOWCASE", "ROCKERS", "ROOTS", "STEPPERS"};
+    bool same = !tess_core_dub_form(5)[0];
+    for (uint32_t i = 0; same && i < 5u; i++) same = !std::strcmp(tess_core_dub_form(i), N[i]);
+    CHECK(same, "dub FORMs: VERSION SHOWCASE ROCKERS ROOTS STEPPERS, as the grid head's menu has them");
+}
 static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lower octave's mute / solo T1-T4, the upper's T5-T8
 {
     tap(B_HOME);
@@ -2080,6 +2088,7 @@ int main(int argc, char **argv)
     page_knobs();
     mixer8();
     keys8();
+    dub_forms();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
     run(50);
     tap(B_HOME);

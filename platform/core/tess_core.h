@@ -189,6 +189,12 @@ enum { TESS_ZA_LINK = 15 };
  * way (envelope, depths, LFO, ENGINE 1..8, FX 1, FM6's operators); n -1 the last DICE or MUTATE put back */
 enum { TESS_ZA_LOCK = 16, TESS_ZA_DICE };
 enum { TESS_ZA_SET = 18 };   /* a SLIDER's value set at n / 1000 of its range */
+/* DUB (an 8-track build's ENTRIES grid, a letter's head: a front end's right-click menu): n 0 that section a DROP (the
+ * spine IN: ANCHOR, or BASS and RHYTHM; the rest OUT); n 1..5 a dub FORM for the whole piece, 1 VERSION 2 SHOWCASE
+ * 3 ROCKERS 4 ROOTS 5 STEPPERS (the CHAIN, ENTRIES and the grid by role; entries.c dub_form_apply). Kept off the
+ * plain clicks on purpose, so other genres aren't steered */
+enum { TESS_ZA_DUB = 19 };
+const char *tess_core_dub_form(uint32_t n);   /* dub FORM n's name (TESS_ZA_DUB's n - 1), "" past the last (4 tracks: none) */
 /* the locks, for a front end's state: out NULL their length; else as many as fit, their length (3 bytes each); load
  * replaces them (a build without TESS_HAS_POINTER: none) */
 uint32_t tess_core_locks(uint8_t *out, uint32_t cap);

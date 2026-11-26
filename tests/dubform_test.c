@@ -23,7 +23,8 @@ static void roles(void)
     static const uint8_t R[8] = {ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR, ET_MELODY, ET_HARMONY, ET_RHYTHM};
     for (uint32_t tr = 0; tr < TESSERA_TRACKS; tr++) tessera.et_role[tr] = R[tr], trk[tr].p[P_MUTE] = 0;
 }
-static void head(uint32_t s) { core_egrid((int32_t)(0x100u + s), TESS_ZA_CLICK); }   /* (a click on letter s's head) */
+static void head(uint32_t s) { core_egrid((int32_t)(0x100u + s), TESS_ZA_CLICK, 0); }   /* (a click on letter s's head) */
+static void menu(uint32_t s, int32_t n) { core_egrid((int32_t)(0x100u + s), TESS_ZA_DUB, n); }   /* (its menu's row) */
 
 int main(int argc, char **argv)
 {
@@ -77,15 +78,16 @@ int main(int argc, char **argv)
     CHECK(seen[1] && !bad[1], "VERSION played: B out T3 T4, in T1 T2 T5 (%u of %u bars wrong)", bad[1], seen[1]);
     CHECK(seen[2] && !bad[2], "VERSION played: C out T1, in T2 T3 (%u of %u bars wrong)", bad[2], seen[2]);
 
-    /* the head's cycle: AUTO IN OUT FADE DROP AUTO */
+    /* a head's click: AUTO IN OUT FADE as before (no DROP: kept to the menu); its menu: DROP, a FORM */
     tessera.et_grid[0] = 0;
-    head(0), head(0), head(0);
-    CHECK(cell(0, 0) == ET_G_FADE && cell(0, 7) == ET_G_FADE, "head: three clicks, all FADE");
-    head(0);
-    CHECK(tessera.et_grid[0] == dub_drop_column() && cell(0, 4) == ET_G_IN && cell(0, 2) == ET_G_OUT,
-          "  a fourth: DROP, the ANCHOR in, the rest out (%04x)", tessera.et_grid[0]);
-    head(0);
-    CHECK(tessera.et_grid[0] == 0u, "  a fifth: AUTO again");
+    head(0), head(0), head(0), head(0);
+    CHECK(tessera.et_grid[0] == 0u, "head: four clicks, AUTO again (no DROP on the plain click)");
+    menu(0, 0);
+    CHECK(tessera.et_grid[0] == dub_drop_column() && cell(0, 4) == ET_G_IN && cell(0, 2) == ET_G_OUT && cell(0, 0) == ET_G_OUT,
+          "  the menu's DROP: the ANCHOR in, the rest out (%04x)", tessera.et_grid[0]);
+    tessera.fc_form = 0;
+    menu(1, 5);
+    CHECK(tessera.fc_form == 3u && tessera.fc_phrase == 2u, "  the menu's STEPPERS: the piece's FORM ABCB, 16 bars");
     tessera.et_role[4] = ET_MELODY;
     CHECK((dub_drop_column() & 3u) == ET_G_IN && (dub_drop_column() >> 2 & 3u) == ET_G_IN &&
           (dub_drop_column() >> 4 & 3u) == ET_G_OUT, "no ANCHOR: the DROP column keeps BASS and RHYTHM");
