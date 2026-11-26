@@ -284,6 +284,9 @@ static void mo_scale_pic(int32_t y, int32_t h);
 static void mo_confirm(const char *a, const char *b);
 static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint32_t flags, int32_t meter);
 static void mo_mixer_foot(void);                      /* (ui_mono.c: MIXER's legend and tabs) */
+#if TESS_SCR_COUNT > 1
+static void mo_inspect(uint32_t k, int32_t meter);     /* (ui_mono.c: MIXER as the selected track's inspector) */
+#endif
 static void mo_cu_row(uint32_t n, const cord_t *c, int sel, int on);
 static void mo_cu_bar(const cord_t *c, int32_t s, int32_t ox);
 static void mo_cu_led(uint32_t lv, int32_t ox);
@@ -921,6 +924,18 @@ static void draw_columns_(void)
     uint32_t c;
     char val[12];
     const char *unit;
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    if (mix_inspect()) {                                /* MIXER as the inspector: the selected track's */
+        static const char *const NM[4] = {"LEVEL", "PAN", "SEND 1", "SEND 2"};
+        for (c = 0; c < 4u; c++) {
+            uint32_t i = MIX_ID[c];
+            param_format(&TP[i], TSEL->p[i], val, &unit);
+            draw_column(c, c == 2u && !song.g[G_FXMODE] ? "FX SEND" : NM[c], c == 3u && !song.g[G_FXMODE] ? "--" : val,
+                        c == 3u && !song.g[G_FXMODE] ? "" : unit, VAL(c), RATIO(&TP[i], TSEL->p[i]), ICON_AUTO);
+        }
+        return;
+    }
+#endif
     if (cur_page()->scope == SC_TRK) {                 /* MIXER: KNOB k track k's LEVEL, OCT- held its PAN */
         static const char *const NAME[2][4] = {{"T1 LVL", "T2 LVL", "T3 LVL", "T4 LVL"}, {"T1 PAN", "T2 PAN", "T3 PAN", "T4 PAN"}};
         uint32_t pan = (uint32_t)oct_dn_only();

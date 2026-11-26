@@ -14,7 +14,7 @@
 #if TESS_SCR_COUNT > 1 && MELODEE_LOOK
 #define T2_W_MAX 480
 #define T2_H_MAX 240
-#define T2_ZONES 33                                     /* (8 rows of four, and the tempo) */
+#define T2_ZONES 72                                     /* (MIXER: 8 strips of eight; the rows: 8 of four; the tempo) */
 static uint16_t t2_px[T2_W_MAX * T2_H_MAX];             /* RGB565 (ui_mono.c's inks as they are) */
 static int32_t t2_w, t2_h, t2_sc;                       /* the size drawn, the pixels a cell */
 static uz_t t2_z[T2_ZONES];
@@ -55,22 +55,28 @@ static void t2_inv(const char *s, int32_t x, int32_t y, uint16_t box, uint16_t c
     t2_fill(x - 1, y - 1, mo_tw(s) + 2, 9, box);
     t2_text(s, x, y, c);
 }
-/* a zone of cells (TESS_HAS_POINTER): kind UZ_TRACK a row, T2_Z_MUTE, T2_Z_SOLO, T2_Z_LEVEL; row the track */
-enum { T2_Z_MUTE = 5, T2_Z_SOLO, T2_Z_LEVEL };
-static void t2_zone(uint32_t kind, int32_t x, int32_t y, int32_t w, int32_t h, uint32_t tr, const char *name,
-                    const char *value)
+/* a zone of cells (TESS_HAS_POINTER): kind UZ_TRACK a row (a strip's head), T2_Z_MUTE, T2_Z_SOLO, T2_Z_LEVEL (role -1
+ * the level, 0..2 FX SEND 1..3), T2_Z_PAN; row the track */
+enum { T2_Z_MUTE = 5, T2_Z_SOLO, T2_Z_LEVEL, T2_Z_PAN = 9 };
+static void t2_zone_r(uint32_t kind, int32_t x, int32_t y, int32_t w, int32_t h, uint32_t tr, const char *name,
+                      const char *value, int32_t role)
 {
 #if TESS_HAS_POINTER
     uz_t *z;
     if (t2_zn >= T2_ZONES) return;
     z = &t2_z[t2_zn++];
     z->x = (int16_t)(x * t2_sc), z->y = (int16_t)(y * t2_sc), z->w = (int16_t)(w * t2_sc), z->h = (int16_t)(h * t2_sc);
-    z->kind = (uint8_t)kind, z->group = UZ_G_TRACKS, z->role = -1, z->vrole = -1, z->row = (int16_t)tr;
+    z->kind = (uint8_t)kind, z->group = UZ_G_TRACKS, z->role = (int8_t)role, z->vrole = -1, z->row = (int16_t)tr;
     str_cpy(z->name, name, sizeof z->name);
     str_cpy(z->value, value, sizeof z->value);
 #else
-    (void)kind, (void)x, (void)y, (void)w, (void)h, (void)tr, (void)name, (void)value;
+    (void)kind, (void)x, (void)y, (void)w, (void)h, (void)tr, (void)name, (void)value, (void)role;
 #endif
+}
+static void t2_zone(uint32_t kind, int32_t x, int32_t y, int32_t w, int32_t h, uint32_t tr, const char *name,
+                    const char *value)
+{
+    t2_zone_r(kind, x, y, w, h, tr, name, value, -1);
 }
 
 /* track k's role, four letters, as HOME's column has it (ui_mono.c mo_stage_col): REC armed, its sound's category, else
@@ -148,11 +154,73 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
     }
 }
 
+/* MIXER (Cosmati audit I1): track k's strip, 30 cells wide from x. Its number (inverted when selected) and role; a
+ * fader (the level, 0..127, a bar from the bottom) and beside it a meter (the loudest voice's envelope now); the level in
+ * dB; PAN as a marker on a line; the FX sends as bars (one in CHAIN, three in SPLIT); M and S. Zones: the head selects,
+ * the fader and the sends turn (dragged, the wheel), PAN too, M and S click */
+static uint32_t t2_meter(uint32_t k)
+{
+    uint32_t i, m = 0;
+    for (i = 0; i < NVOICE; i++) {
+        const voice_t *v = &trk[k].v[i];
+        uint32_t e = v->active && v->env_out > 0 ? (uint32_t)v->env_out >> 8 : 0u;
+        if (e > m) m = e;
+    }
+    return m > 127u ? 127u : m;
+}
+static void t2_strip(uint32_t k, int32_t x, uint32_t blink)
+{
+    static const char *const SN[3] = {"SEND 1", "SEND 2", "SEND 3"};
+    const track_t *t = &trk[k];
+    uint32_t sel = k == song.sel, mute = t->p[P_MUTE] != 0u, wait = (mute_waiting() >> k) & 1u;
+    uint32_t solo = (track_solo >> k) & 1u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, mt = t2_meter(k);
+    uint32_t ns = song.g[G_FXMODE] ? FX_SLOTS : 1u, i;
+    uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
+    int32_t fh, pan = t->p[P_PAN], cx = x + 15;
+    char b[16], nm[8], lv[8];
+    b[0] = (char)('1' + k), b[1] = 0;                   /* the head: number, role */
+    if (sel) t2_box(x + 1, 13, 28, 91, MO_TRK(k));
+    if (sel) t2_inv(b, cx - 2, 15, MO_TRK(k), MO_BG);
+    else t2_text(b, cx - 2, 15, ink);
+    t2_role(k, nm);
+    t2_text(nm, cx - mo_tw(nm) / 2, 24, dim);
+    trk_short_name(k, b);
+    t2_zone(UZ_TRACK, x, 13, 30, 19, k, nm, b);
+    t2_fill(x + 9, 33, 1, 40, dim);                     /* the fader: its slot, the level from the bottom, a cap */
+    fh = (int32_t)(lvl * 40u / 127u);
+    t2_fill(x + 7, 73 - fh, 5, fh, ink);
+    t2_fill(x + 5, 72 - fh, 9, 1, MO_INK);
+    t2_box(x + 17, 33, 5, 40, dim);                     /* the meter */
+    fh = (int32_t)(mt * 38u / 127u);
+    if (fh) t2_fill(x + 18, 72 - fh, 3, fh, mt > 120u ? MO_INK : ink);
+    t2_level(k, lv);
+    t2_zone(T2_Z_LEVEL, x + 3, 32, 24, 42, k, "LEVEL", lv);
+    t2_text(lv, cx - mo_tw(lv) / 2, 75, ink);
+    t2_fill(x + 3, 85, 24, 1, dim);                     /* PAN: a line, its centre, a marker */
+    t2_fill(cx, 84, 1, 3, dim);
+    t2_fill(cx + (int32_t)(pan * 12 / 64) - 1, 83, 3, 5, ink);
+    fmt_int(b, pan);
+    t2_zone(T2_Z_PAN, x + 2, 82, 26, 7, k, "PAN", b);
+    for (i = 0; i < ns; i++) {                          /* the sends: a bar each, two cells high */
+        int32_t y = 90 + (int32_t)i * 3, sv = t->p[P_FXSEND + i];
+        t2_fill(x + 3, y + 1, 24, 1, dim);
+        if (sv) t2_fill(x + 3, y, sv * 24 / 127 < 1 ? 1 : sv * 24 / 127, 2, ink);
+        fmt_int(b, sv * 100 / 127);
+        t2_zone_r(T2_Z_LEVEL, x + 2, y - 1, 26, 3, k, ns > 1u ? SN[i] : "FX SEND", b, (int32_t)i);
+    }
+    if (mute && !(wait && blink)) t2_inv("M", x + 7, 99, dim, MO_BG);   /* M and S */
+    else if (wait && blink) t2_inv("M", x + 7, 99, MO_TRK(k), MO_BG);
+    else t2_text("M", x + 7, 99, dim);
+    t2_text("S", x + 19, 99, solo ? MO_INK : dim);
+    t2_zone(T2_Z_MUTE, x + 3, 98, 12, 8, k, "MUTE", mute ? "ON" : "OFF");
+    t2_zone(T2_Z_SOLO, x + 15, 98, 12, 8, k, "SOLO", solo ? "ON" : "OFF");
+}
+
 /* the page, w x h pixels (at most 480 x 240): 2 px a cell from 240 high, else 1. blink: MENU MUTES' wait, on or off */
 static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
 {
     uint32_t k;
-    int32_t i, cw, ch, compact;
+    int32_t i, cw, ch, compact, mixer;
     char b[24];
     if (w > T2_W_MAX) w = T2_W_MAX;
     if (h > T2_H_MAX) h = T2_H_MAX;
@@ -163,7 +231,8 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
         for (k = 0; k < NTRK; k++) t2_row(k, (int32_t)k * (ch / 8), ch / 8, 1, blink);
         return;
     }
-    str_cpy(b, NTRK > 4u ? "TRACKS 1-8" : "TRACKS 1-4", sizeof b);     /* the header */
+    mixer = !ui.home && cur_page()->graph == GR_TRK;    /* (MIXER the page: the strips) */
+    str_cpy(b, mixer ? NTRK > 4u ? "MIXER 1-8" : "MIXER 1-4" : NTRK > 4u ? "TRACKS 1-8" : "TRACKS 1-4", sizeof b);
     t2_text(b, 4, 2, MO_INK);
     if (song.playing) {                                 /* PLAY a triangle, STOP a square; the tempo */
         int32_t r;
@@ -184,14 +253,20 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
         t2_textr(b, 236, 2, MO_DIM);
     }
     t2_fill(0, 11, 240, 1, MO_DIM);
-    for (k = 0; k < NTRK; k++)                          /* the rows */
-        t2_row(k, 14 + (int32_t)k * 11, 11, 0, blink);
+    if (mixer) {                                        /* MIXER: a strip a track */
+        for (k = 0; k < NTRK; k++)
+            t2_strip(k, (int32_t)k * (240 / (int32_t)NTRK) + (240 / (int32_t)NTRK - 30) / 2, blink);
+    } else {
+        for (k = 0; k < NTRK; k++)                      /* the rows */
+            t2_row(k, 14 + (int32_t)k * 11, 11, 0, blink);
+    }
     t2_fill(0, 105, 240, 1, MO_DIM);                    /* the selected track's sound; the hint */
     b[0] = 'T', b[1] = (char)('1' + song.sel % NTRK), b[2] = ' ';
     trk_short_name(song.sel % NTRK, b + 3);
     t2_text(b, 4, 109, MO_INK);
 #if TESS_HAS_POINTER
-    t2_textr("CLICK A ROW TO SELECT", 236, 109, MO_DIM);
+    t2_textr(mixer ? "DRAG A FADER, CLICK M OR S" : "CLICK A ROW TO SELECT", 236, 109,
+             MO_DIM);
 #endif
 }
 

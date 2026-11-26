@@ -418,6 +418,16 @@ static int32_t list_accel(uint32_t role, int32_t s, uint32_t total, uint32_t *fa
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = &trk[(UI_BASE + slot) % NTRK];
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    if (mix_inspect()) {                                /* (the inspector: the selected track's LEVEL, PAN, SEND 1, 2) */
+        uint32_t i = MIX_ID[slot & 3u];
+        if (slot == 3u && !song.g[G_FXMODE]) return;   /* (CHAIN: one send) */
+        t = TSEL;
+        t->p[i] = (int16_t)clamp(t->p[i] + accel(EN_K1 + slot, steps, TP[i].max - TP[i].min), TP[i].min, TP[i].max);
+        motion_capture(t, i, t->p[i]);
+        return;
+    }
+#endif
     uint32_t pan = (uint32_t)oct_dn_only(), id = pan ? P_PAN : P_LEVEL;
     int16_t *vp = &t->p[id];
     const param_desc_t *d = &TP[id];

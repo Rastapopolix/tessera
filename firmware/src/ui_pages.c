@@ -1096,9 +1096,41 @@ static void pv_draw(void)
 #endif
     if (kind == PV_MIXER) {
         uint32_t k;
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+        static uint8_t was;                             /* (the inspector on or off: drawn whole, its zones anew) */
+        if ((uint8_t)mix_inspect() != was) {
+            was = (uint8_t)mix_inspect();
+            ui.force = 1;
+            uz_frame();
+        }
+#endif
         if (ui.force)
             lcd_fill(0, H_HEAD, 240, 240 - H_HEAD, T_BG);
         draw_head();
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+        if (mix_inspect()) {                            /* (EXPANDED: the strips on TRACKS; here the selected track) */
+            static uint32_t isig;
+            static uint8_t im;
+            track_t *t = TSEL;
+            int32_t m = meter_px(t->peak);
+            uint32_t sig;
+            t->peak = 0;
+            if (m < im - 1) m = im - 1;
+            sig = (uint32_t)song.sel * 3u + (uint32_t)t->p[P_LEVEL] * 7u + (uint32_t)(t->p[P_PAN] + 64) * 131u +
+                  (uint32_t)t->p[P_MUTE] * 17u + ((track_solo >> song.sel) & 1u) * 19u + (uint32_t)song.g[G_FXMODE] * 23u +
+                  (ui.hot_t ? ui.hot_col + 1u : 0u) * 29u;
+            for (k = 0; k < FX_SLOTS; k++)
+                sig = sig * 31u + (uint32_t)t->p[P_FXSEND + k] + (uint32_t)t->p[P_FXTYPE + k * FX_PARAMS] * 257u +
+                      (uint32_t)song.g[G_MFXTYPE + k * FX_PARAMS] * 65537u + (uint32_t)song.g[G_MFXMIX + k * FX_PARAMS] * 8191u;
+            if (ui.force || sig != isig || m != im) {
+                isig = sig, im = (uint8_t)(m < 0 ? 0 : m);
+                mo_inspect(song.sel, im);
+            }
+            if (ui.force)
+                mo_mixer_foot();
+            return;
+        }
+#endif
         for (k = UI_BASE; k < UI_BASE + UI_NT; k++)     /* (8 tracks: the selected track's bank) */
             pv_strip(k);
 #if MELODEE_LOOK
