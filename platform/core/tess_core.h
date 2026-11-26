@@ -171,6 +171,10 @@ enum { TESS_ZA_PAINT = 10, TESS_ZA_LENGTH, TESS_ZA_VELOCITY, TESS_ZA_DROP };
  * let go, n its SOUND cell's place (the cell's row, low byte: rows from the sound shown); that track loads it, as a pick
  * on it would, and stays unselected. The browser no longer showing: nothing */
 enum { TESS_ZA_SOUND = 14 };
+/* LINK (a MATRIX cell, CELL with the name "T1>T3"): another cell dragged onto it and let go, n that cell's row (its low
+ * byte: rows from the FROM picked): a new mod from that row's track (its FX-held shortcut source, the LFO unless picked)
+ * to this cell's column's track, CUTOFF, 25 %, opened in MODS to set its source and destination. MODS full: nothing */
+enum { TESS_ZA_LINK = 15 };
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */

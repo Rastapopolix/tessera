@@ -1338,6 +1338,58 @@ int main(int argc, char **argv)
         CHECK(e.width() == Panel::W_EXPANDED, "TESSERA's shell again: EXPANDED (%d)", e.width());
     }
 
+    {   // G4: MATRIX, a cell dragged onto another: LINK on that one with the first's row; a still press: a click
+        Panel m;
+        m.set_shell(0);
+        std::vector<uint8_t> kept(tess_core_tsp_max());
+        kept.resize(tess_core_save(kept.data(), (uint32_t)kept.size()));
+        tess_core_track_select(0);
+        auto cell_xy = [&](const char *name, int *zx, int *zy, int16_t *row) {
+            tess_core_view(&v);
+            m.draw(px.data(), v);
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (!std::strcmp(v.zones[i].name, name) && v.zones[i].kind == TESS_ZONE_CELL)
+                {
+                    *zx = 292 + 8 + v.zones[i].x + v.zones[i].w / 2, *zy = 44 + 8 + v.zones[i].y + v.zones[i].h / 2;
+                    if (row) *row = v.zones[i].row;
+                    return true;
+                }
+            return false;
+        };
+        int fx, fy, tx, ty;
+        int16_t frow = 0;
+        for (int i = 0; i < 16 && !cell_xy("T1>T1", &fx, &fy, &frow); i++)
+        {
+            tess_core_buttons(1u << 3);   // (LFO: its pages, MATRIX among them)
+            run(m, 0.05);
+            tess_core_buttons(0);
+            run(m, 0.2);
+        }
+        bool in = cell_xy("T1>T1", &fx, &fy, &frow) && cell_xy("T1>T2", &tx, &ty, nullptr);
+        CHECK(in, "G4: MATRIX through the panel, T1>T1 and T1>T2");
+        if (in)
+        {
+            m.input.zones.clear();
+            CHECK(!m.down(fx, fy) && m.input.zones.empty(), "a press on a MATRIX cell: nothing yet");
+            for (int i = 1; i <= 6; i++) m.move(fx + (tx - fx) * i / 6, fy + (ty - fy) * i / 6);
+            m.draw(px.data(), v);
+            if (!out.empty()) ppm(out + "/10g_tessera_matrix_drag.ppm", px);
+            m.up(tx, ty);
+            CHECK(m.input.zones.size() == 1 && m.input.zones[0].action == TESS_ZA_LINK &&
+                      !std::strcmp(m.input.zones[0].z.name, "T1>T2") && m.input.zones[0].n == (int8_t)(frow & 0xFF),
+                  "dragged onto T1>T2 and let go: LINK there, from T1's row (%zu)", m.input.zones.size());
+            m.input.zones.clear();
+            m.down(tx, ty), m.up(tx, ty);   // (another cell: not half a double-click)
+            CHECK(m.input.zones.size() == 1 && m.input.zones[0].action == TESS_ZA_CLICK, "a still press: a click on let go");
+            m.input.zones.clear();
+        }
+        tess_core_load(kept.data(), (uint32_t)kept.size());
+        tess_core_buttons(1u << 6);
+        run(m, 0.1);
+        tess_core_buttons(0);
+        run(m, 0.3);
+    }
+
     {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back
         Panel b;
         b.set_shell(0);

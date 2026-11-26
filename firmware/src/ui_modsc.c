@@ -192,3 +192,31 @@ static void msc_draw(void)
     cv_free_text(12, 106, &AF_X, "FX held: knob amount, SELECT source", T_DIM, T_SURF, 196);
     cv_blit(10, 40);
 }
+
+#if TESS_HAS_POINTER
+/* MATRIX under a mouse (tess_core.c TESS_ZA_LINK): a cell dragged onto another, a mod from track from to track to in a
+ * free slot (as FX held + a knob makes one): from's shortcut source to CUTOFF, 25 %; that cell picked and its new mod
+ * opened in MODS, to set the source and the destination there */
+static void mx_link(int32_t from, int32_t to)
+{
+    int32_t i = msc_free();
+    uint32_t k, j;
+    cord_t c;
+    if (from < 0 || from >= NTRK || to < 0 || to >= NTRK)
+        return;
+    if (i < 0) {
+        ui_message("MODS FULL");
+        return;
+    }
+    c.src = (uint8_t)msc_src((uint32_t)from);
+    c.src_trk = (uint8_t)from;
+    c.dst = CD_CUTOFF;
+    c.dst_trk = (uint8_t)to;
+    c.amount = 25, c.offset = 0, c.uni = 0;
+    cord_set((uint32_t)i, &c);
+    mx_from = (uint8_t)from, mx_to = (uint8_t)to, mx_k = 0;
+    for (k = 0; k < 16u && mx_cell(mx_from, mx_to, k, &j) > k; k++)
+        if (j == (uint32_t)i) mx_k = (uint8_t)k;
+    mx_open();
+}
+#endif

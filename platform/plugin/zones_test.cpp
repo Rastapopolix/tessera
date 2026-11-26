@@ -1245,6 +1245,24 @@ static void mouse2()   // the mouse, round 2: MODS, MATRIX, HOME's double-click,
     tap(B_HOME);
     int cell = reach(B_LFO, "T1>T1", TESS_ZONE_CELL, 16);
     CHECK(cell >= 0, "MATRIX: a cell a pair of tracks");
+    {   // G4: a cell dragged onto another: a new mod from the first's row (FROM) to the second's column (TO), opened in MODS
+        int from = find("T1>T1", TESS_ZONE_CELL), to = find("T1>T3", TESS_ZONE_CELL);
+        if (to < 0) to = find("T1>T2", TESS_ZONE_CELL);
+        CHECK(from >= 0 && to >= 0, "MATRIX: T1>T1 and a cell to its right");
+        if (from >= 0 && to >= 0)
+        {
+            std::string name = v.zones[to].name, was = v.zones[to].value;
+            int8_t n = (int8_t)(uint8_t)((uint16_t)v.zones[from].row & 0xFFu);
+            act(to, TESS_ZA_LINK, n, 40);
+            bool mods = find(name.c_str(), TESS_ZONE_CELL) < 0;
+            CHECK(mods, "dropped on %s: MODS opened (the MATRIX cells gone)", name.c_str());
+            tap(B_OCTDN);   // (OCT- in MODS: back to MATRIX)
+            run(20);
+            int again = find(name.c_str(), TESS_ZONE_CELL);
+            CHECK(again >= 0 && !std::strcmp(v.zones[again].value, "OPEN") && was == "--",
+                  "back in MATRIX: %s has a mod now (%s, was %s)", name.c_str(), again >= 0 ? v.zones[again].value : "?", was.c_str());
+        }
+    }
     // HOME: a track double-clicked opens its sounds (TESSERA's shell: BACK / OK of its own, as the plugin has them)
     tess_core_key_words(1);
     tap(B_HOME);
