@@ -3669,6 +3669,110 @@ static void mo_strip(uint32_t k, const char *nm, uint32_t lvl, int32_t pan, uint
     else mo_circ(14, 84, 3, dim);
     cv_blit((uint32_t)CARD_X(k - UI_BASE) - 2u, PV_STRIP_TOP);   /* (8 tracks: its place in the bank) */
 }
+#if TESS_SCR_COUNT > 1
+/* MIXER as the selected track's channel inspector (the plugin's EXPANDED: the TRACKS screen has every track's strip;
+ * Cosmati audit I1), 120 x 89 cells under the header: its name; LEVEL a large dial with its dB and the meter, PAN a
+ * dial; MUTE and SOLO large; its FX sends (one in CHAIN, three in SPLIT) as bars, its FX inserts by name; along the
+ * bottom the buses' returns (the master FX slots: type, MIX). KNOB 1..4 LEVEL, PAN, SEND 1, SEND 2 (the knob just
+ * turned: its value inverted). Zones: LEVEL, PAN and the sends turn, MUTE and SOLO click */
+static void mo_inspect(uint32_t k, int32_t meter)
+{
+    const track_t *t = &trk[k];
+    uint32_t mute = t->p[P_MUTE] != 0u, solo = (track_solo >> k) & 1u, lvl = (uint32_t)t->p[P_LEVEL] & 127u, i;
+    uint32_t ns = song.g[G_FXMODE] ? FX_SLOTS : 1u, hot = ui.hot_t ? ui.hot_col + 1u : 0u, s;
+    int32_t pan = clamp(t->p[P_PAN], -64, 63), h;
+    uint16_t ink = MO_TRK(k), dim = mo_tdim(k);
+    const char *unit;
+    char b[24], tn[4] = {'T', (char)('1' + k), 0, 0};
+#if TESS_HAS_POINTER
+    uz_begin(UZ_G_STRIPS);
+    uz_add(UZ_G_STRIPS, UZ_LEVEL, 2, 11 + 10, 36, 40, -1, -1, (int32_t)k, tn, "LEVEL");
+    uz_add(UZ_G_STRIPS, UZ_PAN, 46, 11 + 12, 26, 38, -1, -1, (int32_t)k, tn, "PAN");
+    uz_add(UZ_G_STRIPS, UZ_MUTE, 78, 11 + 12, 40, 12, -1, -1, (int32_t)k, tn, "MUTE");
+    uz_add(UZ_G_STRIPS, UZ_SOLO, 78, 11 + 27, 40, 12, -1, -1, (int32_t)k, tn, "SOLO");
+    for (i = 0; i < ns; i++)
+        uz_add(UZ_G_STRIPS, UZ_LEVEL, 2, 11 + 54 + (int32_t)i * 7, 58, 7, (int32_t)i, -1, (int32_t)k, tn,
+               ns > 1u ? (i ? i == 1u ? "SEND 2" : "SEND 3" : "SEND 1") : "FX SEND");
+#endif
+    for (s = 0; s < 2u; s++) {                          /* (in two halves: the canvas holds 240 x 120) */
+        cv_begin(240, 89, MO_BG);
+        cv_oy = -89 * (int32_t)s;
+        b[0] = (char)('1' + k), b[1] = 0;                   /* its number and sound */
+        mo_invc(b, 3, 1, ink);
+        trk_short_name(k, b);
+        mo_text(b, 12, 1, ink);
+        mo_hl(0, 9, 120, dim);
+        mo_textc("LEVEL", 20, 12, MO_DIM);                  /* LEVEL, the meter */
+        mo_dial(20, 30, 11, (int32_t)lvl * 1000 / 127, mute ? dim : ink);
+        if (lvl) {
+            int32_t d = level_db_x10(lvl);
+            fmt_int(b, (d + (d < 0 ? -5 : 5)) / 10);
+            str_cpy(b + str_len(b), " DB", 4);
+        } else {
+            str_cpy(b, "OFF", sizeof b);
+        }
+        if (hot == 1u) mo_invc(b, 20 - mo_tw(b) / 2, 44, MO_HOT);
+        else mo_textc(b, 20, 44, ink);
+        mo_box(38, 17, 5, 25, dim);
+        h = meter * 23 / (TS_MH - 2);
+        if (h > 0) mo_fill(39, 41 - h, 3, h, ink);
+        mo_textc("PAN", 59, 12, MO_DIM);                    /* PAN */
+        mo_dial(59, 29, 8, (pan + 64) * 1000 / 127, ink);
+        if (pan) {
+            b[0] = pan < 0 ? 'L' : 'R';
+            fmt_int(b + 1, pan < 0 ? -pan : pan);
+        } else {
+            str_cpy(b, "C", sizeof b);
+        }
+        if (hot == 2u) mo_invc(b, 59 - mo_tw(b) / 2, 44, MO_HOT);
+        else mo_textc(b, 59, 44, ink);
+        if (mute) {                                         /* MUTE, SOLO */
+            mo_fill(78, 12, 40, 12, ink);
+            mo_textc("MUTE", 98, 15, MO_BG);
+        } else {
+            mo_box(78, 12, 40, 12, dim);
+            mo_textc("MUTE", 98, 15, dim);
+        }
+        if (solo) {
+            mo_fill(78, 27, 40, 12, ink);
+            mo_textc("SOLO", 98, 30, MO_BG);
+        } else {
+            mo_box(78, 27, 40, 12, dim);
+            mo_textc("SOLO", 98, 30, dim);
+        }
+        mo_hl(0, 52, 120, dim);
+        for (i = 0; i < ns; i++) {                          /* the sends */
+            int32_t y = 55 + (int32_t)i * 7, v = t->p[P_FXSEND + i];
+            b[0] = 'S', b[1] = (char)('1' + i), b[2] = 0;
+            mo_text(ns > 1u ? b : "FX", 2, y, MO_DIM);
+            mo_hl(16, y + 3, 30, dim);
+            if (v) mo_fill(16, y + 1, v * 30 / 127 < 1 ? 1 : v * 30 / 127, 5, ink);
+            fmt_int(b, v * 100 / 127);
+            if (hot == 3u + i) mo_invc(b, 48, y, MO_HOT);
+            else mo_text(b, 48, y, ink);
+        }
+        mo_text("INS", 66, 55, MO_DIM);                     /* the inserts, by name */
+        for (i = 0; i < FX_SLOTS; i++) {
+            uint32_t id = P_FXTYPE + i * FX_PARAMS;
+            param_format(&TP[id], t->p[id], b, &unit);
+            b[6] = 0;
+            mo_text(t->p[id] ? b : "--", 85, 55 + (int32_t)i * 7, t->p[id] ? ink : MO_DIM);
+        }
+        mo_hl(0, 76, 120, dim);                             /* the buses' returns: type, MIX as a bar */
+        for (i = 0; i < FX_SLOTS; i++) {
+            uint32_t id = G_MFXTYPE + i * FX_PARAMS;
+            int32_t x = 1 + (int32_t)i * 40, mx = song.g[id + 1u] * 12 / 127;
+            param_format(&GP[id], song.g[id], b, &unit);
+            b[4] = 0;
+            mo_text(song.g[id] ? b : "--", x, 79, song.g[id] ? MO_INK : MO_DIM);
+            mo_hl(x + 25, 82, 12, MO_DIM);
+            if (song.g[id] && mx) mo_fill(x + 25, 80, mx, 4, MO_INK);
+        }
+        cv_oy = 0;
+        cv_blit(0, PV_STRIP_TOP + 89u * s);
+    }
+}
+#endif
 /* under the strips: what the keys do here, a black key MUTE, a white key SOLO, E FILL (the GLO map has the rest);
  * then the GLO pages' tabs, MIXER the first */
 static void mo_mixer_foot(void)
