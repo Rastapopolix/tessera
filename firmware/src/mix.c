@@ -331,7 +331,11 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
      * difference is this track's exact post-fader/pan/solo contribution; CHAIN's sample loops stay unchanged and
      * zero extra sends need no extra mixing pass. */
     if(fx_send_on && fx_bus_separate)for(uint32_t slot=0;slot<FX_SLOTS-1u;slot++){
-        uint32_t amount=(uint32_t)t->p[P_FXSEND2+slot];fx_extra_gain[slot]=(amount+(amount==127u))*512u;extra|=amount;
+        uint32_t amount=(uint32_t)t->p[P_FXSEND2+slot];
+#if TESS_DUB
+        if((dub_throw>>(uint32_t)(t-trk)&1u) && (dub_slots>>(slot+1u)&1u))amount=127u;   /* (THROW: fx.c dub_slots) */
+#endif
+        fx_extra_gain[slot]=(amount+(amount==127u))*512u;extra|=amount;
     }
     if(extra){memcpy(fx_bus_sum_l,mix_l,n*sizeof *mix_l);memcpy(fx_bus_sum_r,mix_r,n*sizeof *mix_r);}
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)

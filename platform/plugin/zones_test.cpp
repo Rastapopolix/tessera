@@ -517,6 +517,22 @@ static void mixer8()   // MIXER on the TRACKS screen (Cosmati audit I1): a strip
     for (uint32_t i = 0; i < tv.zone_count; i++) pans += tv.zones[i].kind == TESS_ZONE_PAN;
     CHECK(!pans, "HOME: the rows again (%d PAN zones)", pans);
 }
+static void drop_button()   // TRACKS's DROP (Tessadub in Cosmati, step 2): stopped, a click is at once; again, back
+{
+    if (tess_core_tracks() < 8) return;
+    tess_core_transport(0);
+    uint32_t role = pid_named("ROLE") != 0xFFFFu ? pid_named("ROLE") : pid_named("ENTRIES ROLE");
+    tess_core_param_set(role, 0, 5);   // (T1 ANCHOR: the one kept)
+    run(10);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    CHECK(role != 0xFFFFu && tfind(TESS_ZONE_DROP, 0) >= 0 && tval(TESS_ZONE_DROP, 0) == "OFF", "TRACKS: a DROP button, OFF (%s)",
+          tval(TESS_ZONE_DROP, 0).c_str());
+    tact(TESS_ZONE_DROP, 0, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_DROP, 0) == "ON", "  clicked, stopped: ON at once (%s)", tval(TESS_ZONE_DROP, 0).c_str());
+    tact(TESS_ZONE_DROP, 0, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_DROP, 0) == "OFF", "  again: OFF (%s)", tval(TESS_ZONE_DROP, 0).c_str());
+    tess_core_param_set(role, 0, 0);
+}
 static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lower octave's mute / solo T1-T4, the upper's T5-T8
 {
     tap(B_HOME);
@@ -526,8 +542,10 @@ static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lowe
               !std::strcmp(v.key_short[20], "M8") && !std::strcmp(v.key_short[14], "S5") && !std::strcmp(v.key_short[19], "S8"),
           "keys: F#3 M1, F3 S1, F#4 M5, C#5 M8, G4 S5, C5 S8 (%s %s %s %s %s %s)", v.key_short[1], v.key_short[0],
           v.key_short[13], v.key_short[20], v.key_short[14], v.key_short[19]);
-    CHECK(!std::strcmp(v.key_long[20], "T8 MUTE") && !v.key_short[10][0] && !std::strcmp(v.key_short[12], "TAP"),
-          "C#5 T8 MUTE (%s); D#4 nothing, F4 still TAP (%s)", v.key_long[20], v.key_short[12]);
+    CHECK(!std::strcmp(v.key_long[20], "T8 MUTE") && !std::strcmp(v.key_short[10], "DRP") && !std::strcmp(v.key_short[12], "TAP"),
+          "C#5 T8 MUTE (%s); D#4 DROP (%s), F4 still TAP (%s)", v.key_long[20], v.key_short[10], v.key_short[12]);
+    CHECK(!std::strcmp(v.key_short[21], "THR") && !std::strcmp(v.key_short[23], "THF") && !v.key_short[22][0],
+          "D5 THROW, E5 THROW + REPEAT, D#5 nothing (%s %s)", v.key_short[21], v.key_short[23]);
     int32_t m0 = tess_core_param_get(mute, 4), m1 = tess_core_param_get(mute, 0);
     tess_core_keys(1u << 13);   // F#4
     run(5);
@@ -2080,6 +2098,7 @@ int main(int argc, char **argv)
     page_knobs();
     mixer8();
     keys8();
+    drop_button();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
     run(50);
     tap(B_HOME);
