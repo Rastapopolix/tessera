@@ -738,11 +738,77 @@ static void note_name(char *b, uint32_t n)
 }
 
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg);
+#if TESS_HAS_POINTER
+/* A front end's own section buttons (Cosmati's shell, tess_core_key_words on; tess_core.h TESS_SEC_*): the pages
+ * grouped by what they do, not by the FM-1 button they share. GEN: the generator, NOTES, ARP, PATTERN, MOTION; SOUND:
+ * the engine's pages, then ENV's; MOD: LFO's family (MODS, MATRIX, LFOs, ORGANIC); FX; SHAPE: EVOLVE .. ENERGY; PIECE:
+ * PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG; MIX: MIXER, PERF; SCALE: SCL's family; SETUP: TEMPO, SYSTEM, MIDI
+ * IN / OUT. HOME and SAVE stay the FM-1's. While on, a section's pages are the footer's tabs and what SELECT turns
+ * (fam_pages of FAM_CS + the section); the page list, its families and the FM-1's buttons are unchanged */
+enum { UI_SEC_GEN, UI_SEC_SOUND, UI_SEC_MOD, UI_SEC_FX, UI_SEC_SHAPE, UI_SEC_PIECE, UI_SEC_MIX, UI_SEC_SCALE,
+       UI_SEC_SETUP, UI_SEC_N };                       /* (tess_core.h's TESS_SEC_*) */
+#define FAM_CS 0x40u                                  /* (fam_pages: FAM_CS + a section, a section's pages) */
+static uint8_t ui_csec;                                 /* 1: the sections (tess_core_key_words) */
+static uint8_t cs_last[UI_SEC_N];                     /* the page last used in each section (0: none yet) */
+static uint32_t cs_of(uint32_t i)                       /* page i's section, UI_SEC_N: none (HOME, SAVE, TRACKS) */
+{
+    const page_t *p = &PAGES[i];
+    uint32_t g = p->graph;
+    switch (p->fam) {
+    case FAM_FX: return UI_SEC_FX;
+    case FAM_LFO: return UI_SEC_MOD;
+    case FAM_EDIT: case FAM_ENV: return UI_SEC_SOUND;
+    case FAM_SCL: return UI_SEC_SCALE;
+    case FAM_GLO:
+        return g == GR_TRK || g == GR_PERF ? UI_SEC_MIX :
+               g == GR_PIECE || g == GR_CHAIN || g == GR_ENTRIES || g == GR_LAND ? UI_SEC_PIECE : UI_SEC_SETUP;
+    case FAM_SEQ:
+        return g == GR_PATGRID || g == GR_SONG ? UI_SEC_PIECE : g == GR_NONE ? UI_SEC_SETUP : UI_SEC_GEN;
+    case FAM_ARP:
+        return arp_page(i) && g != GR_NONE ? UI_SEC_SHAPE : UI_SEC_GEN;
+    }
+    return UI_SEC_N;
+}
+/* section s's pages, in order (SOUND: the engine's, then ENV's; SETUP: TEMPO first) */
+static uint32_t cs_pages(uint32_t s, uint8_t *pg)
+{
+    uint32_t pass, i, n = 0;
+    for (pass = 0; pass < 2u; pass++)
+        for (i = 0; i < NPAGES; i++) {
+            uint32_t f = PAGES[i].fam, second = s == UI_SEC_SOUND ? f == FAM_ENV : s == UI_SEC_SETUP ? f == FAM_GLO : 0u;
+            if (cs_of(i) == s && second == pass && page_visible(i)) pg[n++] = (uint8_t)i;
+        }
+    return n;
+}
+/* section s's button: from elsewhere the page last used there (first time its first), again the next, after the last
+ * the first (as open_family) */
+static void cs_open(uint32_t s)
+{
+    uint8_t pg[NPAGES];
+    uint32_t n = s < UI_SEC_N ? cs_pages(s, pg) : 0u, k, last;
+    if (!n) return;
+    for (k = 0; k < n && pg[k] != ui.page; k++) {}
+    if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
+    else {
+        last = cs_last[s];
+        for (k = 0; k < n && pg[k] != last; k++) {}
+        ui.page = pg[k < n ? k : 0u];
+    }
+    cs_last[s] = ui.page;
+    ui.fam_last[fam_grp(PAGES[ui.page].fam)] = ui.page;
+    ui.home = 0;
+    page_entered();
+    ui.via = (uint8_t)fam_grp(PAGES[ui.page].fam);
+}
+#endif
 /* the ENV / LFO whose pages SELECT turns (fam_pages) on an engine with its own (native_titles); 0: the page's family's
- * (in_fam). From EDIT the engine's own pages are EDIT's */
+ * (in_fam). From EDIT the engine's own pages are EDIT's. The sections on: the page's section (FAM_CS + it) */
 static uint32_t page_nf(void)
 {
     uint32_t fam = fam_grp(cur_page()->fam);
+#if TESS_HAS_POINTER
+    if (ui_csec && cs_of(ui.page) < UI_SEC_N) return FAM_CS + cs_of(ui.page);
+#endif
     if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
     if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
@@ -771,6 +837,12 @@ static void page_scroll(int32_t dir)
     if (i == ui.page)
         return;
     ui.page = (uint8_t)i;
+#if TESS_HAS_POINTER
+    if (fam >= FAM_CS) {                                /* (a section's: its last, and the page's family's) */
+        cs_last[fam - FAM_CS] = ui.page;
+        fam = fam_grp(PAGES[i].fam);
+    }
+#endif
     ui.fam_last[fam] = ui.page;
     page_entered();
     ui.via = (uint8_t)fam;
@@ -781,6 +853,9 @@ static void page_scroll(int32_t dir)
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
 {
     uint32_t i, n = 0;
+#if TESS_HAS_POINTER
+    if (fam >= FAM_CS) return cs_pages(fam - FAM_CS, pg);
+#endif
     for (i = 0; fam == FAM_ENV && i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;

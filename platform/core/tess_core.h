@@ -55,6 +55,16 @@ void tess_core_buttons(uint32_t mask);
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
  * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways */
 void tess_core_key_words(int on);
+/* With the key words on (Cosmati's shell), the front end's own section buttons, one each, in place of the FM-1's FX
+ * SEL ENV LFO EDIT GLO ARP SEQ (HOME, SAVE, PLAY, REC stay): its bit in tess_core_buttons' labels, TESS_BTN_SECTION(s)
+ * (pressed: the section's page last used there, again its next, after the last the first), and lit in
+ * tess_view_t.lit_buttons while one of its pages shows. The footer's tabs and SELECT then turn through the shown
+ * page's section. GEN: the generator, NOTES, ARP, PATTERN, MOTION; SOUND: the engine's pages, ENV; MOD: MODS, MATRIX,
+ * the LFOs, ORGANIC; FX; SHAPE: EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY; PIECE: PIECE, CHAIN, ENTRIES, LANDSCAPE,
+ * PATTERNS, SONG; MIX: MIXER, PERF; SCALE: SCALES, SCL, KEY, CHORD; SETUP: TEMPO, SYSTEM, MIDI IN, MIDI OUT */
+enum { TESS_SEC_GEN, TESS_SEC_SOUND, TESS_SEC_MOD, TESS_SEC_FX, TESS_SEC_SHAPE, TESS_SEC_PIECE, TESS_SEC_MIX,
+       TESS_SEC_SCALE, TESS_SEC_SETUP, TESS_SEC_N };
+#define TESS_BTN_SECTION(s) (1u << (21u + (uint32_t)(s)))
 /* an encoder (knob) turned n detents: role 0 SELECT, 1 ALGORITHM, 2 PRESETS, 3..6 KNOB 1..4 */
 void tess_core_enc(uint32_t role, int32_t n);
 /* MASTER 0..1023 (the FM-1's pot, squared) */
