@@ -928,6 +928,12 @@ int main(int argc, char **argv)
             z.move(mx, my);
             z.draw(px.data(), v);
             int card = 0;
+            for (int yy = 44 + 256; yy < 44 + 256 + 40; yy++)   // (HOVER HELP OFF: none)
+                for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+            CHECK(card == 0, "HOVER HELP OFF: no card under the screen (%d yellow pixels)", card);
+            z.set_hover_help(true);
+            z.draw(px.data(), v);
+            card = 0;
             for (int yy = 44 + 256; yy < 44 + 256 + 40; yy++)   // (under the screen)
                 for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
             CHECK(card > 40, "the mouse over %s: a card with its value under the screen (%d yellow pixels)", m.name, card);
@@ -1458,13 +1464,18 @@ int main(int argc, char **argv)
             for (int x = rail0; x < rail1; x++) handle += wide[24 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
             CHECK(handle >= 6, "MORPH's handle drawn (%d)", handle);
             if (!out.empty()) ppm(out + "/16d_ab.ppm", wide, Panel::W_EXPANDED);
+            e.note("Clip saved: Tessera 2026-11-26 2204 still tide.mid");   // (a toast, G9: EXPANDED lets it run on)
+            e.draw(wide.data(), v, &t2);
+            if (!out.empty()) ppm(out + "/16e_toast.ppm", wide, Panel::W_EXPANDED);
+            CHECK(wide[(44 + 256 + 3) * Panel::W_EXPANDED + 292 + 300] != wide[(44 + 256 + 3) * Panel::W_EXPANDED + 292 + 600],
+                  "EXPANDED: a long toast runs on under TRACKS");
             for (uint32_t st = 0; st < tess_core_gen_styles(); st++)   // (G10: a piece with a CHORD track, the keys in its scale)
                 if (!std::strcmp(tess_core_gen_style(st), "SHORE")) tess_core_generate(st, 1367, 100, 0);
             tess_core_transport(1);
             run(e, 3.0);
             tess_core_view(&v);
             tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
-            e.draw(wide.data(), v, &t2);
+            for (int f = 0; f < 130; f++) e.draw(wide.data(), v, &t2);   // (the toast gone)
             if (!out.empty()) ppm(out + "/16f_scale_keys.ppm", wide, Panel::W_EXPANDED);
             CHECK(v.key_chord[0] && v.key_dim && v.key_root, "SHORE: its chord named (%s), keys out of the scale dim, the root's marked",
                   v.key_chord);
@@ -1526,6 +1537,42 @@ int main(int argc, char **argv)
         run(m, 0.1);
         tess_core_buttons(0);
         run(m, 0.3);
+    }
+
+    {   // a toast (Cosmati audit G9) in TESSERA's shell: a lit tag under the screen in place of its words, an outline
+        // in its last third, then gone
+        Panel n;
+        n.set_shell(0);
+        n.draw(px.data(), v);
+        const int tx = 292 + 8, ty = 44 + 256 + 3 + 21;   // (inside the tag, under its words)
+        uint32_t calm = px[ty * Panel::W + tx];
+        n.note("Loaded Still Tide");
+        n.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/toast.ppm", px);
+        uint32_t lit = px[ty * Panel::W + tx];
+        CHECK(lit != calm, "a toast: a lit tag under the screen (%08x, was %08x)", lit, calm);
+        const int ey = 44 + 256 + 3;   // (the tag's top edge: lit while it shows)
+        uint32_t edge_calm = calm;
+        int frames = 1;
+        bool outline = false;
+        while (frames < 200 && px[ey * Panel::W + tx] != edge_calm)
+        {
+            n.draw(px.data(), v);
+            frames++;
+            outline |= px[ey * Panel::W + tx] != edge_calm && px[ty * Panel::W + tx] == calm;
+        }
+        CHECK(frames >= 110 && frames <= 130 && outline, "the toast stays 4 s, its end an outline (%d frames)", frames);
+        n.note("Saved");   // the mouse on the screen, HOVER HELP OFF: no card, the toast stays
+        n.move(292 + 8 + 30, 44 + 8 + 40);
+        n.draw(px.data(), v);
+        CHECK(px[ty * Panel::W + tx] == lit, "HOVER HELP OFF: no card over the toast");
+        n.set_hover_help(true);   // ON: its card under the screen, the row's words and the toast gone round it
+        n.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/toast_hover.ppm", px);
+        int words = 0;
+        for (int y = 44 + 256 + 3; y < 44 + 256 + 29; y++)
+            for (int x = 292 + 200; x < 292 + 256; x++) words += px[y * Panel::W + x] != px[(44 + 256 + 3) * Panel::W + 292 + 255];
+        CHECK(words == 0, "a card up: PAGE and the toast not cut short beside it (%d pixels)", words);
     }
 
     {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back
@@ -1605,6 +1652,25 @@ int main(int argc, char **argv)
         run(q, 0.3);
         frames(1);
         CHECK(screen_hash(v) != h2, "sideways left: back a page");
+        int tab = -1;   // the wheel over the footer's tabs: its pages, down the next one, up the one before
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) tab = (int)i;
+        CHECK(tab >= 0, "the footer's tab of the page shown is a zone");
+        if (tab >= 0)
+        {
+            const tess_zone_t t = v.zones[tab];
+            const int tx = 292 + 8 + t.x + t.w / 2, ty = 44 + 8 + t.y + t.h / 2;
+            uint64_t h3 = screen_hash(v);
+            frames(9);
+            CHECK(q.wheel(tx, ty, 1), "the wheel up over the tabs: the page before");
+            run(q, 0.3);
+            frames(9);
+            CHECK(screen_hash(v) != h3, "..and the page changed");
+            CHECK(q.wheel(tx, ty, -1), "the wheel down over the tabs: the next page");
+            run(q, 0.3);
+            frames(1);
+            CHECK(screen_hash(v) == h3, "..back where it was");
+        }
         CHECK(q.side_button(false, true) && (q.input.buttons >> 12 & 1u), "the mouse's back button holds BACK (OCT-)");
         CHECK(q.side_button(false, false) && !(q.input.buttons >> 12 & 1u), "and lets it go");
         CHECK(q.side_button(true, true) && (q.input.buttons >> 13 & 1u), "forward: OK (OCT+)");

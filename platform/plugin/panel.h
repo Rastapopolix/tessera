@@ -155,7 +155,8 @@ class Panel
      * the bank of the track selected lit */
     void set_tracks(int n) { tracks_ = n; layout(); }
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
-     * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds. MIDI asks
+     * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds (TESSERA's
+     * shell: a toast under the screen, Cosmati audit G9; the FM-1's: beside the swatches). MIDI asks
      * when let go (FILE_MIDI: the clip saved), or once dragged 8 px off its press (FILE_MIDI_DRAG: the window starts
      * the system's drag of the clip, a .mid file, into a DAW's track or a folder, then calls up()) */
     enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI, FILE_MIDI_DRAG };
@@ -316,6 +317,7 @@ class Panel
     void ink_xy(int i, int &x, int &y) const;
     int ink_at(int x, int y) const;
     int note_frames = 0;
+    static constexpr int NOTE_FRAMES = 120;   // (a note's 4 s at the window's 30 frames a second)
     std::vector<Knob> knobs;
     std::vector<Button> buttons;
     std::vector<Key> keys;
