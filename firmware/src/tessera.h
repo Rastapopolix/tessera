@@ -390,6 +390,11 @@ void entries_play(void);                            /* seq.c, PLAY: Entries from
 void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
 void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
+#if TESS_DUB
+int dub_drop_press(void);                           /* DROP: all but the anchors out on the next bar, again: back in */
+uint32_t dub_drop_state(void);                      /* bit 0 out, bit 1 waiting for the bar line */
+uint32_t dub_drop_keep(void);                       /* the tracks a DROP keeps */
+#endif
 uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
 uint32_t mute_wait_part(uint32_t w);                /* how much of that wait has gone, in w parts */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */

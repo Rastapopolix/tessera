@@ -1326,6 +1326,12 @@ static void key_legend(uint32_t k, char *sh, char *lg)
             key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
         else if (!blk && p >= 4u && p < 8u)
             key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
+#if TESS_DUB
+        else if (blk && p == 4u)
+            key_put(sh, lg, "DRP", "DROP (NEXT BAR)", 0);
+        else if (!blk && (p == 12u || p == 13u))
+            key_put(sh, lg, p == 12u ? "THR" : "THF", p == 12u ? "THROW (HELD)" : "THROW+REPEAT", 0);
+#endif
         return;
     }
     if (l == LAYER_SCL) {

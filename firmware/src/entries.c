@@ -606,7 +606,19 @@ void mute_press(uint32_t tr, int all)
         mute_now(tr);
     }
 }
-uint32_t mute_waiting(void) { return song.playing ? mute_pend : 0u; }   /* the keys that blink */
+uint32_t mute_waiting(void)                           /* the keys that blink (and the tracks a DROP will change) */
+{
+    uint32_t m = mute_pend;
+#if TESS_DUB
+    if (drop_pend) {
+        uint32_t tr, keep = drop_keep();
+        if (drop_out) m |= drop_out;
+        else for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (!(keep >> tr & 1u) && !trk[tr].p[P_MUTE]) m |= 1u << tr;
+    }
+#endif
+    return song.playing ? m : 0u;
+}
 /* MIXER's underline under a waiting MUTE (ui_mono.c mo_strip): how much of the bar or phrase before its line has gone,
  * in w parts (0..w-1; the bars counted from PLAY, as mute_tick counts them) */
 uint32_t mute_wait_part(uint32_t w)
@@ -614,6 +626,45 @@ uint32_t mute_wait_part(uint32_t w)
     uint32_t n = settings_mute_q < 2u ? 1u : fc_bars(), beat = seq_beat_samples();
     return ((bar_n % n * 4u + beat_n) * beat + beat_pos % beat) * w / (n * 4u * beat);
 }
+#if TESS_DUB
+/* DROP (Tessadub in Cosmati, step 2; RAM only): pressed while playing, on the next bar line every track but the anchors
+ * goes out (ENTRIES ROLE ANCHOR; none: BASS and RHYTHM, AUTO's guess counted); pressed again, the same tracks come back
+ * on the next bar's one. A press while one waits calls it off. Stopped: at once. Only tracks sounding are taken out,
+ * and only those still out are brought back (a hand mute meanwhile is kept); ENTRIES is left alone */
+static uint8_t drop_out, drop_pend;                   /* the tracks DROP took out; a change waiting for the line */
+static uint8_t drop_keep(void)                        /* the tracks a DROP keeps */
+{
+    uint32_t k = et_mask(ET_ANCHOR);
+    return (uint8_t)(k ? k : et_mask(ET_BASS) | et_mask(ET_RHYTHM));
+}
+static void drop_now(void)
+{
+    uint32_t tr, keep;
+    if (drop_out) {                                   /* (back in: those DROP took, still out) */
+        for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (drop_out >> tr & 1u) trk[tr].p[P_MUTE] = 0;
+        drop_out = 0;
+        return;
+    }
+    if (!(keep = drop_keep())) return;                 /* (nothing to keep: no DROP) */
+    for (tr = 0; tr < TESSERA_TRACKS; tr++)
+        if (!(keep >> tr & 1u) && !trk[tr].p[P_MUTE]) {
+            trk[tr].p[P_MUTE] = 1;
+            tessera_kill(&trk[tr]);
+            drop_out |= (uint8_t)(1u << tr);
+        }
+}
+/* DROP's key (GLO / MIXER / LANDSCAPE, Cosmati's TRACKS button): 1 = a DROP now or waiting, 0 = back or called off */
+int dub_drop_press(void)
+{
+    if (!song.playing) { drop_pend = 0; drop_now(); }
+    else drop_pend ^= 1u;
+    return (drop_out != 0) ^ drop_pend;
+}
+/* DROP for the screens: bit 0 the tracks are out, bit 1 a change waits for the bar line */
+uint32_t dub_drop_state(void) { return (drop_out != 0) | (uint32_t)drop_pend << 1; }
+uint32_t dub_drop_keep(void) { return drop_keep(); }
+#endif
 static void mute_tick(void)                           /* entries_tick: a waiting key's line */
 {
     uint32_t b = bar_n, tr;
@@ -623,6 +674,12 @@ static void mute_tick(void)                           /* entries_tick: a waiting
             if (mute_pend >> tr & 1u) mute_now(tr);
         mute_pend = 0;
     }
+#if TESS_DUB
+    if (drop_pend && (!song.playing || (mute_bar != 0xFFFFFFFFu && b != mute_bar))) {   /* (DROP: on the bar line) */
+        drop_pend = 0;
+        drop_now();
+    }
+#endif
     mute_bar = song.playing ? b : 0xFFFFFFFFu;
 }
 
