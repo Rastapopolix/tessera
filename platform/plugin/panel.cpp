@@ -322,10 +322,11 @@ void Panel::layout()
 // on USB plays the instance (its OCT- / OCT+ as ever)
 void Panel::key_words()
 {
-    const bool words = native() && !(fm1_on && fm1_mine);
-    if (words != input.key_words)
+    const bool words = native() && !(fm1_on && fm1_mine && fm1_live);   // (LOOKING for one: still ours)
+    if (words != input.key_words || native() != input.sections)
     {
         input.key_words = words;
+        input.sections = native();   // (the section buttons stay while an FM-1 plays it: the footer theirs)
         input.changed = true;
     }
 }
@@ -388,6 +389,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     else
         zones2.clear();
     draw_body(px, v, t2);
+    overlay_inks(v);
     if (locked)   // LOCKed values: a padlock at each one's top right, on the screen (Cosmati audit G6)
     {
         static const char *const LOCK[8] = {"..###..", ".#...#.", ".#...#.", "#######", "###.###", "###.###", "#######",
@@ -400,7 +402,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
                         if (LOCK[r][c] == '#')
                         {
                             int x = ox + zones[i].x + zones[i].w - 9 + c, y = oy + zones[i].y + 2 + r;
-                            if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = 0xFFFFD020u;
+                            if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = ink_edge;
                         }
     }
     if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
@@ -422,7 +424,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     }
     // a value's box: under the screen, centred on the value, its name, the text typed and a cursor, what the keys do
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     const tess_zone_t &z = entry_zone;
     std::string name = z.name, typed = entry_text + "_";
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
@@ -434,8 +436,8 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     if (x + w > width() - 8) x = width() - 8 - w;
     {   // (the value boxed, two pixels)
         int zx = ox + z.x, zy = SCREEN_Y + SCREEN_S / 32 + z.y;
-        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
-        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+        c.box(zx, zy, z.w, 2, EDGE), c.box(zx, zy + z.h - 2, z.w, 2, EDGE);
+        c.box(zx, zy, 2, z.h, EDGE), c.box(zx + z.w - 2, zy, 2, z.h, EDGE);
     }
     c.box(x, y, w, h, BLACK);
     c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
@@ -449,7 +451,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
 void Panel::sound_draw(uint32_t *px)
 {
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, BLACK = 0xFF000000, WORD = 0xFFB9B2A0;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     if (drag == CORD)   // a MATRIX cell: the target cell framed, "T1 > T3" by the mouse
     {
         const int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
@@ -463,8 +465,8 @@ void Panel::sound_draw(uint32_t *px)
             const tess_zone_t *z = k ? (on ? &zones[zi] : nullptr) : &drag_zone;
             if (!z) continue;
             int zx = ox + z->x, zy = oy + z->y;
-            c.box(zx, zy, z->w, 2, YEL), c.box(zx, zy + z->h - 2, z->w, 2, YEL);
-            c.box(zx, zy, 2, z->h, YEL), c.box(zx + z->w - 2, zy, 2, z->h, YEL);
+            c.box(zx, zy, z->w, 2, EDGE), c.box(zx, zy + z->h - 2, z->w, 2, EDGE);
+            c.box(zx, zy, 2, z->h, EDGE), c.box(zx + z->w - 2, zy, 2, z->h, EDGE);
         }
         int w = Canvas::ptext_w(t, 2) + 20, h = 26, x = last_x + 14, y = last_y + 10;
         if (x + w > width() - 4) x = width() - 4 - w;
@@ -480,8 +482,8 @@ void Panel::sound_draw(uint32_t *px)
     {
         const tess_zone_t &z = zones2[z2];
         int zx = T2_X + T2_IN + z.x, zy = T2_Y + T2_IN + z.y;
-        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
-        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+        c.box(zx, zy, z.w, 2, EDGE), c.box(zx, zy + z.h - 2, z.w, 2, EDGE);
+        c.box(zx, zy, 2, z.h, EDGE), c.box(zx + z.w - 2, zy, 2, z.h, EDGE);
     }
     std::string name = drag_zone.value[0] ? drag_zone.value : "SOUND";
     char row[24] = "";
@@ -1009,7 +1011,7 @@ bool Panel::down(int x, int y)
         drag = NONE;
         return menu_click(x, y);
     }
-    if (native() && skin_x > 0 && x >= skin_x - 2 && x < skin_x + 18 && y >= 12 && y < 36)   // the sun / moon: the other skin
+    if (native() && skin_x > 0 && x >= skin_x - 7 && x < skin_x + 23 && y >= 9 && y < 39)   // the sun / moon: the other skin
     {
         drag = NONE;
         int j = day() ? 0 : shell_count() - 1;
@@ -1127,6 +1129,14 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
+        if (z.kind == TESS_ZONE_SLIDER)   // a bar (MORPH's POS): its value where it is pressed, then where dragged
+        {
+            drag = ZONE;
+            drag_zone = z;
+            zone_still = false;
+            zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_SET, slider_at(z, x));
+            return true;
+        }
         if (z.kind == TESS_ZONE_ROLL)   // NOTES' steps: the note there grabbed; dragged up or down, its pitch; let go
         {                               // unmoved, a click (a note there)
             drag = ZONE;
@@ -1334,6 +1344,12 @@ bool Panel::move(int x, int y)
     {
         if (!sound_live && std::abs(x - roll_x0) < 5 && std::abs(y - roll_y0) < 5) return false;
         sound_live = true;
+        return true;
+    }
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_SLIDER)   // a bar: its value follows the mouse
+    {
+        if (!dx) return false;
+        zone_act(drag_zone, TESS_ZA_SET, slider_at(drag_zone, x));
         return true;
     }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
@@ -1719,18 +1735,35 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     // the skin's switch left of the version: the sun by night, the moon by day (the skin a click gives, as the project
     // page's LIGHT / DARK buttons)
     skin_x = vx - 30;
-    if (day())
-    {
-        c.circle(skin_x + 8, 24, 7, T_WORD);
-        c.circle(skin_x + 11, 21, 6, T_BODY);
-    }
-    else
-    {
-        c.circle(skin_x + 8, 24, 4, T_WORD);
-        for (int k = 0; k < 8; k++)
+    {   // LANDSCAPE's own sun and moon (ui_land.c), cell for cell, a cell 2 px: the moon a disc of 5 cut by one of 4 up
+        // and right; the sun a ring of 4 (3 cut) and eight rays two cells long, 6 and 7 out
+        const int mx = skin_x + 8, my = 24;
+        auto cell = [&](int x, int y, uint32_t ink) { c.box(mx + 2 * x - 1, my + 2 * y - 1, 2, 2, ink); };
+        auto disc = [&](int ox, int oy, int r, uint32_t ink) {   // (mo_disc's rows)
+            for (int y = -r; y <= r; y++)
+            {
+                int w = 0;
+                while ((w + 1) * (w + 1) + y * y <= r * r + r)
+                    w++;
+                for (int x = -w; x <= w; x++)
+                    cell(ox + x, oy + y, ink);
+            }
+        };
+        if (day())
         {
-            double a = k * kPi / 4;
-            c.box(skin_x + 7 + (int)std::lround(std::cos(a) * 7), 23 + (int)std::lround(std::sin(a) * 7), 2, 2, T_WORD);
+            disc(0, 0, 5, T_WORD);
+            disc(3, -2, 4, T_BODY);
+        }
+        else
+        {
+            disc(0, 0, 4, T_WORD);
+            disc(0, 0, 3, T_BODY);
+            for (int i = 0; i < 16; i++)   // (mo_cos / mo_sin: 127 a unit, an eighth of a turn apart)
+            {
+                int r = 6 + (i & 1);
+                double a = (i >> 1) * kPi / 4;
+                cell(r * (int)std::lround(std::cos(a) * 127) / 127, r * (int)std::lround(std::sin(a) * 127) / 127, T_WORD);
+            }
         }
     }
 
@@ -1882,7 +1915,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
     for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
-        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine))
+        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine && fm1_live))
             c.ptext_c(b.x + b.w / 2, b.y + b.h + 6, "HOLD: MORE", 1, T_YEL);
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
@@ -2515,6 +2548,12 @@ int Panel::zone_like(const tess_zone_t &z) const
 
 // NOTES' roll (TESS_ZONE_ROLL): the core reads the step and the pitch from the place, so it goes in the zone's x, y (in
 // screen pixels); any other zone as it is
+int Panel::slider_at(const tess_zone_t &z, int x) const   // where x is across a bar, 0..1000
+{
+    int at = x - (SCREEN_X + SCREEN_S / 32) - z.x - 2, w = z.w - 4;   // (inside its outline, a cell each side)
+    return w <= 0 ? 0 : at <= 0 ? 0 : at >= w ? 1000 : at * 1000 / w;
+}
+
 tess_zone_t Panel::zone_here(int zi, int x, int y) const
 {
     tess_zone_t z = zones[zi];
@@ -2618,7 +2657,7 @@ void Panel::ctx_do(int r)
 void Panel::ctx_draw(uint32_t *px)
 {
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, DIM = 0xFF5A5446, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, DIM = ink_dim, BLACK = ink_card;
     int h = (int)ctx_row.size() * CTX_RH + 8;
     c.box(ctx_x, ctx_y, CTX_W, h, BLACK);
     c.box(ctx_x, ctx_y, CTX_W, 2, YEL), c.box(ctx_x, ctx_y + h - 2, CTX_W, 2, YEL);
@@ -2640,6 +2679,22 @@ void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
 
 // the zone under the mouse (or being dragged): a hairline round it on the screen, and under the screen a card with its
 // name and its value large (the readability the FM-1's 5 x 7 text lacks), black with Tessera yellow
+// the overlays' inks: the shell's (DAY: paper, amber, dark words); the outline on the screen by its ground
+void Panel::overlay_inks(const tess_view_t &v)
+{
+    uint32_t luma = 0;
+    for (int y = 8; y < TESS_SCREEN; y += 16)
+        for (int x = 8; x < TESS_SCREEN; x += 16)
+        {
+            uint16_t q = v.screen[y * TESS_SCREEN + x];
+            luma += (q >> 11 & 31) * 2 + (q >> 5 & 63) * 2 + (q & 31);
+        }
+    const bool light = luma > 15u * 15u * 112u;   // (225 samples, each 0..186: paper about 175, black 0)
+    ink_card = native() ? T_BLACK : 0xFF000000u, ink_hot = native() ? T_YEL : 0xFFFFD020u;
+    ink_word = native() ? T_WORD : 0xFFB9B2A0u, ink_dim = native() ? T_OFF : 0xFF5A5446u;
+    ink_edge = light ? 0xFF9A6400u : 0xFFFFD020u;
+}
+
 void Panel::draw_hover(uint32_t *px)
 {
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
@@ -2677,13 +2732,26 @@ void Panel::draw_hover(uint32_t *px)
     if (zi < 0 && z2 < 0) return;
     const tess_zone_t &z = z2 >= 0 ? zones2[z2] : zones[zi];
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
     int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
-    {   // the outline a pixel outside the zone, and only on the screen's black: never over a line, a box or a letter
+    {   // the outline a pixel outside the zone, and only on the screen's ground (black, or the LIGHT ground's paper):
+        // never over a line, a box or a letter
         const int x0 = ox + z.x - 1, y0 = oy + z.y - 1, x1 = ox + z.x + z.w, y1 = oy + z.y + z.h, W = width();
+        uint32_t ground = 0;   // (the ring's most common colour: the ground, whatever its colour)
+        {
+            int votes = 0;
+            auto vote = [&](int x, int y) {
+                if (x < 0 || y < 0 || x >= W || y >= H) return;
+                const uint32_t q = px[y * W + x] & 0xFFFFFFu;
+                if (!votes) ground = q, votes = 1;
+                else votes += q == ground ? 1 : -1;
+            };
+            for (int x = x0; x <= x1; x++) vote(x, y0), vote(x, y1);
+            for (int y = y0; y <= y1; y++) vote(x0, y), vote(x1, y);
+        }
         auto dot = [&](int x, int y) {
-            if (x >= 0 && y >= 0 && x < W && y < H && (px[y * W + x] & 0xFFFFFFu) == 0) px[y * W + x] = YEL;
+            if (x >= 0 && y >= 0 && x < W && y < H && (px[y * W + x] & 0xFFFFFFu) == ground) px[y * W + x] = EDGE;
         };
         for (int x = x0; x <= x1; x++) dot(x, y0), dot(x, y1);
         for (int y = y0; y <= y1; y++) dot(x0, y), dot(x1, y);
@@ -2703,11 +2771,13 @@ void Panel::draw_hover(uint32_t *px)
         c.box(SCREEN_X, y, (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X, h, T_BODY);
     if (x < SX - 80) x = SX - 80;
     if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
-    c.box(x, y, w, h, BLACK);
-    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
-    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
-    c.ptext(x + 10, y + 7, name.c_str(), 2, WORD);
-    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, YEL);
+    // (the cards in the shell's inks: DAY's paper, amber and dark words; NIGHT's and the FM-1 shells' black and yellow)
+    const uint32_t CB = BLACK, CY = YEL, CW = WORD;
+    c.box(x, y, w, h, CB);
+    c.box(x, y, w, 2, CY), c.box(x, y + h - 2, w, 2, CY);
+    c.box(x, y, 2, h, CY), c.box(x + w - 2, y, 2, h, CY);
+    c.ptext(x + 10, y + 7, name.c_str(), 2, CW);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, CY);
     // HOVER HELP: resting half a second, the zone's help text in a box under the card (over the keys, never the screen)
     double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (!hover_help_ || z2 >= 0 || drag != NONE || view_help.empty() || now - hover_t < 0.5 ||
@@ -2734,9 +2804,9 @@ void Panel::draw_hover(uint32_t *px)
     if (bx < 8) bx = 8;
     if (bx + hw > width() - 8) bx = width() - 8 - hw;
     if (by + bh > H - 4) by = H - 4 - bh;
-    c.box(bx, by, hw, bh, BLACK);
-    c.box(bx, by, hw, 2, YEL), c.box(bx, by + bh - 2, hw, 2, YEL);
-    c.box(bx, by, 2, bh, YEL), c.box(bx + hw - 2, by, 2, bh, YEL);
+    c.box(bx, by, hw, bh, CB);
+    c.box(bx, by, hw, 2, CY), c.box(bx, by + bh - 2, hw, 2, CY);
+    c.box(bx, by, 2, bh, CY), c.box(bx + hw - 2, by, 2, bh, CY);
     for (size_t i = 0; i < lines.size(); i++)
-        c.ptext(bx + 12, by + 9 + (int)i * lh, lines[i].c_str(), 2, WORD);
+        c.ptext(bx + 12, by + 9 + (int)i * lh, lines[i].c_str(), 2, CW);
 }

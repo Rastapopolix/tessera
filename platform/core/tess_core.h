@@ -53,7 +53,9 @@ enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP 
 void tess_core_buttons(uint32_t mask);
 /* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
- * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways */
+ * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways. 2: the
+ * section buttons below without the key words (Cosmati's shell while an FM-1 on USB plays it: its OCT- / OCT+ as
+ * ever, the footer and the page count still the shown section's) */
 void tess_core_key_words(int on);
 /* With the key words on (Cosmati's shell), the front end's own section buttons, one each, in place of the FM-1's FX
  * SEL ENV LFO EDIT GLO ARP SEQ (HOME, SAVE, PLAY, REC stay): its bit in tess_core_buttons' labels, TESS_BTN_SECTION(s)
@@ -150,6 +152,9 @@ enum { TESS_ZONE_CHORD = 18 };
  * (0..7), or 0x100 + the letter for its head. CLICK: the cell's next kind, AUTO IN OUT FADE round (a head: every
  * track's cell in that letter, as its first track's next); HELP (a right-click): AUTO again (a head: the column) */
 enum { TESS_ZONE_EGRID = 19 };
+/* SLIDER: a bar that shows a value (MORPH's POS): role KNOB 1..4's, which it sets. TURN and WHEEL turn that knob; SET n
+ * (0..1000, where the mouse is across the bar) sets the value there, min at the left */
+enum { TESS_ZONE_SLIDER = 20 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -180,6 +185,7 @@ enum { TESS_ZA_LINK = 15 };
  * n 1..50 MUTATE: the zone's track (a TRACK zone's; else the selected one) has its sound nudged n % of each range either
  * way (envelope, depths, LFO, ENGINE 1..8, FX 1, FM6's operators); n -1 the last DICE or MUTATE put back */
 enum { TESS_ZA_LOCK = 16, TESS_ZA_DICE };
+enum { TESS_ZA_SET = 18 };   /* a SLIDER's value set at n / 1000 of its range */
 /* the locks, for a front end's state: out NULL their length; else as many as fit, their length (3 bytes each); load
  * replaces them (a build without TESS_HAS_POINTER: none) */
 uint32_t tess_core_locks(uint8_t *out, uint32_t cap);
@@ -359,6 +365,8 @@ uint32_t tess_core_bpm(void);
 /* the Mono look's ink by name, as MENU > COLOR sets it ("YELLOW", "HOT PINK": tools/gen_ui_palettes.py MONO_INK): 1 if
  * set, 0 for an unknown name or a build without the Mono look. A device setting: not in the project */
 uint32_t tess_core_ink(const char *name);
+/* MENU > GROUND: 1 LIGHT (the light inks, on paper), 0 DARK; the setting as it is now. A device setting, as the ink */
+uint32_t tess_core_ground(int light);
 /* MENU > COLOR's choices: how many (0 without the Mono look); for i below that, choice i's name and its four track
  * colours as 0xRRGGBB (alike for one ink; MOSAIC, SUNSET, OCEAN, NEON differ). name or rgb may be 0 */
 uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4]);
