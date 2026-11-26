@@ -928,6 +928,12 @@ int main(int argc, char **argv)
             z.move(mx, my);
             z.draw(px.data(), v);
             int card = 0;
+            for (int yy = 44 + 256; yy < 44 + 256 + 40; yy++)   // (HOVER HELP OFF: none)
+                for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
+            CHECK(card == 0, "HOVER HELP OFF: no card under the screen (%d yellow pixels)", card);
+            z.set_hover_help(true);
+            z.draw(px.data(), v);
+            card = 0;
             for (int yy = 44 + 256; yy < 44 + 256 + 40; yy++)   // (under the screen)
                 for (int xx = mx - 80; xx < mx + 80; xx++) card += px[yy * Panel::W + xx] == 0xFFFFD020u;
             CHECK(card > 40, "the mouse over %s: a card with its value under the screen (%d yellow pixels)", m.name, card);
@@ -1545,6 +1551,17 @@ int main(int argc, char **argv)
             outline |= px[ey * Panel::W + tx] != edge_calm && px[ty * Panel::W + tx] == calm;
         }
         CHECK(frames >= 110 && frames <= 130 && outline, "the toast stays 4 s, its end an outline (%d frames)", frames);
+        n.note("Saved");   // the mouse on the screen, HOVER HELP OFF: no card, the toast stays
+        n.move(292 + 8 + 30, 44 + 8 + 40);
+        n.draw(px.data(), v);
+        CHECK(px[ty * Panel::W + tx] == lit, "HOVER HELP OFF: no card over the toast");
+        n.set_hover_help(true);   // ON: its card under the screen, the row's words and the toast gone round it
+        n.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/toast_hover.ppm", px);
+        int words = 0;
+        for (int y = 44 + 256 + 3; y < 44 + 256 + 29; y++)
+            for (int x = 292 + 200; x < 292 + 256; x++) words += px[y * Panel::W + x] != px[(44 + 256 + 3) * Panel::W + 292 + 255];
+        CHECK(words == 0, "a card up: PAGE and the toast not cut short beside it (%d pixels)", words);
     }
 
     {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back

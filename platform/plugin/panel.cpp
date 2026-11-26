@@ -197,6 +197,9 @@ const int WHITE_K[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 2
 const int BLACK_K[11] = {1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25};
 const int BLACK_AFTER[11] = {0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14};
 const int SCREEN_X = 292, SCREEN_Y = 44, SCREEN_S = 256;
+// the row under the screen (a hover card, a toast): between the screen's edge (its last row SCREEN_Y + SCREEN_S - 1) and
+// the dotted line over the keys (KEYBED's top, 332), 2 px clear of each
+const int UNDER_Y = SCREEN_Y + SCREEN_S + 2, UNDER_H = 332 - 2 - UNDER_Y;
 const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window less 72, Panel::kb_w)
 // EXPANDED: the TRACKS screen beside the FM-1's (its frame as the FM-1's: 8 px round 480 x 240), and KNOB 1..4 and the
 // twelve buttons right of it
@@ -1847,10 +1850,10 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         std::string t = note_text;
         while (!t.empty() && Canvas::ptext_w(t.c_str(), 2) + 12 > room)
             t.pop_back();
-        int w = Canvas::ptext_w(t.c_str(), 2) + 12, y = SCREEN_Y + SCREEN_S + 3;
+        int w = Canvas::ptext_w(t.c_str(), 2) + 12, y = UNDER_Y;
         bool lit = note_frames > NOTE_FRAMES / 3;
-        nbox(c, SCREEN_X, y, w, 24, T_YEL, lit ? T_YEL : T_BODY);
-        c.ptext(SCREEN_X + 6, y + 5, t.c_str(), 2, lit ? T_BLACK : T_YEL);
+        nbox(c, SCREEN_X, y, w, UNDER_H, T_YEL, lit ? T_YEL : T_BODY);
+        c.ptext(SCREEN_X + 6, y + 7, t.c_str(), 2, lit ? T_BLACK : T_YEL);
     }
 
     draw_gen(px);
@@ -2584,7 +2587,7 @@ void Panel::draw_hover(uint32_t *px)
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
     int z2 = zi < 0 && hover_in && drag == NONE ? zone2_at(hover_x, hover_y) : -1;   // (TRACKS, EXPANDED)
     int bi = zi < 0 && z2 < 0 && hover_in && drag == NONE && !(native() && menu_open) ? button_at(hover_x, hover_y) : -1;
-    if (bi >= 0 && buttons[bi].tip)   // a button of TESSERA's own: what it does, in a card over it
+    if (bi >= 0 && buttons[bi].tip && hover_help_)   // a button of TESSERA's own: what it does, in a card over it
     {
         Canvas c{px, width()};
         const Button &b = buttons[bi];
@@ -2599,7 +2602,7 @@ void Panel::draw_hover(uint32_t *px)
     }
     int ki = zi < 0 && z2 < 0 && bi < 0 && hover_in && drag == NONE && !(native() && menu_open) ? key_at(hover_x, hover_y)
                                                                                                  : -1;
-    if (ki >= 0 && key_long[keys[ki].k][0])   // a key with a job on this page: its meaning, in a card over it
+    if (ki >= 0 && key_long[keys[ki].k][0] && hover_help_)   // a key with a job on this page: its meaning, in a card over it
     {
         Canvas c{px, width()};
         const Key &k = keys[ki];
@@ -2624,21 +2627,25 @@ void Panel::draw_hover(uint32_t *px)
     c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
     c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
     if (!z.name[0] && !z.value[0]) return;
-    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large
+    if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
+    // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;
+    // in the gap between the screen's edge and the dotted line over the keys, 2 px from each
     std::string name = z.name, value = z.value;
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
     if (input.key_words && z.kind == TESS_ZONE_KEY)   // (BACK / OK of its own: named as the screen names them)
         value = value == "OCT+" ? "OK" : value == "OCT-" ? "BACK" : value;
     int nw = Canvas::ptext_w(name.c_str(), 2), vw = value.empty() ? 0 : Canvas::ptext_w(value.c_str(), 3);
-    int w = nw + (vw ? vw + 14 : 0) + 20, h = 34;
-    int x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
+    int w = nw + (vw ? vw + 14 : 0) + 20, h = UNDER_H;
+    int x = ox + z.x + z.w / 2 - w / 2, y = UNDER_Y;
+    if (native())   // (the row's words and a toast (G9) gone while the card is up, not cut short round it)
+        c.box(SCREEN_X, y, (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X, h, T_BODY);
     if (x < SX - 80) x = SX - 80;
     if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
     c.box(x, y, w, h, BLACK);
     c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
     c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
-    c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
-    if (vw) c.ptext(x + 10 + nw + 14, y + 7, value.c_str(), 3, YEL);
+    c.ptext(x + 10, y + 7, name.c_str(), 2, WORD);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, YEL);
     // HOVER HELP: resting half a second, the zone's help text in a box under the card (over the keys, never the screen)
     double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (!hover_help_ || z2 >= 0 || drag != NONE || view_help.empty() || now - hover_t < 0.5 ||
