@@ -381,6 +381,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     }
     zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
     locked = v.locked, dice_back = v.dice_back != 0;
+    lit_seen = v.lit_buttons;
     if (expanded() && t2 && t2->w == TESS_TRACKS_W)
         zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
                                                                                           : (uint32_t)TESS_TRACKS_ZONES));
@@ -822,6 +823,7 @@ bool Panel::key(int code, bool down)
     static const int BTN_SC[12] = {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D};   // 1 .. 0 - =
     static const int BTN_BIT[12] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
     int k = -1, b = -1;
+    if (code == 0x2A || code == 0x36) shift_held_ = down;   // (Shift: the arrows' other jobs, G12)
     for (int i = 0; i < 10; i++) if (code == WHITE_SC[i]) k = WHITE_K[i];
     for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
     for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
@@ -874,12 +876,47 @@ bool Panel::key(int code, bool down)
         input.changed = true;
         return true;
     }
-    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
+    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)   // the arrows (G12, Theo 2026-11-26)
     {
-        if (!down) return false;
-        int role = code == KEY_UP || code == KEY_DOWN ? 0 : 1;   // SELECT, ALGORITHM
+        const bool side = code == KEY_LEFT || code == KEY_RIGHT;
+        const int dir = code == KEY_RIGHT || code == KEY_DOWN ? 1 : -1;
+        if (!down)   // (a section's button the arrow held: let go)
+        {
+            if (arrow_sec < 0) return false;
+            kbd_buttons &= ~(1u << (SEC_BIT + arrow_sec));
+            arrow_sec = -1;
+            merge_held();
+            return true;
+        }
+        if (side && shift_held_ && native())   // Shift+Left / Right: the section before / after (from HOME: GEN, SETUP)
+        {
+            if (arrow_sec >= 0) return true;   // (a repeat: once a press)
+            int cur = -1;
+            for (int s = 0; s < TESS_SEC_N; s++)
+                if (lit_seen & TESS_BTN_SECTION(s)) cur = s;
+            arrow_sec = cur < 0 ? (dir > 0 ? 0 : TESS_SEC_N - 1) : (cur + dir + TESS_SEC_N) % TESS_SEC_N;
+            kbd_buttons |= 1u << (SEC_BIT + arrow_sec);
+            merge_held();
+            return true;
+        }
+        if (side)   // Left / Right: the page before / after among the footer's tabs
+        {
+            page_step(dir);
+            return true;
+        }
+        if (shift_held_ && tracks_ > 1)   // Shift+Up / Down: the track before / after
+        {
+            input.track = (track_now + dir + tracks_) % tracks_;
+            track_now = input.track;
+            input.changed = true;
+            return true;
+        }
+        int role = 0;   // Up / Down: a list's row (its KNOB), else SELECT as before (Up turning it up)
+        bool list = false;
+        for (const auto &z : zones)
+            if (z.kind == TESS_ZONE_ROW && z.role >= 0) { role = z.role; list = true; break; }
         for (size_t i = 0; i < knobs.size(); i++)
-            if (knobs[i].role == role) turn((int)i, code == KEY_UP || code == KEY_RIGHT ? 1 : -1);
+            if (knobs[i].role == role) turn((int)i, list ? dir : -dir);
         return true;
     }
     uint32_t was_k = kbd_keys, was_b = kbd_buttons;
@@ -920,6 +957,7 @@ bool Panel::shortcut(char c)
 
 bool Panel::release_keys()
 {
+    shift_held_ = false, arrow_sec = -1;
     if (!kbd_keys && !kbd_buttons) return false;
     kbd_keys = kbd_buttons = 0;
     merge_held();
@@ -1537,11 +1575,17 @@ bool Panel::hwheel(int notches)
 {
     if (!notches || (hwheel_at && frame - hwheel_at < 8u))   // (8 frames at 30 a second)
         return false;
-    const int want = notches > 0 ? 1 : -1;
+    if (!page_step(notches > 0 ? 1 : -1))
+        return false;
+    hwheel_at = frame ? frame : 1u;
+    return true;
+}
+
+bool Panel::page_step(int dir)   // the footer's tab next to the shown one that way (or the arrow to it): its page
+{
     for (auto &z : zones)
-        if (z.kind == TESS_ZONE_TAB && z.row == want)   // (the tab next to the shown one, or the arrow to it)
+        if (z.kind == TESS_ZONE_TAB && z.row == dir)
         {
-            hwheel_at = frame ? frame : 1u;
             zone_act(z, TESS_ZA_CLICK, 0);
             return true;
         }

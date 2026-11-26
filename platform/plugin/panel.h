@@ -299,6 +299,12 @@ class Panel
     FileButton usb{};                  // the FM-1's shells: FM-1 USB, under the keys
     FileButton banks[2];               // the 1-4 / 5-8 switch (8 tracks); action: the bank's first track
     int tracks_ = 4, track_now = 0, bank_held = -1;
+    // the arrows (Cosmati audit G12): Shift held (either key, any shell), the buttons last lit (the shown page's
+    // section), the section button an arrow holds down (-1 none)
+    bool shift_held_ = false;
+    uint32_t lit_seen = 0;
+    int arrow_sec = -1;
+    bool page_step(int dir);
     uint32_t hwheel_at = 0;            // the frame of the last sideways page step (hwheel; 0 none yet)
     bool banked() const { return tracks_ > 4 && !expanded(); }   // the 1-4 / 5-8 switch (EXPANDED: TRACKS shows all)
     int bank_at(int x, int y) const;
