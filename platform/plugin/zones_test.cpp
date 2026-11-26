@@ -526,8 +526,10 @@ static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lowe
               !std::strcmp(v.key_short[20], "M8") && !std::strcmp(v.key_short[14], "S5") && !std::strcmp(v.key_short[19], "S8"),
           "keys: F#3 M1, F3 S1, F#4 M5, C#5 M8, G4 S5, C5 S8 (%s %s %s %s %s %s)", v.key_short[1], v.key_short[0],
           v.key_short[13], v.key_short[20], v.key_short[14], v.key_short[19]);
-    CHECK(!std::strcmp(v.key_long[20], "T8 MUTE") && !v.key_short[10][0] && !std::strcmp(v.key_short[12], "TAP"),
-          "C#5 T8 MUTE (%s); D#4 nothing, F4 still TAP (%s)", v.key_long[20], v.key_short[12]);
+    CHECK(!std::strcmp(v.key_long[20], "T8 MUTE") && !std::strcmp(v.key_short[10], "DRP") && !std::strcmp(v.key_short[12], "TAP"),
+          "C#5 T8 MUTE (%s); D#4 DROP (%s), F4 still TAP (%s)", v.key_long[20], v.key_short[10], v.key_short[12]);
+    CHECK(!std::strcmp(v.key_short[21], "THR") && !std::strcmp(v.key_short[23], "THF") && !v.key_short[22][0],
+          "D5 THROW, E5 THROW + REPEAT, D#5 nothing (%s %s)", v.key_short[21], v.key_short[23]);
     int32_t m0 = tess_core_param_get(mute, 4), m1 = tess_core_param_get(mute, 0);
     tess_core_keys(1u << 13);   // F#4
     run(5);
