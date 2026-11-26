@@ -283,7 +283,7 @@ class Panel
     bool typing_ = false;   // the view's: NAME open
     bool mod_type = false, mod_fine = false, mod_alt = false;   // (set_mods)
     int roll_way = 0, roll_x0 = 0, roll_y0 = 0, paint_x = 0;   // (a drag on NOTES' steps: which way, from where)
-    enum { CTX_VALUE = 1, CTX_TRACK };
+    enum { CTX_VALUE = 1, CTX_TRACK, CTX_GRID };   // (GRID: ENTRIES grid's letter head: AUTO, DROP, the dub FORMs)
     bool ctx_locked = false;          // (the value right-clicked is LOCKed: UNLOCK in its menu)
     uint64_t locked = 0;              // the view's: zones LOCKed (a mark on each), and a DICE / MUTATE to put back
     bool dice_back = false;
