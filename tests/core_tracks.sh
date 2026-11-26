@@ -7,7 +7,8 @@
 # again the same, and the 4-track build reads that record; tests/track_copy_test.c: a track copied, pasted, swapped
 # (platform/core/tess_track.c); tests/egrid_test.c: ENTRIES' arrangement grid obeyed, saved and read by the 4-track
 # build; tests/abank_test.c: ATLAS's genre banks played, saved and read by the 4-track build; tests/dub_test.c: DROP
-# and THROW (core.h TESS_DUB). Needs build/gen (tools/build.py).
+# and THROW (core.h TESS_DUB); tests/dubform_test.c: the dub FORMs and the grid's DROP column. Needs build/gen
+# (tools/build.py).
 # usage: tests/core_tracks.sh [out-dir]
 set -u
 cd "$(dirname "$0")/.."
@@ -60,6 +61,12 @@ $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_H
     { echo "core_tracks: dub_test failed to build"; exit 1; }
 "$OUT/dub_test" demos/still-tide.tsp > "$OUT/dub_test.log" || { cat "$OUT/dub_test.log"; fails=$((fails + 1)); }
 tail -1 "$OUT/dub_test.log"
+$CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
+    -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+    '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/dubform_test.c -o "$OUT/dubform_test" -lm ||
+    { echo "core_tracks: dubform_test failed to build"; exit 1; }
+"$OUT/dubform_test" demos/still-tide.tsp > "$OUT/dubform_test.log" || { cat "$OUT/dubform_test.log"; fails=$((fails + 1)); }
+tail -1 "$OUT/dubform_test.log"
 $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
     -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
     '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/egrid_test.c -o "$OUT/egrid_test" -lm ||

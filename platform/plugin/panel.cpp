@@ -1518,6 +1518,12 @@ bool Panel::latch(int x, int y)
         ctx_open(CTX_VALUE, x, y);
         return true;
     }
+    if (zi >= 0 && zones[zi].kind == TESS_ZONE_EGRID && zones[zi].row >= 0 && (zones[zi].row & 0x100))
+    {   // ENTRIES grid's letter head (8 tracks): AUTO, DROP THIS SECTION, the dub FORMs (only here, not on a click)
+        ctx_zone = zones[zi];
+        ctx_open(CTX_GRID, x, y);
+        return true;
+    }
     if (zi >= 0 && zones[zi].kind == TESS_ZONE_TRACK && zones[zi].row >= 0)   // HOME's track: its menu
     {
         ctx_track = zones[zi].row;
@@ -2638,9 +2644,18 @@ void Panel::ctx_open(int kind, int x, int y)
                                       "DICE THE PAGE", "PUT BACK"};
     static const char *const TRK[] = {"COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN", "MUTATE",
                                       "PUT BACK"};
+    static const char *const GRID[] = {"AUTO", "DROP THIS SECTION", "PIECE: VERSION", "PIECE: SHOWCASE", "PIECE: ROCKERS",
+                                       "PIECE: ROOTS", "PIECE: STEPPERS"};   // (entries.c DUB_FORMS' order: zones_test)
     ctx_row.clear();
     if (kind == CTX_VALUE)
         for (const char *r : VAL) ctx_row.push_back(r);
+    else if (kind == CTX_GRID)
+    {
+        char t[24];
+        std::snprintf(t, sizeof t, "SECTION %c", 'A' + (ctx_zone.row & 0xFF));   // (whose: its letter over the rows)
+        ctx_row.push_back(t);
+        for (const char *r : GRID) ctx_row.push_back(r);
+    }
     else
         for (const char *r : TRK) ctx_row.push_back(r);
     if (kind == CTX_VALUE && ctx_locked)
@@ -2664,7 +2679,8 @@ int Panel::ctx_row_at(int x, int y) const
     if (!ctx_kind || x < ctx_x || x >= ctx_x + CTX_W || y < ctx_y + 4) return -1;
     int r = (y - ctx_y - 4) / CTX_RH;
     if (r < 0 || r >= (int)ctx_row.size()) return -1;
-    if (ctx_kind == CTX_TRACK && r == 0) return -1;   // (the track's number: no job)
+    if ((ctx_kind == CTX_TRACK || ctx_kind == CTX_GRID) && r == 0) return -1;   // (the track's number, the letter: no job)
+    if (ctx_kind == CTX_GRID) return r;
     if (ctx_kind == CTX_VALUE && r == 3 && clip_value.empty()) return -1;   // (PASTE VALUE: nothing copied yet)
     if (r == (int)ctx_row.size() - 1 && !dice_back) return -1;   // (PUT BACK: no DICE or MUTATE to put back)
     return r;
@@ -2697,6 +2713,10 @@ void Panel::ctx_do(int r)
         default: break;
         }
     }
+    else if (ctx_kind == CTX_GRID && r == 1)
+        zone_act(ctx_zone, TESS_ZA_HELP, 0);   // (AUTO: the column, as a right-click on the head did)
+    else if (ctx_kind == CTX_GRID && r >= 2)
+        zone_act(ctx_zone, TESS_ZA_DUB, r - 2);   // (0 DROP THIS SECTION, 1.. a dub FORM for the piece)
     else if (ctx_kind == CTX_TRACK && r >= 1 && r <= 5)
         track_req = {TR_COPY + (r - 1), ctx_track};
     else if (ctx_kind == CTX_TRACK && r >= 6)   // MUTATE that track, or PUT BACK
@@ -2721,7 +2741,7 @@ void Panel::ctx_draw(uint32_t *px)
     for (int r = 0; r < (int)ctx_row.size(); r++)
     {
         int y = ctx_y + 4 + r * CTX_RH;
-        bool head = ctx_kind == CTX_TRACK && r == 0, off = !head && ctx_row_at(ctx_x + 4, y + 4) < 0;
+        bool head = (ctx_kind == CTX_TRACK || ctx_kind == CTX_GRID) && r == 0, off = !head && ctx_row_at(ctx_x + 4, y + 4) < 0;
         if (r == ctx_hover && !off && !head) c.box(ctx_x + 4, y, CTX_W - 8, CTX_RH - 2, YEL);
         c.ptext(ctx_x + 12, y + 7, ctx_row[r].c_str(), 2, head ? YEL : off ? DIM : r == ctx_hover ? BLACK : WORD);
     }

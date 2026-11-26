@@ -396,6 +396,12 @@ int dub_drop_press(void);                           /* DROP: all but the anchors
 uint32_t dub_drop_state(void);                      /* bit 0 out, bit 1 waiting for the bar line */
 uint32_t dub_drop_keep(void);                       /* the tracks a DROP keeps */
 #endif
+#if TESSERA_TRACKS > 4
+uint32_t dub_form_count(void);                      /* the dub FORMs (entries.c): VERSION SHOWCASE ROCKERS ROOTS STEPPERS */
+const char *dub_form_name(uint32_t n);
+int dub_form_apply(uint32_t n);                     /* dub FORM n onto the CHAIN, ENTRIES and the grid (0: none such) */
+uint32_t dub_drop_column(void);                     /* the grid's DROP column: the spine IN, the rest OUT (0: no spine) */
+#endif
 uint32_t mute_waiting(void);                        /* the mute keys waiting for their line (blinking) */
 uint32_t mute_wait_part(uint32_t w);                /* how much of that wait has gone, in w parts */
 uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[4]);   /* the tracks out, those about to change, the roles */

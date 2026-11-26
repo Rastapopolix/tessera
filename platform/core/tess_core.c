@@ -419,9 +419,25 @@ static void core_send_lane(int32_t step, uint32_t action, int32_t n)
 #if TESSERA_TRACKS > 4
 /* ENTRIES' arrangement grid edited a cell at a time (TESS_ZONE_EGRID): a click the next kind (AUTO IN OUT FADE), a
  * right-click AUTO; a letter's head the whole column, as its first track's cell goes */
-static void core_egrid(int32_t row, uint32_t action)
+static void core_egrid(int32_t row, uint32_t action, int32_t n)
 {
     uint32_t s = (uint32_t)(row & 0xFF) / 16u, tr = (uint32_t)row & 15u, c, g, k;
+    if (action == TESS_ZA_DUB && row >= 0 && (row & 0x100)) {   /* (a head's menu: the section a DROP, or a dub FORM
+                                                                  * for the piece; entries.c) */
+        s = (uint32_t)row & 0xFFu;
+        if (n == 0 && s < ET_G_SECS && (g = dub_drop_column()) != 0u) {
+            TESS_IRQ_OFF();
+            tessera.et_grid[s] = (uint16_t)g;
+            TESS_IRQ_ON();
+            ui_say("DROP", "THIS SECTION");
+        } else if (n > 0 && dub_form_apply((uint32_t)n - 1u)) {
+            ui_say("FORM", dub_form_name((uint32_t)n - 1u));
+        } else {
+            ui_say("NO BASS OR DRUMS", "");
+        }
+        ui.force = 1;
+        return;
+    }
     if (action == TESS_ZA_DOUBLE) action = TESS_ZA_CLICK;   /* (quick clicks: each one the next) */
     if (row < 0 || (action != TESS_ZA_CLICK && action != TESS_ZA_HELP)) return;
     if (row & 0x100) s = (uint32_t)row & 0xFFu, tr = 0;
@@ -671,7 +687,7 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
 #if TESSERA_TRACKS > 4
         } else if (z->kind == TESS_ZONE_EGRID) {
-            core_egrid(z->row, action);               /* (ENTRIES' grid: a right-click, AUTO) */
+            core_egrid(z->row, action, n);            /* (ENTRIES' grid: a right-click, AUTO) */
 #endif
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
@@ -832,7 +848,7 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         break;
 #if TESSERA_TRACKS > 4
     case TESS_ZONE_EGRID:                             /* ENTRIES' grid: a cell's next kind, or a column's */
-        core_egrid(z->row, action);
+        core_egrid(z->row, action, n);
         break;
 #endif
     case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
@@ -1638,6 +1654,15 @@ void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
     (void)w, (void)h;
     v->w = v->h = 0;
     v->zone_count = 0;
+#endif
+}
+const char *tess_core_dub_form(uint32_t n)
+{
+#if TESSERA_TRACKS > 4
+    return dub_form_name(n);
+#else
+    (void)n;
+    return "";
 #endif
 }
 void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
