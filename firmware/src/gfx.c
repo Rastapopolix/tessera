@@ -144,6 +144,10 @@ static const char *pal_name(uint32_t i)
 /* a front end's screen on paper (Cosmati's DAY): its inks a quarter darker, its dim text nearer the ink, so thin
  * strokes do not wash out on a large or scaled-down window (Theo 2026-11-26); the FM-1's own as #557 tuned them */
 #define UX_LIGHT_DARKEN 25
+/* and its paper a step whiter than the DAY body round it (#EDE8DA), so the screens read as lit screens, not as the body
+ * (Theo 2026-11-27); still under the white of the panel's buttons. SURF keeps the FM-1's step below the paper */
+#define UX_LIGHT_BG 0xf79cu      /* (247, 243, 231) */
+#define UX_LIGHT_SURF 0xe71au    /* (231, 227, 214) */
 #define UX_DIM_PCT (ux_ground ? 74 : UI_DIM_PCT)
 #define UX_MID_PCT (ux_ground ? 92 : UI_MID_PCT)
 #else
@@ -225,7 +229,11 @@ static void palette_set(uint32_t i)
     if (ux_ground && ux.pal < UI_NPALETTES) {        /* LIGHT (GRAY, the tests': as it is) */
         uint32_t j;
         ux_lpal.name = p->name;
+#ifdef UX_LIGHT_BG
+        ux_lpal.bg = UX_LIGHT_BG; ux_lpal.surf = UX_LIGHT_SURF;
+#else
         ux_lpal.bg = UI_LIGHT_BG; ux_lpal.surf = UI_LIGHT_SURF;
+#endif
         for (j = 0; j < 4u; j++)
 #ifdef UX_LIGHT_DARKEN
             ux_lpal.trk[j] = ux_mix(pal_light(ux.pal, j), 0x0000u, UX_LIGHT_DARKEN);
