@@ -40,6 +40,12 @@ static int load(const uint8_t *buf, uint32_t n)
     return 1;
 }
 
+static int32_t send_at(uint32_t tr, uint32_t step)   /* T(tr+1)'s FX SEND move on step, -1 none */
+{
+    for (uint32_t i = 0; i < motion.count; i++)
+        if (motion.event[i].place == (tr << 6 | step) && motion.event[i].param == P_FXSEND) return motion.event[i].value;
+    return -1;
+}
 int main(int argc, char **argv)
 {
     static uint8_t buf[TSP_MAX + 64];
@@ -124,6 +130,32 @@ int main(int argc, char **argv)
     tess_core_transport(1);
     for (b = 0; b < 200u; b++) tess_core_render(l, r, 0, 256);
     CHECK(trk[1].p[P_FXSEND2] == 0 && trk[1].p[P_FXSEND] == 10, "the track's own sends unchanged after playing thrown");
+
+    /* send moves (NOTES' SEND lane; MOTION records the sends since step 4): played, saved and read back */
+    {
+        static uint8_t rec[TSP_MAX + 64];
+        uint32_t len, i, hit = 0;
+        tess_core_transport(0);
+        for (i = 0; i < 4u; i++) tess_core_render(l, r, 0, 256);
+        dub_throw = 0, dub_throw_fb = 0;
+        trk[0].p[P_FXSEND] = 0;
+        motion_clear(&trk[0]);
+        CHECK(motion_param(P_FXSEND) && motion_param(P_FXSEND2) && motion_param(P_FXSEND3),
+              "MOTION takes FX SEND, SEND 2, SEND 3");
+        CHECK(motion_set_event(&trk[0], 0, P_FXSEND, 127) == 0 && motion_set_event(&trk[0], 2, P_FXSEND, 0) == 0,
+              "  T1: SEND 127 on step 1, 0 on step 3");
+        tess_core_transport(1);
+        for (i = 0; i < 800u && !hit; i++) {
+            tess_core_render(l, r, 0, 256);
+            hit = trk[0].p[P_FXSEND] == 127;
+        }
+        CHECK(hit, "  played: T1's send moves to 127");
+        tess_core_transport(0);
+        len = tess_core_save(rec, sizeof rec);
+        motion_clear(&trk[0]);
+        CHECK(len && !tess_core_load(rec, len) && send_at(0, 0) == 127 && send_at(0, 2) == 0,
+              "  saved and read back: the two moves (%d, %d)", send_at(0, 0), send_at(0, 2));
+    }
 
     /* a load forgets both */
     (void)dub_drop_press();

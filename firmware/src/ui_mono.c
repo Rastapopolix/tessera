@@ -1007,7 +1007,10 @@ static uint32_t send_lane_param(void)
     return P_FXSEND;
 #endif
 }
-static int send_lane_on(void) { return oct_dn_only() && !name_on(); }
+static int send_lane_on(void)                           /* SHIFT (OCT-) held alone: a combo with it (EDIT + OCT-: UNDO) no lane */
+{
+    return fm1_in.buttons == 1u << panel.btn[B_OCTDN] && !name_on();
+}
 /* the send's event on the track's step, -1 none */
 static int32_t send_lane_at(const track_t *t, uint32_t step, uint32_t id)
 {
