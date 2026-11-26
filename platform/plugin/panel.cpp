@@ -1511,6 +1511,8 @@ bool Panel::wheel(int x, int y, int notches)
         return true;
     }
     int zi = zone_at(x, y);
+    if (zi >= 0 && notches && zones[zi].kind == TESS_ZONE_TAB)   // the footer's tabs: the pages, as sideways (down: on)
+        return hwheel(-notches);
     if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
         const tess_zone_t &zw = zones[zi];

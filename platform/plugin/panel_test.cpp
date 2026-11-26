@@ -1594,6 +1594,25 @@ int main(int argc, char **argv)
         run(q, 0.3);
         frames(1);
         CHECK(screen_hash(v) != h2, "sideways left: back a page");
+        int tab = -1;   // the wheel over the footer's tabs: its pages, down the next one, up the one before
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) tab = (int)i;
+        CHECK(tab >= 0, "the footer's tab of the page shown is a zone");
+        if (tab >= 0)
+        {
+            const tess_zone_t t = v.zones[tab];
+            const int tx = 292 + 8 + t.x + t.w / 2, ty = 44 + 8 + t.y + t.h / 2;
+            uint64_t h3 = screen_hash(v);
+            frames(9);
+            CHECK(q.wheel(tx, ty, 1), "the wheel up over the tabs: the page before");
+            run(q, 0.3);
+            frames(9);
+            CHECK(screen_hash(v) != h3, "..and the page changed");
+            CHECK(q.wheel(tx, ty, -1), "the wheel down over the tabs: the next page");
+            run(q, 0.3);
+            frames(1);
+            CHECK(screen_hash(v) == h3, "..back where it was");
+        }
         CHECK(q.side_button(false, true) && (q.input.buttons >> 12 & 1u), "the mouse's back button holds BACK (OCT-)");
         CHECK(q.side_button(false, false) && !(q.input.buttons >> 12 & 1u), "and lets it go");
         CHECK(q.side_button(true, true) && (q.input.buttons >> 13 & 1u), "forward: OK (OCT+)");
