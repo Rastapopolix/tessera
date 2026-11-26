@@ -1141,6 +1141,8 @@ void tess_core_buttons(uint32_t labels)
                  go = ex & ~host_extra;
         _Static_assert(TESS_SEC_N == UI_SEC_N && TESS_SEC_SETUP == UI_SEC_SETUP && TESS_BTN_SECTION(TESS_SEC_N - 1) < (1ull << 32) &&
                        TESS_BTN_SECTION(0) > TESS_BTN_POINTER, "the sections: ui.c's, bits above POINTER");
+        if ((labels >> B_HOME & 1u) && ui.menu == 1 && cs_settings_on())
+            cs_settings_leave();                      /* (HOME on SETUP's SETTINGS: the list closes too, as HOME leaves) */
         for (b = 0; b < TESS_SEC_N; b++)              /* a section's button: its pages (ui.c cs_open; a pinned card */
             if (go & TESS_BTN_SECTION(b)) {           /* closes first) */
                 help_unpin();
