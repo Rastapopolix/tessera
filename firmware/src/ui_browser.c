@@ -200,3 +200,46 @@ static void browser_key(int keep)
     }
     go_home();
 }
+
+#if TESS_HAS_POINTER
+/* a sound of the browser (r rows from the one shown) dragged onto track tr's row on the TRACKS screen: that track loads
+ * it, as a pick on it would (its engine, then the preset; a user slot through the selected track's own load), and joins
+ * RECENT; the selected track stays selected and its browsing goes on */
+static void browse_drop(int32_t r, uint32_t tr)
+{
+    uint32_t total, at, src, k, sel = song.sel;
+    int32_t n;
+    if (ui.home || cur_page()->graph != GR_BROWSE || tr >= NTRK)
+        return;
+    at = preset_pos(&total);
+    n = (int32_t)at + r;
+    if (!total || at >= total || n < 0 || n >= (int32_t)total)
+        return;
+    if (tr == sel) {                                    /* (its own row: as OK on that sound) */
+        brw.on = 0;
+        preset_go((uint32_t)n);
+        ui.force = 1;
+        return;
+    }
+    src = preset_at((uint32_t)n, &k);
+    if (src == USER_NATIVE_FM) {
+        native_load(ENGI_FM6, k, tr);
+    } else if (src == USER_GENERAL) {
+        song.sel = (uint8_t)tr;                         /* (up_load is the selected track's: a moment that one) */
+        up_load(k);
+        song.sel = (uint8_t)sel;
+    } else {
+        if (src != trk[tr].eng_req)
+            set_engine_of(&trk[tr], src);
+        apply_preset_to(&trk[tr], k);
+    }
+    recent_push(src, k);
+    {
+        char b[16];
+        str_cpy(b, "T", sizeof b);
+        fmt_int(b + 1, (int32_t)tr + 1);
+        ui_say(b, " LOADED");
+    }
+    ui.force = 1;
+}
+#endif

@@ -157,6 +157,10 @@ enum { TESS_ZA_RANDOM = 9 };      /* the zone's parameter (tess_core_zone_param)
  * and a drag up or down): its velocity 4 a detent (the grid: TURN on a hit, + accented, - not); DROP: the mouse let go
  * after a drag, the drag's edits one undo step (any zone, or none) */
 enum { TESS_ZA_PAINT = 10, TESS_ZA_LENGTH, TESS_ZA_VELOCITY, TESS_ZA_DROP };
+/* SOUND (tess_core_tracks_do, on a TRACKS row's TRACK zone): a sound of the browser (SAVE > PRESETS) dragged there and
+ * let go, n its SOUND cell's place (the cell's row, low byte: rows from the sound shown); that track loads it, as a pick
+ * on it would, and stays unselected. The browser no longer showing: nothing */
+enum { TESS_ZA_SOUND = 14 };
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */

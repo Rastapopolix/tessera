@@ -1294,6 +1294,12 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
     }
     if (tr >= NTRK)
         return;
+#if TESS_HAS_POINTER
+    if (z->kind == TESS_ZONE_TRACK && action == TESS_ZA_SOUND) {
+        browse_drop(n, tr);                           /* (a browser's sound dropped on the row: ui_browser.c) */
+        return;
+    }
+#endif
     if (z->kind == TESS_ZONE_TRACK && click) {
         tess_core_track_select(tr);
 #if TESS_HAS_POINTER
