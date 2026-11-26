@@ -5791,8 +5791,8 @@ static int engine_cycle(const char *const *want, uint32_t n)   /* EDIT tapped fr
 static int test_edit_cycle(void)
 {
     static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "VOICE", "VOICE"};   /* (SELECT stops at the last) */   /* (VOICE: VOICE 1-3's list) */
-    static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "STORE", "ALGO", "FREQ", "OUT", "EG RATE", "EG LVL", "SCALE",
-                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "VOICE"};
+    static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "ALGO", "FREQ", "OUT", "EG RATE", "EG LVL", "SCALE",
+                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "STORE", "STORE"};
     static const char *const CYC_D[] = {"EDIT 1", "EDIT 2", "OP1 ENV", "OP2 ENV", "OP3 ENV", "OP4 ENV",
                                         "OP LEVEL", "VOICE", "VOICE"};
     int bad = 0, ok;
