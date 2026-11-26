@@ -294,6 +294,9 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         cpdf, cpdf_out = HERE.parent / make_manual.COSMATI_PDF_SRC, out / "cosmati" / make_manual.COSMATI_PDF_NAME
         if cpdf.exists() and cpdf.resolve() != cpdf_out.resolve():   # (the Cosmati manual's PDF, beside its page)
             shutil.copy(cpdf, cpdf_out)
+        sheet, sheet_out = HERE.parent / make_manual.COSMATI_SHEET_SRC, out / "cosmati" / make_manual.COSMATI_SHEET_NAME
+        if sheet.exists() and sheet.resolve() != sheet_out.resolve():   # (and its quick reference)
+            shutil.copy(sheet, sheet_out)
     if sim and not installer_only:
         copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "

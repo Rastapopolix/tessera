@@ -33,7 +33,8 @@ PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start", "PLUGIN.md": "plu
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 PDF_SRC = "docs/manual/tessera-manual.pdf"          # the manual as a PDF (tools/gen_manual_pdf.py)
 PDF_NAME = "tessera-manual.pdf"
-COSMATI_PDF_SRC, COSMATI_PDF_NAME = "docs/manual/cosmati-manual.pdf", "cosmati-manual.pdf"                     # its name on the site, next to the manual's page
+COSMATI_PDF_SRC, COSMATI_PDF_NAME = "docs/manual/cosmati-manual.pdf", "cosmati-manual.pdf"
+COSMATI_SHEET_SRC, COSMATI_SHEET_NAME = "docs/cheatsheet/cosmati-cheatsheet.pdf", "cosmati-cheatsheet.pdf"                     # its name on the site, next to the manual's page
 TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Cosmati: Tessera as a plugin", "cosmati": "The Cosmati manual"}
 
 
@@ -57,6 +58,8 @@ def link(url, here):
         return "../manual/" + PDF_NAME
     if path == COSMATI_PDF_SRC:
         return "../cosmati/" + COSMATI_PDF_NAME
+    if path == COSMATI_SHEET_SRC:
+        return "../cosmati/" + COSMATI_SHEET_NAME
     for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/"),
                      ("assets/plugin/", "media/plugin/")):
         if path.startswith(src):
@@ -348,6 +351,7 @@ main .downloads p {{ color: var(--mid); }}
   <a href="../plugin/"{cur_plugin}>PLUGIN</a>
   <a href="../cosmati/"{cur_cosmati}>COSMATI</a>
   <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
+  <a class="wide" href="../cosmati/cosmati-cheatsheet.pdf" download title="Cosmati's mouse, keys and sections on two printable pages">COSMATI SHEET</a>
   <a class="wide" href="{repo}RECIPES.md">RECIPES</a>
   <a class="wide" href="../webapp/sim/">SIMULATOR</a>
   <button class="contents" id="contents" type="button" aria-expanded="false" aria-controls="side">CONTENTS</button>
@@ -469,7 +473,7 @@ NEXT = {
     "start": 'Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.',
     "manual": 'New to Tessera? Start with <a href="../start/">Getting started</a>. '
               'To print it or read it offline: <a href="tessera-manual.pdf" download>the manual as a PDF</a>.',
-    "cosmati": 'To print it or read it offline: <a href="cosmati-manual.pdf" download>the Cosmati manual as a PDF</a>. Installing and downloading Cosmati: the <a href="../plugin/">plugin\'s page</a>. What each page and generator does: the <a href="../manual/">Tessera manual</a>. '
+    "cosmati": 'To print it or read it offline: <a href="cosmati-manual.pdf" download>the Cosmati manual as a PDF</a>, or the two-page <a href="cosmati-cheatsheet.pdf" download>quick reference</a>. Installing and downloading Cosmati: the <a href="../plugin/">plugin\'s page</a>. What each page and generator does: the <a href="../manual/">Tessera manual</a>. '
                'New to Tessera? Start with <a href="../start/">Getting started</a>.',
     "plugin": 'The whole guide to using it: the <a href="../cosmati/">Cosmati manual</a>. Everything else, the same in the plugin as on the FM-1: the <a href="../manual/">manual</a>. New to Tessera? '
               'Start with <a href="../start/">Getting started</a>.',
