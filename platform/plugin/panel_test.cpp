@@ -42,7 +42,7 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
     PanelInput &in = p.input;
     if (in.changed)
     {
-        tess_core_key_words(in.key_words ? 1 : 0);
+        tess_core_key_words(in.key_words ? 1 : in.sections ? 2 : 0);
         tess_core_buttons(in.buttons);
         tess_core_keys(in.keys);
         if (in.master >= 0) tess_core_master((uint32_t)in.master);
@@ -264,6 +264,7 @@ int main(int argc, char **argv)
     CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the body is orange (%08X)", px[320 * Panel::W + 12]);
     std::vector<uint16_t> was(v.screen, v.screen + TESS_SCREEN * TESS_SCREEN);
     CHECK(tess_core_ink(Panel::shell_ink(4)) == 1 && tess_core_ink("NO SUCH INK") == 0, "the shell's ink is a palette");
+    CHECK(tess_core_ground(1) == 1 && tess_core_ground(0) == 0, "GROUND: LIGHT and back to DARK (the DAY shell's)");
     run(p, 0.2);
     tess_core_view(&v);
     int moved = 0;
@@ -432,6 +433,25 @@ int main(int argc, char **argv)
               "SKIN: DAY picked from the menu (%d)", q.shell());
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/11_tessera_day.ppm", px);
+        if (!out.empty())   // (DAY with GROUND LIGHT, as picking DAY sets it: the screen on paper)
+        {
+            tess_core_ground(1);
+            run(q, 0.3);
+            tess_core_view(&v);
+            q.draw(px.data(), v);
+            ppm(out + "/11b_tessera_day_light.ppm", px);
+            q.set_hover_help(true);
+            q.move(330, 120);   // (a value on the paper screen: its outline dark amber, the card in DAY's inks)
+            run(q, 0.1);
+            tess_core_view(&v);
+            q.draw(px.data(), v);
+            ppm(out + "/11c_tessera_day_light_hover.ppm", px);
+            q.move(5, 5);
+            q.set_hover_help(false);
+            tess_core_ground(0);
+            run(q, 0.3);
+            tess_core_view(&v);
+        }
         CHECK(px[320 * Panel::W + 12] == 0xFFEDE8DAu, "the DAY skin's paper body (%08X)", px[320 * Panel::W + 12]);
         q.down(q.skin_switch_x() + 8, 24);   // the moon, left of the version
         q.up(q.skin_switch_x() + 8, 24);
@@ -706,7 +726,9 @@ int main(int argc, char **argv)
         // BACK / OK on Stage no longer do
         CHECK(q.input.key_words && !f.input.key_words, "key words: TESSERA's shell on, an FM-1 shell off");
         q.set_fm1(true, true, true, "FM-1 CONNECTED");
-        CHECK(!q.input.key_words, "an FM-1 on USB playing it: OCT- / OCT+ as ever");
+        CHECK(!q.input.key_words && q.input.sections, "an FM-1 on USB playing it: OCT- / OCT+ as ever, the sections still");
+        q.set_fm1(true, true, false, "LOOKING FOR FM-1");
+        CHECK(q.input.key_words && q.input.sections, "FM-1 USB on, none found yet: BACK / OK and the sections as ever");
         q.set_fm1(false, false, false, "");
         CHECK(q.input.key_words, "and back to BACK / OK / SHIFT");
         q.move(50 + 33, 258 + 17);   // the mouse over SHIFT: what it does, in a card over it

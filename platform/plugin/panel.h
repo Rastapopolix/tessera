@@ -29,6 +29,7 @@ struct PanelInput
     struct Typed { tess_zone_t z; char text[24]; };
     std::vector<Typed> typed;         // a value typed for a zone (Ctrl / Cmd-click it): tess_core_zone_type
     bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
+    bool sections = false;            // TESSERA's shell, its section buttons (an FM-1 on USB too): tess_core_key_words 2
     bool away = false;                // a click on nothing while a picker, sheet or help card is open: tess_core_away
     bool hover_changed = false;       // HOVER HELP: the zone the mouse rests on changed (kind 0: none): tess_core_hover
     tess_zone_t hover = {};
@@ -393,6 +394,11 @@ class Panel
     // the screen's zones: the view's last, the mouse over them, a click's time for a double-click
     void draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2);
     void draw_hover(uint32_t *px);
+    void overlay_inks(const tess_view_t &v);
+    // the overlays' inks (cards, menus, the outline round a value), set each draw: NIGHT's and the FM-1 shells' black
+    // and yellow, DAY's paper, amber and dark words; the outline on the screen dark amber when its ground is LIGHT
+    uint32_t ink_card = 0xFF000000u, ink_hot = 0xFFFFD020u, ink_word = 0xFFB9B2A0u, ink_dim = 0xFF5A5446u,
+             ink_edge = 0xFFFFD020u;
     std::vector<tess_zone_t> zones, zones2;   // the FM-1 screen's, the TRACKS screen's (EXPANDED)
     tess_zone_t drag_zone{}, click_zone{};
     bool click_known = false, hover_in = false;
@@ -401,6 +407,7 @@ class Panel
     int zone_at(int x, int y) const;
     int zone2_at(int x, int y) const;   // a TRACKS zone under the mouse (EXPANDED), -1 none
     int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
-    tess_zone_t zone_here(int zi, int x, int y) const;   // zone zi as the core takes it from (x, y): a ROLL with the place
+    tess_zone_t zone_here(int zi, int x, int y) const;
+    int slider_at(const tess_zone_t &z, int x) const;   // (a SLIDER: where x is across it, 0..1000)   // zone zi as the core takes it from (x, y): a ROLL with the place
     void zone_act(const tess_zone_t &z, uint32_t action, int n);
 };
