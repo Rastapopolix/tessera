@@ -1741,6 +1741,38 @@ int main(int argc, char **argv)
         run(q, 0.3);
     }
 
+    {   // G13: a new project, stopped, nothing to play: HOME says what to do (PRESS GENERATE, OPEN A DEMO OR PLAY)
+        Panel q;
+        q.set_inks(inks);
+        q.set_shell(0);
+        q.set_tracks((int)tess_core_tracks());
+        tess_core_project_new();
+        tess_core_buttons(1u << 6);   // (HOME)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.5);
+        auto band = [&]() {   // the screen's lower band, under the columns
+            uint64_t h = 1469598103934665603ull;
+            for (uint32_t y = 180; y < 221; y++)
+                for (uint32_t x = 0; x < TESS_SCREEN; x++) h = (h ^ v.screen[y * TESS_SCREEN + x]) * 1099511628211ull;
+            return h;
+        };
+        tess_core_view(&v);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/31_empty_state.ppm", px);
+        uint32_t lit = 0;
+        for (uint32_t y = 184; y < 221; y++)
+            for (uint32_t x = 0; x < TESS_SCREEN; x++) lit += v.screen[y * TESS_SCREEN + x] != v.screen[200 * TESS_SCREEN + 1];
+        const uint64_t empty = band();
+        CHECK(lit > 100, "G13: a new project's HOME has words under the columns (%u px)", lit);
+        CHECK(tess_core_param_set(0x200, 0, 4), "G13: T1's generator on (MORPH)");
+        run(q, 0.5);
+        tess_core_view(&v);
+        CHECK(band() != empty, "G13: a generator on: the words gone");
+        tess_core_project_new();
+        run(q, 0.3);
+    }
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }
