@@ -150,6 +150,9 @@ enum { TESS_ZONE_CHORD = 18 };
  * (0..7), or 0x100 + the letter for its head. CLICK: the cell's next kind, AUTO IN OUT FADE round (a head: every
  * track's cell in that letter, as its first track's next); HELP (a right-click): AUTO again (a head: the column) */
 enum { TESS_ZONE_EGRID = 19 };
+/* SLIDER: a bar that shows a value (MORPH's POS): role KNOB 1..4's, which it sets. TURN and WHEEL turn that knob; SET n
+ * (0..1000, where the mouse is across the bar) sets the value there, min at the left */
+enum { TESS_ZONE_SLIDER = 20 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -180,6 +183,7 @@ enum { TESS_ZA_LINK = 15 };
  * n 1..50 MUTATE: the zone's track (a TRACK zone's; else the selected one) has its sound nudged n % of each range either
  * way (envelope, depths, LFO, ENGINE 1..8, FX 1, FM6's operators); n -1 the last DICE or MUTATE put back */
 enum { TESS_ZA_LOCK = 16, TESS_ZA_DICE };
+enum { TESS_ZA_SET = 18 };   /* a SLIDER's value set at n / 1000 of its range */
 /* the locks, for a front end's state: out NULL their length; else as many as fit, their length (3 bytes each); load
  * replaces them (a build without TESS_HAS_POINTER: none) */
 uint32_t tess_core_locks(uint8_t *out, uint32_t cap);

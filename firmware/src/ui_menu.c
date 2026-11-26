@@ -476,7 +476,13 @@ static void menu_head(void)
  * bar in the track's colour, its name in text and its value in the track's colour; COLOR: the palettes as swatches,
  * the one chosen outlined. Under the rows where they are in the list. Drawn in two bands (the canvas holds 124
  * rows), split between two rows */
+#if TESS_HAS_POINTER
+/* SETUP's SETTINGS page (a front end's sections): the list a row shorter, SETUP's tabs under it */
+#define MENU_TABS (ui_csec && !ui.home && ui.menu == 1 && cur_page()->graph == GR_SETTINGS)
+#define MENU_VISIBLE (MENU_TABS ? 8u : 9u)
+#else
 #define MENU_VISIBLE 9u
+#endif
 #define MENU_Y0 28
 #define MENU_ROW 22
 #define MENU_RH 20
@@ -678,6 +684,9 @@ static void draw_menu(void)
     sig += (uint32_t)(batt_head() + 1) * 2654435761u;   /* (the header's battery) */
     sig += ui.menu == 2 ? ((uint32_t)song.batt_raw * 131u + song.pwr[0] * 7u + song.pwr[1] * 977u + song.pwr[2] * 7919u +
                            (usb.config && !usb.suspended)) * 16777619u : settings_batt_off * 15485863u;   /* (POWER) */
+#if TESS_HAS_POINTER
+    sig += MENU_TABS ? ui.page * 33391u + 7u : 0u;     /* (SETUP's tabs under the list) */
+#endif
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
@@ -705,6 +714,15 @@ static void draw_menu(void)
     }
 #if MELODEE_LOOK
     menu_mono();
+#if TESS_HAS_POINTER
+    if (MENU_TABS) {                                    /* SETUP's page: its tabs */
+        cv_begin(240, 240 - 216, MO_BG);
+        cv_oy = -216;
+        mo_foot();
+        cv_oy = 0;
+        cv_blit(0, 216);
+    }
+#endif
     return;
 #endif
     for (pass = 0; pass < 2u; pass++) {

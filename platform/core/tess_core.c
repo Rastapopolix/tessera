@@ -94,6 +94,17 @@ enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, 
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
+#if TESS_HAS_POINTER
+/* SETUP's SETTINGS page (ui.c cs_pages): the menu's list shown as a page while the sections are on */
+static int cs_settings_on(void) { return ui_csec && !ui.home && cur_page()->graph == GR_SETTINGS; }
+static void cs_settings_leave(void)                   /* the list closed, the page stays to step from (not HOME) */
+{
+    settings_save();
+    ui.menu = 0;
+    menu_cols = 0;
+    ui.force = 1;
+}
+#endif
 static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
 {
     if (zq_w - zq_r < ZQ_N)
@@ -158,10 +169,14 @@ static void zq_run(void)
         break;
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
                                                        * picker (as the FM-1's buttons, which those take) */
+        if (ui.menu == 1 && cs_settings_on())        /* (on SETUP's SETTINGS: the list closes, the section opens) */
+            cs_settings_leave();
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
         ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
+        if (ui.menu == 1 && cs_settings_on())
+            cs_settings_leave();
         page_scroll(sg);
         ui.force = 1;
         break;
@@ -547,6 +562,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         ui.force = 1;
         return;
     }
+    if (action == TESS_ZA_SET) {                      /* (a SLIDER: its value where the mouse is across it) */
+        uint32_t pid, tr;
+        tess_param_t info;
+        if (!tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable ||
+            info.max <= info.min)
+            return;
+        n = n < 0 ? 0 : n > 1000 ? 1000 : n;
+        tess_core_param_set(pid, tr, info.min + ((info.max - info.min) * n + 500) / 1000);
+        ui.force = 1;
+        return;
+    }
     if (action == TESS_ZA_TURN_FINE) {                /* (as TURN, a detent at a time) */
         zq_fine = 1;
         tess_core_zone_do(z, TESS_ZA_TURN, n);
@@ -623,6 +649,7 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         action = z->kind == TESS_ZONE_POINT ? TESS_ZA_TURN_Y : TESS_ZA_TURN;
     }
     switch (z->kind) {
+    case TESS_ZONE_SLIDER:                            /* (TURN, WHEEL: as its knob) */
     case TESS_ZONE_KNOB:
         if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
@@ -669,6 +696,20 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if ((z->row & 0x400) && action == TESS_ZA_TURN)   /* (up-down only: CONSTELLATION's ship, its brackets) */
+            break;
+        if (z->row & 0x800) {                         /* (vrole the selected track's TX_* itself, on no knob's layer:
+                                                       * up a step more (row bit 1: less), a double-click its default) */
+            uint32_t id = PID_TESS((uint32_t)z->vrole);
+            tess_param_t pi;
+            if (z->vrole < 0 || !tess_core_param_info(id, song.sel, &pi)) break;
+            if (action == TESS_ZA_TURN_Y)
+                tess_core_param_set(id, song.sel, tess_core_param_get(id, song.sel) + ((z->row & 2) ? -n : n));
+            else if (action == TESS_ZA_DOUBLE)
+                tess_core_param_set(id, song.sel, pi.def);
+            ui.force = 1;
+            break;
+        }
         if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
                                                        * a right-click one less, the wheel or a drag up and down) */
             if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
@@ -1830,7 +1871,7 @@ uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *tra
         *track = (uint32_t)z->row;
         return 1;
     }
-    if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
+    if ((z->kind == TESS_ZONE_KNOB || z->kind == TESS_ZONE_SLIDER) && z->role >= EN_K1 && z->role <= EN_K4) {
         uint8_t keep[sizeof help];                    /* (the help card's state as it was: only asked, not shown) */
         uint32_t tr0 = help_tr, ok;
         memcpy(keep, &help, sizeof help);

@@ -547,7 +547,8 @@ enum { SC_TRACK, SC_GLOBAL, SC_ENGINE, SC_STEP, SC_TRK,   /* SC_TRK: the TRACKS 
 enum { GR_NONE, GR_ADSR, GR_LFO, GR_STEPS, GR_ARP, GR_SCALE, GR_ROLL, GR_BROWSE, GR_SLOTS, GR_USER, GR_TRK,
        GR_MOD, GR_PATS, GR_SONG, GR_MOTION, GR_CHORD, GR_SLICES,
        GR_FMEG, GR_FMPEG, GR_FMSTORE, GR_SCALE_PICKER, GR_DRUMHIT, GR_PATGRID, GR_EVOLVE, GR_FORM, GR_TWEAK,
-       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN, GR_ENTRIES, GR_PIECE, GR_LAND, GR_PERF }; /* NOTES shares GR_ROLL for steps and recorded events */
+       GR_CORDS, GR_TWEAK2, GR_ORGANIC, GR_MATRIX, GR_NOTELEN, GR_TIMING, GR_ENERGY, GR_MIDICH, GR_KEYLINK, GR_CHAIN, GR_ENTRIES, GR_PIECE, GR_LAND, GR_PERF,
+       GR_SETTINGS }; /* NOTES shares GR_ROLL for steps and recorded events */
 
 typedef struct {
     const char *title;
@@ -687,6 +688,10 @@ static const page_t PAGES[] = {
     {"PATTERNS", FAM_SEQ, SC_GLOBAL, GR_PATGRID, {0xFF, 0xFF, 0xFF, 0xFF}},   /* the 4 x 8 grid: KNOB k track k's (ui_stage.c) */
     {"SONG", FAM_SEQ, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},
     {"MOTION", FAM_SEQ, SC_TRACK, GR_MOTION, {0xFF, 0xFF, 0xFF, 0xFF}},
+#if TESS_HAS_POINTER
+    {"SETTINGS", FAM_GLO, SC_GLOBAL, GR_SETTINGS, {0xFF, 0xFF, 0xFF, 0xFF}},   /* a front end's sections: SETUP's first
+                                                         * page, the menu's list (HOME held opens it too; ui.c cs_pages) */
+#endif
 };
 #define NPAGES (sizeof(PAGES) / sizeof(PAGES[0]))
 static uint8_t mod_ui_slot;      /* the MOD page: the matrix slot (0..3) KNOB 2..4 edit */
