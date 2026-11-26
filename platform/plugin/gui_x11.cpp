@@ -203,8 +203,8 @@ class GuiX11 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
-        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
-        {
+        if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
+        {                                                                // MIDI; dragged too: no drag out of an X11 window yet)
             panel.note(link->export_midi());
             return;
         }

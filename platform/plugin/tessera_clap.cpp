@@ -282,6 +282,8 @@ struct Tessera : GuiLink
     std::string save_file(const std::string &path) override;
     std::string file_name() override;
     std::string export_midi() override;
+    std::string midi_drag_file(std::string &path) override;
+    std::string midi_clip(std::vector<uint8_t> &f, std::string &file);
     void changed_by_file(const char *what = "OPEN PROJECT");   // (what: the host's undo step's name)
     // the shell (gui.h): the last one picked in any window, from the plugin's settings
     int shell_i = 0;
@@ -457,9 +459,10 @@ std::string render_bars(const std::vector<uint8_t> &tsp, uint32_t bars, std::vec
     return err;
 }
 
-// MIDI under the keys: a clip as a .mid in Documents/Tessera/MIDI, named after the project and the time. Playing: the
-// notes played since PLAY; stopped: the project rendered from the top for MIDI_BARS bars (render_bars)
-std::string Tessera::export_midi()
+// MIDI under the keys: a clip as a .mid, named after the project and the time. Playing: the notes played since PLAY;
+// stopped: the project rendered from the top for MIDI_BARS bars (render_bars). The clip's bytes and file name, or what
+// to show instead
+std::string Tessera::midi_clip(std::vector<uint8_t> &f, std::string &file)
 {
     std::string name;
     std::vector<uint8_t> tsp = record_of(this);
@@ -482,19 +485,49 @@ std::string Tessera::export_midi()
         if (!err.empty())
             return err;
     }
-    std::vector<uint8_t> f = midifile::smf(ev, bpm, name, bars);
+    f = midifile::smf(ev, bpm, name, bars);
     if (f.empty())
         return playing ? "NO NOTES YET: PLAY, THEN MIDI" : "NO NOTES IN THE FIRST BARS";
-    std::string dir = midifile::folder();
-    if (dir.empty())
-        return "NO DOCUMENTS FOLDER FOR THE CLIP";
     char stamp[32];
     std::time_t tt = std::time(nullptr);
     std::strftime(stamp, sizeof stamp, "%Y-%m-%d %H%M%S", std::localtime(&tt));
-    std::string file = midifile::file_name(name, stamp);
+    file = midifile::file_name(name, stamp);
+    return "";
+}
+
+// MIDI clicked: the clip in Documents/Tessera/MIDI
+std::string Tessera::export_midi()
+{
+    std::vector<uint8_t> f;
+    std::string file, err = midi_clip(f, file);
+    if (!err.empty())
+        return err;
+    std::string dir = midifile::folder();
+    if (dir.empty())
+        return "NO DOCUMENTS FOLDER FOR THE CLIP";
     if (!projfile::write_file((std::filesystem::u8path(dir) / std::filesystem::u8path(file)).u8string(), f))
         return "CANNOT WRITE THE CLIP";
     return "CLIP SAVED IN DOCUMENTS/TESSERA/MIDI";
+}
+
+// MIDI dragged off: the clip in the system's temporary folder (Tessera/), for the window's drag into a DAW (which
+// copies it); its path, or what to show instead
+std::string Tessera::midi_drag_file(std::string &path)
+{
+    path.clear();
+    std::vector<uint8_t> f;
+    std::string file, err = midi_clip(f, file);
+    if (!err.empty())
+        return err;
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::temp_directory_path(ec) / "Tessera";
+    if (ec || (std::filesystem::create_directories(dir, ec), ec))
+        return "NO TEMPORARY FOLDER FOR THE CLIP";
+    std::string p = (dir / std::filesystem::u8path(file)).u8string();
+    if (!projfile::write_file(p, f))
+        return "CANNOT WRITE THE CLIP";
+    path = p;
+    return "";
 }
 
 std::string Tessera::file_name()

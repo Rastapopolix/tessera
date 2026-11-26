@@ -230,6 +230,14 @@ int main(int argc, char **argv)
     p.down(224 + 36, 588 + 5 + 12);
     p.up(224 + 36, 588 + 5 + 12);
     CHECK(p.take_file_request() == Panel::FILE_MIDI, "MIDI asks");
+    p.down(224 + 36, 588 + 5 + 12);   // MIDI dragged off (G4): no ask on the press or a small wobble, a drag past 8 px
+    CHECK(p.take_file_request() == Panel::FILE_NONE, "MIDI pressed: nothing asked yet (a click or a drag)");
+    p.move(224 + 39, 588 + 5 + 13);
+    CHECK(p.peek_file_request() == Panel::FILE_NONE, "MIDI: a wobble of 4 px is still a click");
+    p.move(224 + 36, 588 + 5 + 2);
+    CHECK(p.take_file_request() == Panel::FILE_MIDI_DRAG, "MIDI dragged 10 px: the clip's drag asked for");
+    p.up(-1, -1);
+    CHECK(p.take_file_request() == Panel::FILE_NONE, "the drag's window lets go: no save as well");
     std::vector<uint32_t> before_note = px;
     p.draw(before_note.data(), v);
     p.note("Saved Undertow");

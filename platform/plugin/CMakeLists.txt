@@ -148,7 +148,7 @@ target_link_libraries(tessera-impl PUBLIC clap tessera-copies tessera-panel tess
 target_compile_definitions(tessera-impl PRIVATE TESS_VERSION_STR="${TESS_VERSION}")
 target_include_directories(tessera-impl PRIVATE ${TESS_ROOT}/build/gen)   # (plugin_demos.h: presets.cpp)
 if (WIN32)
-    target_link_libraries(tessera-impl PUBLIC comdlg32 shell32)
+    target_link_libraries(tessera-impl PUBLIC comdlg32 shell32 ole32 uuid)
 elseif (APPLE)
     target_link_libraries(tessera-impl PUBLIC "-framework Cocoa" "-framework QuartzCore")
 elseif (UNIX AND NOT APPLE)
