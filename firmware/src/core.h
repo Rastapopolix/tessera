@@ -206,6 +206,25 @@ enum {                          /* per-track parameters */
     P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
     P_COUNT
 };
+/* SLOPE (TESS_LFO_SLOPE: the plugin, the Daisy): the track LFO as a function generator, after Mutable Instruments'
+ * Tides and Mannequins' Just Friends. WAVE 5..7 (LW_SLOPE ..) a rise and a fall, straight, EXP or LOG, PHS read as
+ * their SKEW (where the top is: 0 straight up and a long fall, 64 a triangle, 127 a long rise); TRIG 2 ONCE starts it
+ * with each phrase as NOTE, runs one cycle and holds at its end (an AD envelope). No new parameter ID: values of
+ * WAVE and TRIG; the FM-1 loads WAVE 5..7 as TRI and ONCE as NOTE (project.c). LFO_PH0: the phase a cycle starts
+ * from (a slope from 0, its PHS being the SKEW); LFO_FREE: TRIG FREE (NOTE and ONCE start it again) */
+#ifndef TESS_LFO_SLOPE
+#define TESS_LFO_SLOPE 0
+#endif
+#define LW_SLOPE 5u
+#define LT_ONCE 2u
+#if TESS_LFO_SLOPE
+#define LFO_SLOPE(t) ((uint32_t)(t)->p[P_LWAVE] >= LW_SLOPE)
+#define LFO_PH0(t) (LFO_SLOPE(t) ? 0u : (uint32_t)(t)->p[P_LPHASE] << 25)
+#define LFO_FREE(t) ((t)->p[P_LTRIG] == 1)
+#else
+#define LFO_PH0(t) ((uint32_t)(t)->p[P_LPHASE] << 25)
+#define LFO_FREE(t) ((t)->p[P_LTRIG] != 0)
+#endif
 #define FX_SLOTS 3u
 #define FX_PARAMS 4u
 #ifndef MELODEE_ECHO_SYNC

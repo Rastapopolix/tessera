@@ -285,8 +285,15 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_RECQ, "RECORD QUANTIZE",
         "Moves a recorded take onto this grid when recording ends; OFF keeps the timing as played."),
     T_(P_LRATE, "LFO RATE", "How fast the track's LFO moves."),
+#if TESS_LFO_SLOPE
+    T_(P_LWAVE, "LFO WAVE", "The LFO's shape: sine, triangle, saw, square, a random step each cycle (S&H), or a "
+                            "SLOPE: a rise and a fall, straight, EXP or LOG. On the FM-1 a SLOPE plays as TRI."),
+    T_(P_LPHASE, "LFO PHASE", "Where in its cycle the LFO starts. With a SLOPE wave it is SKEW: where the top is, from "
+                              "straight up and a long fall (0), a triangle (64), to a long rise (127)."),
+#else
     T_(P_LWAVE, "LFO WAVE", "The LFO's shape: sine, triangle, saw, square or a random step each cycle (S&H)."),
     T_(P_LPHASE, "LFO PHASE", "Where in its cycle the LFO starts."),
+#endif
     T_(P_LFADE, "LFO FADE", "How long the LFO takes to fade in after a note starts."),
     T_(P_LD_PIT, "LFO TO PITCH", "How far the LFO moves the pitch (vibrato)."),
     T_(P_LD_FLT, "LFO TO FILTER", "How far the LFO moves the filter."),
@@ -369,7 +376,13 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_LSYNC, "LFO SYNC",
         "Ties the LFO to the tempo: one cycle every bar, beat or step chosen, up to 64 bars; OFF runs at its own "
         "RATE."),
+#if TESS_LFO_SLOPE
+    T_(P_LTRIG, "LFO TRIGGER", "NOTE starts the LFO again with each note; FREE lets it run on; ONCE starts it as NOTE, "
+                               "runs one cycle and holds at its end, an envelope (EOC fires there). On the FM-1 ONCE "
+                               "plays as NOTE."),
+#else
     T_(P_LTRIG, "LFO TRIGGER", "NOTE starts the LFO again with each note; FREE lets it run on."),
+#endif
     T_(P_LPOL, "LFO POLARITY", "BI moves both ways from the setting; UNI only one way. For this page's depths: a mod "
                                "from the LFO has its own + or +- (OCT+ on MODS)."),
     T_(P_SPRD, "STEREO SPREAD", "Spreads the track's voices from left to right."),

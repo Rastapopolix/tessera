@@ -16,8 +16,25 @@
  * declicks it); one of the part's own is restarted in place, as before. Extra UNISON
  * voices only start when there is room. */
 static uint32_t vage;                                   /* voice ages: one clock for every part */
-static int32_t lfo_wave(track_t *t, uint32_t ph)
+#if TESS_LFO_SLOPE
+/* a SLOPE wave (core.h LW_SLOPE ..) at phase ph: up to the top at SKEW (PHS 0..127 -> 0..65532 of the cycle), down
+ * after it, 0..1 bent by its curve (EXP: y^2, a slow start and a quick fall from the top; LOG: 1 - (1 - y)^2), out
+ * -1..1 as the other waves (POL UNI folds it to 0..1) */
+static int32_t lfo_slope(const track_t *t, uint32_t ph)
 {
+    uint32_t x = ph >> 16, top = (uint32_t)(t->p[P_LPHASE] & 127) * 516u, y;   /* (Q16) */
+    y = x < top ? (x << 16) / top : 65535u - ((x - top) << 16) / (65536u - top);
+    if (y > 65535u) y = 65535u;
+    if ((uint32_t)t->p[P_LWAVE] == LW_SLOPE + 1u) y = y * y >> 16;
+    else if ((uint32_t)t->p[P_LWAVE] == LW_SLOPE + 2u) y = 65535u - ((65535u - y) * (65535u - y) >> 16);
+    return (int32_t)y - 32768;
+}
+#endif
+static int32_t lfo_wave(const track_t *t, uint32_t ph)
+{
+#if TESS_LFO_SLOPE
+    if (LFO_SLOPE(t)) return lfo_slope(t, ph);
+#endif
     switch (t->p[P_LWAVE]) {
     case 1:
         return osc_tri(ph);
@@ -82,26 +99,44 @@ static __attribute__((noinline)) uint32_t lfo_sync_inc(const track_t *t)   /* (n
  * 1024 x, r x 2^22 / x = (r / x) 2^22 + q 2^22 / x, q = r mod x < x (<= 6144), the second in two steps of 2^9 and 2^13 */
 static void lfo_seek(track_t *t, uint32_t units)
 {
-    if (!t->p[P_LSYNC] || !t->p[P_LTRIG]) return;      /* (NOTE: each phrase starts it again; OFF: RATE's, free) */
+    if (!t->p[P_LSYNC] || !LFO_FREE(t)) return;        /* (NOTE: each phrase starts it again; OFF: RATE's, free) */
     uint32_t x = lsync_cycle((uint32_t)t->p[P_LSYNC]) / 1024u;
     if (!x) return;
     uint32_t r = units % (x * 1024u), q = r % x, a = q << 9;
-    t->lfo_ph = ((uint32_t)t->p[P_LPHASE] << 25) + ((r / x) << 22) + ((a / x) << 13) + (((a % x) << 13) / x);
+    t->lfo_ph = LFO_PH0(t) + ((r / x) << 22) + ((a / x) << 13) + (((a % x) << 13) / x);
     lfo_sync_rem[(uint32_t)(t - trk) % NTRK] = 0;
 }
 
 static uint8_t lfo_eoc;                              /* bit tr: its LFO wrapped and the first eighth of the cycle is not over */
 static int lfo_eoc_now(const track_t *t) { return (lfo_eoc >> ((uint32_t)(t - trk) % NTRK)) & 1u; }   /* (cord.c CS_EOC) */
+#if TESS_LFO_SLOPE
+/* TRIG ONCE (core.h LT_ONCE): one cycle from a phrase's start (or LFO RST, cord.c), then held at its end (phase
+ * 0xFFFFFFFF) until the next; EOC fires once, at the end (a slope's end of cycle, to start another track's) */
+static void lfo_once(track_t *t, uint32_t inc)
+{
+    uint32_t old = t->lfo_ph, bit = 1u << ((uint32_t)(t - trk) % NTRK);
+    t->lfo_ph = old == 0xFFFFFFFFu || old + inc < old ? 0xFFFFFFFFu : old + inc;
+    if (t->lfo_ph == 0xFFFFFFFFu && old != 0xFFFFFFFFu) lfo_eoc |= (uint8_t)bit;
+    else if (t->lfo_ph >= 0x20000000u) lfo_eoc &= (uint8_t)~bit;
+}
+#endif
 static void track_lfo_tick(track_t *t)
 {
-    uint32_t old = t->lfo_ph;
-    t->lfo_ph += t->p[P_LSYNC] ? lfo_sync_inc(t) : LFO_INC[t->p[P_LRATE] & 127];
-    if (t->lfo_ph < old) {
-        t->lfo_prev = (int16_t)mod_sh(t);               /* mod.c SLEW: it glides on from there */
-        t->lfo_rnd = lfo_rand(t);
-        lfo_eoc |= (uint8_t)(1u << ((uint32_t)(t - trk) % NTRK));   /* (EOC: a wrap, not a TRIG or PLAY phase set) */
-    } else if (t->lfo_ph >= 0x20000000u)
-        lfo_eoc &= (uint8_t)~(1u << ((uint32_t)(t - trk) % NTRK));
+#if TESS_LFO_SLOPE
+    if (t->p[P_LTRIG] == LT_ONCE)
+        lfo_once(t, t->p[P_LSYNC] ? lfo_sync_inc(t) : LFO_INC[t->p[P_LRATE] & 127]);
+    else
+#endif
+    {
+        uint32_t old = t->lfo_ph;
+        t->lfo_ph += t->p[P_LSYNC] ? lfo_sync_inc(t) : LFO_INC[t->p[P_LRATE] & 127];
+        if (t->lfo_ph < old) {
+            t->lfo_prev = (int16_t)mod_sh(t);               /* mod.c SLEW: it glides on from there */
+            t->lfo_rnd = lfo_rand(t);
+            lfo_eoc |= (uint8_t)(1u << ((uint32_t)(t - trk) % NTRK));   /* (EOC: a wrap, not a TRIG or PLAY phase set) */
+        } else if (t->lfo_ph >= 0x20000000u)
+            lfo_eoc &= (uint8_t)~(1u << ((uint32_t)(t - trk) % NTRK));
+    }
     t->lfo_val = lfo_wave(t, t->lfo_ph);
     if (t->p[P_LPOL])                                   /* UNI: 0..+1 (the depths reach as far, one way only) */
         t->lfo_val = (t->lfo_val + 32768) >> 1;
@@ -657,8 +692,8 @@ static void trk_note_on_work(track_t *t, uint32_t note, uint32_t vel)
     for (i = 0; i < NVOICE; i++)
         any |= t->v[i].gate;
     if (!any) {                                        /* fresh phrase: LFO retrigger (TRIG NOTE) and fade */
-        if (!t->p[P_LTRIG])
-            t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
+        if (!LFO_FREE(t))
+            t->lfo_ph = LFO_PH0(t);
         t->lfo_fade = t->p[P_LFADE] ? 0 : 32767;       /* (FADE 0: no fade-in to restart. 0 left the LFO out for a
                                                      * block, a step and back: a click on a note still releasing) */
     }

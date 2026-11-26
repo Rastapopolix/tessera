@@ -470,6 +470,10 @@ static int project_restore_runtime(const project_t *input)
             const param_desc_t *d = param_desc_of(e, i);
             t->p[i] = param_reserved(i) ? 0 : gone && i >= P_E0 ? d->def : eng_extra_retired(e) && i >= P_E0 ? s->p[i] :
                       (int16_t)clamp(s->p[i], d->min, d->max);
+#if !TESS_LFO_SLOPE
+            if ((i == P_LWAVE || i == P_LTRIG) && s->p[i] > d->max)   /* (a SLOPE wave, TRIG ONCE: core.h; TRI, NOTE) */
+                t->p[i] = i == P_LWAVE;
+#endif
         }
         t->preset = gone ? 0u : eng_extra_retired(e) ? s->preset : (uint8_t)(ENGINES[e]->npresets ? (s->preset >= PROJ_DEF_KEEP ? 0u : s->preset) % ENGINES[e]->npresets : 0u);
         t->pattern = p->pattern[k];

@@ -42,7 +42,14 @@
  *             block; read back as the source BUS A / BUS B one block later; destination track 0 as CK_GLOBAL
  *   CK_MDEPTH the project's MOD DEPTH (cord.c cord_mdepth_tick): added to its setting, each block; destination track 0
  *             as CK_GLOBAL; its own cords are never scaled by it */
-enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_SEQ, CK_VEL, CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
+/*   CK_LRST   (TESS_LFO_SLOPE) the destination track's LFO started again from its cycle's start (core.h LFO_PH0) as
+ *             its mods together rise past half (cord.c cord_lrst_tick): a gate's edge fires a SLOPE, ONCE or not; a
+ *             track's */
+enum { CK_VOICE, CK_BLOCK, CK_DEPTH, CK_STEP, CK_CC, CK_CLOCK, CK_PLAY, CK_SEQ, CK_VEL,
+#if TESS_LFO_SLOPE
+       CK_LRST,
+#endif
+       CK_GLOBAL, CK_CORD, CK_FILL, CK_TEMPO, CK_BUS, CK_MDEPTH };
 
 /* Destination codes. FROZEN: saved cords keep them; new ones at the end, a retired one stays as a gap */
 enum {
@@ -102,6 +109,10 @@ enum {
     CD_ACC_LIMIT,                                                   /* the pitch accumulator's LIMIT (STEP tracks) */
     CD_ORG_SPEED, CD_ORG_RATE,                                      /* TIDE's SPEED, SWARM's RATE (organic.c) */
     CD_ARATE, CD_AGATE, CD_AOCT,                                    /* ARP's RATE, GATE, OCT (CK_SEQ) */
+#if TESS_LFO_SLOPE
+    CD_LFO_RST = 134,                                               /* the track's LFO started again (CK_LRST); 132-133
+                                                                     * BUS C, BUS D (claimed) */
+#endif
     CD_N
 };
 
@@ -152,9 +163,18 @@ enum {
     CS_SLIDE,                     /* (TESS_MPE: the plugin) each note's slide, 0..1: its own MPE CC74 or CLAP BRIGHTNESS; a
                                    * note not from MIDI the track's CC74. A track's source, a value per voice as VEL's */
 #endif
+#if TESS_LFO_SLOPE
+    CS_LFOQ = 38,                 /* (TESS_LFO_SLOPE) the track's LFO a quarter cycle on (90 degrees), -1..1 with its FADE */
+    CS_LFO2X,                     /* .. at twice its rate, locked to it (a cycle starts with each of its), as CS_LFOQ.
+                                   * Track sources; 36-37 BUS C, BUS D (claimed) */
+#endif
     CS_N
 };
-#if TESS_MPE
+#if TESS_MPE && TESS_LFO_SLOPE
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN && (s) != CS_SLIDE && (s) != CS_LFOQ && (s) != CS_LFO2X)
+#elif TESS_LFO_SLOPE
+#define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN && (s) != CS_LFOQ && (s) != CS_LFO2X)
+#elif TESS_MPE
 #define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN && (s) != CS_SLIDE)
 #else
 #define CS_PROJECT(s) ((s) >= CS_ENERGY && (s) != CS_EOC && (s) != CS_IN)

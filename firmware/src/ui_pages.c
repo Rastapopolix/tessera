@@ -500,7 +500,7 @@ static void pv_lfo(int32_t h)
     const track_t *t = TSEL;
     int32_t uni = t->p[P_LPOL] != 0, cy = uni ? h - 26 : h / 2, amp = uni ? h - 66 : 48, x, py = 0;
     int32_t fw = t->p[P_LFADE] * 120 / 127, x0 = 10, w = PV_PANEL_W - 20, best = 0, bi = -1, hot = pv_hot();
-    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, i;
+    uint32_t ph = LFO_PH0(t), i;
     char v[12], b[20];
     const char *unit;
     cv_rect(x0, cy, w, 1, T_LINE);

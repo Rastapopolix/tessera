@@ -134,6 +134,9 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_ARATE] = Q_(CD_ARATE, P_ARATE, "ARP RTE", "ARP's RATE, stepped through the divisions"),
     [CD_AGATE] = Q_(CD_AGATE, P_AGATE, "ARP GTE", "ARP's GATE: how long its notes hold"),
     [CD_AOCT] = Q_(CD_AOCT, P_AOCT, "ARP OCT", "ARP's OCT: over how many octaves it runs, 1..4"),
+#if TESS_LFO_SLOPE
+    [CD_LFO_RST] = {CD_LFO_RST, CK_LRST, 0, PID_NONE, "LFO RST" CD_FULL("starts the track's LFO again from its cycle's start as the move rises past half: a gate (EOC, IN, GATE) fires a SLOPE, with TRIG ONCE an envelope")},
+#endif
 };
 #undef V_
 #undef B_
@@ -156,6 +159,9 @@ static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY"
                                                 "MACRO 2", "MACRO 3", "MACRO 4", "BUS A", "BUS B", "EOC", "IN",
 #if TESS_MPE
                                                 "SLIDE",
+#endif
+#if TESS_LFO_SLOPE
+                                                [CS_LFOQ] = "LFO 90", [CS_LFO2X] = "LFO X2",   /* (36-37 unbuilt: 0) */
 #endif
                                                 };   /* (TIDE by speed: CS_TORPOR 1, CS_INERTIA 2, CS_APATHY 3) */
 const char *cord_src_name(uint32_t code) { return code < CS_N ? CORD_SRC_NAME[code] : 0; }
@@ -183,6 +189,12 @@ static uint32_t cord_mdmask, cord_nsmask;
 static uint32_t cord_playm[NTRK];
 static uint8_t cord_shut;
 static void cord_play_tick(void);
+#if TESS_LFO_SLOPE
+/* LFO RST (cord.h CK_LRST): lrstm[t] bit i, cords[i] goes onto track t's LFO RST; lrst_hi bit t, its mods past half */
+static uint32_t cord_lrstm[NTRK];
+static uint32_t cord_lrst_hi;
+static void cord_lrst_tick(void);
+#endif
 static uint8_t cord_mdset = 100;
 static int32_t cord_md = 32768;
 static void cord_mdepth_tick(void);
@@ -203,6 +215,9 @@ void cord_tick(void)
     if (cord_ccmask) cord_cc_tick();
     if (cord_playm[0] | cord_playm[1] | cord_playm[2] | cord_playm[3]) cord_play_tick();
     else cord_shut = 0;
+#if TESS_LFO_SLOPE
+    cord_lrst_tick();
+#endif
     organic_tick();                                     /* (tessera.c, organic.c) */
     energy_tick();                                      /* (tessera.c, energy.c) */
 }
@@ -251,6 +266,11 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
     if (s == CS_SLIDE)                                  /* (the latest note's, as VEL: mod.c mod_mpe) */
         return mod_mpe(t, &t->v[t->m_vi % NVOICE], CS_SLIDE);
 #endif
+#if TESS_LFO_SLOPE
+    if (s == CS_LFOQ || s == CS_LFO2X)                  /* (the LFO's wave at a quarter cycle on, or twice its phase:
+                                                         * bipolar whatever its POL, with its FADE, as CS_LFO) */
+        return mulq15(lfo_wave(t, s == CS_LFOQ ? t->lfo_ph + 0x40000000u : t->lfo_ph << 1), t->lfo_fade);
+#endif
     if (s >= CS_BUSA)                                   /* (the MIX buses, the project's: one block late) */
         return cord_bus_out[(s - CS_BUSA) & 1u];
     if (s >= CS_MACRO1)                                 /* (PERF's, the project's: 0..1) */
@@ -265,6 +285,9 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
 static int cord_bipolar(uint32_t s, uint32_t tr)
 {
     (void)tr;
+#if TESS_LFO_SLOPE
+    if (s == CS_LFOQ || s == CS_LFO2X) return 1;
+#endif
     return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || (s >= CS_BUSA && s < CS_EOC) ||
            (s < CS_GATE && MS_BIPOLAR(s));             /* (CV: 0..1) */
 }
@@ -304,6 +327,12 @@ _Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT
                "cord codes are saved: never renumbered");
 #if TESS_MPE
 _Static_assert(CS_SLIDE == 35, "cord codes are saved: never renumbered");
+#endif
+#if TESS_LFO_SLOPE
+_Static_assert(CS_LFOQ == 38 && CS_LFO2X == 39 && CD_LFO_RST == 134, "cord codes are saved: never renumbered");
+#define CORD_SRC_OK(s) ((s) < CS_N && CORD_SRC_NAME[s])   /* (a gap: a code another build has, BUS C, BUS D) */
+#else
+#define CORD_SRC_OK(s) ((s) < CS_N)
 #endif
 /* CC OUT: each cord's CC number (0..119), the value it last sent (0xFF none yet) and the block it went at */
 static uint8_t cord_ccn[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 1}, cord_cc_was[CORD_LIVE] = {[0 ... CORD_LIVE - 1] = 0xFF};
@@ -458,6 +487,9 @@ static void cord_masks(void)
     cord_clk_trk = 0;
     memset(cord_clcnt, 0, sizeof cord_clcnt);              /* (a cord edited: its divisions count afresh) */
     for (t = 0; t < NTRK; t++) cord_playm[t] = 0;
+#if TESS_LFO_SLOPE
+    for (t = 0; t < NTRK; t++) cord_lrstm[t] = 0;      /* (cord_lrst_hi kept: a gate held stays held, no new edge) */
+#endif
     for (i = 0, t = 0; i < CORD_LIVE; i++)              /* (HOLD: a new one samples now, not 0 until its bar) */
         if (cords[i].uni == CU_HOLD && cords[i].src) {
             if (!((cord_hmask >> i) & 1u)) cord_hval[i] = (int16_t)cord_src(cords[i].src, cords[i].src_trk);
@@ -514,6 +546,12 @@ static void cord_masks(void)
             cord_playm[c->dst_trk] |= 1u << i;
             continue;
         }
+#if TESS_LFO_SLOPE
+        if (kind == CK_LRST) {                          /* (cord_lrst_tick) */
+            cord_lrstm[c->dst_trk] |= 1u << i;
+            continue;
+        }
+#endif
         if (kind == CK_VEL) {                           /* (cord_vel) */
             cord_velm |= (uint16_t)(1u << i);
             continue;
@@ -532,7 +570,7 @@ static void cord_masks(void)
 int cord_set(uint32_t i, const cord_t *c)
 {
     uint32_t t;
-    if (i >= CORD_LIVE || c->src >= CS_N || c->src_trk >= NTRK || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
+    if (i >= CORD_LIVE || !CORD_SRC_OK(c->src) || c->src_trk >= NTRK || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
         c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_HOLD)
         return 0;
     TESS_IRQ_OFF();
@@ -563,6 +601,10 @@ static void cord_reset(void)
     cord_mdmask = cord_nsmask = 0;
     cord_shut = 0;
     for (t = 0; t < NTRK; t++) cord_playm[t] = 0;
+#if TESS_LFO_SLOPE
+    for (t = 0; t < NTRK; t++) cord_lrstm[t] = 0;
+    cord_lrst_hi = 0;
+#endif
     cord_mdset = 100;
     cord_md = 32768;
     cord_busm[0] = cord_busm[1] = 0;                    /* (the buses: SUM, no LAG, at rest) */
@@ -605,7 +647,7 @@ static int cord_parse(const uint8_t *in, cord_t *got)
         c->src = in[0]; c->src_trk = in[1] & 0x3Fu; c->uni = (uint8_t)(in[1] >> 7 | (in[1] >> 5 & 2u)); c->dst = in[2]; c->dst_trk = in[3];
         c->amount = (int8_t)in[4]; c->offset = (int8_t)in[5];
         if (c->dst == CD_RETIRED_CL_RULE) memset(c, 0, sizeof *c);   /* (to CELLS' RULE, cut: the cord gone) */
-        if (c->src >= CS_N || c->src_trk >= NTRK || c->dst >= CD_N || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
+        if (!CORD_SRC_OK(c->src) || c->src_trk >= NTRK || c->dst >= CD_N || !cord_dest(c->dst) || c->dst_trk >= NTRK ||
             c->amount < -100 || c->amount > 100 || c->offset < -100 || c->offset > 100 || c->uni > CU_GATE)
             return 0;
         if (cord_dest(c->dst)->kind >= CK_GLOBAL) c->dst_trk = 0;
@@ -932,6 +974,28 @@ static __attribute__((noinline)) void cord_play_tick(void)
     }
     cord_shut = (uint8_t)shut;
 }
+#if TESS_LFO_SLOPE
+/* each block (cord_tick): a track's LFO started again from its cycle's start (core.h LFO_PH0) as its LFO RST mods
+ * together rise past half; SYNC's carried remainder with it, so a synced slope runs its note value from the edge.
+ * Its S&H value stays (a new one comes at the cycle's end) */
+static __attribute__((noinline)) void cord_lrst_tick(void)
+{
+    uint32_t t, i, m, hi = 0;
+    for (t = 0; t < NTRK; t++) {
+        int32_t s = 0;
+        if (!cord_lrstm[t]) continue;
+        for (i = 0, m = cord_lrstm[t]; m; i++, m >>= 1)
+            if (m & 1u) s += cord_share(&cords[i]);
+        if (s < 16384) continue;
+        hi |= 1u << t;
+        if (!((cord_lrst_hi >> t) & 1u)) {
+            trk[t].lfo_ph = LFO_PH0(&trk[t]);
+            lfo_sync_rem[t] = 0;
+        }
+    }
+    cord_lrst_hi = hi;
+}
+#endif
 int cord_play_shut(uint32_t tr) { return (int)((cord_shut >> (tr & (NTRK - 1u))) & 1u); }
 void cord_mdepth_set(int32_t v) { cord_mdset = (uint8_t)clamp(v, 0, 100); }
 

@@ -240,7 +240,7 @@ static void graph_dxenv(const uint8_t *r, const uint8_t *l, int pitch, uint16_t 
 static void graph_lfo(const track_t *t, uint16_t c)
 {
     int32_t x, uni = t->p[P_LPOL] != 0, z = uni ? 88 : 50, py = z;   /* the zero line: POL UNI (LFO 2) draws 0..+1 over it */
-    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25;
+    uint32_t ph = LFO_PH0(t);
     cv_rect(PANEL_X0, z, PANEL_W, 1, T_RAISE);
     for (x = 0; x < PANEL_W; x++) {                  /* two cycles (lfo_wave only reads the track) */
         int32_t w = lfo_wave((track_t *)t, ph + (uint32_t)x * (0xFFFFFFFFu / (PANEL_W / 2u))), y;
