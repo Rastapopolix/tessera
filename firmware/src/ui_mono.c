@@ -876,7 +876,11 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
     mo_disc(px, py, 2, MO_INK);
     for (p = 0; p < 3u; p++) {                          /* the three parts: 16 steps as two rows of eight */
         int32_t y = 56 + (int32_t)p * 17;
-        mo_text(LN[p], 47, y + 2, MO_DIM);
+        const char *ln = LN[p];
+#if TESS_ATLAS_BANKS
+        if (p == 1u && g->bank) ln = gen_grids_note(g, 1u) == 37u ? "RS" : gen_grids_note(g, 1u) == 39u ? "CP" : ln;
+#endif
+        mo_text(ln, 47, y + 2, MO_DIM);
         for (i = 0; i < 16u; i++) {
             int acc = 0;
             uint32_t s = steps > 16u ? i * 2u : i;

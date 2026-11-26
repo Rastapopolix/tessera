@@ -36,6 +36,11 @@ static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO"
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
 static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
+#if TESS_ATLAS_BANKS
+static const char *const TX_N_GRBANK[] = {"ALL", "DUB", "REGGAE", "TECHNO", "HIP-HOP", "DNB", "HOUSE", "AMBIENT", "BREAKS",
+                                          "ELECTRO", "GARAGE", "HALFTIME", "DOWNTEMPO", "AFRO"};   /* (GEN_AB_*) */
+_Static_assert(sizeof TX_N_GRBANK / sizeof TX_N_GRBANK[0] == GEN_AB_N, "ATLAS BANK: a name a bank");
+#endif
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
                                         "CANON5", "CANON6", "CANON7", "CANON8", "HARM"};   /* (TESS_FH_*) */
@@ -251,6 +256,9 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_SECTION_PC] = PE("SEC PC", TX_N_PATGEN, 0),
     [TX_CH_WHEN] = PE("WHEN", TX_N_CWHEN, 0),
     [TX_CH_BY] = PE("BY", TX_N_CBY, TESS_CB_UP2),
+#if TESS_ATLAS_BANKS
+    [TX_GRD_BANK] = PE("BANK", TX_N_GRBANK, 0),
+#endif
 };
 
 #if MELODEE_HELP_PACKED                          /* the texts stay here, tools/gen_help.py packs them */
@@ -873,6 +881,12 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves: the whole shape by semitones (ST), up the scale in key "
                                   "(DEG), turned over (INV), an octave, the top note a degree (TOP), or the next "
                                   "chord a semitone below (LEAD). GEN sheet."),
+#if TESS_ATLAS_BANKS                                /* (an 8-track build's: tools/gen_help.py leaves it out) */
+    X_(TX_GRD_BANK, "ATLAS BANK", "The map X and Y scan: ALL is the original one, the others a genre's own. In "
+                                  "each, Y picks one of five feels of the genre and X goes from its bare skeleton to "
+                                  "its fullest, so the grid never leaves the genre. DUB, REGGAE and AFRO play the "
+                                  "snare part on the rim, TECHNO, HOUSE and ELECTRO on the clap. GEN sheet."),
+#endif
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT
 #undef QD_EVERY_TEXT
