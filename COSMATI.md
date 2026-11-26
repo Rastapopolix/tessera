@@ -13,23 +13,41 @@ and it points to the [FM-1 manual](MANUAL.md) for what each page and generator d
 
 *EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).*
 
+**To get started,** read [Getting started](#getting-started). To have something at your side while you work, print the
+**[Quick reference](docs/cheatsheet/cosmati-cheatsheet.pdf)**: the mouse, keys and sections on two pages
+([the same as a table](#shortcut-reference)).
+
+**Basics:** the window and how to move around it.
+
 - [Getting started](#getting-started)
 - [The window](#the-window)
 - [Finding your way: sections, tabs and the page map](#finding-your-way-sections-tabs-and-the-page-map)
 - [Using the mouse](#using-the-mouse)
 - [The computer keyboard](#the-computer-keyboard)
+
+**Making music:** a piece, its sounds, notes and modulation.
+
 - [Making a piece](#making-a-piece)
 - [The sounds](#the-sounds)
 - [Notes, steps and chords](#notes-steps-and-chords)
 - [Modulation](#modulation)
+
+**The whole song:** the long form, the mix, tracks, and trying things out.
+
 - [The long form: PIECE, ENTRIES and the song](#the-long-form-piece-entries-and-the-song)
 - [Mixing and performing](#mixing-and-performing)
 - [Working with tracks](#working-with-tracks)
 - [Trying things: dice, locks, A / B and MORPH](#trying-things-dice-locks-a--b-and-morph)
+
+**Files and the DAW:** transport, automation, outputs, saving and the FM-1.
+
 - [In the DAW](#in-the-daw)
 - [Saving, and project files](#saving-and-project-files)
 - [Playing it from an FM-1, and a MIDI keyboard](#playing-it-from-an-fm-1-and-a-midi-keyboard)
 - [Sounds only the plugin has](#sounds-only-the-plugin-has)
+
+**Reference and troubleshooting:**
+
 - [CPU, and when something goes wrong](#cpu-and-when-something-goes-wrong)
 - [Shortcut reference](#shortcut-reference)
 - [Where each page is explained](#where-each-page-is-explained)
@@ -528,6 +546,8 @@ has (FM6 16, most 8). If you hear clicks with several Cosmati, raise the audio b
 has no tall layout for square screens.
 
 ## Shortcut reference
+
+The printable version of this table, with the mouse as well: the [Quick reference](docs/cheatsheet/cosmati-cheatsheet.pdf).
 
 | Keys | Does |
 |---|---|
