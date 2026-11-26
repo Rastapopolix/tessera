@@ -1127,6 +1127,14 @@ bool Panel::down(int x, int y)
         click_known = !dbl;
         click_zone = z;
         click_t = now, click_x = x, click_y = y;
+        if (z.kind == TESS_ZONE_SLIDER)   // a bar (MORPH's POS): its value where it is pressed, then where dragged
+        {
+            drag = ZONE;
+            drag_zone = z;
+            zone_still = false;
+            zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_SET, slider_at(z, x));
+            return true;
+        }
         if (z.kind == TESS_ZONE_ROLL)   // NOTES' steps: the note there grabbed; dragged up or down, its pitch; let go
         {                               // unmoved, a click (a note there)
             drag = ZONE;
@@ -1334,6 +1342,12 @@ bool Panel::move(int x, int y)
     {
         if (!sound_live && std::abs(x - roll_x0) < 5 && std::abs(y - roll_y0) < 5) return false;
         sound_live = true;
+        return true;
+    }
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_SLIDER)   // a bar: its value follows the mouse
+    {
+        if (!dx) return false;
+        zone_act(drag_zone, TESS_ZA_SET, slider_at(drag_zone, x));
         return true;
     }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
@@ -2515,6 +2529,12 @@ int Panel::zone_like(const tess_zone_t &z) const
 
 // NOTES' roll (TESS_ZONE_ROLL): the core reads the step and the pitch from the place, so it goes in the zone's x, y (in
 // screen pixels); any other zone as it is
+int Panel::slider_at(const tess_zone_t &z, int x) const   // where x is across a bar, 0..1000
+{
+    int at = x - (SCREEN_X + SCREEN_S / 32) - z.x - 2, w = z.w - 4;   // (inside its outline, a cell each side)
+    return w <= 0 ? 0 : at <= 0 ? 0 : at >= w ? 1000 : at * 1000 / w;
+}
+
 tess_zone_t Panel::zone_here(int zi, int x, int y) const
 {
     tess_zone_t z = zones[zi];

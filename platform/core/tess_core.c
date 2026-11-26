@@ -562,6 +562,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         ui.force = 1;
         return;
     }
+    if (action == TESS_ZA_SET) {                      /* (a SLIDER: its value where the mouse is across it) */
+        uint32_t pid, tr;
+        tess_param_t info;
+        if (!tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable ||
+            info.max <= info.min)
+            return;
+        n = n < 0 ? 0 : n > 1000 ? 1000 : n;
+        tess_core_param_set(pid, tr, info.min + ((info.max - info.min) * n + 500) / 1000);
+        ui.force = 1;
+        return;
+    }
     if (action == TESS_ZA_TURN_FINE) {                /* (as TURN, a detent at a time) */
         zq_fine = 1;
         tess_core_zone_do(z, TESS_ZA_TURN, n);
@@ -638,6 +649,7 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         action = z->kind == TESS_ZONE_POINT ? TESS_ZA_TURN_Y : TESS_ZA_TURN;
     }
     switch (z->kind) {
+    case TESS_ZONE_SLIDER:                            /* (TURN, WHEEL: as its knob) */
     case TESS_ZONE_KNOB:
         if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
@@ -1859,7 +1871,7 @@ uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *tra
         *track = (uint32_t)z->row;
         return 1;
     }
-    if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
+    if ((z->kind == TESS_ZONE_KNOB || z->kind == TESS_ZONE_SLIDER) && z->role >= EN_K1 && z->role <= EN_K4) {
         uint8_t keep[sizeof help];                    /* (the help card's state as it was: only asked, not shown) */
         uint32_t tr0 = help_tr, ok;
         memcpy(keep, &help, sizeof help);

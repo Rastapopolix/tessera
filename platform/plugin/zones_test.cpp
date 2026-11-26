@@ -1565,6 +1565,45 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static void slider_drag()   // MORPH's POS bar: a click sets POS where it lands, a drag follows the mouse
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_track_select(0);
+    CHECK(tess_core_param_set(0x200, 0, 4), "SLIDER: T1's MODE set to MORPH");   // (PID_TESS(TX_MODE), TESS_ENG_MORPH)
+    run(10);
+    tess_core_key_words(1);
+    tap(B_HOME);
+    press_section(TESS_SEC_GEN);
+    int bar = -1;
+    for (int g = 0; g < 8 && bar < 0; g++)
+    {
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_SLIDER && !std::strcmp(v.zones[i].name, "POS")) bar = (int)i;
+        if (bar < 0) press_section(TESS_SEC_GEN);
+    }
+    CHECK(bar >= 0, "MORPH: its POS bar a SLIDER zone (page %s)", page_now().c_str());
+    if (bar >= 0)
+    {
+        act(bar, TESS_ZA_SET, 1000);
+        const char *full = v.zones[bar].value;
+        CHECK(!std::strcmp(full, "100%"), "SET at the right end: POS 100%% (%s)", full);
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_SLIDER) bar = (int)i;
+        act(bar, TESS_ZA_SET, 250);
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_SLIDER) bar = (int)i;
+        CHECK(!std::strcmp(v.zones[bar].value, "25%"), "SET a quarter across: POS 25%% (%s)", v.zones[bar].value);
+        act(bar, TESS_ZA_WHEEL, 1);
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_SLIDER) bar = (int)i;
+        CHECK(std::strcmp(v.zones[bar].value, "25%"), "the wheel over it turns POS (%s)", v.zones[bar].value);
+    }
+    tap(B_HOME);
+    tess_core_key_words(0);
+    tess_core_project_new();
+}
+
 static void macro_mods()   // PERF: a MACRO's row clicked opens its mod in MODS (a new one from MCRn when it has none)
 {
     tess_core_project_new();
@@ -2080,6 +2119,7 @@ int main(int argc, char **argv)
     drop_sound();
     constel_drag();
     live_motion();
+    slider_drag();
     macro_mods();
     scale_keys();
     dice_mutate();
