@@ -365,7 +365,7 @@ void Panel::note(const std::string &text)
     note_text.clear();
     for (char ch : text)   // (the Mono face: capitals)
         note_text += ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
-    note_frames = 150;     // (5 s at the window's 30 frames a second)
+    note_frames = NOTE_FRAMES;
 }
 
 void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
@@ -897,6 +897,9 @@ bool Panel::shortcut(char c)
         tess_zone_t z{};
         if (c == 'r') z.kind = TESS_ZONE_TRACK, z.row = (int16_t)track_now;
         zone_act(z, TESS_ZA_DICE, c == 'r' ? MUTATE_PCT : 0);
+        char said[24];
+        std::snprintf(said, sizeof said, c == 'r' ? "MUTATED T%d" : "DICED THE PAGE", track_now + 1);
+        note(said);
         return true;
     }
     static const char TR_KEYS[] = "CVv^_";
@@ -1692,12 +1695,15 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             uint32_t r = (p >> 11 & 31) * 255 / 31, g = (p >> 5 & 63) * 255 / 63, b = (p & 31) * 255 / 31;
             px[(SCREEN_Y + inset + y) * PW + SCREEN_X + inset + x] = 0xFF000000u | r << 16 | g << 8 | b;
         }
+    const bool toast = note_frames > 0;   // (a toast in the row under the screen, in place of its words: G9)
     char cap[8];
     std::snprintf(cap, sizeof cap, "T%d", track_now + 1);
-    c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
+    if (!toast)
+        c.ptext(SCREEN_X + 2, SCREEN_Y + SCREEN_S + 8, cap, 2, T_WORD);
     if (expanded())   // EXPANDED: PAGE under the page; TRACKS beside it, 1-8 (or 1-4) under it
     {
-        c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w("PAGE", 2), SCREEN_Y + SCREEN_S + 8, "PAGE", 2, T_WORD);
+        if (!toast)
+            c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w("PAGE", 2), SCREEN_Y + SCREEN_S + 8, "PAGE", 2, T_WORD);
         nbox(c, T2_X, T2_Y, T2_W, T2_H, T_DIM, T_BODY);
         c.box(T2_X + T2_IN, T2_Y + T2_IN, TESS_TRACKS_W, TESS_TRACKS_H, T_BLACK);
         if (t2 && t2->w == TESS_TRACKS_W && t2->h == TESS_TRACKS_H)
@@ -1709,10 +1715,12 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
                     px[(T2_Y + T2_IN + y) * PW + T2_X + T2_IN + x] = 0xFF000000u | r << 16 | g << 8 | b;
                 }
         const char *all = tracks_ > 4 ? "1-8" : "1-4";
-        c.ptext(T2_X + 2, T2_Y + T2_H + 8, "TRACKS", 2, T_WORD);
-        c.ptext(T2_X + T2_W - 2 - Canvas::ptext_w(all, 2), T2_Y + T2_H + 8, all, 2, T_WORD);
+        if (!toast || Canvas::ptext_w(note_text.c_str(), 2) + 16 < T2_X - SCREEN_X)
+            c.ptext(T2_X + 2, T2_Y + T2_H + 8, "TRACKS", 2, T_WORD);
+        if (!toast || Canvas::ptext_w(note_text.c_str(), 2) + 16 < T2_X + T2_W - SCREEN_X - 40)
+            c.ptext(T2_X + T2_W - 2 - Canvas::ptext_w(all, 2), T2_Y + T2_H + 8, all, 2, T_WORD);
     }
-    else if (tracks_ > 4)
+    else if (tracks_ > 4 && !toast)
     {
         const char *bank = track_now & 4 ? "5-8" : "1-4";
         c.ptext(SCREEN_X + SCREEN_S - 2 - Canvas::ptext_w(bank, 2), SCREEN_Y + SCREEN_S + 8, bank, 2, T_WORD);
@@ -1832,11 +1840,17 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             nbox(c, b.x, b.y, b.w, b.h, T_YEL, lit ? T_YEL : T_BODY);
             c.ptext_c(b.x + b.w / 2, b.y + b.h / 2 - 7, b.face, 2, lit ? T_BLACK : T_YEL);
         }
-    if (note_frames > 0)
-    {
+    if (note_frames > 0)   // the toast: a lit tag under the screen (EXPANDED: it may run on under TRACKS), its last
+    {                      // third an outline
         note_frames--;
-        const FileButton &last = banked() ? banks[1] : files.back();
-        c.ptext(last.x + last.w + 16, last.y + last.h / 2 - 7, note_text.c_str(), 2, T_WORD);
+        int room = (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X;
+        std::string t = note_text;
+        while (!t.empty() && Canvas::ptext_w(t.c_str(), 2) + 12 > room)
+            t.pop_back();
+        int w = Canvas::ptext_w(t.c_str(), 2) + 12, y = SCREEN_Y + SCREEN_S + 3;
+        bool lit = note_frames > NOTE_FRAMES / 3;
+        nbox(c, SCREEN_X, y, w, 24, T_YEL, lit ? T_YEL : T_BODY);
+        c.ptext(SCREEN_X + 6, y + 5, t.c_str(), 2, lit ? T_BLACK : T_YEL);
     }
 
     draw_gen(px);
@@ -2511,7 +2525,7 @@ void Panel::ctx_do(int r)
         {
         case 0: zone_act(ctx_zone, TESS_ZA_HELP, 0); break;
         case 1: zone_act(ctx_zone, TESS_ZA_DOUBLE, 0); break;   // (a double-click: its default)
-        case 2: clip_value = ctx_zone.value; break;
+        case 2: clip_value = ctx_zone.value, note("COPIED " + clip_value); break;
         case 3:
         {
             PanelInput::Typed t{ctx_zone, {}};
@@ -2522,8 +2536,8 @@ void Panel::ctx_do(int r)
         case 4: zone_act(ctx_zone, TESS_ZA_RANDOM, 0); break;
         case 5: entry_on = true, entry_find = false, entry_zone = ctx_zone, entry_text.clear(); break;
         case 6: zone_act(ctx_zone, TESS_ZA_LOCK, 0); break;
-        case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0); break;
-        case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1); break;
+        case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0), note("DICED THE PAGE"); break;
+        case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1), note("PUT BACK"); break;
         default: break;
         }
     }
@@ -2534,6 +2548,9 @@ void Panel::ctx_do(int r)
         tess_zone_t z{};
         z.kind = TESS_ZONE_TRACK, z.row = (int16_t)ctx_track;
         zone_act(z, TESS_ZA_DICE, r == 6 ? MUTATE_PCT : -1);
+        char said[24];
+        std::snprintf(said, sizeof said, r == 6 ? "MUTATED T%d" : "PUT BACK T%d", ctx_track + 1);
+        note(said);
     }
     input.changed = true;
 }

@@ -1458,6 +1458,11 @@ int main(int argc, char **argv)
             for (int x = rail0; x < rail1; x++) handle += wide[24 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
             CHECK(handle >= 6, "MORPH's handle drawn (%d)", handle);
             if (!out.empty()) ppm(out + "/16d_ab.ppm", wide, Panel::W_EXPANDED);
+            e.note("Clip saved: Tessera 2026-11-26 2204 still tide.mid");   // (a toast, G9: EXPANDED lets it run on)
+            e.draw(wide.data(), v, &t2);
+            if (!out.empty()) ppm(out + "/16e_toast.ppm", wide, Panel::W_EXPANDED);
+            CHECK(wide[(44 + 256 + 3) * Panel::W_EXPANDED + 292 + 300] != wide[(44 + 256 + 3) * Panel::W_EXPANDED + 292 + 600],
+                  "EXPANDED: a long toast runs on under TRACKS");
         }
         e.set_shell(1);
         CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());
@@ -1515,6 +1520,31 @@ int main(int argc, char **argv)
         run(m, 0.1);
         tess_core_buttons(0);
         run(m, 0.3);
+    }
+
+    {   // a toast (Cosmati audit G9) in TESSERA's shell: a lit tag under the screen in place of its words, an outline
+        // in its last third, then gone
+        Panel n;
+        n.set_shell(0);
+        n.draw(px.data(), v);
+        const int tx = 292 + 8, ty = 44 + 256 + 3 + 21;   // (inside the tag, under its words)
+        uint32_t calm = px[ty * Panel::W + tx];
+        n.note("Loaded Still Tide");
+        n.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/toast.ppm", px);
+        uint32_t lit = px[ty * Panel::W + tx];
+        CHECK(lit != calm, "a toast: a lit tag under the screen (%08x, was %08x)", lit, calm);
+        const int ey = 44 + 256 + 3;   // (the tag's top edge: lit while it shows)
+        uint32_t edge_calm = calm;
+        int frames = 1;
+        bool outline = false;
+        while (frames < 200 && px[ey * Panel::W + tx] != edge_calm)
+        {
+            n.draw(px.data(), v);
+            frames++;
+            outline |= px[ey * Panel::W + tx] != edge_calm && px[ty * Panel::W + tx] == calm;
+        }
+        CHECK(frames >= 110 && frames <= 130 && outline, "the toast stays 4 s, its end an outline (%d frames)", frames);
     }
 
     {   // the sound browser in TESSERA's shell, through the panel: a sound clicked loads it, BACK clicked takes it back
