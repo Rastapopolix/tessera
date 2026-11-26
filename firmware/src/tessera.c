@@ -1530,11 +1530,11 @@ static uint32_t tess_gate_len(const track_t *t, uint32_t period, uint32_t len)
 }
 
 /* Chord: the chord on degree deg of the track's scale, from an octave below middle C (CHR: ROOT's major scale, as SCL
- * CHORD's DIA chords), as its SCL CHORD makes it (CHRD, DIA3 when OFF; VOIC) -> its notes (before TRN and SHIFT); *rp
- * its root, *maskp its tones above the root */
-static uint32_t tess_chord_build(const track_t *t, uint32_t deg, uint8_t *out, int32_t *rp, uint16_t *maskp)
+ * CHORD's DIA chords), as its SCL CHORD makes it (CHRD, DIA3 when OFF; VOIC; q, a USER chord's quality, in CHRD's
+ * place when not 0) -> its notes (before TRN and SHIFT); *rp its root, *maskp its tones above the root */
+static uint32_t tess_chord_build(const track_t *t, uint32_t deg, uint32_t q, uint8_t *out, int32_t *rp, uint16_t *maskp)
 {
-    uint32_t m = scale_mask(t) & 0xFFFu, mode = (uint32_t)t->p[P_CHRD], guard = 84;
+    uint32_t m = scale_mask(t) & 0xFFFu, mode = q ? q : (uint32_t)t->p[P_CHRD], guard = 84;
     int32_t x = 48 + t->p[P_ROOT] % 12;
     if (m == 0xFFFu || !m) m = SCALE_MASK[1];
     while (deg && guard--)
@@ -1550,7 +1550,7 @@ uint32_t tessera_chord_at(uint32_t tr, uint32_t i, char *name)
     uint16_t mask;
     uint32_t pc;
     tr %= TESSERA_TRACKS;
-    tess_chord_build(t, gen_chord_degree(&tessera.chord[tr], i), out, &r, &mask);
+    tess_chord_build(t, gen_chord_degree(&tessera.chord[tr], i), gen_chord_quality(&tessera.chord[tr], i), out, &r, &mask);
     pc = (uint32_t)((r + tess_trn(t, tr) + tessera.evolve[tr].shift) % 12 + 12) % 12;
     mask = mask ? mask : 1u;
     chord_name(name, pc, mask);
@@ -1623,7 +1623,7 @@ static uint32_t tess_chord_move(const track_t *t, uint32_t tr, const tessera_cho
     uint16_t m;
     if (by == TESS_CB_LEAD || by == TESS_CB_DEG1 || by == TESS_CB_DEG2)   /* (in key; LEAD the next chord) */
         n = tess_chord_build(t, by == TESS_CB_LEAD ? gen_chord_degree(g, g->idx + 1u) : g->deg + by - TESS_CB_DEG1 + 1u,
-                             out, &r, &m);
+                             by == TESS_CB_LEAD ? gen_chord_quality(g, g->idx + 1u) : 0u, out, &r, &m);
     for (i = 0; i < n; i++) out[i] = (uint8_t)(out[i] + ST[by]);   /* (tess_chord_play keeps them to 0..127) */
     if (n > 1u && by == TESS_CB_INVU) {                 /* (the lowest note an octave up, on top) */
         r = out[0] + 12;
@@ -1656,7 +1656,7 @@ static void tess_chord_play(track_t *t, uint32_t tr, uint32_t gate)
         int32_t j = (int32_t)(tw->human / 5u), v = (int32_t)vel + (int32_t)gen_rnd(&tessera.rnd[tr], (uint32_t)(2 * j + 1)) - j;
         vel = (uint32_t)(v < 1 ? 1 : v > 127 ? 127 : v);
     }
-    n = tess_chord_build(t, g->deg, out, &r, &mask);
+    n = tess_chord_build(t, g->deg, gen_chord_quality(g, g->idx), out, &r, &mask);
     if (tess_chord_when(tr, g)) n = tess_chord_move(t, tr, g, out, n);
     period = seq_div_samples((uint32_t)t->p[P_SDIV]);
     br = tessera.ch_breath[tr] && g->hit == GEN_CH_HOLD;

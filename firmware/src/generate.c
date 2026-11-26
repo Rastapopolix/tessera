@@ -3298,7 +3298,8 @@ static void rnd_chord_prime(void)
         uint16_t mask;
         uint32_t n;
         if (tessera.mode[tr] != TESS_ENG_CHORD) continue;
-        n = tess_chord_build(t, gen_chord_degree(&tessera.chord[tr], tessera.chord[tr].idx), out, &r, &mask);
+        n = tess_chord_build(t, gen_chord_degree(&tessera.chord[tr], tessera.chord[tr].idx),
+                             gen_chord_quality(&tessera.chord[tr], tessera.chord[tr].idx), out, &r, &mask);
         if (!n) continue;
         x = (int32_t)out[0] + 12 * tessera.chord[tr].oct + t->p[P_TRANS] + tessera.evolve[tr].shift;
         tessera.last_note[tr] = (uint8_t)(x < 0 ? 0 : x > 127 ? 127 : x);

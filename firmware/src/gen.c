@@ -904,12 +904,24 @@ static uint32_t gen_chord_degree(const gen_chord_t *g, uint32_t i)
     uint32_t p = g->prog < GEN_CH_PROGS ? g->prog : 0u, k = (i + g->rot) % gen_chord_len(g);
     return (p == GEN_CH_WALK ? g->walk[k] : p == GEN_CH_USER ? g->user[k] : GEN_CH_PROG[p][k]) % 7u;
 }
+/* chord i's quality (0: AUTO, the track's SCL CHORD; else a CHRD): USER's own, where the build keeps one */
+#if TESS_CH_QUAL
+static uint32_t gen_chord_quality(const gen_chord_t *g, uint32_t i)
+{
+    return g->prog == GEN_CH_USER ? g->uq[(i + g->rot) % gen_chord_ulen(g)] : 0u;
+}
+#else
+#define gen_chord_quality(g, i) 0u
+#endif
 /* USER's progression, a key at a time (first: a new one): degree deg (0..6) the next chord, up to eight; 1 taken, 0
  * full (the eighth already in) */
 static int gen_chord_user_add(gen_chord_t *g, uint32_t deg, int first)
 {
     if (first) g->ulen = 0;
     if (g->ulen >= GEN_CH_USER_N) return 0;
+#if TESS_CH_QUAL
+    g->uq[g->ulen] = 0;                                 /* (AUTO: the track's CHRD) */
+#endif
     g->user[g->ulen++] = (uint8_t)(deg % 7u);
     g->rot = 0;                                         /* (the progression from its first chord, as played in) */
     return 1;
