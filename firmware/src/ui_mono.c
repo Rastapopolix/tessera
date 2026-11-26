@@ -1396,6 +1396,18 @@ static void mo_pic_constel(uint32_t tr)
         uint16_t bc = g->held ? mo_tdim(3u) : MO_TRK(3u);
         mo_hl(sx - 2, yt, 5, bc); mo_px(sx - 2, yt + 1, bc); mo_px(sx + 2, yt + 1, bc);
         mo_hl(sx - 2, yb, 5, bc); mo_px(sx - 2, yb - 1, bc); mo_px(sx + 2, yb - 1, bc);
+#if TESS_HAS_POINTER
+        if (!cv_under) {                                /* (zones: the ship dragged up and down its Y; a bracket
+                                                         * dragged away from it, SIZE wider; up-down only, 0x400) */
+            int32_t ky = mo_knob_named("Y"), ks = mo_knob_named("SIZE");
+            uz_begin(UZ_G_PIC);
+            if (ky >= 0) uz_add(UZ_G_PIC, UZ_POINT, sx - 13, y - 3, 10, 7, -1, ky, 0x400, "Y", "");
+            if (ks >= 0) {
+                uz_add(UZ_G_PIC, UZ_POINT, sx - 3, yt - 2, 7, 5, -1, ks, 0x400, "SIZE", "");
+                uz_add(UZ_G_PIC, UZ_POINT, sx - 3, yb - 2, 7, 5, -1, ks, 0x400 | 2, "SIZE", "");
+            }
+        }
+#endif
         mo_hl(sx - 11, y, 7, MO_HOT);                   /* the ship, a triangle nose right, and its thruster */
         mo_hl(sx - 11, y - 1, 5, MO_HOT); mo_hl(sx - 11, y + 1, 5, MO_HOT);
         mo_hl(sx - 11, y - 2, 3, MO_HOT); mo_hl(sx - 11, y + 2, 3, MO_HOT);

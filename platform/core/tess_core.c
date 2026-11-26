@@ -669,6 +669,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if ((z->row & 0x400) && action == TESS_ZA_TURN)   /* (up-down only: CONSTELLATION's ship, its brackets) */
+            break;
         if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
                                                        * a right-click one less, the wheel or a drag up and down) */
             if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
