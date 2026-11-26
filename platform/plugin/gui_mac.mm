@@ -376,7 +376,8 @@ bool v_key(id self, NSEvent *e, bool down)
         NSEventModifierFlags m = e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl |
                                                     NSEventModifierFlagOption);
         bool shift = e.modifierFlags & NSEventModifierFlagShift;
-        char c = m == NSEventModifierFlagCommand && e.keyCode == 8   ? 'C'
+        char c = m == NSEventModifierFlagCommand && e.keyCode == 15  ? (shift ? 'r' : 'R')   // (DICE, MUTATE)
+                 : m == NSEventModifierFlagCommand && e.keyCode == 8 ? 'C'
                  : m == NSEventModifierFlagCommand && e.keyCode == 9 ? (shift ? 'v' : 'V')
                  : m == NSEventModifierFlagOption && e.keyCode == 126 ? '^'
                  : m == NSEventModifierFlagOption && e.keyCode == 125 ? '_'

@@ -832,7 +832,7 @@ int main(int argc, char **argv)
                 std::string before = m.value;
                 const int mx = 292 + 8 + m.x + m.w / 2, my = 44 + 8 + m.y + m.h / 2;
                 q.draw(px.data(), v);
-                CHECK(q.latch(mx, my) && q.input.zones.empty() && q.ctx_rows().size() == 6 && q.ctx_rows()[0] == "HELP" &&
+                CHECK(q.latch(mx, my) && q.input.zones.empty() && q.ctx_rows().size() == 9 && q.ctx_rows()[0] == "HELP" &&
                           q.ctx_rows()[5] == "TYPE A VALUE",
                       "a right-click on KNOB 2's column: its menu, HELP first (G2)");
                 q.draw(px.data(), v);
@@ -1002,7 +1002,7 @@ int main(int argc, char **argv)
             std::string kept = v.zones[mix].value;
             z.latch(mx, my), z.down(mx + 20, row_y(2)), z.up(mx + 20, row_y(2));   // COPY VALUE
             z.latch(mx, my);
-            CHECK(z.ctx_rows().size() == 6, "the menu again");
+            CHECK(z.ctx_rows().size() == 9, "the menu again");
             z.down(5, 5), z.up(5, 5);
             CHECK(z.ctx_rows().empty() && z.input.typed.empty(), "a click away: shut, nothing done");
             z.wheel(mx, my, 6);
@@ -1020,6 +1020,58 @@ int main(int argc, char **argv)
             run(z, 0.3);
             tess_core_view(&v);
             z.draw(px.data(), v);
+            // G6: LOCK the value; DICE THE PAGE leaves it, PUT BACK undoes the roll; UNLOCK
+            {
+                std::string held = v.zones[mix].value;
+                std::vector<std::string> before;
+                for (uint32_t i = 0; i < v.zone_count; i++) before.push_back(v.zones[i].value);
+                z.latch(mx, my);
+                CHECK(z.ctx_rows()[6] == "LOCK" && z.ctx_rows()[8] == "PUT BACK", "G6: the value's menu: LOCK, DICE, PUT BACK");
+                CHECK(!z.ctx_row_on(8), "PUT BACK: nothing to put back yet");
+                z.down(mx + 20, row_y(6)), z.up(mx + 20, row_y(6));
+                CHECK(!z.input.zones.empty() && z.input.zones.back().action == TESS_ZA_LOCK, "LOCK asked for");
+                run(z, 0.3);
+                tess_core_view(&v);
+                CHECK(v.locked >> mix & 1u, "%s LOCKed (its bit in the view)", m.name);
+                z.draw(px.data(), v);
+                int lockpx = 0;
+                for (int yy = 44 + 8 + m.y; yy < 44 + 8 + m.y + 12; yy++)
+                    for (int xx = 292 + 8 + m.x + m.w - 10; xx < 292 + 8 + m.x + m.w; xx++) lockpx += px[yy * Panel::W + xx] == 0xFFFFD020u;
+                CHECK(lockpx >= 30, "a padlock drawn on %s (%d)", m.name, lockpx);
+                if (!out.empty()) ppm(out + "/09d_locked.ppm", px);
+                int changed = 0;
+                for (int roll = 0; roll < 4 && !changed; roll++)
+                {
+                    CHECK(z.shortcut('R') && z.input.zones.back().action == TESS_ZA_DICE && z.input.zones.back().n == 0,
+                          "Ctrl+R: DICE the page");
+                    run(z, 0.3);
+                    tess_core_view(&v);
+                    for (uint32_t i = 0; i < v.zone_count && i < before.size(); i++)
+                        changed += (int)i != mix && v.zones[i].kind == TESS_ZONE_KNOB && before[i] != v.zones[i].value;
+                }
+                CHECK(changed > 0, "DICE: the page's other values rolled (%d)", changed);
+                CHECK(std::string(v.zones[mix].value) == held, "..the LOCKed %s kept (%s, %s)", m.name, held.c_str(), v.zones[mix].value);
+                CHECK(v.dice_back, "a roll to put back");
+                z.draw(px.data(), v);
+                z.latch(mx, my);
+                CHECK(z.ctx_rows()[6] == "UNLOCK" && z.ctx_row_on(8), "the menu: UNLOCK, PUT BACK on");
+                std::vector<std::string> rolled;
+                for (uint32_t i = 0; i < v.zone_count; i++) rolled.push_back(v.zones[i].value);
+                z.down(mx + 20, row_y(8)), z.up(mx + 20, row_y(8));
+                run(z, 0.3);
+                tess_core_view(&v);
+                int back = 0, diff = 0;
+                for (uint32_t i = 0; i < v.zone_count && i < rolled.size(); i++)
+                    if (v.zones[i].kind == TESS_ZONE_KNOB && rolled[i] != v.zones[i].value) back++;
+                CHECK(back > 0 && !v.dice_back, "PUT BACK: the last roll undone (%d values)", back);
+                (void)diff;
+                z.draw(px.data(), v);
+                z.latch(mx, my), z.down(mx + 20, row_y(6)), z.up(mx + 20, row_y(6));   // UNLOCK
+                run(z, 0.3);
+                tess_core_view(&v);
+                CHECK(!(v.locked >> mix & 1u), "UNLOCK: the bit gone");
+                z.draw(px.data(), v);
+            }
             tess_core_buttons(1u << 6);   // HOME: a track's menu
             run(z, 0.05);
             tess_core_buttons(0);
@@ -1035,12 +1087,12 @@ int main(int argc, char **argv)
                 const tess_zone_t &t3 = v.zones[tz];
                 int tx = 292 + 8 + t3.x + t3.w / 2, ty = 44 + 8 + t3.y + t3.h / 2;
                 z.take_track_request();
-                CHECK(z.latch(tx, ty) && z.ctx_rows().size() == 6 && z.ctx_rows()[0] == "T3" && z.ctx_rows()[4] == "MOVE UP",
+                CHECK(z.latch(tx, ty) && z.ctx_rows().size() == 8 && z.ctx_rows()[0] == "T3" && z.ctx_rows()[4] == "MOVE UP",
                       "a right-click on T3: its menu (T3, COPY .. MOVE DOWN)");
                 z.draw(px.data(), v);
                 if (!out.empty()) ppm(out + "/09c_track_menu.ppm", px);
                 int ry = ty + 4 + 4 * 28 + 10;
-                if (ry + 30 > Panel::H) ry = Panel::H - 8 - 6 * 28 - 8 + 4 + 4 * 28 + 10;
+                if (ty + 8 * 28 + 8 > Panel::H - 8) ry = Panel::H - 8 - 8 * 28 - 8 + 4 + 4 * 28 + 10;
                 z.down(tx + 20, ry), z.up(tx + 20, ry);
                 Panel::TrackRequest rq = z.take_track_request();
                 CHECK(rq.what == Panel::TR_UP && rq.track == 2, "..MOVE UP: T3 asked up (%d, T%d)", rq.what, rq.track + 1);

@@ -175,6 +175,15 @@ enum { TESS_ZA_SOUND = 14 };
  * byte: rows from the FROM picked): a new mod from that row's track (its FX-held shortcut source, the LFO unless picked)
  * to this cell's column's track, CUTOFF, 25 %, opened in MODS to set its source and destination. MODS full: nothing */
 enum { TESS_ZA_LINK = 15 };
+/* LOCK (a value's zone, as RANDOM): its parameter locked, or unlocked: DICE and MUTATE leave it alone. DICE (any zone, or
+ * none): n 0 the page's values rolled round their defaults (40 % of their range either way; not MUTE, LEVEL or LENGTH);
+ * n 1..50 MUTATE: the zone's track (a TRACK zone's; else the selected one) has its sound nudged n % of each range either
+ * way (envelope, depths, LFO, ENGINE 1..8, FX 1, FM6's operators); n -1 the last DICE or MUTATE put back */
+enum { TESS_ZA_LOCK = 16, TESS_ZA_DICE };
+/* the locks, for a front end's state: out NULL their length; else as many as fit, their length (3 bytes each); load
+ * replaces them (a build without TESS_HAS_POINTER: none) */
+uint32_t tess_core_locks(uint8_t *out, uint32_t cap);
+void tess_core_locks_load(const uint8_t *in, uint32_t len);
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */
@@ -221,6 +230,8 @@ typedef struct {
                                       * TESS_HAS_POINTER; else 0) */
     uint32_t sheet;                  /* 1: the page has a sheet, which OCT+ (OK) held opens (a build with TESS_HAS_POINTER;
                                       * else 0) */
+    uint64_t locked;                 /* bit i: zones[i]'s parameter is LOCKed (TESS_ZA_LOCK) */
+    uint32_t dice_back;              /* 1: a DICE or MUTATE can be put back (TESS_ZA_DICE -1) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

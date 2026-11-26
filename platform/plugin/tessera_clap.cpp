@@ -1686,6 +1686,8 @@ void tx58_load(Tessera *t, const uint8_t *b, uint32_t n)
         }
 }
 
+static const uint32_t LOCKS_MAX = 64;   // (tess_core.c LK_MAX)
+
 bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 {
     auto *t = self(p);
@@ -1717,6 +1719,15 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
                 b.insert(b.begin() + len, ls, ls + 6);
                 len += 6;
             }
+            uint8_t lk[LOCKS_MAX * 3];   // (LOCKed values, Cosmati audit G6: after it all, only when there are any)
+            uint32_t nl = t->core->locks(lk, sizeof lk);
+            if (nl)
+            {
+                const uint8_t tag[6] = {(uint8_t)nl, (uint8_t)(nl >> 8), 'T', 'L', 'C', 'K'};
+                b.insert(b.begin() + len, lk, lk + nl);
+                b.insert(b.begin() + len + nl, tag, tag + 6);
+                len += nl + 6;
+            }
             std::vector<uint8_t> ab = t->snaps_state();   // (A / B, Cosmati audit G7: after it all, only once stored)
             if (!ab.empty())
             {
@@ -1744,7 +1755,8 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
     const uint32_t ab_max = 2 * (t->core->tsp_max() + 8 + 5 * t->core->param_count() * t->core->tracks()) + 2 + 8;
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size() + ab_max);
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size() +
+                           LOCKS_MAX * 3 + 6 + ab_max);
     uint32_t len = 0;
     for (;;)
     {
@@ -1774,6 +1786,15 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
             std::lock_guard<std::mutex> sl(t->snap_lock);
             t->snaps[0] = {}, t->snaps[1] = {}, t->snap_active = t->snap_morph = -1;
         }
+        uint32_t nl = 0;   // (LOCKs: the last part, when there are any)
+        if (len >= 6 && !std::memcmp(&b[len - 4], "TLCK", 4))
+        {
+            nl = b[len - 6] | (uint32_t)b[len - 5] << 8;
+            if (nl + 6u > len || nl > LOCKS_MAX * 3u)
+                return false;   // (not a state this build wrote)
+            len -= nl + 6;
+        }
+        t->core->locks_load(nl ? b.data() + len : nullptr, nl);
         int lc = 0, lsp = Listen::SPLIT;
         if (len >= 6 && !std::memcmp(&b[len - 6], "TLSN", 4) && b[len - 2] <= 16 && Listen::split_ok(b[len - 1]))
             lc = b[len - 2], lsp = b[len - 1], len -= 6;
