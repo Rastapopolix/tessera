@@ -89,7 +89,7 @@ void tess_core_boot(void)
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
 _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS };
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -149,6 +149,11 @@ static void zq_run(void)
         break;
     case ZQ_DETENT:
         tess_core_enc(arg, sg);
+        break;
+    case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
+                                                       * picker (as the FM-1's buttons, which those take) */
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
+        ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
         page_scroll(sg);
@@ -635,6 +640,7 @@ void tess_core_key_words(int on)
         uz_key_words = (uint8_t)(on != 0);
         ui.force = 1;                                 /* (the hints again, in the other words) */
     }
+    ui_csec = uz_key_words;                           /* (the shell's own section buttons: ui.c cs_open) */
 #else
     (void)on;
 #endif
@@ -844,8 +850,16 @@ void tess_core_buttons(uint32_t labels)
     {   /* Smalti's own buttons: SHIFT holds OCT- with no press (no edge: never BACK, never an octave; its release no
          * tap), the knobs' second layer; OCTAVE DOWN / UP step the keys' octave, on any page, as OCT- / OCT+ do on
          * Stage (both: back to 0) */
-        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP | TESS_BTN_HELP),
+        uint32_t ex = labels & (TESS_BTN_SHIFT | TESS_BTN_OCT_DOWN | TESS_BTN_OCT_UP | TESS_BTN_HELP |
+                                TESS_BTN_SECTION(TESS_SEC_N) - TESS_BTN_SECTION(0)),
                  go = ex & ~host_extra;
+        _Static_assert(TESS_SEC_N == UI_SEC_N && TESS_SEC_SETUP == UI_SEC_SETUP && TESS_BTN_SECTION(TESS_SEC_N - 1) < (1ull << 32) &&
+                       TESS_BTN_SECTION(0) > TESS_BTN_POINTER, "the sections: ui.c's, bits above POINTER");
+        for (b = 0; b < TESS_SEC_N; b++)              /* a section's button: its pages (ui.c cs_open; a pinned card */
+            if (go & TESS_BTN_SECTION(b)) {           /* closes first) */
+                help_unpin();
+                zq_put(ZQ_SECTION, b, 1);
+            }
         if (go & TESS_BTN_HELP) {                     /* ?: KNOB 1's help card (turn another knob for its), or it closes */
             if (!help_unpin())
                 zq_put(ZQ_HELP, 0, 1);
@@ -1107,6 +1121,10 @@ void tess_core_view(tess_view_t *v)
         v->screen[i] = 0;
 #endif
     v->lit_buttons = led_buttons(fm1_led);
+#if TESS_HAS_POINTER
+    if (ui_csec && !ui.home && cs_of(ui.page) < UI_SEC_N)   /* (the shown page's section) */
+        v->lit_buttons |= TESS_BTN_SECTION(cs_of(ui.page));
+#endif
     v->lit_keys = led_keys(fm1_led);
     v->dim_buttons = led_buttons(led_dim_plane());
     v->dim_keys = led_keys(led_dim_plane());
