@@ -391,10 +391,10 @@ int main(int argc, char **argv)
                 screen += px[(44 + 8 + y) * Panel::W + 292 + 8 + x] == (0xFF000000u | r << 16 | g << 8 | b);
             }
         CHECK(screen == TESS_SCREEN * TESS_SCREEN, "the screen at 1:1 inside the hairline (%d)", screen);
-        q.down(574 + 5 * 66 + 55, 174 + 20);   // GLO, at the grid's right edge (wider than the FM-1's)
-        CHECK(q.input.buttons & (1u << 5), "GLO held where TESSERA draws it");
+        q.down(552 + 6 * 62 + 45, 174 + 20);   // MIX, the sections' seventh (TESSERA's own buttons)
+        CHECK(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX), "MIX held where TESSERA draws it");
         q.up(0, 0);
-        CHECK(!(q.input.buttons & (1u << 5)), "GLO let go");
+        CHECK(!(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX)), "MIX let go");
         CHECK(q.wheel(610, 100, 1) && q.input.enc[3] == 1, "a wheel turns KNOB 1");
         q.input.enc[3] = 0;
         // the MIDI lamp: lit a moment when MIDI comes in
@@ -663,13 +663,15 @@ int main(int argc, char **argv)
         CHECK(q.menu_shown(), "the menu stays open");
         q.key(0x01, true);   // (Esc: the menu shut)
         CHECK(!q.menu_shown(), "Esc shuts the menu");
-        // a right-click latches a button or key: GLO held while FX is clicked, then let go; Esc lets every latch go
-        const int glo_x = 574 + 5 * 66 + 55, fx_x = 574 + 30, by = 174 + 20;
-        CHECK(q.latch(glo_x, by) && (q.input.buttons & (1u << 5)), "a right-click latches GLO");
+        // a right-click latches a button or key (a section: the FM-1 button it stands for, PIECE's GLO): GLO held
+        // while FX is clicked, then let go; Esc lets every latch go
+        const int glo_x = 552 + 5 * 62 + 30, fx_x = 552 + 3 * 62 + 20, by = 174 + 20;
+        const uint32_t fx_b = TESS_BTN_SECTION(TESS_SEC_FX);
+        CHECK(q.latch(glo_x, by) && (q.input.buttons & (1u << 5)), "a right-click on PIECE latches GLO");
         q.down(fx_x, by);
-        CHECK((q.input.buttons & 1u) && (q.input.buttons & (1u << 5)), "FX clicked with GLO latched: both held");
+        CHECK((q.input.buttons & fx_b) && (q.input.buttons & (1u << 5)), "FX clicked with GLO latched: both held");
         q.up(fx_x, by);
-        CHECK(!(q.input.buttons & 1u) && (q.input.buttons & (1u << 5)), "FX let go, GLO still held");
+        CHECK(!(q.input.buttons & fx_b) && (q.input.buttons & (1u << 5)), "FX let go, GLO still held");
         CHECK(q.latch(glo_x, by) && !(q.input.buttons & (1u << 5)), "a second right-click lets GLO go");
         q.latch(glo_x, by);
         CHECK(q.down(glo_x, by) && !(q.input.buttons & (1u << 5)), "a click on a latched button lets it go");
@@ -1227,13 +1229,13 @@ int main(int argc, char **argv)
         Panel q;
         q.set_tracks((int)tess_core_tracks());
         auto frames = [&](int n) { for (int i = 0; i < n; i++) { tess_core_view(&v); q.draw(px.data(), v); } };
-        tess_core_buttons(1u << 2);   // (ENV: FILT ENV, AMP ENV)
+        tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));   // (FX's section: FX 1 .. SEND FX 3)
         run(q, 0.1);
         tess_core_buttons(0);
         run(q, 0.3);
         frames(1);
         const tess_zone_t *k1 = q.knob_zone(3);
-        CHECK(k1 && k1->value[0], "ENV: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
+        CHECK(k1 && k1->value[0], "FX 1: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
         if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
         uint64_t h0 = screen_hash(v);
         CHECK(!q.hwheel(-1), "sideways left on the first page: nothing (it stops)");
