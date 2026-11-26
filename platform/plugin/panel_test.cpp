@@ -1458,6 +1458,17 @@ int main(int argc, char **argv)
             for (int x = rail0; x < rail1; x++) handle += wide[24 * Panel::W_EXPANDED + x] == 0xFFFFD020u;
             CHECK(handle >= 6, "MORPH's handle drawn (%d)", handle);
             if (!out.empty()) ppm(out + "/16d_ab.ppm", wide, Panel::W_EXPANDED);
+            for (uint32_t st = 0; st < tess_core_gen_styles(); st++)   // (G10: a piece with a CHORD track, the keys in its scale)
+                if (!std::strcmp(tess_core_gen_style(st), "SHORE")) tess_core_generate(st, 1367, 100, 0);
+            tess_core_transport(1);
+            run(e, 3.0);
+            tess_core_view(&v);
+            tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+            e.draw(wide.data(), v, &t2);
+            if (!out.empty()) ppm(out + "/16f_scale_keys.ppm", wide, Panel::W_EXPANDED);
+            CHECK(v.key_chord[0] && v.key_dim && v.key_root, "SHORE: its chord named (%s), keys out of the scale dim, the root's marked",
+                  v.key_chord);
+            tess_core_transport(0);
         }
         e.set_shell(1);
         CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());

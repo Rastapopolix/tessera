@@ -1804,12 +1804,24 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.lit_keys & bit) border = T_YEL, led = T_YEL;
         else if (v.breath_keys & bit) border = T_YEL, led = mix(base, T_YEL, 0.6 * breath);
         else if (v.dim_keys & bit) border = T_YEL;
+        else if (v.key_dim & bit)   // (out of the scale, G10: faded into the body)
+            border = mix(T_BODY, T_DIM, 0.45), fill = natural ? mix(T_BODY, T_BLACK, 0.5) : mix(T_BODY, T_DIM, 0.35);
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
         if (led)
         {
             int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
             c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
         }
+        if (v.key_root & bit)   // the scale's root: a dot near the key's foot
+        {
+            int d = kw / 5 < 6 ? 6 : kw / 5;
+            c.box(k.cx - d / 2, k.cy + kh / 2 - d - 8, d, d, (input.keys & bit) ? T_BLACK : T_YEL);
+        }
+    }
+    if (v.key_chord[0])   // the CHORD track's chord, above OCT+ (G10)
+    {
+        c.ptext(KEYBED[0], KEYBED[1] + 18, "CHORD", 1, T_WORD);
+        c.ptext(KEYBED[0], KEYBED[1] + 32, v.key_chord, 3, T_YEL);
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
     for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)

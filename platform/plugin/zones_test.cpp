@@ -1557,6 +1557,40 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static void scale_keys()   // G10: the keys that give no new note in the scale dim, the root's marked, the chord named
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_track_select(0);
+    tap(B_HOME);
+    uint32_t root = pid_named("ROOT"), quant = pid_named("QUANTIZE"), trans = pid_named("TRANSPOSE"), scale = pid_named("SCALE");
+    CHECK(root != 0xFFFF && quant != 0xFFFF && trans != 0xFFFF && scale != 0xFFFF, "G10: ROOT, QUANTIZE, TRANSPOSE, SCALE");
+    tess_core_param_set(root, 0, 0), tess_core_param_set(trans, 0, 0), tess_core_param_set(quant, 0, 1);   // (C, SNAP)
+    char sc[24] = "";
+    for (int32_t i = 0; i < 40; i++)
+    {
+        tess_core_param_text(scale, 0, i, sc, sizeof sc);
+        if (!std::strcmp(sc, "MAJ") || !std::strcmp(sc, "MAJOR")) { tess_core_param_set(scale, 0, i); break; }
+    }
+    run(4);
+    tess_core_view(&v);
+    uint32_t in_key = 0;
+    for (int k = 0; k < 12; k++) in_key |= (~v.key_dim >> k & 1u) << ((k + 5) % 12);   // (by pitch class: key 0 is F)
+    CHECK(in_key == 0xAB5u, "G10: C major on the keys, SNAP: C D E F G A B lit, the sharps dim (%03x, scale %s)", in_key, sc);
+    CHECK(v.key_root == (1u << 7 | 1u << 19), "G10: the C keys marked as the root (%06x)", v.key_root);
+    tess_core_param_set(quant, 0, 0);   // OFF: every key its own note, the ones out of the scale dim all the same
+    run(4);
+    tess_core_view(&v);
+    in_key = 0;
+    for (int k = 0; k < 12; k++) in_key |= (~v.key_dim >> k & 1u) << ((k + 5) % 12);
+    CHECK(in_key == 0xAB5u, "G10: QUANTIZE OFF too (%03x)", in_key);
+    tess_core_param_set(root, 0, 9);   // A: the A keys the root
+    run(4);
+    tess_core_view(&v);
+    CHECK(v.key_root == (1u << 4 | 1u << 16), "G10: ROOT A marks the A keys (%06x)", v.key_root);
+    tess_core_project_new();
+}
+
 static void live_motion()   // G8: KNOB 1..4's places in the view; TRACKS rows: a meter and a note's flash while playing
 {
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
@@ -1937,6 +1971,7 @@ int main(int argc, char **argv)
     paint();
     drop_sound();
     live_motion();
+    scale_keys();
     dice_mutate();
     audition_find();
     smap();
