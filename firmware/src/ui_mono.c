@@ -2017,6 +2017,12 @@ static void mo_pic_perf(void)
         fmt_int(b, (int32_t)n);
         str_cpy(b + str_len(b), n == 1u ? " MOD" : " MODS", 6);
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+        if (!cv_under) {                                /* (zones: a row, a click its mod in MODS, ui_modsc.c) */
+            if (!k) uz_begin(UZ_G_PIC);
+            uz_add(UZ_G_PIC, UZ_CELL, 2, y - 1, 116, 10, -1, -1, 0, m, n ? b : "NO MOD");
+        }
+#endif
     }
 }
 /* ENTRIES: a row a track: its number, its role (AUTO's guess, marked *), IN / OUT / MUTE, its level as
