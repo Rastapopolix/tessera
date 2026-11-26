@@ -1570,6 +1570,93 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static void macro_mods()   // PERF: a MACRO's row clicked opens its mod in MODS (a new one from MCRn when it has none)
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_key_words(1);
+    tap(B_HOME);
+    press_section(TESS_SEC_MIX);
+    for (int g = 0; g < 12 && page_now() != "PERF"; g++)
+    {
+        int nx = -1;
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 1) nx = (int)i;
+        if (nx < 0) break;
+        act(nx, TESS_ZA_CLICK);
+    }
+    CHECK(page_now() == "PERF", "MIX: PERF reached (%s)", page_now().c_str());
+    int row = -1;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_CELL && !std::strcmp(v.zones[i].name, "MCR2")) row = (int)i;
+    CHECK(row >= 0 && !std::strcmp(v.zones[row].value, "NO MOD"), "PERF: MCR2's row a zone, NO MOD");
+    if (row < 0) { tess_core_key_words(0); return; }
+    act(row, TESS_ZA_CLICK);
+    CHECK(page_now() == "MODS", "MCR2 clicked: MODS (%s)", page_now().c_str());
+    tap(B_HOME);
+    press_section(TESS_SEC_MIX);
+    for (int g = 0; g < 12 && page_now() != "PERF"; g++)
+    {
+        int nx = -1;
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 1) nx = (int)i;
+        if (nx < 0) break;
+        act(nx, TESS_ZA_CLICK);
+    }
+    row = -1;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_CELL && !std::strcmp(v.zones[i].name, "MCR2")) row = (int)i;
+    CHECK(row >= 0 && !std::strcmp(v.zones[row].value, "1 MOD"), "..MCR2 drives a mod now (%s)", row >= 0 ? v.zones[row].value : "-");
+    if (row >= 0) act(row, TESS_ZA_CLICK);
+    CHECK(page_now() == "MODS", "MCR2 clicked again: its mod in MODS, no second one (%s)", page_now().c_str());
+    tap(B_HOME);
+    press_section(TESS_SEC_MIX);   // (MIX remembers its page: back on MIXER for the tests after)
+    for (int g = 0; g < 12 && page_now() != "MIXER"; g++)
+    {
+        int pv = -1;
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == -1) pv = (int)i;
+        if (pv < 0) break;
+        act(pv, TESS_ZA_CLICK);
+    }
+    tap(B_HOME);
+    tess_core_key_words(0);
+}
+
+static void scale_keys()   // G10: the keys that give no new note in the scale dim, the root's marked, the chord named
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_track_select(0);
+    tap(B_HOME);
+    uint32_t root = pid_named("ROOT"), quant = pid_named("QUANTIZE"), trans = pid_named("TRANSPOSE"), scale = pid_named("SCALE");
+    CHECK(root != 0xFFFF && quant != 0xFFFF && trans != 0xFFFF && scale != 0xFFFF, "G10: ROOT, QUANTIZE, TRANSPOSE, SCALE");
+    tess_core_param_set(root, 0, 0), tess_core_param_set(trans, 0, 0), tess_core_param_set(quant, 0, 1);   // (C, SNAP)
+    char sc[24] = "";
+    for (int32_t i = 0; i < 40; i++)
+    {
+        tess_core_param_text(scale, 0, i, sc, sizeof sc);
+        if (!std::strcmp(sc, "MAJ") || !std::strcmp(sc, "MAJOR")) { tess_core_param_set(scale, 0, i); break; }
+    }
+    run(4);
+    tess_core_view(&v);
+    uint32_t in_key = 0;
+    for (int k = 0; k < 12; k++) in_key |= (~v.key_dim >> k & 1u) << ((k + 5) % 12);   // (by pitch class: key 0 is F)
+    CHECK(in_key == 0xAB5u, "G10: C major on the keys, SNAP: C D E F G A B lit, the sharps dim (%03x, scale %s)", in_key, sc);
+    CHECK(v.key_root == (1u << 7 | 1u << 19), "G10: the C keys marked as the root (%06x)", v.key_root);
+    tess_core_param_set(quant, 0, 0);   // OFF: every key its own note, the ones out of the scale dim all the same
+    run(4);
+    tess_core_view(&v);
+    in_key = 0;
+    for (int k = 0; k < 12; k++) in_key |= (~v.key_dim >> k & 1u) << ((k + 5) % 12);
+    CHECK(in_key == 0xAB5u, "G10: QUANTIZE OFF too (%03x)", in_key);
+    tess_core_param_set(root, 0, 9);   // A: the A keys the root
+    run(4);
+    tess_core_view(&v);
+    CHECK(v.key_root == (1u << 4 | 1u << 16), "G10: ROOT A marks the A keys (%06x)", v.key_root);
+    tess_core_project_new();
+}
+
 static void live_motion()   // G8: KNOB 1..4's places in the view; TRACKS rows: a meter and a note's flash while playing
 {
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
@@ -1871,7 +1958,8 @@ int main(int argc, char **argv)
     while (k0 < (int)v.zone_count && v.zones[k0].kind != TESS_ZONE_KNOB) k0++;
     bool order = (int)v.zone_count >= k0 + 4;
     for (int i = 0; i < 4 && order; i++)
-        order = v.zones[k0 + i].role == 3 + i && v.zones[k0 + i].x == 60 * i && v.zones[k0 + i].w == 60 && v.zones[k0 + i].name[0];
+        order = v.zones[k0 + i].role == 3 + i && v.zones[k0 + i].x <= 60 * i && v.zones[k0 + i].x + v.zones[k0 + i].w >= 60 * i + 60 &&
+                v.zones[k0 + i].w <= 72 && v.zones[k0 + i].name[0];   // (a column, wider by a value's box)
     CHECK(order, "FX: KNOB 1..4 left to right, a column each, named");
     tess_zone_t mix = v.zones[k0 + 1];
     std::string was = mix.value;
@@ -1950,6 +2038,8 @@ int main(int argc, char **argv)
     paint();
     drop_sound();
     live_motion();
+    macro_mods();
+    scale_keys();
     dice_mutate();
     audition_find();
     smap();

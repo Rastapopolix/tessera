@@ -1836,12 +1836,24 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.lit_keys & bit) border = T_YEL, led = T_YEL;
         else if (v.breath_keys & bit) border = T_YEL, led = mix(base, T_YEL, 0.6 * breath);
         else if (v.dim_keys & bit) border = T_YEL;
+        else if (v.key_dim & bit)   // (out of the scale, G10: faded into the body)
+            border = mix(T_BODY, T_DIM, 0.45), fill = natural ? mix(T_BODY, T_BLACK, 0.5) : mix(T_BODY, T_DIM, 0.35);
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
-        if (led)
+        if (led)   // (as far from the key's top as from its sides)
         {
             int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
-            c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
+            c.box(k.cx - lw / 2, k.cy - kh / 2 + (kw - lw) / 2, lw, lh, led);
         }
+        if (v.key_root & bit)   // the scale's root: a dot near the key's foot
+        {
+            int d = kw / 5 < 6 ? 6 : kw / 5;
+            c.box(k.cx - d / 2, k.cy + kh / 2 - d - 8, d, d, (input.keys & bit) ? T_BLACK : T_YEL);
+        }
+    }
+    if (v.key_chord[0])   // the CHORD track's chord, above OCT+ (G10)
+    {
+        c.ptext(KEYBED[0], KEYBED[1] + 18, "CHORD", 1, T_WORD);
+        c.ptext(KEYBED[0], KEYBED[1] + 32, v.key_chord, 3, T_YEL);
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
     for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
@@ -2659,10 +2671,27 @@ void Panel::draw_hover(uint32_t *px)
     const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
     int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
-    c.box(ox + z.x, oy + z.y, z.w, 1, EDGE);
-    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, EDGE);
-    c.box(ox + z.x, oy + z.y, 1, z.h, EDGE);
-    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, EDGE);
+    {   // the outline a pixel outside the zone, and only on the screen's ground (black, or the LIGHT ground's paper):
+        // never over a line, a box or a letter
+        const int x0 = ox + z.x - 1, y0 = oy + z.y - 1, x1 = ox + z.x + z.w, y1 = oy + z.y + z.h, W = width();
+        uint32_t ground = 0;   // (the ring's most common colour: the ground, whatever its colour)
+        {
+            int votes = 0;
+            auto vote = [&](int x, int y) {
+                if (x < 0 || y < 0 || x >= W || y >= H) return;
+                const uint32_t q = px[y * W + x] & 0xFFFFFFu;
+                if (!votes) ground = q, votes = 1;
+                else votes += q == ground ? 1 : -1;
+            };
+            for (int x = x0; x <= x1; x++) vote(x, y0), vote(x, y1);
+            for (int y = y0; y <= y1; y++) vote(x0, y), vote(x1, y);
+        }
+        auto dot = [&](int x, int y) {
+            if (x >= 0 && y >= 0 && x < W && y < H && (px[y * W + x] & 0xFFFFFFu) == ground) px[y * W + x] = EDGE;
+        };
+        for (int x = x0; x <= x1; x++) dot(x, y0), dot(x, y1);
+        for (int y = y0; y <= y1; y++) dot(x0, y), dot(x1, y);
+    }
     if (!z.name[0] && !z.value[0]) return;
     if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
     // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;

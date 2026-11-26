@@ -71,8 +71,12 @@ static void mo_uz_col(uint32_t c, int key, const char *shown, int32_t x, int32_t
         str_cpy(v + str_len(v), mo_col[c].unit, sizeof v - str_len(v));
     if (key && (str_eq(shown, "OCT+") || str_eq(shown, "OCT-")))
         uz_add(UZ_G_COLS, UZ_KEY, x, 21, w, 15, -1, -1, str_eq(shown, "OCT+") ? B_OCTUP : B_OCTDN, mo_col[c].label, shown);
-    else if (!key)
-        uz_add(UZ_G_COLS, UZ_KNOB, (int32_t)c * 30, 10, 30, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+    else if (!key) {                                  /* (the column, wider where its value's box is: the mouse's
+                                                         * outline round both, never across the box) */
+        int32_t x0 = x - 1 < (int32_t)c * 30 ? x - 1 : (int32_t)c * 30, x1 = x + w + 1 > (int32_t)c * 30 + 30 ? x + w + 1 : (int32_t)c * 30 + 30;
+        x0 = x0 < 0 ? 0 : x0, x1 = x1 > 120 ? 120 : x1;
+        uz_add(UZ_G_COLS, UZ_KNOB, x0, 10, x1 - x0, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+    }
 }
 #endif
 
@@ -2030,6 +2034,12 @@ static void mo_pic_perf(void)
         fmt_int(b, (int32_t)n);
         str_cpy(b + str_len(b), n == 1u ? " MOD" : " MODS", 6);
         mo_text(n ? b : "NO MOD", 82, y, n ? MO_INK : MO_DIM);
+#if TESS_HAS_POINTER
+        if (!cv_under) {                                /* (zones: a row, a click its mod in MODS, ui_modsc.c) */
+            if (!k) uz_begin(UZ_G_PIC);
+            uz_add(UZ_G_PIC, UZ_CELL, 2, y - 1, 116, 10, -1, -1, 0, m, n ? b : "NO MOD");
+        }
+#endif
     }
 }
 /* ENTRIES: a row a track: its number, its role (AUTO's guess, marked *), IN / OUT / MUTE, its level as
@@ -3483,6 +3493,23 @@ static void mo_stage_wave(int32_t top, int32_t h, uint16_t c)   /* the output, t
         py = y;
     }
 }
+#if CORE_TRACKS > 4
+#define MO_STAGE_WT 98                                  /* (8 tracks: the wave under the columns' numbers) */
+/* 8 tracks: each column's track number under it (T1..T4 or T5..T8: a one-ink palette tells the banks apart), the
+ * selected one ink */
+static void mo_stage_tnums(void)
+{
+    uint32_t k;
+    char b[3] = {'T', 0, 0};
+    for (k = 0; k < 4u; k++) {
+        b[1] = (char)('1' + UI_BASE + k);
+        mo_textc(b, (int32_t)k * 30 + 15, 90, UI_BASE + k == song.sel % NTRK ? MO_INK : MO_DIM);
+    }
+}
+#else
+#define MO_STAGE_WT 90
+#define mo_stage_tnums() ((void)0)
+#endif
 static void mo_stage_panel(void)
 {
     uint32_t sel = song.sel % NTRK, bits[4], i, n = 0, pcs = 0, root = 0, held = 0, l;
@@ -3490,7 +3517,8 @@ static void mo_stage_panel(void)
     char b[40];
     const char *q;
     if (drum_track(TSEL)) {                             /* a DRUM track: its lanes, lit as they hit */
-        mo_stage_wave(90, 12, MO_DIM);
+        mo_stage_tnums();
+        mo_stage_wave(MO_STAGE_WT, 102 - MO_STAGE_WT, MO_DIM);
         for (l = 0; l < NLANE; l++) {
             int32_t x = 1 + (int32_t)(l % 4u) * 30, y = 104 + (int32_t)(l / 4u) * 0;
             char ab[6];
@@ -3520,15 +3548,17 @@ static void mo_stage_panel(void)
         held |= live_held[sel][i];
     }
     fm1_irq_on();
-    mo_stage_wave(90, 28, held ? MO_DIM : MO_INK);
+    mo_stage_wave(MO_STAGE_WT, 118 - MO_STAGE_WT, held ? MO_DIM : MO_INK);
     for (i = 0; i < 128u; i++)
         if ((bits[i >> 5] >> (i & 31u)) & 1u) {
             pcs |= 1u << (i % 12u);
             if (n < sizeof note) note[n] = (uint8_t)i;
             n++;
         }
-    if (!n)
+    if (!n) {                                           /* (nothing played: the columns' numbers; else the chord) */
+        mo_stage_tnums();
         return;
+    }
     q = micro_active(TSEL) ? 0 : chord_of(pcs, note[0] % 12u, &root);
     b[0] = 0;
     if (q) {
