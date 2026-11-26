@@ -19,6 +19,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_ENERGY, TSP_DEV, TSP_TRANSP, TSP_TUNE, TSP_SOUND, TSP_CHAIN, TSP_ENTRY, TSP_PLAN, TSP_PERF, TSP_HOLD,
        TSP_CCN, TSP_FKEY, TSP_SPLIT, TSP_FMODE, TSP_PGEN, TSP_DMAP, TSP_EORDER, TSP_USCALE, TSP_SDIR, TSP_MHOLD,
        TSP_STRUM, TSP_BUS, TSP_MVCA, TSP_MDEPTH, TSP_MHCLK, TSP_QLINK, TSP_SECPC, TSP_CHMOVE,
+#if TESS_CH_QUAL
+       TSP_CHQUAL,
+#endif
 #if CORE_TRACKS > 4
        TSP_EGRID = 51,                                /* (50: TSP_CHQUAL, ROADMAP's claim) */
 #endif
@@ -81,6 +84,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * only when one is ON; none: OFF, as before;
                                               * TSP_CHMOVE: each track's CHORD MOVE WHEN, then each one's BY, written
                                               * only when one WHEN is not OFF; none: OFF, +2 ST;
+                                              * TSP_CHQUAL (an 8-track build's only: the FM-1 skips it): each
+                                              * track's CHORD USER qualities, GEN_CH_USER_N bytes a track (0 AUTO,
+                                              * else a CH_*), written only when one is not AUTO; none: AUTO;
                                               * TSP_EGRID (an 8-track build's only: the FM-1 skips it): ENTRIES'
                                               * arrangement grid, FORM letter A, B, C's cells as a u16 each (2 bits
                                               * a track, entries.c ET_G_*), written only when one is not AUTO;
@@ -93,6 +99,11 @@ _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRAN
                TSP_MVCA == 44 && TSP_MDEPTH == 45 && TSP_MHCLK == 46 && TSP_QLINK == 47 &&
                TSP_SECPC == 48 && TSP_CHMOVE == 49,
                "the parts' numbers are stored: never renumbered");
+#if TESS_CH_QUAL
+_Static_assert(TSP_CHQUAL == 50, "the parts' numbers are stored: never renumbered");
+#define TSP_CHQUAL_BYTES (TESSERA_TRACKS * GEN_CH_USER_N)
+_Static_assert(TSP_CHQUAL_BYTES <= 255u, "TSP_PLAIN's at: a byte");
+#endif
 #if CORE_TRACKS > 4
 _Static_assert(TSP_EGRID == 51 && sizeof tessera.et_grid == 6u, "the parts' numbers are stored: never renumbered");
 #endif
@@ -595,6 +606,15 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             }
         }
         tsp_end(&w);
+#if TESS_CH_QUAL
+        for (t = 0; t < TSP_CHQUAL_BYTES; t++)          /* (CHORD USER's qualities: only when one is not AUTO) */
+            if (tessera.chord[t / GEN_CH_USER_N].uq[t % GEN_CH_USER_N]) {
+                tsp_begin(&w, TSP_CHQUAL, 1);
+                for (t = 0; t < TESSERA_TRACKS; t++) tsp_bytes(&w, tessera.chord[t].uq, GEN_CH_USER_N);
+                tsp_end(&w);
+                break;
+            }
+#endif
 #if CORE_TRACKS > 4
         if (tessera.et_grid[0] | tessera.et_grid[1] | tessera.et_grid[2]) {   /* (ENTRIES' grid: only when a cell */
             tsp_begin(&w, TSP_EGRID, 1);                                     /* is not AUTO) */
@@ -699,6 +719,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
     {TSP_HUMAN, TESS_HUMAN_MS, 0, PROJ_NTRK, PROJ_NTRK},
     {TSP_ACC, TESS_ACC_LIMIT, TESS_ACC_MODES - 1u, PROJ_NTRK, 2u * PROJ_NTRK},   /* (LIMIT 0: 7) */
     {TSP_CCN, 119u, 0, CORD_MAX, CORD_MAX},
+#if TESS_CH_QUAL
+    {TSP_CHQUAL, CH_N - 1u, 0, TSP_CHQUAL_BYTES, TSP_CHQUAL_BYTES},
+#endif
 #if CORE_TRACKS > 4
     {TSP_EGRID, 255u, 0, 6u, 6u},
 #endif
@@ -1028,6 +1051,11 @@ static void tsp_restore(const uint8_t *raw)
             if (tessera.mode[t] == TESS_ENG_OFF) tessera.evolve[t].human = 0;
             else tessera.sub_human[t] = (uint8_t)((tessera.evolve[t].human + 2u) / 5u);
         }
+#if TESS_CH_QUAL
+    for (t = 0; t < TESSERA_TRACKS; t++)               /* (CHORD USER's qualities; none saved: AUTO) */
+        if (tsp_seen.at[TSP_CHQUAL]) memcpy(tessera.chord[t].uq, raw + tsp_seen.at[TSP_CHQUAL] + t * GEN_CH_USER_N, GEN_CH_USER_N);
+        else memset(tessera.chord[t].uq, 0, GEN_CH_USER_N);
+#endif
 #if CORE_TRACKS > 4
     for (t = 0; t < 3u; t++)                           /* (ENTRIES' grid; none saved: every cell AUTO) */
         tessera.et_grid[t] = (uint16_t)(tsp_seen.at[TSP_EGRID] ? tsp_u16_at(raw + tsp_seen.at[TSP_EGRID] + 2u * t) : 0u);

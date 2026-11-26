@@ -420,16 +420,16 @@ static void smap()   // EDIT's sections map (Page map on the sound's sheet, T3's
 static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns its root, "+" adds one, a right-click takes it
 {
     uint32_t mode = pid_named("GENERATOR MODE"), prog = pid_named("CHORD PROG");
-    int32_t was_mode = tess_core_param_get(mode, 3), was_prog = tess_core_param_get(prog, 3);
-    tess_core_track_select(3);
-    tess_core_param_set(mode, 3, 12);   // (CHORD)
-    tess_core_param_set(prog, 3, 7);    // (USER)
+    int32_t was_mode = tess_core_param_get(mode, 1), was_prog = tess_core_param_get(prog, 1);
+    tess_core_track_select(1);   // (T2: a synth, so a chord's quality is heard; T4's kit plays roots)
+    tess_core_param_set(mode, 1, 12);   // (CHORD)
+    tess_core_param_set(prog, 1, 7);    // (USER)
     run(20);
     tap(B_HOME);
     int i = -1;
     for (int k = 0; k < 6 && (i = find("CHORD 1", TESS_ZONE_CHORD)) < 0; k++) tap(B_SEQ);
-    CHECK(i >= 0, "GEN on a CHORD USER track: a zone a card (MODE %d PROG %d)", tess_core_param_get(mode, 3),
-          tess_core_param_get(prog, 3));
+    CHECK(i >= 0, "GEN on a CHORD USER track: a zone a card (MODE %d PROG %d)", tess_core_param_get(mode, 1),
+          tess_core_param_get(prog, 1));
     if (i >= 0)
     {
         int n0 = count(TESS_ZONE_CHORD);
@@ -462,11 +462,33 @@ static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns
         act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_HELP);
         CHECK(count(TESS_ZONE_CHORD) == n1 - 1 || n1 - 1 == 8, "a right-click takes a chord (%d -> %d)", n1,
               count(TESS_ZONE_CHORD));
+        std::string q0 = v.zones[find("CHORD 1", TESS_ZONE_CHORD)].value;   // a click: its quality, the next one
+        std::string q1 = q0;
+        for (int k = 0; k < 3 && q1 == q0; k++)   // (AUTO may already be the first one's: maj on I)
+        {
+            act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_CLICK);
+            q1 = v.zones[find("CHORD 1", TESS_ZONE_CHORD)].value;
+        }
+        CHECK(q1 != q0, "a click gives the first chord a quality (%s -> %s)", q0.c_str(), q1.c_str());
+        static uint8_t rec[1 << 17];
+        uint32_t len = tess_core_save(rec, sizeof rec);
+        for (int k = 0; k < 3; k++) act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_CLICK);
+        std::string q2 = v.zones[find("CHORD 1", TESS_ZONE_CHORD)].value;
+        CHECK(len && q2 != q1, "three clicks more: another quality (%s)", q2.c_str());
+        tess_core_load(rec, len);
+        run(20);
+        int j = find("CHORD 1", TESS_ZONE_CHORD);
+        CHECK(j >= 0 && q1 == v.zones[j].value, "the project keeps the quality (%s -> %s)", q1.c_str(),
+              j >= 0 ? v.zones[j].value : "?");
+        int a = 0;   // round to AUTO: the track's own chord again
+        while (a++ < 12 && v.zones[find("CHORD 1", TESS_ZONE_CHORD)].value != q0)
+            act(find("CHORD 1", TESS_ZONE_CHORD), TESS_ZA_CLICK);
+        CHECK(v.zones[find("CHORD 1", TESS_ZONE_CHORD)].value == q0, "the clicks come round to AUTO (%d)", a);
     }
     else
         dump("chord user");
-    tess_core_param_set(mode, 3, was_mode);
-    tess_core_param_set(prog, 3, was_prog);
+    tess_core_param_set(mode, 1, was_mode);
+    tess_core_param_set(prog, 1, was_prog);
     tap(B_HOME);
     tess_core_track_select(0);
     run(20);
