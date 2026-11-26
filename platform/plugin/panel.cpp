@@ -391,7 +391,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
         ctx_draw(px);
         return;
     }
-    if (drag == SOUND && sound_live)
+    if ((drag == SOUND || drag == CORD) && sound_live)
     {
         sound_draw(px);
         return;
@@ -431,6 +431,30 @@ void Panel::sound_draw(uint32_t *px)
 {
     Canvas c{px, width()};
     const uint32_t YEL = 0xFFFFD020, BLACK = 0xFF000000, WORD = 0xFFB9B2A0;
+    if (drag == CORD)   // a MATRIX cell: the target cell framed, "T1 > T3" by the mouse
+    {
+        const int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
+        int zi = zone_at(last_x, last_y);
+        bool on = zi >= 0 && zones[zi].kind == TESS_ZONE_CELL && zones[zi].name[0] == 'T' && zones[zi].name[2] == '>' &&
+                  std::strcmp(zones[zi].name, drag_zone.name);
+        char t[24];
+        std::snprintf(t, sizeof t, "MOD T%c > %s", drag_zone.name[1], on ? zones[zi].name + 3 : "?");
+        for (int k = 0; k < 2; k++)   // (from: the cell pressed; to: the one under the mouse)
+        {
+            const tess_zone_t *z = k ? (on ? &zones[zi] : nullptr) : &drag_zone;
+            if (!z) continue;
+            int zx = ox + z->x, zy = oy + z->y;
+            c.box(zx, zy, z->w, 2, YEL), c.box(zx, zy + z->h - 2, z->w, 2, YEL);
+            c.box(zx, zy, 2, z->h, YEL), c.box(zx + z->w - 2, zy, 2, z->h, YEL);
+        }
+        int w = Canvas::ptext_w(t, 2) + 20, h = 26, x = last_x + 14, y = last_y + 10;
+        if (x + w > width() - 4) x = width() - 4 - w;
+        c.box(x, y, w, h, BLACK);
+        c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
+        c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
+        c.ptext(x + 10, y + 7, t, 2, on ? YEL : WORD);
+        return;
+    }
     int z2 = zone2_at(last_x, last_y);
     bool on = z2 >= 0 && zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row >= 0;
     if (on)
@@ -1028,6 +1052,14 @@ bool Panel::down(int x, int y)
             return true;
         }
         drag = NONE;
+        if (z.kind == TESS_ZONE_CELL && z.name[0] == 'T' && z.name[2] == '>' && !dbl)   // a MATRIX cell: clicked when let
+        {                                  // go still (its mod opened); dragged onto another cell, a mod from its row's
+            drag = CORD;                   // track to that cell's column's
+            drag_zone = z;
+            sound_live = false;
+            roll_x0 = x, roll_y0 = y;
+            return false;
+        }
         if (z.kind == TESS_ZONE_CELL && !std::strcmp(z.name, "SOUND") && !dbl && expanded())   // the browser's sound: picked
         {                                  // (the click), then held, it can be dragged onto a TRACKS row (EXPANDED)
             zone_act(z, TESS_ZA_CLICK, 0);
@@ -1176,7 +1208,7 @@ bool Panel::move(int x, int y)
         if (n) { acc -= n * step; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
         return false;
     }
-    if (drag == SOUND)   // a browser's sound on its way: past 5 px it follows the mouse (sound_draw)
+    if (drag == SOUND || drag == CORD)   // a browser's sound, a MATRIX cell on its way: past 5 px it follows the mouse
     {
         if (!sound_live && std::abs(x - roll_x0) < 5 && std::abs(y - roll_y0) < 5) return false;
         sound_live = true;
@@ -1352,6 +1384,16 @@ bool Panel::up(int x, int y)
             input.tzones.push_back({zones2[z2], TESS_ZA_SOUND, 0});
             input.changed = true;
         }
+        ch = true;
+    }
+    if (drag == CORD)   // a MATRIX cell: let go still, a click; on another cell, a mod from its FROM to that one's TO
+    {
+        int zi = zone_at(x, y);
+        if (!sound_live)
+            zone_act(drag_zone, TESS_ZA_CLICK, 0);
+        else if (zi >= 0 && zones[zi].kind == TESS_ZONE_CELL && zones[zi].name[0] == 'T' && zones[zi].name[2] == '>' &&
+                 std::strcmp(zones[zi].name, drag_zone.name))
+            zone_act(zones[zi], TESS_ZA_LINK, (int8_t)(uint8_t)((uint16_t)drag_zone.row & 0xFFu));
         ch = true;
     }
     sound_live = false;

@@ -630,6 +630,11 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         }
         break;
     case TESS_ZONE_CELL:                              /* a place in a grid: its knobs turned to it, a detent each */
+        if (action == TESS_ZA_LINK) {                 /* (MATRIX: a cell dragged onto this one, ui_modsc.c) */
+            if (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_MATRIX)
+                mx_link((int32_t)mx_from + n, (int32_t)mx_to + (int8_t)(uint8_t)((uint16_t)z->row >> 8));
+            break;
+        }
         if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
             break;
