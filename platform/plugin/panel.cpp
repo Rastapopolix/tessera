@@ -388,6 +388,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     else
         zones2.clear();
     draw_body(px, v, t2);
+    overlay_inks(v);
     if (locked)   // LOCKed values: a padlock at each one's top right, on the screen (Cosmati audit G6)
     {
         static const char *const LOCK[8] = {"..###..", ".#...#.", ".#...#.", "#######", "###.###", "###.###", "#######",
@@ -400,7 +401,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
                         if (LOCK[r][c] == '#')
                         {
                             int x = ox + zones[i].x + zones[i].w - 9 + c, y = oy + zones[i].y + 2 + r;
-                            if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = 0xFFFFD020u;
+                            if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = ink_edge;
                         }
     }
     if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
@@ -422,7 +423,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     }
     // a value's box: under the screen, centred on the value, its name, the text typed and a cursor, what the keys do
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     const tess_zone_t &z = entry_zone;
     std::string name = z.name, typed = entry_text + "_";
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
@@ -434,8 +435,8 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     if (x + w > width() - 8) x = width() - 8 - w;
     {   // (the value boxed, two pixels)
         int zx = ox + z.x, zy = SCREEN_Y + SCREEN_S / 32 + z.y;
-        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
-        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+        c.box(zx, zy, z.w, 2, EDGE), c.box(zx, zy + z.h - 2, z.w, 2, EDGE);
+        c.box(zx, zy, 2, z.h, EDGE), c.box(zx + z.w - 2, zy, 2, z.h, EDGE);
     }
     c.box(x, y, w, h, BLACK);
     c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
@@ -449,7 +450,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
 void Panel::sound_draw(uint32_t *px)
 {
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, BLACK = 0xFF000000, WORD = 0xFFB9B2A0;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     if (drag == CORD)   // a MATRIX cell: the target cell framed, "T1 > T3" by the mouse
     {
         const int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32;
@@ -463,8 +464,8 @@ void Panel::sound_draw(uint32_t *px)
             const tess_zone_t *z = k ? (on ? &zones[zi] : nullptr) : &drag_zone;
             if (!z) continue;
             int zx = ox + z->x, zy = oy + z->y;
-            c.box(zx, zy, z->w, 2, YEL), c.box(zx, zy + z->h - 2, z->w, 2, YEL);
-            c.box(zx, zy, 2, z->h, YEL), c.box(zx + z->w - 2, zy, 2, z->h, YEL);
+            c.box(zx, zy, z->w, 2, EDGE), c.box(zx, zy + z->h - 2, z->w, 2, EDGE);
+            c.box(zx, zy, 2, z->h, EDGE), c.box(zx + z->w - 2, zy, 2, z->h, EDGE);
         }
         int w = Canvas::ptext_w(t, 2) + 20, h = 26, x = last_x + 14, y = last_y + 10;
         if (x + w > width() - 4) x = width() - 4 - w;
@@ -480,8 +481,8 @@ void Panel::sound_draw(uint32_t *px)
     {
         const tess_zone_t &z = zones2[z2];
         int zx = T2_X + T2_IN + z.x, zy = T2_Y + T2_IN + z.y;
-        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
-        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+        c.box(zx, zy, z.w, 2, EDGE), c.box(zx, zy + z.h - 2, z.w, 2, EDGE);
+        c.box(zx, zy, 2, z.h, EDGE), c.box(zx + z.w - 2, zy, 2, z.h, EDGE);
     }
     std::string name = drag_zone.value[0] ? drag_zone.value : "SOUND";
     char row[24] = "";
@@ -2580,7 +2581,7 @@ void Panel::ctx_do(int r)
 void Panel::ctx_draw(uint32_t *px)
 {
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, DIM = 0xFF5A5446, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, DIM = ink_dim, BLACK = ink_card;
     int h = (int)ctx_row.size() * CTX_RH + 8;
     c.box(ctx_x, ctx_y, CTX_W, h, BLACK);
     c.box(ctx_x, ctx_y, CTX_W, 2, YEL), c.box(ctx_x, ctx_y + h - 2, CTX_W, 2, YEL);
@@ -2602,6 +2603,22 @@ void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
 
 // the zone under the mouse (or being dragged): a hairline round it on the screen, and under the screen a card with its
 // name and its value large (the readability the FM-1's 5 x 7 text lacks), black with Tessera yellow
+// the overlays' inks: the shell's (DAY: paper, amber, dark words); the outline on the screen by its ground
+void Panel::overlay_inks(const tess_view_t &v)
+{
+    uint32_t luma = 0;
+    for (int y = 8; y < TESS_SCREEN; y += 16)
+        for (int x = 8; x < TESS_SCREEN; x += 16)
+        {
+            uint16_t q = v.screen[y * TESS_SCREEN + x];
+            luma += (q >> 11 & 31) * 2 + (q >> 5 & 63) * 2 + (q & 31);
+        }
+    const bool light = luma > 15u * 15u * 112u;   // (225 samples, each 0..186: paper about 175, black 0)
+    ink_card = native() ? T_BLACK : 0xFF000000u, ink_hot = native() ? T_YEL : 0xFFFFD020u;
+    ink_word = native() ? T_WORD : 0xFFB9B2A0u, ink_dim = native() ? T_OFF : 0xFF5A5446u;
+    ink_edge = light ? 0xFF9A6400u : 0xFFFFD020u;
+}
+
 void Panel::draw_hover(uint32_t *px)
 {
     int zi = drag == ZONE ? zone_like(drag_zone) : hover_in && drag == NONE ? zone_at(hover_x, hover_y) : -1;
@@ -2639,13 +2656,13 @@ void Panel::draw_hover(uint32_t *px)
     if (zi < 0 && z2 < 0) return;
     const tess_zone_t &z = z2 >= 0 ? zones2[z2] : zones[zi];
     Canvas c{px, width()};
-    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    const uint32_t YEL = ink_hot, WORD = ink_word, BLACK = ink_card, EDGE = ink_edge;
     const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
     int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
-    c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
-    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
+    c.box(ox + z.x, oy + z.y, z.w, 1, EDGE);
+    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, EDGE);
+    c.box(ox + z.x, oy + z.y, 1, z.h, EDGE);
+    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, EDGE);
     if (!z.name[0] && !z.value[0]) return;
     if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
     // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;
@@ -2662,7 +2679,7 @@ void Panel::draw_hover(uint32_t *px)
     if (x < SX - 80) x = SX - 80;
     if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
     // (the cards in the shell's inks: DAY's paper, amber and dark words; NIGHT's and the FM-1 shells' black and yellow)
-    const uint32_t CB = native() ? T_BLACK : BLACK, CY = native() ? T_YEL : YEL, CW = native() ? T_WORD : WORD;
+    const uint32_t CB = BLACK, CY = YEL, CW = WORD;
     c.box(x, y, w, h, CB);
     c.box(x, y, w, 2, CY), c.box(x, y + h - 2, w, 2, CY);
     c.box(x, y, 2, h, CY), c.box(x + w - 2, y, 2, h, CY);

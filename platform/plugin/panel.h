@@ -365,6 +365,11 @@ class Panel
     // the screen's zones: the view's last, the mouse over them, a click's time for a double-click
     void draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2);
     void draw_hover(uint32_t *px);
+    void overlay_inks(const tess_view_t &v);
+    // the overlays' inks (cards, menus, the outline round a value), set each draw: NIGHT's and the FM-1 shells' black
+    // and yellow, DAY's paper, amber and dark words; the outline on the screen dark amber when its ground is LIGHT
+    uint32_t ink_card = 0xFF000000u, ink_hot = 0xFFFFD020u, ink_word = 0xFFB9B2A0u, ink_dim = 0xFF5A5446u,
+             ink_edge = 0xFFFFD020u;
     std::vector<tess_zone_t> zones, zones2;   // the FM-1 screen's, the TRACKS screen's (EXPANDED)
     tess_zone_t drag_zone{}, click_zone{};
     bool click_known = false, hover_in = false;

@@ -440,6 +440,14 @@ int main(int argc, char **argv)
             tess_core_view(&v);
             q.draw(px.data(), v);
             ppm(out + "/11b_tessera_day_light.ppm", px);
+            q.set_hover_help(true);
+            q.move(330, 120);   // (a value on the paper screen: its outline dark amber, the card in DAY's inks)
+            run(q, 0.1);
+            tess_core_view(&v);
+            q.draw(px.data(), v);
+            ppm(out + "/11c_tessera_day_light_hover.ppm", px);
+            q.move(5, 5);
+            q.set_hover_help(false);
             tess_core_ground(0);
             run(q, 0.3);
             tess_core_view(&v);
