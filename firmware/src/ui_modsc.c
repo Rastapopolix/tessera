@@ -219,4 +219,36 @@ static void mx_link(int32_t from, int32_t to)
         if (j == (uint32_t)i) mx_k = (uint8_t)k;
     mx_open();
 }
+
+/* PERF under a mouse (tess_core.c): MACRO k's row clicked, its mod in MODS: the first that MACRO k drives, or none yet,
+ * a new one in a free slot (from MCRk, on the selected track, 25 %, its destination OFF to pick there) */
+static void macro_mods(uint32_t k)
+{
+    int32_t i = -1;
+    uint32_t j, p, tr = song.sel % NTRK;
+    cord_t c;
+    for (j = 0; j < CORD_LIVE && i < 0; j++)
+        if (cord_get(j)->src == CS_MACRO1 + k)
+            i = (int32_t)j;
+    if (i < 0) {
+        if ((i = msc_free()) < 0) {
+            ui_message("NO FREE MOD SLOT");
+            return;
+        }
+        c = *cord_get((uint32_t)i);
+        c.src = (uint8_t)(CS_MACRO1 + k), c.src_trk = (uint8_t)tr;
+        c.dst = CD_OFF, c.dst_trk = (uint8_t)tr;
+        c.amount = 25, c.offset = 0, c.uni = 0;
+        cord_set((uint32_t)i, &c);
+    }
+    for (p = 0; p < NPAGES && PAGES[p].graph != GR_CORDS; p++)
+        ;
+    if (p == NPAGES)
+        return;
+    cord_ui_sel = (uint8_t)i;
+    ui.page = (uint8_t)p;
+    ui.fam_last[fam_grp(PAGES[p].fam)] = ui.page;
+    page_entered();
+    ui.force = 1;
+}
 #endif
