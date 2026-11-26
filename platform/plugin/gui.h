@@ -73,6 +73,8 @@ struct GuiLink
     /* A / B (Panel::SnapState): what the instance has; a press (Panel::SNAP_*): what to show */
     virtual Panel::SnapState snap_state() { return {}; }
     virtual std::string snap_do(int what, int slot, int value) { (void)what, (void)slot, (void)value; return ""; }
+    /* a toast (Cosmati audit G9): what happened out of the window's view since its last tick (empty: nothing) */
+    virtual std::string take_toast() { return ""; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
     // LISTEN: the MIDI channel whose notes set the key and GENERATE (listen.h), 0 off; this instance's
     virtual int listen_channel() { return 0; }
@@ -167,6 +169,9 @@ inline void gui_gen_tick(Panel &panel, GuiLink *link)
         if (!said.empty())
             panel.note(said);
     }
+    std::string toast = link->take_toast();
+    if (!toast.empty())
+        panel.note(toast);
 }
 
 /* the plugin's version, for the window's ABOUT (TESS_VERSION, CMakeLists.txt) */
