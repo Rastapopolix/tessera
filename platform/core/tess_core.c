@@ -671,6 +671,18 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
         if ((z->row & 0x400) && action == TESS_ZA_TURN)   /* (up-down only: CONSTELLATION's ship, its brackets) */
             break;
+        if (z->row & 0x800) {                         /* (vrole the selected track's TX_* itself, on no knob's layer:
+                                                       * up a step more (row bit 1: less), a double-click its default) */
+            uint32_t id = PID_TESS((uint32_t)z->vrole);
+            tess_param_t pi;
+            if (z->vrole < 0 || !tess_core_param_info(id, song.sel, &pi)) break;
+            if (action == TESS_ZA_TURN_Y)
+                tess_core_param_set(id, song.sel, tess_core_param_get(id, song.sel) + ((z->row & 2) ? -n : n));
+            else if (action == TESS_ZA_DOUBLE)
+                tess_core_param_set(id, song.sel, pi.def);
+            ui.force = 1;
+            break;
+        }
         if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
                                                        * a right-click one less, the wheel or a drag up and down) */
             if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
