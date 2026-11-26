@@ -18,8 +18,9 @@ enum { UZ_ROLL = 15 };                                 /* NOTES' steps (tess_cor
 enum { UZ_OP = 16 };                                   /* FM6's chart: an operator (tess_core.h's TESS_ZONE_OP) */
 enum { UZ_SMAP = 17 };                                 /* EDIT's sections map's tiles (TESS_ZONE_SMAP; ui_sections.c) */
 enum { UZ_CHORD = 18 };                                /* CHORD USER's cards on GEN (TESS_ZONE_CHORD; ui_mono.c) */
+enum { UZ_EGRID = 19 };                                /* ENTRIES' arrangement grid's cells (TESS_ZONE_EGRID; ui_mono.c) */
 enum { UZ_G_COLS, UZ_G_LIST, UZ_G_KEYS, UZ_G_TRACKS, UZ_G_SIDES, UZ_G_STRIPS, UZ_G_TABS, UZ_G_HEAD, UZ_G_PIC, UZ_GROUPS };
-#define UZ_MAX 48
+#define UZ_MAX 64
 typedef struct {
     int16_t x, y, w, h;                                 /* in screen pixels (2 a Mono cell) */
     uint8_t kind, group;

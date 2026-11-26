@@ -6311,6 +6311,20 @@ static int test_land_lights(void)
                 lit[t0] |= (key_light(14u + k) == 2u) << k;
         }
         bad += check("  MIXER: its map still blinks", lit[0] != lit[1]);
+        settings_lights = LIGHTS_OFF;
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0, lit[t0] = 0; k < 27u; k++)
+                lit[t0] |= (key_light(14u + k) == 2u) << k;
+        }
+        bad += check("  MIXER, LIGHTS OFF: no blinking, the tracks' keys lit (their state)", lit[0] == lit[1] && lit[0] == bl);
+        go_page(GR_PERF);
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0, lit[t0] = 0; k < 27u; k++)
+                lit[t0] |= (key_light(14u + k) == 2u) << k;
+        }
+        bad += check("  PERF, LIGHTS OFF: the same", lit[0] == lit[1] && lit[0] == bl);
     }
     settings_lights = LIGHTS_MID;
     led_pos_init();

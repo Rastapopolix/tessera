@@ -20,7 +20,13 @@
  *   fades MIDI OUT's velocity too, entries_vel). Hand wins: a
  *   track muted by hand stays muted; its key on GLO brings an out track back, left alone until the next section; SOLO
  *   is heard whatever Entries says. Every draw is a hash of the SEEDs taken at PLAY, so a piece replays. Included by
- *   tessera.c after form_chain.c. */
+ *   tessera.c after form_chain.c.
+ *   The arrangement grid (an 8-track build's: Cosmati's ENTRIES grid, Andamento's; tessera.et_grid): a cell a track
+ *   and FORM letter (A, B, C; FORM OFF: A's the whole piece). AUTO: Entries decides, as above; IN: plays there; OUT:
+ *   never; FADE: in, fading in over the section's first phrase (when it was out) and out over its last (when the next
+ *   section has it AUTO or OUT). The rules draw among the AUTO cells only; OUT wins over ANCHOR; hand mutes still win,
+ *   and one track still plays. The grid works with ENTRIES 0 too (its AUTO cells then play). Every cell AUTO: no
+ *   change at all. */
 
 enum { ET_AUTO, ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR,
 #if TESSERA_TRACKS > 4
@@ -32,6 +38,10 @@ enum { ET_AUTO, ET_BASS, ET_RHYTHM, ET_HARMONY, ET_MELODY, ET_ANCHOR,
 #define ET_RANK_MEL (4u + ET_MELODY)                  /* an AUTO melody's: the top (it waits for a bass or harmony) */
 #define ET_RANK_HI ET_RANK_MEL
 #define ET_SECTION 4u                                 /* FORM OFF: a section every 4 phrases */
+#if TESSERA_TRACKS > 4
+enum { ET_G_AUTO, ET_G_IN, ET_G_OUT, ET_G_FADE };    /* the grid's cells (saved: TSP_EGRID) */
+#define ET_G_SECS 3u                                  /* the FORM's letters: A, B, C */
+#endif
 
 static struct {
     uint32_t seed;                                    /* the SEEDs' hash, at PLAY */
@@ -50,12 +60,28 @@ static struct {
 #if TESSERA_TRACKS > 4
     uint8_t alts;                                     /* TURNS: the tracks 5..8 taking turns (et_alts, at PLAY and each line) */
     uint8_t turn, pend_turn;                          /* TURNS: those heard in place of their partner; on the next line */
+    uint8_t fin, fout, gout;                          /* the grid, this phrase: fading in, fading out; its OUT cells */
+    uint8_t pend_fin, pend_fout, pend_gout;           /* the same, the next phrase's */
 #endif
 } et;
 #if TESSERA_TRACKS > 4
 #define ET_ALTS ((uint32_t)et.alts)
 #else
 #define ET_ALTS 0u                                    /* (four tracks: no TURNS) */
+#endif
+
+/* the grid: the tracks whose cell in letter sec is `kind`; 1 if a cell is not AUTO */
+#if TESSERA_TRACKS > 4
+static uint32_t et_cells(uint32_t sec, uint32_t kind)
+{
+    uint32_t tr, m = 0, g = tessera.et_grid[sec < ET_G_SECS ? sec : 0u];
+    for (tr = 0; tr < TESSERA_TRACKS; tr++)
+        if ((g >> (2u * tr) & 3u) == kind) m |= 1u << tr;
+    return m;
+}
+static int et_grid_on(void) { return (tessera.et_grid[0] | tessera.et_grid[1] | tessera.et_grid[2]) != 0; }
+#else
+#define et_grid_on() 0
 #endif
 
 static int32_t tess_flourish(const track_t *t, uint32_t tr);
@@ -211,6 +237,7 @@ static void et_clear(void)
     et.want = et.final = 0;
 #if TESSERA_TRACKS > 4
     et.turn = et.pend_turn = 0;
+    et.fin = et.fout = et.gout = et.pend_fin = et.pend_fout = et.pend_gout = 0;
 #endif
     et.pend_p = 0xFFFFFFFFu;
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
@@ -236,12 +263,15 @@ void entries_play(void)
 }
 
 /* what the CHAIN does at phrase p: a section begins there; it is a return to A; the next phrase is one, after two
- * phrases or more away (a single phrase away is no breakdown) */
-static void et_chain(uint32_t p, uint32_t *sec, uint32_t *home, uint32_t *home_next)
+ * phrases or more away (a single phrase away is no breakdown); *let phrase p's letter, *last 1 when the next phrase
+ * begins a section, *nlet the next phrase's letter (FORM OFF: A) */
+static void et_chain(uint32_t p, uint32_t *sec, uint32_t *home, uint32_t *home_next, uint32_t *let, uint32_t *last,
+                     uint32_t *nlet)
 {
     fc_st_t a, b, c;
     *sec = p % ET_SECTION == 0u;
-    *home = *home_next = 0;
+    *last = (p + 1u) % ET_SECTION == 0u;
+    *home = *home_next = *let = *nlet = 0;
     if (!tessera.fc_form || !fc_len() || !p) return;
     a = *fc_at(p - 1u);                               /* (the phrase playing; the next two worked out on a copy) */
     b = a;
@@ -251,6 +281,9 @@ static void et_chain(uint32_t p, uint32_t *sec, uint32_t *home, uint32_t *home_n
     *sec = b.moved & 1u;
     *home = *sec && !fc_letter_at(b.pos) && fc_letter_at(a.pos);
     *home_next = (c.moved & 1u) && !fc_letter_at(c.pos) && b.away >= 2u;   /* (not a lone phrase away) */
+    *let = fc_letter_at(b.pos);
+    *nlet = fc_letter_at(c.pos);
+    *last = c.moved & 1u;
 }
 
 /* the changes for phrase p, a bar before its line: which tracks go out, which come in */
@@ -260,8 +293,11 @@ static void et_decide(uint32_t p)
     uint32_t mute = et_hand_muted(), anchor = et_mask(ET_ANCHOR), lock = et.lock;
     uint32_t dwell = tessera.et_dwell < 1u ? 1u : tessera.et_dwell > 8u ? 8u : tessera.et_dwell;
     uint32_t can, ready = 0, play, sup, mel = 0;
-    uint32_t go_out = 0, come_in = 0, most, wanted;
-    et_chain(p, &sec, &home, &home_next);
+    uint32_t go_out = 0, come_in = 0, most, wanted, let, last, nlet, gx = 0;
+#if TESSERA_TRACKS > 4
+    uint32_t g_in, g_out, g_fade;
+#endif
+    et_chain(p, &sec, &home, &home_next, &let, &last, &nlet);
     if (sec) et_guess_all();                          /* (a new section: AUTO looks again, by what it has heard) */
     sup = et_mask(ET_BASS) | et_mask(ET_HARMONY);
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
@@ -272,9 +308,19 @@ static void et_decide(uint32_t p)
 #endif
     can = et_present() & ~mute & ~anchor & ~lock & ~ET_ALTS;   /* (the tracks the rules may move; TURNS:
                                                        * the pair's lower track stands for both) */
+#if TESSERA_TRACKS > 4
+    g_fade = et_cells(let, ET_G_FADE) & ~mute;         /* (the grid: its IN, OUT and FADE cells, out of the rules' */
+    g_in = (et_cells(let, ET_G_IN) & ~mute) | g_fade;  /* hands) */
+    g_out = et_cells(let, ET_G_OUT) & ~mute & ~lock;
+    gx = g_in | g_out;
+    can &= ~gx;
+#endif
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if ((uint32_t)et.since[tr] + 1u >= dwell) ready |= 1u << tr;
     play = et_present() & ~mute & ~et.out & ~ET_ALTS;   /* (sounding now, as the rules count) */
+#if TESSERA_TRACKS > 4
+    play &= ~g_out;                                   /* (the grid's OUT: as gone) */
+#endif
     most = (et_count(can) * tessera.et_amount + 50u) / 100u;
     if (!(play & anchor) && most >= et_count(can)) most = et_count(can) ? et_count(can) - 1u : 0u;   /* (one plays) */
     h = et_hash(p, 1u);
@@ -301,7 +347,7 @@ static void et_decide(uint32_t p)
             et.want = (uint8_t)most;
         }
         wanted = et.want;
-        n = et_count(et.out & ~mute);
+        n = et_count(et.out & ~mute & ~gx);
         if (sec && n == wanted && wanted && (h >> 8) % 2u) {   /* (as many as wanted out already: now and then one swaps) */
             for (r = ET_RANK_LO; r <= ET_RANK_HI && !come_in; r++)
                 for (i = 0; i < TESSERA_TRACKS && !come_in; i++) {
@@ -328,11 +374,25 @@ static void et_decide(uint32_t p)
             for (r = ET_RANK_LO; r <= ET_RANK_HI && !come_in; r++)
                 for (i = 0; i < TESSERA_TRACKS && !come_in; i++) {
                     tr = (i + (h >> 12)) % TESSERA_TRACKS;
-                    if (!((et.out & ~mute & ready) >> tr & 1u) || et_rank(tr) != r) continue;
+                    if (!((et.out & ~mute & ~gx & ready) >> tr & 1u) || et_rank(tr) != r) continue;
                     if (r == ET_RANK_MEL && !(play & sup)) continue;   /* (an AUTO melody over a bass or harmony) */
                     come_in = 1u << tr;
                 }
     }
+#if TESSERA_TRACKS > 4
+    if (gx | et.fout) {                               /* the grid: IN and FADE in, OUT out, a faded track out */
+        uint32_t after;
+        come_in = (come_in | (g_in & et.out)) & ~g_out;
+        go_out = (go_out | (g_out & ~et.out) | (et.fout & ~et.out & ~mute & ~g_in)) & ~g_in;
+        after = et_present() & ~mute & ~ET_ALTS & ~((et.out | go_out) & ~come_in);
+        if (!after && go_out) go_out &= go_out - 1u;   /* (one still plays: the lowest track) */
+    }
+    et.pend_fin = (uint8_t)(sec ? g_fade & (et.out | et.fout) : 0u);
+    et.pend_fout = (uint8_t)(last ? g_fade & ~et.pend_fin & ~et_cells(nlet, ET_G_IN) & ~et_cells(nlet, ET_G_FADE) : 0u);
+    et.pend_gout = (uint8_t)g_out;
+#else
+    (void)gx, (void)let, (void)last, (void)nlet;
+#endif
     et.pend_in = (uint8_t)come_in;
     et.pend_out = (uint8_t)go_out;
     et.pend_sec = (uint8_t)sec;
@@ -355,13 +415,23 @@ static void et_apply(uint32_t p)
         et.out = (uint8_t)((et.out | et.pend_out) & ~et.pend_in);
 #if TESSERA_TRACKS > 4
         et.turn = et.pend_turn;
+        et.fin = et.pend_fin, et.fout = et.pend_fout, et.gout = et.pend_gout;
+        for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (et.fin >> tr & 1u) entry_gain[tr] = 0;   /* (a FADE in: from silence) */
 #endif
         if (et.pend_sec) et.lock = 0;
     }
+#if TESSERA_TRACKS > 4
+    else
+        et.fin = et.fout = 0;                         /* (a fade: one phrase) */
+#endif
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
         if (et.pend_p == p && ((et.pend_in | et.pend_out) >> tr & 1u)) et.since[tr] = 0;
         else if (et.since[tr] < 255u) et.since[tr]++;
     et.pend_in = et.pend_out = 0;
+#if TESSERA_TRACKS > 4
+    et.pend_fin = et.pend_fout = 0;
+#endif
     et.pend_p = 0xFFFFFFFFu;
 }
 
@@ -385,6 +455,21 @@ static void et_intro(void)
     et.want = (uint8_t)want;
 }
 
+/* PLAY: the grid's A cells for the first phrase (OUT out at once, FADE in from silence) */
+#if TESSERA_TRACKS > 4
+static void et_grid_start(void)
+{
+    uint32_t tr, mute = et_hand_muted(), o = et_cells(0, ET_G_OUT) & ~mute;
+    if (!(et_present() & ~mute & ~ET_ALTS & ~(et.out | o))) o &= o - 1u;   /* (one plays) */
+    et.out |= (uint8_t)o;
+    et.gout = (uint8_t)o;
+    et.fin = (uint8_t)(et_cells(0, ET_G_FADE) & ~mute);
+    et.out &= (uint8_t)~(et_cells(0, ET_G_IN) | et.fin);
+    for (tr = 0; tr < TESSERA_TRACKS; tr++)
+        if ((o | et.fin) >> tr & 1u) entry_gain[tr] = 0;
+}
+#endif
+
 /* planner.c, a planned piece's END STOP: every track out, the ANCHORs too (its FADE, then the tails) */
 static void entries_all_out(void)
 {
@@ -401,12 +486,13 @@ void entries_tick(uint32_t n)
     fc_pc_tick();                                     /* (SECTION PC: form_chain.c, on the same phrase line) */
     if (et.final && song.playing) {
         /* (the end: everything fades out, nothing decided) */
-    } else if (!song.playing || !tessera.et_amount) {
+    } else if (!song.playing || (!tessera.et_amount && !et_grid_on())) {
         if (et.out || et.pend_in || et.pend_out || et.lock || et_heard_out()) {   /* (off or stopped: everything
                                                        * back in) */
             et.out = et.pend_in = et.pend_out = et.lock = 0;
 #if TESSERA_TRACKS > 4
             et.turn = et.pend_turn = 0;
+            et.fin = et.fout = et.gout = 0;
 #endif
             et.pend_p = 0xFFFFFFFFu;
         }
@@ -416,19 +502,41 @@ void entries_tick(uint32_t n)
             return;
         }
     } else if (b != et.bar) {
-        if (et.bar == 0xFFFFFFFFu && !b && pl_on()) et_intro();
-        else if (et.bar != 0xFFFFFFFFu && b == et.bar + 1u) {
+        if (et.bar == 0xFFFFFFFFu && !b) {
+            if (pl_on()) et_intro();
+#if TESSERA_TRACKS > 4
+            if (et_grid_on()) et_grid_start();
+#endif
+        } else if (et.bar != 0xFFFFFFFFu && b == et.bar + 1u) {
             if (b % bars == bars - 1u) et_decide(b / bars + 1u);   /* (the phrase coming: decided, warned a bar ahead) */
             else if (b % bars == 0u) et_apply(b / bars);
         }
         et.bar = b;
     }
+#if TESSERA_TRACKS > 4
+    if (!et.final) et.out &= (uint8_t)~(et_mask(ET_ANCHOR) & ~et.gout);   /* (an ANCHOR never drops, set so now: back at
+                                                       * once; but where the grid has it OUT) */
+#else
     if (!et.final) et.out &= (uint8_t)~et_mask(ET_ANCHOR);   /* (an ANCHOR never drops, set so now: back at once) */
+#endif
     step = tessera.et_style ? 32768u * n / ((tessera.et_fade ? tessera.et_fade : 1u) * 4u * seq_beat_samples() + 1u) + 1u
                             : 32768u;
     heard = et_heard_out();
+#if TESSERA_TRACKS > 4
+    if (song.playing && (et.fin | et.fout)) {          /* the grid's FADEs: the level across the phrase */
+        uint32_t bars = fc_bars(), beat = seq_beat_samples(), part;
+        part = ((b % bars * 4u + beat_n) * beat + beat_pos % beat) / ((bars * 4u * beat >> 10) + 1u);
+        part = part > 1024u ? 1024u : part;
+        for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (!(heard >> tr & 1u) && ((et.fin | et.fout) >> tr & 1u))
+                entry_gain[tr] = (int32_t)((et.fin >> tr & 1u) ? part : 1024u - part) * 32;
+    }
+#endif
     for (tr = 0; tr < TESSERA_TRACKS; tr++) {
         int32_t g = entry_gain[tr], to = (heard >> tr & 1u) ? 0 : 32768, d = to - g;
+#if TESSERA_TRACKS > 4
+        if ((et.fin | et.fout) >> tr & 1u && !(heard >> tr & 1u)) continue;   /* (set above) */
+#endif
         if (d > (int32_t)step) d = (int32_t)step;
         else if (d < -(int32_t)step) d = -(int32_t)step;
         entry_gain[tr] = g + d;
@@ -548,7 +656,7 @@ uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[TESSERA_TRACKS])
         uint32_t x = (uint32_t)(et.turn ^ et.pend_turn) & 0xF0u;
         w |= x | x >> 4;                              /* (TURNS: the pair changing hands) */
 #endif
-        *warn = song.playing && tessera.et_amount ? w : 0u;
+        *warn = song.playing && (tessera.et_amount || et_grid_on()) ? w : 0u;
     }
     if (role && !song.playing) {                      /* (stopped: AUTO's guess from the settings as they are now) */
         memset(et.avg, 0, sizeof et.avg);
@@ -556,5 +664,5 @@ uint32_t tessera_entries_get(uint32_t *warn, uint8_t role[TESSERA_TRACKS])
     }
     if (role)
         for (tr = 0; tr < TESSERA_TRACKS; tr++) role[tr] = (uint8_t)et_role(tr);
-    return song.playing && (tessera.et_amount || et.final) ? et_heard_out() : 0u;
+    return song.playing && (tessera.et_amount || et.final || et_grid_on()) ? et_heard_out() : 0u;
 }
