@@ -155,9 +155,12 @@ class Panel
      * the bank of the track selected lit */
     void set_tracks(int n) { tracks_ = n; layout(); }
     /* the project-file buttons under the keys: OPEN (a .tsp or an FM-1 backup) and SAVE (a .tsp). A click asks; the
-     * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds */
-    enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI };
+     * window takes the ask (1 OPEN, 2 SAVE, 0 none) and shows the outcome with note() for a few seconds. MIDI asks
+     * when let go (FILE_MIDI: the clip saved), or once dragged 8 px off its press (FILE_MIDI_DRAG: the window starts
+     * the system's drag of the clip, a .mid file, into a DAW's track or a folder, then calls up()) */
+    enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI, FILE_MIDI_DRAG };
     int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
+    int peek_file_request() const { return file_req; }
     void note(const std::string &text);
     /* the shells: TESSERA's own (0), then the FM-1's (web/sim/index.html SHELLS). The FM-1's show a row of swatches
      * under the keys; TESSERA's a menu under the mark (SHELL, INK, MODE, SIZE, ABOUT). A pick shows that shell at once
@@ -254,6 +257,7 @@ class Panel
     bool entry_on = false;  // a value's box open: its zone, the text typed so far
     tess_zone_t entry_zone = {};
     std::string entry_text;
+    bool entry_find = false;   // the box is the browser's FIND: each key filters at once, Esc clears
     bool expanded_ = false;
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none
@@ -283,6 +287,7 @@ class Panel
     bool banked() const { return tracks_ > 4 && !expanded(); }   // the 1-4 / 5-8 switch (EXPANDED: TRACKS shows all)
     int bank_at(int x, int y) const;
     int file_req = FILE_NONE, file_held = -1;
+    bool midi_press = false; int midi_x0 = 0, midi_y0 = 0;   // MIDI pressed: a click or a drag, not known yet
     std::string note_text;
     static constexpr int SWATCH_R = 9;
     static constexpr int SHELL_GAP = 14;   // (TESSERA's swatch apart from the FM-1's)

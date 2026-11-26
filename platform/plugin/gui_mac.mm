@@ -136,6 +136,30 @@ class GuiMac : public Gui
         return true;
     }
 
+    // MIDI dragged off (panel FILE_MIDI_DRAG): the clip as a file, the system's drag of it from the mouse (a DAW's track
+    // or the Finder takes a copy); the session has the mouse from here, so the button is let go at once
+    void drag_out(NSView *v, NSEvent *e)
+    {
+        if (panel.peek_file_request() != Panel::FILE_MIDI_DRAG)
+            return;
+        panel.take_file_request();
+        std::string path, err = link->midi_drag_file(path);
+        input(panel.up(-1, -1));
+        if (path.empty())
+        {
+            panel.note(err);
+            return;
+        }
+        NSURL *url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]];
+        NSDraggingItem *item = [[NSDraggingItem alloc] initWithPasteboardWriter:url];
+        NSPoint p = [v convertPoint:e.locationInWindow fromView:nil];
+        NSImage *icon = [[NSWorkspace sharedWorkspace] iconForFile:url.path];
+        icon.size = NSMakeSize(32, 32);
+        [item setDraggingFrame:NSMakeRect(p.x - 16, p.y - 16, 32, 32) contents:icon];
+        [v beginDraggingSessionWithItems:@[ item ] event:e source:(id<NSDraggingSource>)v];
+        panel.note("DROP THE CLIP ON A TRACK");
+    }
+
     // OPEN or SAVE, if one was clicked (and a shell picked): the system's dialog, then the instance opens or saves
     void files()
     {
@@ -154,8 +178,8 @@ class GuiMac : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
-        if (req == Panel::FILE_MIDI)   // (no dialog: the clip goes to Documents/Tessera/MIDI)
-        {
+        if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
+        {                                                                // MIDI)
             panel.note(link->export_midi());
             return;
         }
@@ -286,7 +310,14 @@ void v_drag(id self, SEL, NSEvent *e)
         g->panel.set_mods(e.modifierFlags & NSEventModifierFlagCommand, e.modifierFlags & NSEventModifierFlagShift,
                           e.modifierFlags & NSEventModifierFlagOption);
         g->input(g->panel.move((int)p.x, (int)p.y));
+        if (e.type == NSEventTypeLeftMouseDragged)
+            g->drag_out(self, e);
     }
+}
+// NSDraggingSource (MIDI's clip dragged off): a copy, into another app only (not back onto this window)
+NSDragOperation v_drag_mask(id, SEL, NSDraggingSession *, NSDraggingContext c)
+{
+    return c == NSDraggingContextOutsideApplication ? NSDragOperationCopy : NSDragOperationNone;
 }
 void v_up(id self, SEL, NSEvent *e)
 {
@@ -468,6 +499,10 @@ Class view_class()
     std::snprintf(t_drop, sizeof t_drop, "%s@:@", @encode(BOOL));
     add(cls, @selector(draggingEntered:), (IMP)v_drag_enter, t_enter);
     add(cls, @selector(performDragOperation:), (IMP)v_drop, t_drop);
+    char t_mask[24];   // (NSDraggingSource: the clip dragged off MIDI)
+    std::snprintf(t_mask, sizeof t_mask, "%s@:@%s", @encode(NSDragOperation), @encode(NSDraggingContext));
+    add(cls, @selector(draggingSession:sourceOperationMaskForDraggingContext:), (IMP)v_drag_mask, t_mask);
+    class_addProtocol(cls, @protocol(NSDraggingSource));
     objc_registerClassPair(cls);
     gui_ivar = class_getInstanceVariable(cls, "tess_gui");
     return cls;

@@ -4074,7 +4074,17 @@ static void mo_browser(uint32_t cur, uint32_t total)
                 str_cpy(b + str_len(b), total == 1u ? " SOUND" : " SOUNDS", 8);
                 if (right - mo_tw(b) < chip + 3)        /* (no room: the number) */
                     fmt_int(b, (int32_t)total);
+#if TESS_HAS_POINTER
+                if (br_find[0]) {                       /* FIND: its text, then the count, in ink */
+                    mo_ascii(a, br_find, sizeof a);
+                    mo_cut(b, a, (uint32_t)(right - chip - 4) / 6u > 4u ? (uint32_t)(right - chip - 4) / 6u - 4u : 1u);
+                    str_cpy(b + str_len(b), " ", 2);
+                    fmt_int(b + str_len(b), (int32_t)total);
+                }
+                mo_textr(b, right, 1, br_find[0] ? MO_INK : MO_DIM);
+#else
                 mo_textr(b, right, 1, MO_DIM);
+#endif
             }
         }
         mo_hl(0, 8, 120, MO_INK);
@@ -4143,6 +4153,8 @@ static void mo_browser(uint32_t cur, uint32_t total)
 #if TESS_HAS_POINTER
             uz_begin(UZ_G_PIC);                         /* (a LIST name or a sound: a click turns its knob to it; a
                                                          * sound's double-click also OK, tess_core.c) */
+            uz_cell(UZ_G_PIC, 60, 0, 60, 9, -1, 0, -1, 0, "FIND", br_find);   /* (the count: a click types FIND, a
+                                                                         * box of the panel's, tess_core_zone_type) */
             for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)
                 if (first + (uint32_t)r != m)
                     uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,

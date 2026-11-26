@@ -422,7 +422,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     const tess_zone_t &z = entry_zone;
     std::string name = z.name, typed = entry_text + "_";
     for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
-    const char *hint = "ENTER: SET   ESC: NOT";
+    const char *hint = entry_find ? "ENTER: KEEP   ESC: CLEAR" : "ENTER: SET   ESC: NOT";
     int nw = Canvas::ptext_w(name.c_str(), 2), tw = Canvas::ptext_w(typed.c_str(), 3), hw = Canvas::ptext_w(hint, 2);
     int w = nw + 14 + (tw > 120 ? tw : 120) + 14 + hw + 20, h = 34;
     int ox = SCREEN_X + SCREEN_S / 32, x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
@@ -780,6 +780,18 @@ bool Panel::text(uint32_t ch)
 {
     if (entry_on && ch)   // a value's box (Ctrl / Cmd-click): every character its, Enter sets it, Esc not
     {
+        if (entry_find)   // FIND: the list follows each key; Enter keeps it, Esc clears it
+        {
+            if (ch == TESS_TEXT_OK) entry_on = false;
+            else if (ch == TESS_TEXT_CANCEL) entry_text.clear(), entry_on = false;
+            else if (ch == TESS_TEXT_BACK || ch == TESS_TEXT_DELETE) { if (!entry_text.empty()) entry_text.pop_back(); }
+            else if (ch >= 32 && ch < 127 && entry_text.size() < 14) entry_text += (char)ch;
+            PanelInput::Typed t{entry_zone, {}};
+            std::snprintf(t.text, sizeof t.text, "%s", entry_text.c_str());
+            input.typed.push_back(t);
+            input.changed = true;
+            return true;
+        }
         if (ch == TESS_TEXT_OK)
         {
             PanelInput::Typed t{entry_zone, {}};
@@ -1031,9 +1043,18 @@ bool Panel::down(int x, int y)
     if (zi >= 0)   // the screen: a zone (a double-click: the same zone, soon, where the first was)
     {
         const tess_zone_t z = zones[zi];
+        if (z.kind == TESS_ZONE_CELL && !std::strcmp(z.name, "FIND"))
+        {   // the browser's count: FIND, a box to type a name in (Cosmati audit G5)
+            entry_on = entry_find = true;
+            entry_zone = z;
+            entry_text = z.value;
+            drag = NONE;
+            input.changed = true;
+            return true;
+        }
         if (mod_type && (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN))
         {   // Ctrl / Cmd-click a value: a box to type it in (Cosmati audit G1)
-            entry_on = true;
+            entry_on = true, entry_find = false;
             entry_zone = z;
             entry_text.clear();
             drag = NONE;
@@ -1167,7 +1188,10 @@ bool Panel::down(int x, int y)
         if (x >= files[i].x && x < files[i].x + files[i].w && y >= files[i].y && y < files[i].y + files[i].h)
         {
             file_held = (int)i;
-            file_req = files[i].action;
+            if (files[i].action == FILE_MIDI)   // (asked when let go or dragged: move, up)
+                midi_press = true, midi_x0 = x, midi_y0 = y;
+            else
+                file_req = files[i].action;
             hit = true;
         }
     if (!native() && x >= usb.x && x < usb.x + usb.w && y >= usb.y && y < usb.y + usb.h)
@@ -1223,6 +1247,12 @@ bool Panel::move(int x, int y)
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
+    if (midi_press && std::abs(x - midi_x0) + std::abs(y - midi_y0) >= 8)   // MIDI dragged off: the clip, to drop
+    {
+        midi_press = false;
+        file_req = FILE_MIDI_DRAG;
+        return true;
+    }
     if (drag == ZONE2)   // TRACKS' tempo: a detent every 8 px; MIXER's faders and sends every 2, PAN every 3 (Shift:
     {                    // four times as far)
         int step = (drag_zone.kind == TESS_ZONE_TEMPO ? 8 : drag_zone.kind == TESS_ZONE_PAN ? 3 : 2) * (mod_fine ? 4 : 1);
@@ -1424,6 +1454,9 @@ bool Panel::up(int x, int y)
     if (drag == ZONE && zone_still) { zone_act(drag_zone, TESS_ZA_CLICK, 0); ch = true; }   // (a help card's text, a
     zone_still = false;                                                                       // knob's column: a click)
     drag = NONE;
+    if (midi_press)   // MIDI let go where pressed: the clip saved
+        file_req = FILE_MIDI, ch = true;
+    midi_press = false;
     file_held = bank_held = -1;
     return ch;
 }
@@ -2384,7 +2417,7 @@ void Panel::ctx_do(int r)
             break;
         }
         case 4: zone_act(ctx_zone, TESS_ZA_RANDOM, 0); break;
-        case 5: entry_on = true, entry_zone = ctx_zone, entry_text.clear(); break;
+        case 5: entry_on = true, entry_find = false, entry_zone = ctx_zone, entry_text.clear(); break;
         case 6: zone_act(ctx_zone, TESS_ZA_LOCK, 0); break;
         case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0); break;
         case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1); break;
