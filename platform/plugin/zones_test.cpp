@@ -370,6 +370,37 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
+static void typed_values()   // G1: a value typed for its zone; a fine turn never sped up
+{
+    tap(B_HOME);
+    tap(B_FX);
+    int k = -1;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_KNOB && v.zones[i].role == 4) { k = (int)i; break; }   // KNOB 2: FX MIX
+    CHECK(k >= 0, "FX: KNOB 2's zone");
+    if (k < 0) return;
+    tess_zone_t z = v.zones[k];
+    uint32_t pid = 0, tr = 0;
+    CHECK(tess_core_zone_param(&z, &pid, &tr) && tr == v.track, "its parameter (%x, T%u)", pid, tr + 1);
+    CHECK(!tess_core_zone_type(&z, "50 %"), "\"50 %\" typed: set");
+    run(10);
+    std::string a = v.zones[k].value;
+    CHECK(a == "50%", "..FX MIX shows 50%% (%s)", a.c_str());
+    CHECK(!tess_core_zone_type(&z, "33"), "\"33\" typed: the nearest shown");
+    run(10);
+    CHECK(std::string(v.zones[k].value) == "33%" || std::string(v.zones[k].value) == "32%" ||
+              std::string(v.zones[k].value) == "34%", "..%s", v.zones[k].value);
+    CHECK(tess_core_zone_type(&z, "LOUD"), "words that are no value: refused");
+    int32_t b = tess_core_param_get(pid, tr);
+    for (int i = 0; i < 6; i++) { tess_core_zone_do(&v.zones[k], TESS_ZA_TURN_FINE, 1); run(1); }
+    run(10);
+    CHECK(tess_core_param_get(pid, tr) == b + 6, "six fine detents, quickly: six steps (%d, was %d)",
+          tess_core_param_get(pid, tr), b);
+    tess_zone_t row = {};
+    row.kind = TESS_ZONE_ROW;
+    CHECK(!tess_core_zone_param(&row, &pid, &tr), "a zone that is no value: no parameter");
+    tap(B_HOME);
+}
 static int tfind_role(uint32_t kind, int track, int role)
 {
     for (uint32_t i = 0; i < tv.zone_count; i++)
@@ -1489,6 +1520,7 @@ int main(int argc, char **argv)
     points();
     tweak_marks();
     beta10();
+    typed_values();
     mixer8();
     keys8();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);

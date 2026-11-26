@@ -255,6 +255,7 @@ class GuiX11 : public Gui
             {
             case ButtonPress:
                 XSetInputFocus(dpy, wnd, RevertToParent, CurrentTime);   // (the keyboard, once clicked)
+                panel.set_mods(e.xbutton.state & ControlMask, e.xbutton.state & ShiftMask);   // (Ctrl: type, Shift: fine)
                 if (e.xbutton.button == Button1)
                     changed |= panel.down(at(e.xbutton.x), at(e.xbutton.y));
                 else if (e.xbutton.button == Button3)   // a button or key latched
@@ -273,6 +274,7 @@ class GuiX11 : public Gui
                     changed |= panel.side_button(e.xbutton.button == 9, false);
                 break;
             case MotionNotify:
+                panel.set_mods(e.xmotion.state & ControlMask, e.xmotion.state & ShiftMask);
                 changed |= panel.move(at(e.xmotion.x), at(e.xmotion.y));
                 break;
             case KeyPress:

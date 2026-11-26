@@ -157,6 +157,7 @@ typedef struct {
 } tess_zone_t;
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
 enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
+enum { TESS_ZA_TURN_FINE = 8 };   /* TURN n a detent at a time, never sped up (Shift held: fine steps) */
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */
@@ -290,6 +291,13 @@ uint32_t tess_core_key(uint32_t root, int32_t minor);
 /* the value v as the FM-1's screen shows it ("SAW", "1/16", "250ms", "42%"), into out (cap bytes, terminated): its
  * length, 0 if pid is not a parameter */
 uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out, uint32_t cap);
+
+/* ---- a value typed (the plugin: TESS_HAS_POINTER). zone_param: the parameter a screen zone turns (a value's column,
+ * KNOB 1..4; MIXER's LEVEL, PAN, a send): 1 with its central ID and track, 0 none (a list's row, an action, a page's own
+ * knob). zone_type: text typed for that zone ("440", "-6 dB", "1/8", "SAW", any case, spaces or not) sets it: a name or a
+ * value as the screen shows it, else the value whose shown number is nearest. 0 set, 1 refused */
+uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *track);
+uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text);
 
 /* ---- a DAW's transport (a build with TESS_HOST_CLOCK). Each host block while the DAW plays, before its audio, and
  * once when it stops. playing: its PLAY; bpm: its tempo; beats: its position at the block's start (quarter notes

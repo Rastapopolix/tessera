@@ -89,7 +89,8 @@ void tess_core_boot(void)
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
 _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
-enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION };
+enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION,
+       ZQ_FINE };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -98,13 +99,14 @@ static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
     if (zq_w - zq_r < ZQ_N)
         zq[zq_w++ % ZQ_N] = op | (arg & 255u) << 8 | (sign < 0 ? 1u : 0u) << 16;
 }
+static uint8_t zq_fine;                                 /* (TESS_ZA_TURN_FINE: the detents never sped up) */
 static void zq_turn(int32_t role, int32_t n)          /* n detents of a knob (at most 64 at once) */
 {
     int32_t k, a = n < 0 ? -n : n;
     if (role < 0 || role >= (int32_t)NE)
         return;
     for (k = 0; k < a && k < 64; k++)
-        zq_put(ZQ_DETENT, (uint32_t)role, n);
+        zq_put(zq_fine ? ZQ_FINE : ZQ_DETENT, (uint32_t)role, n);
 }
 /* the mouse's help (TESS_ZA_HELP, TESS_BTN_HELP): knob k's card (0..3: KNOB 1..4), as ARP held + that knob opens it,
  * pinned (UZ_HELP_PIN) till help_unpin: a click */
@@ -148,6 +150,10 @@ static void zq_run(void)
             uz_list_sel_pending = -1;                 /* (the list's cursor is its own again when next drawn) */
         break;
     case ZQ_DETENT:
+        tess_core_enc(arg, sg);
+        break;
+    case ZQ_FINE:                                     /* a detent never sped up (TESS_ZA_TURN_FINE) */
+        ui.enc_t[arg % NE] = 0;
         tess_core_enc(arg, sg);
         break;
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
@@ -380,6 +386,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
     int32_t d, k;
+    if (action == TESS_ZA_TURN_FINE) {                /* (as TURN, a detent at a time) */
+        zq_fine = 1;
+        tess_core_zone_do(z, TESS_ZA_TURN, n);
+        zq_fine = 0;
+        return;
+    }
     if (z && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && help_unpin())
         return;                                       /* a pinned help card: any click closes it, and does no more */
     if (z && action == TESS_ZA_DOUBLE && z->kind == TESS_ZONE_CELL && z->group == UZ_G_PIC && z->role == EN_K2 &&
@@ -1538,6 +1550,92 @@ uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out
         out[n++] = unit[i];
     out[n] = 0;
     return n;
+}
+
+/* ---- a value typed (Cosmati audit G1: Ctrl / Cmd-click a value, type it) */
+#if TESS_HAS_POINTER
+static void tt_norm(const char *s, char *d, uint32_t cap)   /* upper case, no spaces: "-6 dB" == "-6DB" */
+{
+    uint32_t n = 0;
+    for (; *s && n + 1u < cap; s++)
+        if (*s != ' ')
+            d[n++] = *s >= 'a' && *s <= 'z' ? (char)(*s - 32) : *s;
+    d[n] = 0;
+}
+static int tt_num(const char *s, int32_t *x1000)        /* a number at s's start (sign, digits, a point): x 1000 */
+{
+    int32_t v = 0, f = 0, fd = 1, neg = 0, any = 0;
+    if (*s == '+' || *s == '-') neg = *s++ == '-';
+    for (; *s >= '0' && *s <= '9'; s++) any = 1, v = v > 2000000 ? v : v * 10 + (*s - '0');
+    if (*s == '.')
+        for (s++; *s >= '0' && *s <= '9'; s++)
+            if (fd < 1000) any = 1, f = f * 10 + (*s - '0'), fd *= 10;
+    if (!any) return 0;
+    *x1000 = (v * 1000 + f * 1000 / fd) * (neg ? -1 : 1);
+    return 1;
+}
+#endif
+uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *track)
+{
+#if TESS_HAS_POINTER
+    if (!z || !zone_live(z))
+        return 0;
+    if ((z->kind == TESS_ZONE_LEVEL || z->kind == TESS_ZONE_PAN) && z->row >= 0 && z->row < (int32_t)NTRK) {
+        *pid = PID_TRACK(z->kind == TESS_ZONE_PAN ? P_PAN : z->role >= 0 && z->role < (int)FX_SLOTS ?
+                         (uint32_t)P_FXSEND + (uint32_t)z->role : (uint32_t)P_LEVEL);
+        *track = (uint32_t)z->row;
+        return 1;
+    }
+    if (z->kind == TESS_ZONE_KNOB && z->role >= EN_K1 && z->role <= EN_K4) {
+        uint8_t keep[sizeof help];                    /* (the help card's state as it was: only asked, not shown) */
+        uint32_t tr0 = help_tr, ok;
+        memcpy(keep, &help, sizeof help);
+        help_find((uint32_t)(z->role - EN_K1));
+        ok = help.pid != PID_NONE && pid_find(help.pid) != 0;
+        *pid = help.pid, *track = help_tr % NTRK;
+        memcpy(&help, keep, sizeof help);
+        help_tr = tr0;
+        return ok;
+    }
+#else
+    (void)z, (void)pid, (void)track;
+#endif
+    return 0;
+}
+uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text)
+{
+#if TESS_HAS_POINTER
+    uint32_t pid, tr;
+    tess_param_t info;
+    char want[24], got[24], t[24];
+    int32_t v, best = 0, num, x, bd = -1;
+    int has_num;
+    if (!text || !tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable)
+        return 1;
+    tt_norm(text, want, sizeof want);
+    if (!want[0])
+        return 1;
+    has_num = tt_num(want, &num);
+    for (v = info.min; v <= info.max && v - info.min < 65536; v++) {   /* a name or a value as shown, else the nearest number */
+        tess_core_param_text(pid, tr, v, t, sizeof t);
+        tt_norm(t, got, sizeof got);
+        if (!strcmp(got, want)) {
+            bd = 0, best = v;
+            break;
+        }
+        if (has_num && tt_num(got, &x)) {
+            int32_t d = x > num ? x - num : num - x;
+            if (bd < 0 || d < bd) bd = d, best = v;
+        }
+    }
+    if (bd < 0 || !tess_core_param_set(pid, tr, best))
+        return 1;
+    ui.force = 1;
+    return 0;
+#else
+    (void)z, (void)text;
+    return 1;
+#endif
 }
 
 /* ---- the Mono look's ink (MENU > COLOR; the plugin's shell picker, as web/sim/sim.c web_ink) */
