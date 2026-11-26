@@ -7,7 +7,7 @@
                                     stays at webapp/installer/)
   media/gallery/, media/brand/      its pictures: assets/gallery (tests/gallery_render.c), assets/brand (tools/gen_brand.py)
   media/video/                      the demo video and its poster: assets/video (tools/demo_video.py)
-  manual/, start/, plugin/          MANUAL.md, GETTING_STARTED.md and PLUGIN.md as pages (web/make_manual.py: needs
+  manual/, start/, plugin/, cosmati/  MANUAL.md, GETTING_STARTED.md, PLUGIN.md and COSMATI.md as pages (web/make_manual.py: needs
                                     markdown-it-py); plugin/ with the plugin's downloads (web/plugin_release.json)
   manual/tessera-manual.pdf         the manual as a PDF: docs/manual/tessera-manual.pdf (tools/gen_manual_pdf.py)
   firmware/tessera-VER.fwsc    the package, both cores (+ LICENSE, LICENSING.md, LICENSES/: the
@@ -291,6 +291,9 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         pdf, pdf_out = HERE.parent / make_manual.PDF_SRC, out / "manual" / make_manual.PDF_NAME   # (its PDF link)
         if pdf.resolve() != pdf_out.resolve():      # (the site made into main's docs/: the PDF is there already)
             shutil.copy(pdf, pdf_out)
+        cpdf, cpdf_out = HERE.parent / make_manual.COSMATI_PDF_SRC, out / "cosmati" / make_manual.COSMATI_PDF_NAME
+        if cpdf.exists() and cpdf.resolve() != cpdf_out.resolve():   # (the Cosmati manual's PDF, beside its page)
+            shutil.copy(cpdf, cpdf_out)
     if sim and not installer_only:
         copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "

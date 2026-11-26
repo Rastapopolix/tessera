@@ -3,6 +3,7 @@
 """Make the site's manual pages (GitHub Pages), from the repository's markdown:
   manual/index.html   MANUAL.md
   start/index.html    GETTING_STARTED.md
+  cosmati/index.html  COSMATI.md: the Cosmati manual
   plugin/index.html   PLUGIN.md: what differs in the plugin, with its downloads at the top (plugin_release.json)
 
 Each page: the project page's look (Tessera Mono and the colours from web/home/index.html, the light / dark choice it
@@ -27,12 +28,13 @@ from markdown_it import MarkdownIt
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 REPO = "https://github.com/Rastapopolix/tessera/blob/HEAD/"
-PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start", "PLUGIN.md": "plugin"}
+PAGES = {"MANUAL.md": "manual", "GETTING_STARTED.md": "start", "PLUGIN.md": "plugin", "COSMATI.md": "cosmati"}
 # CommonMark, as GitHub reads it (a list item's lines indented by two, raw HTML kept), with its tables
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 PDF_SRC = "docs/manual/tessera-manual.pdf"          # the manual as a PDF (tools/gen_manual_pdf.py)
-PDF_NAME = "tessera-manual.pdf"                     # its name on the site, next to the manual's page
-TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Cosmati: Tessera as a plugin"}
+PDF_NAME = "tessera-manual.pdf"
+COSMATI_PDF_SRC, COSMATI_PDF_NAME = "docs/manual/cosmati-manual.pdf", "cosmati-manual.pdf"                     # its name on the site, next to the manual's page
+TITLES = {"manual": "Tessera manual", "start": "Getting started with Tessera", "plugin": "Cosmati: Tessera as a plugin", "cosmati": "The Cosmati manual"}
 
 
 def slug(text, seen):
@@ -53,6 +55,8 @@ def link(url, here):
         return f"../{PAGES[path]}/" + (f"#{frag}" if frag else "")
     if path == PDF_SRC:
         return "../manual/" + PDF_NAME
+    if path == COSMATI_PDF_SRC:
+        return "../cosmati/" + COSMATI_PDF_NAME
     for src, dst in (("assets/gallery/", "media/gallery/"), ("assets/brand/", "media/brand/"), ("assets/guides/", "media/guides/"),
                      ("assets/plugin/", "media/plugin/")):
         if path.startswith(src):
@@ -342,6 +346,7 @@ main .downloads p {{ color: var(--mid); }}
   <a href="../start/"{cur_start}>START</a>
   <a href="../manual/"{cur_manual}>MANUAL</a>
   <a href="../plugin/"{cur_plugin}>PLUGIN</a>
+  <a href="../cosmati/"{cur_cosmati}>COSMATI</a>
   <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
   <a class="wide" href="{repo}RECIPES.md">RECIPES</a>
   <a class="wide" href="../webapp/sim/">SIMULATOR</a>
@@ -464,7 +469,9 @@ NEXT = {
     "start": 'Next: <a href="../manual/#tessera-in-plain-words">Tessera in plain words</a>, then the whole <a href="../manual/">manual</a>.',
     "manual": 'New to Tessera? Start with <a href="../start/">Getting started</a>. '
               'To print it or read it offline: <a href="tessera-manual.pdf" download>the manual as a PDF</a>.',
-    "plugin": 'Everything else, the same in the plugin as on the FM-1: the <a href="../manual/">manual</a>. New to Tessera? '
+    "cosmati": 'To print it or read it offline: <a href="cosmati-manual.pdf" download>the Cosmati manual as a PDF</a>. Installing and downloading Cosmati: the <a href="../plugin/">plugin\'s page</a>. What each page and generator does: the <a href="../manual/">Tessera manual</a>. '
+               'New to Tessera? Start with <a href="../start/">Getting started</a>.',
+    "plugin": 'The whole guide to using it: the <a href="../cosmati/">Cosmati manual</a>. Everything else, the same in the plugin as on the FM-1: the <a href="../manual/">manual</a>. New to Tessera? '
               'Start with <a href="../start/">Getting started</a>.',
 }
 
@@ -480,10 +487,11 @@ def make(out):
         dest.write_text(PAGE.format(src=src, title=TITLES[page], face=face, dark=dark, light=light, repo=REPO,
                                     # (a narrow screen has room for two of START, MANUAL and PLUGIN: the plugin's page drops START,
                                     # the others PLUGIN)
-                                    cur_start=' aria-current="page"' if page == "start" else ' class="wide"' if page == "plugin" else "",
+                                    cur_start=' aria-current="page"' if page == "start" else ' class="wide"' if page in ("plugin", "cosmati") else "",
                                     cur_manual=' aria-current="page"' if page == "manual" else "",
                                     cur_plugin=' aria-current="page"' if page == "plugin" else ' class="wide"',
-                                    short={"manual": "the manual", "plugin": "the plugin's guide"}.get(page, "this guide"),
+                                    cur_cosmati=' aria-current="page"' if page == "cosmati" else "",
+                                    short={"manual": "the manual", "plugin": "the plugin's guide", "cosmati": "the Cosmati manual"}.get(page, "this guide"),
                                     toc=sidebar(heads, page), body=body, next=NEXT[page],
                                     intro=f'<p class="next" style="margin:16px 0 0;border:0;padding:0">{NEXT[page]}</p>' if page == "manual" else ""), encoding="utf-8")
         print(f"make_manual: {dest} ({len(heads)} headings)")

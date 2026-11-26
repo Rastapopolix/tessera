@@ -35,12 +35,17 @@ import make_manual                                      # noqa: E402
 SRC = ROOT / "MANUAL.md"
 WORK = ROOT / "build" / "manual-pdf"
 PDF = ROOT / "docs" / "manual" / "tessera-manual.pdf"
+COSMATI = "--cosmati" in sys.argv          # the Cosmati manual (COSMATI.md) instead: docs/manual/cosmati-manual.pdf
+if COSMATI:
+    sys.argv.remove("--cosmati")
+    SRC, PDF, WORK = ROOT / "COSMATI.md", ROOT / "docs" / "manual" / "cosmati-manual.pdf", ROOT / "build" / "cosmati-pdf"
+TITLE = "Cosmati manual" if COSMATI else "Tessera manual"
 REPO = make_manual.REPO
 SITE = "https://rastapopolix.github.io/tessera/"
 
 CSS = """
 @page { size: A4; margin: 16mm 16mm 18mm 16mm;
-  @bottom-left { content: "Tessera manual"; font: 7.5pt/1 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #777; }
+  @bottom-left { content: "TITLE_HERE"; font: 7.5pt/1 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #777; }
   @bottom-right { content: counter(page); font: 8pt/1 "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: #444; } }
 @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
 :root { --ink: #000; --line: #c8c8c8; --tint: #f2f2f2; --pixel: "Tessera Mono", ui-monospace, monospace; }
@@ -101,8 +106,10 @@ def link(url):
         return url
     path, _, frag = url.partition("#")
     path = path.lstrip("./")
-    if path == "MANUAL.md":
+    if path == ("COSMATI.md" if COSMATI else "MANUAL.md"):
         return f"#{frag}" if frag else "#top"
+    if COSMATI and path in ("MANUAL.md", "PLUGIN.md"):
+        return SITE + ("manual/" if path == "MANUAL.md" else "plugin/") + (f"#{frag}" if frag else "")
     if path == "GETTING_STARTED.md":
         return SITE + "start/" + (f"#{frag}" if frag else "")
     if path.startswith("assets/"):
@@ -112,7 +119,7 @@ def link(url):
 
 def convert(md_text):
     """the manual as HTML: GitHub's heading ids (make_manual's), the links the PDF's, the folds open"""
-    body, heads = make_manual.convert(md_text, "manual")
+    body, heads = make_manual.convert(md_text, "cosmati" if COSMATI else "manual")
     # make_manual already turned the links into the site's: redo them for paper from the markdown's own
     raw = make_manual.MD.render(md_text)
     srcs = re.findall(r'(?:href|src)="([^"]*)"', raw)
@@ -134,14 +141,15 @@ def contents(heads):
             subs[hid] = []
         elif level == 3 and cur:
             subs[cur].append(hid)
-    groups = make_manual.GROUPS["manual"]
+    groups = [] if COSMATI else make_manual.GROUPS["manual"]
     moved = {hid for _, ids in groups for hid in ids if hid not in subs}
     rest = [hid for hid in chapters if not any(hid in ids for _, ids in groups)]
     if rest:
-        groups = groups + [("More", rest)]
+        groups = groups + [("" if COSMATI else "More", rest)]
     out = ['<nav class="toc"><h2 id="contents">Contents</h2><ol>']
     for label, ids in groups:
-        out.append(f'<li class="group">{html.escape(label)}</li>')
+        if label:
+            out.append(f'<li class="group">{html.escape(label)}</li>')
         for hid in ids:
             if hid not in titles:
                 continue
@@ -172,17 +180,17 @@ def page():
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Tessera manual</title>
-<!-- made by tools/gen_manual_pdf.py from MANUAL.md: edit that, not this -->
-<style>{face}{CSS}</style>
+<title>{TITLE}</title>
+<!-- made by tools/gen_manual_pdf.py from {SRC.name}: edit that, not this -->
+<style>{face}{CSS.replace("TITLE_HERE", TITLE)}</style>
 </head>
 <body id="top">
 <section class="cover">
 <img class="banner" src="{banner}" alt="Tessera: generative firmware for the M-Vave FM-1">
-<p class="title">Tessera manual</p>
-<p class="sub">Generative firmware for the M-Vave FM-1{f", version {v}" if v else ""}</p>
+<p class="title">{TITLE}</p>
+<p class="sub">{"Tessera in your DAW: CLAP, VST3, Audio Unit and standalone" if COSMATI else "Generative firmware for the M-Vave FM-1"}{f", version {v}" if v and not COSMATI else ""}</p>
 <div class="foot">
-<p>The latest manual, always: <a href="{SITE}manual/">{SITE}manual/</a></p>
+<p>The latest manual, always: <a href="{SITE}{"cosmati" if COSMATI else "manual"}/">{SITE}{"cosmati" if COSMATI else "manual"}/</a></p>
 <p>Recipes: <a href="{REPO}RECIPES.md">RECIPES.md</a> · Every button on one sheet: <a href="{REPO}docs/cheatsheet/tessera-cheatsheet.pdf">the cheatsheet</a></p>
 <p>Tessera is free software under the GPL-3.0. See LICENSING.md for the parts under other licences.</p>
 </div>

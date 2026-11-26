@@ -159,7 +159,9 @@ class Panel
      * shell: a toast under the screen, Cosmati audit G9; the FM-1's: beside the swatches). MIDI asks
      * when let go (FILE_MIDI: the clip saved), or once dragged 8 px off its press (FILE_MIDI_DRAG: the window starts
      * the system's drag of the clip, a .mid file, into a DAW's track or a folder, then calls up()) */
-    enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI, FILE_MIDI_DRAG };
+    enum { FILE_NONE, FILE_OPEN, FILE_SAVE, FILE_MIDI, FILE_MIDI_DRAG, FILE_MANUAL };   // (FILE_MANUAL: MANUAL in the menu; the window
+    // opens manual_url() in the browser)
+    static const char *manual_url() { return "https://rastapopolix.github.io/tessera/cosmati/"; }
     int take_file_request() { int r = file_req; file_req = FILE_NONE; return r; }
     int peek_file_request() const { return file_req; }
     void note(const std::string &text);

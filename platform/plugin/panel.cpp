@@ -1618,16 +1618,16 @@ void skin(const Skin &k)
 {
     T_YEL = k.yel, T_DIM = k.dim, T_HELD = k.held, T_WORD = k.word, T_OFF = k.off, T_BLACK = k.black, T_BODY = k.body;
 }
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 12, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 13, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
-// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT, TRACK, OUTPUTS; ABOUT (a dotted line between each
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT, TRACK, OUTPUTS; MANUAL, ABOUT (a dotted line between each
 // group)
 enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_TRACK, ROW_OUTS,
-       ROW_ABOUT };
+       ROW_MANUAL, ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
-           (i >= ROW_ABOUT ? 18 : 0);
+           (i >= ROW_MANUAL ? 18 : 0);
 }
 const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
@@ -1922,7 +1922,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
     static const char *NAMES[MENU_ROWS] = {"SKIN", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
-                                                "LISTEN", "SPLIT", "TRACK", "OUTPUTS", "ABOUT"};
+                                                "LISTEN", "SPLIT", "TRACK", "OUTPUTS", "MANUAL", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -1999,6 +1999,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             seg("STEREO", !outs_mono_, true);
             seg("MONO", outs_mono_, true);
         }
+        else if (r == ROW_MANUAL)   // a click opens the Cosmati manual's web page
+            c.ptext(right - Canvas::ptext_w("OPENS A WEB PAGE", 2), y + 11, "OPENS A WEB PAGE", 2, T_DIM);
         else if (r == ROW_LISTEN || r == ROW_SPLIT)   // < OFF > / < CH 16 >, < 48 >: fixed widths (LISTEN_SEG)
         {
             char t[8];
@@ -2342,6 +2344,13 @@ bool Panel::menu_click(int x, int y)
             set_listen(ch);
             listen_req = ch;
         }
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_MANUAL)   // the Cosmati manual in the browser (the window opens it: FILE_MANUAL)
+    {
+        file_req = FILE_MANUAL;
+        menu_open = false;
         menu_sub = 0;
         return false;
     }

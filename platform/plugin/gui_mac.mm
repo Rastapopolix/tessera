@@ -178,6 +178,11 @@ class GuiMac : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MANUAL)   // (MANUAL in the menu: the manual's page in the browser)
+        {
+            [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@(Panel::manual_url())]];
+            return;
+        }
         if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
         {                                                                // MIDI)
             panel.note(link->export_midi());
