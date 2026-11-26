@@ -994,6 +994,74 @@ static int32_t mo_note_h(int32_t x, int32_t span)
  * the next span, or moves the lowest past a C; one pitch alone: its place in the whole range) (a chord: a tick above for each note more), a tie an outline at the note before's height, a rest a dim dash; an
  * accent a mark under, a slide a tail into the next, Accumulate a caret over (pointing up or down); the playhead a
  * dim frame, the cursor a thick underline */
+#if TESS_HAS_POINTER
+/* NOTES' SEND lane (Tessadub in Cosmati, step 4; SHIFT held or latched on NOTES): the echo's send a step, as MOTION
+ * events (tracks 1..4, motion.c); the core's TESS_ZONE_SEND edits them (tess_core.c core_send_lane). The send it moves:
+ * the one THROW opens (fx.c dub_slots: SPLIT's ECHO slot, else FX SEND) */
+static uint32_t send_lane_param(void)
+{
+#if TESS_DUB
+    uint32_t s = dub_slots & 2u ? 1u : dub_slots & 4u ? 2u : 0u;
+    return s ? (uint32_t)P_FXSEND2 + s - 1u : (uint32_t)P_FXSEND;
+#else
+    return P_FXSEND;
+#endif
+}
+static int send_lane_on(void) { return oct_dn_only() && !name_on(); }
+/* the send's event on the track's step, -1 none */
+static int32_t send_lane_at(const track_t *t, uint32_t step, uint32_t id)
+{
+    uint32_t k = trk_index(t), i;
+    if (k >= MOTION_TRACKS) return -1;
+    for (i = 0; i < motion.count; i++)
+        if (motion_pattern[i] == t->pattern && motion.event[i].place == (k << 6 | step) && motion.event[i].param == id &&
+            !motion_native_event(id, motion.event[i].value))
+            return motion.event[i].value;
+    return -1;
+}
+/* the lane: a bar a step, its event's send (full ink), the track's own where there is none (a dim line); the label
+ * SEND (or SEND 2 / 3) at the lane's left; tracks 5..8: none (MOTION's tracks) */
+static void mo_send_lane(const track_t *t, uint32_t pg, uint32_t len, int32_t base)
+{
+    uint32_t id = send_lane_param(), i, own = (uint32_t)clamp(motion_base_value(t, id), 0, 127);
+    char nm[16];
+    str_cpy(nm, id == P_FXSEND ? "SEND" : id == P_FXSEND2 ? "SEND 2" : "SEND 3", sizeof nm);
+    if (trk_index(t) >= MOTION_TRACKS) {
+        mo_textc("SEND LANE: T1-T4", 60, base - 14, MO_DIM);
+        return;
+    }
+    mo_text(nm, 1, 61, MO_INK);
+    uz_begin(UZ_G_PIC);
+    for (i = 0; i < 16u; i++) {
+        uint32_t si = pg * 16u + i;
+        int32_t x = 3 + (int32_t)i * 7 + (int32_t)(i / 4u) * 2, v = si < len ? send_lane_at(t, si, id) : -1, h;
+        char val[8];
+        if (si >= len) {
+            mo_px(x + 2, base - 1, MO_DIM);
+            continue;
+        }
+        if (v >= 0) {
+            h = 1 + v * 23 / 127;
+            mo_fill(x, base - h, 5, h, MO_TRK(trk_index(t)));
+            fmt_int(val, v);
+        } else {
+            h = 1 + (int32_t)own * 23 / 127;
+            mo_hl(x, base - h, 5, MO_DIM);
+            str_cpy(val, "-", sizeof val);
+        }
+        if (song.playing && si == t->seq_idx % len)
+            mo_box(x - 1, base - 26, 7, 28, MO_DIM);
+        if (!cv_under) {
+            char zn[16];
+            str_cpy(zn, nm, sizeof zn);
+            str_cpy(zn + str_len(zn), " S", 3);
+            fmt_int(zn + str_len(zn), (int32_t)si + 1);
+            uz_add(UZ_G_PIC, UZ_SEND, x - 1, base - 26, 7, 30, -1, -1, (int32_t)si, zn, val);
+        }
+    }
+    mo_text("CLICK: FULL / NONE, DRAG: AMOUNT", 1, 101, MO_DIM);
+}
+#endif
 static void mo_pic_notes(const track_t *t)
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), pages = (len + 15u) / 16u, pg = ui.cursor / 16u, i;
@@ -1029,6 +1097,10 @@ static void mo_pic_notes(const track_t *t)
     span = hi - c0 <= 12 ? 12 : hi - c0 <= 24 ? 24 : 36;
     if (lo == hi) c0 = 0, span = 127;
 #if TESS_HAS_POINTER
+    if (send_lane_on()) {                               /* (SHIFT held or latched: the SEND lane in the steps' place) */
+        mo_send_lane(t, pg, len, base);
+        return;
+    }
     if (!cv_under) {                                    /* (a zone over the steps: a click there a note, ui_roll.c) */
         uz_roll.first = (int16_t)(pg * 16u), uz_roll.len = (int16_t)len, uz_roll.c0 = (int16_t)c0;
         uz_roll.span = (int16_t)span, uz_roll.lo = (int16_t)lo, uz_roll.hi = (int16_t)hi;
