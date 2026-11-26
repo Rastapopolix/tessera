@@ -270,6 +270,14 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
         b[k++] = '.', b[k++] = (char)('1' + beat_n % 4u), b[k] = 0;
         t2_textr(b, 236, 2, MO_DIM);
     }
+#if TESS_DUB
+    {                                                   /* DROP: lit while out, blinking while it waits for the line */
+        uint32_t d = dub_drop_state();
+        if ((d & 1u) ^ ((d >> 1) & blink)) t2_inv("DROP", 142, 2, MO_INK, MO_BG);
+        else t2_text("DROP", 142, 2, MO_DIM);
+        t2_zone(UZ_DROP, 140, 0, 28, 11, 0, "DROP", d & 2u ? "NEXT BAR" : d & 1u ? "ON" : "OFF");
+    }
+#endif
     t2_fill(0, 11, 240, 1, MO_DIM);
     if (mixer) {                                        /* MIXER: a strip a track */
         for (k = 0; k < NTRK; k++)

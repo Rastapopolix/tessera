@@ -347,6 +347,13 @@ static uint32_t glo_key_trk(uint32_t k)
 #endif
 }
 
+#if TESS_DUB
+static void dub_drop_message(int on)                    /* DROP pressed (D#4, the TRACKS screen's button): what it did */
+{
+    ui_message(on < 0 ? "NOTHING TO DROP" : on ? (song.playing ? "DROP NEXT BAR" : "DROP") :
+               song.playing ? "BACK NEXT BAR" : "DROP OFF");
+}
+#endif
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
@@ -359,7 +366,7 @@ static void layer_key(uint32_t l, uint32_t k)
             else lys.solo |= 1u << k;                   /* (layer_masks: track_solo while held) */
 #if TESS_DUB
         } else if (key_black(k) && p == 4u) {          /* D#4: DROP (entries.c, on the bar line) */
-            ui_message(dub_drop_press() ? (song.playing ? "DROP NEXT BAR" : "DROP") : (song.playing ? "BACK NEXT BAR" : "DROP OFF"));
+            dub_drop_message(dub_drop_press());
         } else if (!key_black(k) && (p == 12u || p == 13u)) {   /* D5 / E5: THROW while held (layer_keys) */
             lys.thr |= 1u << k;
 #endif

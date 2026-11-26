@@ -517,6 +517,22 @@ static void mixer8()   // MIXER on the TRACKS screen (Cosmati audit I1): a strip
     for (uint32_t i = 0; i < tv.zone_count; i++) pans += tv.zones[i].kind == TESS_ZONE_PAN;
     CHECK(!pans, "HOME: the rows again (%d PAN zones)", pans);
 }
+static void drop_button()   // TRACKS's DROP (Tessadub in Cosmati, step 2): stopped, a click is at once; again, back
+{
+    if (tess_core_tracks() < 8) return;
+    tess_core_transport(0);
+    uint32_t role = pid_named("ROLE") != 0xFFFFu ? pid_named("ROLE") : pid_named("ENTRIES ROLE");
+    tess_core_param_set(role, 0, 5);   // (T1 ANCHOR: the one kept)
+    run(10);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    CHECK(role != 0xFFFFu && tfind(TESS_ZONE_DROP, 0) >= 0 && tval(TESS_ZONE_DROP, 0) == "OFF", "TRACKS: a DROP button, OFF (%s)",
+          tval(TESS_ZONE_DROP, 0).c_str());
+    tact(TESS_ZONE_DROP, 0, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_DROP, 0) == "ON", "  clicked, stopped: ON at once (%s)", tval(TESS_ZONE_DROP, 0).c_str());
+    tact(TESS_ZONE_DROP, 0, TESS_ZA_CLICK);
+    CHECK(tval(TESS_ZONE_DROP, 0) == "OFF", "  again: OFF (%s)", tval(TESS_ZONE_DROP, 0).c_str());
+    tess_core_param_set(role, 0, 0);
+}
 static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lower octave's mute / solo T1-T4, the upper's T5-T8
 {
     tap(B_HOME);
@@ -2043,6 +2059,7 @@ int main(int argc, char **argv)
     typed_values();
     mixer8();
     keys8();
+    drop_button();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
     run(50);
     tap(B_HOME);

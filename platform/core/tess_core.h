@@ -155,6 +155,9 @@ enum { TESS_ZONE_EGRID = 19 };
 /* SLIDER: a bar that shows a value (MORPH's POS): role KNOB 1..4's, which it sets. TURN and WHEEL turn that knob; SET n
  * (0..1000, where the mouse is across the bar) sets the value there, min at the left */
 enum { TESS_ZONE_SLIDER = 20 };
+/* DROP: the TRACKS screen's DROP (an 8-track build's, core.h TESS_DUB). CLICK: DROP pressed (all but the anchors out on
+ * the next bar, again: back in; entries.c dub_drop_press). Its value: OFF, NEXT BAR (waiting) or ON */
+enum { TESS_ZONE_DROP = 22 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;

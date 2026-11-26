@@ -89,6 +89,7 @@ void tess_core_boot(void)
 #if TESS_HAS_POINTER
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
 _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
+_Static_assert(TESS_ZONE_DROP == UZ_DROP, "tess_core.h TESS_ZONE_DROP is ui_zones.c's UZ_DROP");
 enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION,
        ZQ_FINE };
 #define ZQ_N 256u
@@ -1576,6 +1577,15 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
         core_tempo(action, n);
         return;
     }
+#if TESS_DUB
+    if (z && z->kind == TESS_ZONE_DROP) {             /* (the header's DROP: a click, as GLO's D#4) */
+        if (click && action != TESS_ZA_HELP) {
+            dub_drop_message(dub_drop_press());
+            ui.force = 1;
+        }
+        return;
+    }
+#endif
     if (tr >= NTRK)
         return;
 #if TESS_HAS_POINTER

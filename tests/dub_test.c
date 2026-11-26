@@ -86,6 +86,8 @@ int main(int argc, char **argv)
     tessera.et_role[0] = 0;
     for (b = 0; b < TESSERA_TRACKS; b++) tessera.et_role[b] = b == 2u ? 2u : 3u;   /* (no ANCHOR: T3 RHYTHM kept) */
     CHECK(dub_drop_keep() == 1u << 2, "no ANCHOR: BASS and RHYTHM kept (%02x)", (unsigned)dub_drop_keep());
+    for (b = 0; b < TESSERA_TRACKS; b++) tessera.et_role[b] = 3u;
+    CHECK(dub_drop_press() == -1 && muted() == 0u && dub_drop_state() == 0u, "nothing to keep: nothing dropped (-1)");
 
     /* THROW */
     song.g[G_FXMODE] = 0;

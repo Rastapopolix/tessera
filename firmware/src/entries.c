@@ -587,26 +587,36 @@ static uint8_t drop_keep(void)                        /* the tracks a DROP keeps
     uint32_t k = et_mask(ET_ANCHOR);
     return (uint8_t)(k ? k : et_mask(ET_BASS) | et_mask(ET_RHYTHM));
 }
+static uint32_t drop_takes(void)                      /* the tracks a DROP now would take out: sounding, not kept */
+{
+    uint32_t tr, keep = drop_keep(), m = 0;
+    if (keep)
+        for (tr = 0; tr < TESSERA_TRACKS; tr++)
+            if (!(keep >> tr & 1u) && !trk[tr].p[P_MUTE]) m |= 1u << tr;
+    return m;
+}
 static void drop_now(void)
 {
-    uint32_t tr, keep;
+    uint32_t tr, take;
     if (drop_out) {                                   /* (back in: those DROP took, still out) */
         for (tr = 0; tr < TESSERA_TRACKS; tr++)
             if (drop_out >> tr & 1u) trk[tr].p[P_MUTE] = 0;
         drop_out = 0;
         return;
     }
-    if (!(keep = drop_keep())) return;                 /* (nothing to keep: no DROP) */
+    take = drop_takes();                              /* (nothing kept, or nothing to take: no DROP) */
     for (tr = 0; tr < TESSERA_TRACKS; tr++)
-        if (!(keep >> tr & 1u) && !trk[tr].p[P_MUTE]) {
+        if (take >> tr & 1u) {
             trk[tr].p[P_MUTE] = 1;
             tessera_kill(&trk[tr]);
-            drop_out |= (uint8_t)(1u << tr);
         }
+    drop_out = (uint8_t)take;
 }
-/* DROP's key (GLO / MIXER / LANDSCAPE, Cosmati's TRACKS button): 1 = a DROP now or waiting, 0 = back or called off */
+/* DROP's key (GLO / MIXER / LANDSCAPE, Cosmati's TRACKS button): 1 = a DROP now or waiting, 0 = back or called off,
+ * -1 = nothing to drop (no ANCHOR, BASS or RHYTHM kept, or every other track muted already): nothing done */
 int dub_drop_press(void)
 {
+    if (!drop_out && !drop_pend && !drop_takes()) return -1;
     if (!song.playing) { drop_pend = 0; drop_now(); }
     else drop_pend ^= 1u;
     return (drop_out != 0) ^ drop_pend;
@@ -649,12 +659,7 @@ uint32_t mute_waiting(void)                           /* the keys that blink (an
 {
     uint32_t m = mute_pend;
 #if TESS_DUB
-    if (drop_pend) {
-        uint32_t tr, keep = drop_keep();
-        if (drop_out) m |= drop_out;
-        else for (tr = 0; tr < TESSERA_TRACKS; tr++)
-            if (!(keep >> tr & 1u) && !trk[tr].p[P_MUTE]) m |= 1u << tr;
-    }
+    if (drop_pend) m |= drop_out ? drop_out : drop_takes();
 #endif
     return song.playing ? m : 0u;
 }
