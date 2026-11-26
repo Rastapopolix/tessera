@@ -1851,53 +1851,10 @@ static void page_tap(uint32_t b)
         smap_close();
         return;
     }
-    if (b == B_EDIT && sec_on()) {                      /* an EDIT page of an engine in sections: its map */
-        smap_open();
-        return;
-    }
-    if(b==B_EDIT && !ui.home && cur_page()->scope==SC_DRUMHIT){drum_hit_delete();return;}
-    if (b == B_GLO) {
-        open_global();                                  /* MIXER -> GLOBAL -> SYSTEM -> MIXER */
-        return;
-    }
-    if (b == B_EDIT && song.seq_mode && !ui.home && cur_page()->graph == GR_ROLL) {   /* the DRUM grid: EDIT clears
-                                                         * the step (synth STEP: a step modifier, ui_input) */
-        if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
-        if (live_rec_sel() && notes_have_recording(TSEL)) { ui_message("STOP RECORDING"); return; }
-        fm1_irq_off();
-        if (drum_track(TSEL))
-            step_clear(&TSEL->step[ui.cursor]);
-        else
-            step_delete(TSEL, ui.cursor);
-        fm1_irq_on();
-        cursor_set(ui.cursor + (ui.cursor_dir < 0 ? -1 : 1));   /* (on the way KNOB 1 went) */
-        ui_message("STEP CLEARED");
-        return;
-    }
-    if (b == B_EDIT && !ui.home && (cur_page()->graph == GR_USER || cur_page()->graph == GR_SLOTS)) {
-        name_rename();                                  /* SAVE > USER / PROJECT: EDIT renames the slot */
-        return;
-    }
-    if (b == B_ARP) {                                   /* ARP: the shaping lane (ui.c arp_page); again: its next page */
-        uint8_t pg[NPAGES];
-        uint32_t n = fam_pages(FAM_ARP, pg), k, last = ui.fam_last[FAM_ARP];
-        if (!n) return;
-        for (k = 0; k < n && pg[k] != ui.page; k++) {}
-        if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
-        else {
-            for (k = 0; k < n && pg[k] != last; k++) {}
-            if (k < n) ui.page = (uint8_t)last;
-            else {                                      /* first time: the lane's first (ARP 2 is ARP's OCT- layer, not listed) */
-                for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
-                ui.page = pg[k < n ? k : 0u];
-            }
-        }
-        ui.fam_last[FAM_ARP] = ui.page;
-        ui.home = 0;
-        page_entered();
-        return;
-    }
-    for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)
+    /* (EDIT, as every group's button: its pages, again the next one. Its old page actions are on the sheets now:
+     * the map on the SOUND sheet, Clear hit / Delete note on the hit's or note's, Rename on the slot's; Theo
+     * 2026-11-26) */
+    for (f = FAM_HOME + 1u; f < FAM_COUNT; f++)       /* (GLO: FAM_GLO before FAM_TRK; ARP: its lane, open_family) */
         if (FAM_BTN[f] == b) {
             open_family(f);
             return;
@@ -2508,10 +2465,7 @@ static void ui_input(void)
     }
     if (lytap)                                          /* a layer's button acts on release (held: the layer) */
         layer_tap(lytap);
-    if (seq == BT_HOLD) {                               /* SEQ held: PATTERNS, the song under it (SONG: SELECT) */
-        for (k = 0; k < NPAGES; k++) if (PAGES[k].graph == GR_PATGRID) break;
-        ui.home = 0; ui.page = (uint8_t)k; ui.fam_last[FAM_SEQ] = ui.page; page_entered();
-    } else if (seq == BT_TAP) {
+    if (seq == BT_TAP) {                                /* (SEQ held: the pattern keys, never a page: Theo 2026-11-26) */
         open_family(FAM_SEQ);
     }
     if (home == BT_TAP)                                 /* HOME acts on release: a hold opens the menu */
@@ -2784,12 +2738,8 @@ static void ui_input(void)
             ui.step_mods &= (uint16_t)~bit;
             if (!(ui.step_used & bit)) {
                 b = panel_btn_of(k);
-                if (b != B_EDIT)
-                    open_family(b == B_ENV ? FAM_ENV : FAM_SCL);
-                else if (chain_busy())
-                    ui_message("STOP TO EDIT");
-                else
-                    step_delete_edit();                 /* EDIT tapped: the note with its ties */
+                open_family(b == B_ENV ? FAM_ENV : b == B_EDIT ? FAM_EDIT : FAM_SCL);   /* tapped: its pages, as
+                                                         * anywhere (Delete note: the note's sheet) */
             }
             ui.step_used &= (uint16_t)~bit;
         }

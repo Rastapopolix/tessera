@@ -45,7 +45,7 @@ struct GuiLink
      * every Tessera) */
     virtual Fm1Link::State fm1_state() { return Fm1Link::OFF; }
     virtual void fm1_set(bool on) { (void)on; }
-    /* SIZE (TESSERA's menu): the window's size now in % (100, 150, 200; EXPANDED 100, 125: Panel::size_fit), and a
+    /* SIZE (TESSERA's menu): the window's size now in % (75 to 200; EXPANDED to 150: Panel::size_fit), and a
      * pick: the instance remembers it for every window and asks the host for the new size */
     virtual int size_pct() { return 100; }
     virtual void size_pick(int pct) { (void)pct; }
@@ -76,6 +76,10 @@ struct GuiLink
     /* HOVER HELP (TESSERA's menu), remembered as KEYS is: off unless turned on */
     virtual bool hover_help_on() { return projfile::setting_get("hover_help") == "1"; }
     virtual void hover_help_set(bool on) { projfile::setting_put("hover_help", on ? "1" : "0"); }
+    /* OUTPUTS (TESSERA's menu): the track ports mono or stereo, the setting (the next instance's) and this instance's */
+    virtual bool outs_mono() { return false; }
+    virtual bool outs_live_mono() { return false; }
+    virtual void outs_set(bool mono) { (void)mono; }
 };
 
 /* each window's tick: a click on FM-1 USB handed on, and its state shown */
@@ -112,6 +116,10 @@ inline void gui_listen_tick(Panel &panel, GuiLink *link)
         link->listen_split_pick(sp);
     panel.set_listen(link->listen_channel());
     panel.set_split(link->listen_split_note());
+    int o = panel.take_outs_request();   // (OUTPUTS: the setting; this instance keeps its ports)
+    if (o >= 0)
+        link->outs_set(o == 1);
+    panel.set_outs(link->outs_mono(), link->outs_live_mono());
 }
 
 /* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */

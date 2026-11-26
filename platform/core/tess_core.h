@@ -45,7 +45,11 @@ void tess_core_keys(uint32_t mask);
  * never its BACK), OCTAVE DOWN / UP (the keys' octave a step, on any page; both: back to 0). With these, OCT- and OCT+
  * are BACK and OK alone: tess_core_key_words */
 enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP = 1u << 18,
-       TESS_BTN_HELP = 1u << 19 };   /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
+       TESS_BTN_HELP = 1u << 19,     /* (HELP: KNOB 1's help card, as TESS_ZA_HELP opens one; pressed again, it closes) */
+       TESS_BTN_POINTER = 1u << 20 };   /* the buttons first pressed in this call are a mouse's (the window's), not an
+                                         * FM-1's: GLO / SEL clicked twice quickly turn two pages (no LOCK), and a layer
+                                         * held open stays open when let go, till its button is clicked again (a mouse
+                                         * cannot hold it and play the keys) */
 void tess_core_buttons(uint32_t mask);
 /* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
@@ -120,6 +124,16 @@ enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_Z
  * pitch, in key when the track quantises, over its chord's other notes; TURN_CHORD n: the whole chord, its shape kept;
  * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records */
 enum { TESS_ZONE_ROLL = 15 };
+/* OP: FM6's algorithm chart, an operator's box (row: the operator, 0..5 for OP 1..6). CLICK: that operator picked (as
+ * SELECT on its pages); DOUBLE: its pages opened, the one last used there */
+enum { TESS_ZONE_OP = 16 };
+/* SMAP: a tile of EDIT's sections map (EDIT pressed on an engine's page: a row a section, a tile a page); row: the
+ * section * 8 + the tile. CLICK or DOUBLE: that page opened (as the map's cursor moved there, then OCT+) */
+enum { TESS_ZONE_SMAP = 17 };
+/* CHORD: a card of CHORD USER's progression on GEN (a track whose generator is CHORD, PROG USER); row: its slot (0..7),
+ * or the progression's length for the "+" card after it. TURN or WHEEL n: that chord's root n scale degrees up (- down);
+ * CLICK on "+": a chord more (a fourth above the last); HELP (a right-click) on a card: that chord gone (one stays) */
+enum { TESS_ZONE_CHORD = 18 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -130,7 +144,7 @@ typedef struct {
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
 enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
- * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up); either -1: none. The wheel:
+ * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */
 /* HELP (a right-click): on MIXER's MUTE word, that track's solo (on, or off again); a KNOB's or a value ROW's help card, as ARP held + its knob opens it, kept open without ARP:
  * the knobs then as with ARP held (another one's card; the wheel on the card scrolls it), and the next CLICK or DOUBLE
@@ -173,6 +187,8 @@ typedef struct {
     uint32_t closable;               /* 1: a picker, a sheet or a help card the mouse opened is over the page, which a
                                       * click away closes (tess_core_away); not a YES / NO question (a build with
                                       * TESS_HAS_POINTER; else 0) */
+    uint32_t sheet;                  /* 1: the page has a sheet, which OCT+ (OK) held opens (a build with TESS_HAS_POINTER;
+                                      * else 0) */
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and

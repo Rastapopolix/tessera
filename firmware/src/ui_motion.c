@@ -156,6 +156,10 @@ static void motion_draw(void)
     if (ui.force)
         mo.sig = 0;
     draw_head();
+#if MELODEE_LOOK
+    if (ui.force)
+        mo_foot_line();                                 /* (Mono: the page tabs under the lanes, as every page) */
+#endif
     pv_sound();
     if (n && mo.lane >= n)
         mo.lane = (uint8_t)(n - 1u);

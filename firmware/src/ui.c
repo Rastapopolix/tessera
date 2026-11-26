@@ -733,7 +733,8 @@ static uint32_t page_nf(void)
     if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
 }
-/* SELECT: the open section's pages, both ways (wraps; pages the track does not show skipped). On an engine with its
+/* SELECT: the open section's pages, both ways, stopping at the first and the last (the group's button wraps, the knob
+ * does not: Theo 2026-11-26; pages the track does not show skipped). On an engine with its
  * own ENV / LFO (FM6): from ENV or LFO the pages that button visits (fam_pages), so ENV's EG pages do not run on into
  * EDIT's; from EDIT all of EDIT's, its EG pages among them */
 static void page_scroll(int32_t dir)
@@ -746,14 +747,12 @@ static void page_scroll(int32_t dir)
         for (k = 0; k < n && pg[k] != ui.page; k++) {}
         if (!n)
             return;
-        i = k < n ? pg[(k + (dir > 0 ? 1u : n - 1u)) % n] : pg[0];
+        i = k >= n ? pg[0] : dir > 0 ? pg[k + (k + 1u < n)] : pg[k - (k > 0u)];
         fam = nf;
     } else {
-        for (n = 0; n < NPAGES; n++) {
-            i = (i + (dir > 0 ? 1u : NPAGES - 1u)) % NPAGES;
-            if (in_fam(i, fam) && page_visible(i))
-                break;
-        }
+        for (n = i; (dir > 0 ? ++n < NPAGES : n-- > 0u) && !(in_fam(n, fam) && page_visible(n));) {}
+        if (n < NPAGES)
+            i = n;
     }
     if (i == ui.page)
         return;
@@ -784,18 +783,28 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
     return page < NPAGES && (native_page(page, fam) || PAGES[page].fam == fam) && page_visible(page);
 }
 
+/* a group's button: from elsewhere the page last used there (first time its first; SAVE always USER), again the next
+ * one, after the last the first (the button wraps; SELECT stops at the ends: page_scroll). One routine for every
+ * group (Theo 2026-11-26: the buttons act alike) */
 static void open_family(uint32_t fam)
 {
-    if ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam)) {   /* ENV / LFO of FM6 */
+    if (fam == FAM_ARP || ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam))) {   /* ARP's lane (ui.c
+                                                         * arp_page); ENV / LFO of FM6 */
         uint8_t pg[NPAGES];
-        uint32_t n = fam_pages(fam, pg), k;
+        uint32_t n = fam_pages(fam, pg), k, last = ui.fam_last[fam];
         for (k = 0; k < n && pg[k] != ui.page; k++) {}
         if (!n)
             return;
-        ui.page = !ui.home && k < n ? pg[(k + 1u) % n]                 /* again: the next one; from elsewhere the */
-                  : (fam == FAM_LFO || native_page(ui.fam_last[fam], fam)) && fam_has(fam, ui.fam_last[fam]) ? ui.fam_last[fam] : pg[0];
-                                                                        /* page last used (ENV: the engine's), else
-                                                                         * the first */
+        if (!ui.home && k < n)
+            ui.page = pg[(k + 1u) % n];                 /* again: the next one */
+        else if (fam == FAM_ARP) {                      /* the page last used, first time the lane's first (ARP 2 is
+                                                         * ARP's OCT- layer, not listed) */
+            for (k = 0; k < n && pg[k] != last; k++) {}
+            if (k >= n)
+                for (k = 0; k < n && PAGES[pg[k]].graph != GR_NONE; k++) {}
+            ui.page = pg[k < n ? k : 0u];
+        } else                                          /* the page last used (ENV: the engine's), else the first */
+            ui.page = (fam == FAM_LFO || native_page(last, fam)) && fam_has(fam, last) ? (uint8_t)last : pg[0];
     } else if (!ui.home && in_fam(ui.page, fam)) {   /* same button again: next page */
         uint32_t n, i = ui.page;
         for (n = 0; n < NPAGES; n++) {
@@ -807,7 +816,8 @@ static void open_family(uint32_t fam)
         uint32_t i;
         for (i = 0; i < NPAGES; i++)
             if (PAGES[i].graph == GR_USER) break;
-        ui.page = (uint8_t)i;                         /* SAVE enters the sound save screen directly */
+        ui.page = (uint8_t)i;                         /* SAVE enters the sound save screen directly (always: the quick
+                                                       * save SAVE, OCT+, OCT+, OCT+ is muscle memory) */
     } else {
         ui.page = ui.fam_last[fam] && in_fam(ui.fam_last[fam], fam) && page_visible(ui.fam_last[fam]) ? ui.fam_last[fam]
                                                                           : (uint8_t)page_first(fam);
@@ -818,18 +828,6 @@ static void open_family(uint32_t fam)
     ui.via = (uint8_t)fam;
     if (fam == FAM_SAVE && cur_page()->graph == GR_USER)
         slot_save_sheet();                       /* SAVE: USER; OCT+ then its slot's sheet on Save here (ui_slots.c) */
-}
-
-/* GLO always enters MIXER (its first page) from another family; then each tap the next GLO page, after the last
- * MIXER again */
-static void open_global(void)
-{
-    uint32_t i = NPAGES;
-    if (!ui.home && cur_page()->fam == FAM_GLO)
-        for (i = ui.page + 1u; i < NPAGES && (PAGES[i].fam != FAM_GLO || !page_visible(i)); i++) {}
-    ui.page = (uint8_t)(i < NPAGES ? i : page_first(FAM_GLO));
-    ui.home = 0;
-    page_entered();
 }
 
 static void go_home(void)

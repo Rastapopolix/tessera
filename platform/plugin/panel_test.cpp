@@ -239,7 +239,7 @@ int main(int argc, char **argv)
     CHECK(differ > 100, "the note is drawn beside the buttons (%d pixels)", differ);
 
     // the shells: a swatch under the keys shows that shell at once and asks for its ink; the ink changes the screen
-    CHECK(Panel::shell_count() == 9 && p.shell() == 1, "nine shells: TESSERA, then black (%d)", Panel::shell_count());
+    CHECK(Panel::shell_count() == 10 && p.shell() == 1, "ten shells: TESSERA, the FM-1's, its DAY (%d)", Panel::shell_count());
     CHECK(p.take_shell_request() == -1, "no shell asked for yet");
     CHECK(Panel::shell_by_id("orange") == 4 && Panel::shell_by_id("nope") == -1, "shells by id");
     const int sx = 36 + 928 - 9 - 2 - 4 * (2 * 9 + 10), sy = 332 + 256 + 5 + 12;   // (swatch 4, ORANGE)
@@ -412,19 +412,20 @@ int main(int argc, char **argv)
         CHECK(q.menu_shown(), "the mark opens the menu");
         q.down(80, 46 + 10 + 18);   // SHELL
         q.up(80, 46 + 10 + 18);
-        q.move(400, 46 + 10 + 30 * 4 + 15);
+        q.move(400, 46 + 10 + 30 + 15);
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/11_tessera_shells.ppm", px);
         CHECK(q.take_shell_request() == -1, "no shell asked for yet");
-        q.down(400, 46 + 10 + 30 * 4 + 15);   // ORANGE (the fifth)
-        q.up(400, 46 + 10 + 30 * 4 + 15);
-        CHECK(q.shell() == 4 && q.take_shell_request() == 4 && !q.menu_shown(), "a shell picked from the menu (%d)", q.shell());
+        q.down(400, 46 + 10 + 30 + 15);   // DAY (the second of NIGHT, DAY)
+        q.up(400, 46 + 10 + 30 + 15);
+        CHECK(q.day() && q.native() && q.take_shell_request() == Panel::shell_count() - 1 && !q.menu_shown(),
+              "SKIN: DAY picked from the menu (%d)", q.shell());
         q.draw(px.data(), v);
-        CHECK(px[320 * Panel::W + 12] == 0xFFEE8A30u, "the FM-1's orange shell drawn");
-        const int tx = 36 + 928 - 9 - 2 - 8 * (2 * 9 + 10) - 14, ty = 332 + 256 + 5 + 12;   // (swatch 0, TESSERA, set 14 apart)
-        q.down(tx, ty);
-        q.up(tx, ty);
-        CHECK(q.shell() == 0 && q.take_shell_request() == 0, "TESSERA again from the FM-1's swatches");
+        if (!out.empty()) ppm(out + "/11_tessera_day.ppm", px);
+        CHECK(px[320 * Panel::W + 12] == 0xFFEDE8DAu, "the DAY skin's paper body (%08X)", px[320 * Panel::W + 12]);
+        q.down(q.skin_switch_x() + 8, 24);   // the moon, left of the version
+        q.up(q.skin_switch_x() + 8, 24);
+        CHECK(!q.day() && q.shell() == 0 && q.take_shell_request() == 0, "the moon: NIGHT again");
         // INK: the swatches; one picked asks once and shuts the menu
         q.down(100, 25);
         q.up(100, 25);
@@ -500,11 +501,39 @@ int main(int argc, char **argv)
         q.down(100, 25), q.up(100, 25);
         q.down(300, 200), q.up(300, 200);
         CHECK(q.take_size_request() == -1, "SIZE 200 again: nothing to ask (it is 200 already)");
+        {   // a frame dragged to 117 %: the row shows 117 lit, left of the presets; 75 picked from it
+            q.set_size_pct(117);
+            q.down(100, 25), q.up(100, 25);
+            int x75 = -1, x117 = -1;
+            for (int x = 300; x > 40 && (x75 < 0 || x117 < 0); x--)
+            {
+                int pct = q.size_seg_at(x);
+                if (pct == 75 && x75 < 0) x75 = x;
+                if (pct == 117 && x117 < 0) x117 = x;
+            }
+            CHECK(x75 > 0 && x117 > 0 && x117 < x75, "SIZE's row: 75 and, left of it, 117 (%d, %d)", x75, x117);
+            q.down(x117, 200), q.up(x117, 200);
+            CHECK(q.take_size_request() == -1 && !q.menu_shown(), "117 (the size now): nothing to ask");
+            q.down(100, 25), q.up(100, 25);
+            q.down(x75, 200), q.up(x75, 200);
+            CHECK(q.take_size_request() == 75, "SIZE 75 picked from the menu");
+            q.set_size_pct(200);
+        }
         q.key(0x01, true);
         q.draw(px.data(), v);
         std::vector<uint32_t> big((size_t)Panel::W * Panel::H * 4), mid((size_t)Panel::W * Panel::H * 9 / 4);
         Panel::scale(px.data(), big.data(), Panel::W, 200);
         Panel::scale(px.data(), mid.data(), Panel::W, 150);
+        {   // 75 % and 117 %: every window pixel a 1:1 pixel or a mean of them (no stray colour from past the edge)
+            std::vector<uint32_t> small((size_t)(Panel::W * 3 / 4) * (Panel::H * 3 / 4), 0x12345678u);
+            std::vector<uint32_t> odd((size_t)(Panel::W * 117 / 100) * (Panel::H * 117 / 100), 0x12345678u);
+            Panel::scale(px.data(), small.data(), Panel::W, 75);
+            Panel::scale(px.data(), odd.data(), Panel::W, 117);
+            int bad = 0;
+            for (uint32_t c : small) bad += c >> 24 != 0xFFu;
+            for (uint32_t c : odd) bad += c >> 24 != 0xFFu;
+            CHECK(bad == 0, "75 %% and 117 %%: every pixel drawn (%d not)", bad);
+        }
         int same = 0, even = 0;
         for (int y = 0; y < Panel::H; y += 7)
             for (int x = 0; x < Panel::W; x += 7)
@@ -573,6 +602,15 @@ int main(int argc, char **argv)
         q.down(254, hy);   // OFF
         q.up(254, hy);
         CHECK(!q.hover_help() && q.take_hover_request() == 0, "HOVER HELP OFF asks for off");
+        // OUTPUTS: STEREO to start; MONO asks once (the ports change from the DAW's next load)
+        int oy = 46 + 10 + 9 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_OUTS)'s middle)
+        CHECK(q.take_outs_request() == -1, "OUTPUTS: nothing asked to start");
+        q.down(200, oy);   // MONO
+        q.up(200, oy);
+        CHECK(q.take_outs_request() == 1 && q.take_outs_request() == -1, "OUTPUTS MONO asks once");
+        q.down(300, oy);   // STEREO
+        q.up(300, oy);
+        CHECK(q.take_outs_request() == 0, "OUTPUTS STEREO asks for stereo");
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
         int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
@@ -1021,11 +1059,13 @@ int main(int argc, char **argv)
         CHECK(e.take_mode_request() == 1 && e.expanded() && e.width() == Panel::W_EXPANDED,
               "MODE EXPANDED picked: the panel 1500 wide (%d)", e.width());
         CHECK(!e.menu_shown(), "the menu shuts on a pick");
-        e.down(100, 25), e.up(100, 25);   // SIZE: 125 and 100 only
+        e.set_size_pct(100);
+        e.down(100, 25), e.up(100, 25);   // SIZE: 150 at most
         e.down(300, 200), e.up(300, 200);
-        CHECK(e.take_size_request() == 125, "EXPANDED's SIZE: 125 at the right");
-        CHECK(Panel::size_fit(150, true) == 125 && Panel::size_fit(200, true) == 125 && Panel::size_fit(125, false) == 150,
-              "SIZE 150 / 200 show at 125 in EXPANDED, 125 at 150 in FM-1 mode");
+        CHECK(e.take_size_request() == 150, "EXPANDED's SIZE: 150 at the right");
+        CHECK(Panel::size_fit(200, true) == 150 && Panel::size_fit(125, true) == 125 && Panel::size_fit(117, false) == 117 &&
+                  Panel::size_fit(40, false) == Panel::PCT_MIN && Panel::size_fit(250, false) == 200,
+              "SIZE: any whole %% from 75, to 150 in EXPANDED and 200 in FM-1 mode");
         e.set_size_pct(125);
         tess_core_view(&v);
         tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
@@ -1120,6 +1160,46 @@ int main(int argc, char **argv)
         tess_core_view(&v);
         b.draw(px.data(), v);
     }
+    // Cosmati: the knobs named by the page, sideways scroll a page (stopping at the ends), the mouse's back / forward
+    {
+        Panel q;
+        q.set_tracks((int)tess_core_tracks());
+        auto frames = [&](int n) { for (int i = 0; i < n; i++) { tess_core_view(&v); q.draw(px.data(), v); } };
+        tess_core_buttons(1u << 2);   // (ENV: FILT ENV, AMP ENV)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.3);
+        frames(1);
+        const tess_zone_t *k1 = q.knob_zone(3);
+        CHECK(k1 && k1->value[0], "ENV: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
+        if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
+        uint64_t h0 = screen_hash(v);
+        CHECK(!q.hwheel(-1), "sideways left on the first page: nothing (it stops)");
+        CHECK(q.hwheel(1), "sideways right: the next page");
+        run(q, 0.3);
+        frames(1);
+        uint64_t h1 = screen_hash(v);
+        CHECK(h1 != h0, "sideways right: the page changed");
+        CHECK(!q.hwheel(1), "sideways again at once: nothing (one swipe, one page)");
+        int steps = 1;
+        for (frames(9); steps < 16 && q.hwheel(1); steps++) { run(q, 0.3); frames(9); }
+        CHECK(steps > 1 && steps < 16 && !q.hwheel(1), "sideways right to the last page, then nothing (it stops; %d pages)", steps + 1);
+        uint64_t h2 = screen_hash(v);
+        CHECK(q.hwheel(-1), "sideways left: the page before");
+        run(q, 0.3);
+        frames(1);
+        CHECK(screen_hash(v) != h2, "sideways left: back a page");
+        CHECK(q.side_button(false, true) && (q.input.buttons >> 12 & 1u), "the mouse's back button holds BACK (OCT-)");
+        CHECK(q.side_button(false, false) && !(q.input.buttons >> 12 & 1u), "and lets it go");
+        CHECK(q.side_button(true, true) && (q.input.buttons >> 13 & 1u), "forward: OK (OCT+)");
+        q.side_button(true, false);
+        run(q, 0.3);
+        tess_core_buttons(1u << 6);   // (HOME)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.3);
+    }
+
     std::printf(fails ? "panel test: %d FAILED\n" : "panel test: ok\n", fails);
     return fails ? 1 : 0;
 }

@@ -47,13 +47,22 @@ static struct {
     uint32_t solo;                     /* GLO: the keys held that solo */
     uint32_t fill;                     /* GLO: E4 held, FILL (seq.c seq_fill) */
     uint32_t tap[4];                   /* GLO TAP: the last taps (fm1_ms) */
-    uint8_t ntap, dt_l, dtap, rp_dirty;
+    uint8_t ntap, rp_dirty;
     uint8_t snd;                       /* GLO + PRESETS turned: the sound view in the map's place (Mono) */
-    uint32_t dt_ms;
-    struct { uint8_t home, page, act, seq, fam[FAM_COUNT]; } nv;
 } lys;
 
 static const uint32_t LY_DTAP_MS=300u;
+#if TESS_HAS_POINTER
+static uint32_t ly_ptr;                /* the buttons last pressed by a mouse (tess_core_buttons, TESS_BTN_POINTER) */
+static uint8_t ly_plock;               /* locked open (a mouse's hold): the next release of its button closes */
+#define LY_PTR(l) ((ly_ptr & ly_bit(l)) != 0u)
+#define LY_PLOCK_OFF() (ly_plock = 0)
+#define LY_PLOCK_ON() (ly_plock = 1)
+#else
+#define LY_PTR(l) 0
+#define LY_PLOCK_OFF() ((void)0)
+#define LY_PLOCK_ON() ((void)0)
+#endif
 enum { LH_KEY = 1, LH_LATCH = 2, LH_TAP = 4 };   /* D4 held; HOLD latched; a tap just let go (the next press latches) */
 #define LY_D4 9u                       /* D4's key (0 = F3) */
 
@@ -83,8 +92,13 @@ static uint32_t layer_bits(void)
 static uint32_t layer_btn(void) { return LAYERS[ui.layer % LAYER_N].btn; }
 static const char *layer_head(void)
 {
+#if TESS_HAS_POINTER                                    /* (a mouse's hold locks; on the FM-1 a layer is open while held:
+                                                         * no double-tap lock, Theo 2026-11-26) */
     static const char *const locked[LAYER_N] = {"", "", "[GLO] LOCK", "[SEL] LOCK"};
-    return ui.lock ? locked[ui.layer % LAYER_N] : LAYERS[ui.layer % LAYER_N].head;
+    if (ui.lock)
+        return locked[ui.layer % LAYER_N];
+#endif
+    return LAYERS[ui.layer % LAYER_N].head;
 }
 static uint32_t layer_open(void) { return ui.ly && (ui.ly_t0 & LY_OPEN) && ly_down(ui.ly) && layer_allowed() ? ui.ly : 0u; }
 static int layer_set_open(void) { return layer_open() && LAYERS[layer_open()].kind==LK_SET; }
@@ -112,8 +126,6 @@ static void layer_arm(uint32_t pressed, uint32_t now)
         return;
     for (l = LAYER_GLO; l < LAYER_N; l++)
         if (pressed & ly_bit(l) & layer_bits()) {
-            lys.dtap=lys.dt_l==l && fm1_ms-lys.dt_ms<=LY_DTAP_MS;
-            lys.dt_l=0;
             ui.ly = (uint8_t)l;
             ui.ly_t0 = (now & ~15u) | 1u | (layer_allowed() ? 0u : LY_DEAD);
             return;
@@ -147,13 +159,11 @@ static void layer_let_go(uint32_t quiet)
     (void)quiet;
 
     if (lys.rp_dirty) { lys.rp_dirty=0; settings_save(); }
-    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0; lys.snd=0;
+    ui.ly_t0=0; ui.ly=0; ui.lock=0; kb_lock=0; lys.snd=0; LY_PLOCK_OFF();
 }
 static void layer_lock_input(uint32_t pressed)
 {
     uint32_t keep = 1u << panel.btn[B_PLAY] | 1u << panel.btn[B_REC] | 1u << panel.btn[B_OCTDN] | 1u << panel.btn[B_OCTUP];
-    if (lys.dt_l && (pressed & ~ly_bit(lys.dt_l)))
-        lys.dt_l = 0;
     if (!ui.lock)
         return;
     if (pressed & ly_bit(ui.lock))
@@ -181,14 +191,14 @@ static uint32_t layer_gesture(uint32_t now, uint32_t combo)
         return 0;
     }
     l = *t0 & (LY_OPEN | LY_DEAD) || combo ? 0u : l;   /* (a knob turned as it was let go: a combo, no tap) */
-    if (l && lys.dtap) {                                /* #83: a double tap: locked open (no tap) */
-        lys.dtap = 0;
-        ui.home=lys.nv.home; ui.page=lys.nv.page; ui.act=lys.nv.act;
-        memcpy(ui.fam_last,lys.nv.fam,sizeof ui.fam_last); song.seq_mode=lys.nv.seq;
-        ui.entry_open=0; ui.msg_t=0; ui.lock=(uint8_t)l;
-        ui.ly_t0=(now&~15u)|1u|LY_OPEN; ui.force=1; layer_opened(l);
+#if TESS_HAS_POINTER
+    if ((*t0 & (LY_OPEN | LY_DEAD)) == LY_OPEN && !combo && !ui.lock && !ly_plock && LY_PTR(ui.ly)) {   /* held open by a mouse */
+        ui.lock = ui.ly;                                /* and let go: kept open (LOCK) till clicked again */
+        LY_PLOCK_ON();
+        ui.force = 1;
         return 0;
     }
+#endif
     layer_let_go(*t0 & LY_OPEN || combo);
     return l;
 }
@@ -208,9 +218,6 @@ static void layer_show(void)
  * whose keys are the layer's already) */
 static void layer_tap(uint32_t l)
 {
-    lys.dt_l=(uint8_t)l; lys.dt_ms=fm1_ms;
-    lys.nv.home=ui.home; lys.nv.page=ui.page; lys.nv.act=ui.act; lys.nv.seq=song.seq_mode;
-    memcpy(lys.nv.fam,ui.fam_last,sizeof ui.fam_last);
     uint8_t m = ui.msg_t;
     page_tap(LAYERS[l].btn);
     if (!((layer_seen >> l) & 1u) && ui.msg_t == m && !name_on() && !ui.confirm && !ui.menu && !mixer_live()) {

@@ -66,8 +66,12 @@ const Shell SHELLS[] = {
      0xFF3A3630, 0, 0, 0},
     {"hot-pink", "HOT PINK", "HOT PINK", 0xFFD6346C, 0xFFC42A60, 0xFFCF2F67, 0xFFA91F50, 0xFFFDE8EF, 0xFF5E0F2C,
      0xFFFDE8EF, 0xFF3A0C20, 0, 0xFFFFE08A},
+    // TESSERA's shell by day (draw_native's DAY skin: a paper body, dark words, an amber for what is live); last, so the
+    // FM-1's keep their places
+    {"tessera-day", "DAY", "MOSAIC", 0xFFEDE8DA, 0xFFEDE8DA, 0xFFB57A00, 0xFFCFC6AE, 0xFFB57A00, 0xFFCFC6AE, 0xFF4A4438,
+     0xFFFFFFFF, 0xFFB57A00, 0xFFB57A00},
 };
-const int NSHELLS = (int)(sizeof SHELLS / sizeof SHELLS[0]);
+const int NSHELLS = (int)(sizeof SHELLS / sizeof SHELLS[0]), NSWATCH = NSHELLS - 1;   // (the swatches: all but DAY)
 
 // ---- drawing: anti-aliased by distance at the edges
 struct Canvas
@@ -196,7 +200,7 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 // EXPANDED: the TRACKS screen beside the FM-1's (its frame as the FM-1's: 8 px round 480 x 240), and KNOB 1..4 and the
 // twelve buttons right of it
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
-const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 56;
+const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 60;   // (60: SCALE, SOUND, SHAPE at full size)
 // TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
@@ -245,12 +249,21 @@ void Panel::layout()
         buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)   KEY: ESC"});        // SHIFT, BACK, OK)
         buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET   KEY: ENTER"});
         buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)   KEY: F1"});
-        static const char *K1[6] = {"KEY: 1", "KEY: 2", "KEY: 3", "KEY: 4", "KEY: 5", "KEY: 6"},   // (panel.h key)
-                          *K2[6] = {"KEY: 7", "KEY: 8", "KEY: 9", "KEY: 0", "KEY: -", "KEY: ="};
+        // the grid named by what each button opens (Andamento's groups), the FM-1's name small under a renamed one
+        // (the screen and the help still say ARP held, GLO + ...); the card: what is behind it and its key (panel.h key)
+        static const char *N1[6] = {"FX", "SCALE", "ENV", "MOD", "SOUND", "MIX"},
+                          *N2[6] = {"HOME", "SAVE", "SHAPE", "SEQ", "PLAY", "REC"},
+                          *S1[6] = {nullptr, "SEL", nullptr, "LFO", "EDIT", "GLO"},
+                          *S2[6] = {nullptr, nullptr, "ARP", nullptr, nullptr, nullptr},
+                          *K1[6] = {"FX 1-3, SENDS   KEY: 1", "SCALES, LOCK   KEY: 2", "FILTER, AMP ENVELOPES   KEY: 3",
+                                    "MODS, MATRIX, LFOS, ORGANIC   KEY: 4", "THE ENGINE'S PAGES   KEY: 5",
+                                    "MIXER, PERF, PIECE, CHAIN   KEY: 6"},
+                          *K2[6] = {"KEY: 7", "KEY: 8", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 9",
+                                    "PATTERN, TEMPO, PATTERNS, SONG   KEY: 0", "KEY: -", "KEY: ="};
         for (int i = 0; i < 6; i++)
         {
-            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], F1[i], nullptr, K1[i]});
-            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], F2[i], nullptr,
+            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], N1[i], S1[i], K1[i]});
+            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], N2[i], S2[i],
                                R2[i] == B_PLAY && standalone_ ? "KEY: SPACE  (OR -)" : K2[i]});
         }
         const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
@@ -381,6 +394,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
     }
     typing_ = v.typing != 0;
     closable_ = v.closable != 0;
+    sheet_ = v.sheet != 0;
     view_hover = v.hover;
     view_help.assign(v.hover_help, strnlen(v.hover_help, sizeof v.hover_help));
     track_now = (int)v.track;
@@ -502,7 +516,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
     }
 
     // the shells: a swatch each (its body round its buttons), the one shown ringed; its name while the mouse is on it
-    for (int i = 0; i < NSHELLS; i++)
+    for (int i = 0; i < NSWATCH; i++)
     {
         int x, y;
         swatch_xy(i, x, y);
@@ -553,6 +567,7 @@ void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t
 // ---- the shells
 
 int Panel::shell_count() { return NSHELLS; }
+bool Panel::shell_native(int i) { return i == 0 || i == NSHELLS - 1; }
 const char *Panel::shell_id(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].id : ""; }
 const char *Panel::shell_ink(int i) { return i >= 0 && i < NSHELLS ? SHELLS[i].ink : ""; }
 int Panel::shell_by_id(const std::string &id)
@@ -574,7 +589,7 @@ void Panel::set_shell(int i)
 // swatch i's centre: a row under the keys, at the right, as OPEN and SAVE are at the left
 void Panel::swatch_xy(int i, int &x, int &y) const
 {
-    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSHELLS - 1 - i) * (2 * SWATCH_R + 10) - (i == 0 ? SHELL_GAP : 0);
+    x = KEYBED[0] + KEYBED[2] - SWATCH_R - 2 - (NSWATCH - 1 - i) * (2 * SWATCH_R + 10) - (i == 0 ? SHELL_GAP : 0);
     y = KEYBED[1] + KEYBED[3] + 5 + 12;
 }
 // ink i's centre: a row between the buttons and the keys, at the right
@@ -598,7 +613,7 @@ int Panel::ink_at(int x, int y) const
 int Panel::swatch_at(int x, int y) const
 {
     if (native()) return -1;
-    for (int i = 0; i < NSHELLS; i++)
+    for (int i = 0; i < NSWATCH; i++)
     {
         int sx, sy;
         swatch_xy(i, sx, sy);
@@ -761,6 +776,14 @@ bool Panel::down(int x, int y)
         drag = NONE;
         return menu_click(x, y);
     }
+    if (native() && skin_x > 0 && x >= skin_x - 2 && x < skin_x + 18 && y >= 12 && y < 36)   // the sun / moon: the other skin
+    {
+        drag = NONE;
+        int j = day() ? 0 : shell_count() - 1;
+        set_shell(j);
+        shell_req = j;
+        return false;
+    }
     if (gen_list)   // GENERATE's style list: a style picked, or (anywhere else) the list shut
     {
         drag = NONE;
@@ -846,8 +869,8 @@ bool Panel::down(int x, int y)
             return true;
         }
         if (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN ||
-            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT)   // (a value, a text,
-                                                                                                   // the tempo, a marker)
+            z.kind == TESS_ZONE_SCROLL || z.kind == TESS_ZONE_TEMPO || z.kind == TESS_ZONE_POINT ||
+            z.kind == TESS_ZONE_CHORD)   // (a value, a text, the tempo, a marker, CHORD USER's card: its root)
         {
             drag = ZONE;
             drag_zone = z;
@@ -864,7 +887,7 @@ bool Panel::down(int x, int y)
             return true;
         }
         drag = NONE;
-        if (dbl && z.kind != TESS_ZONE_ROW && z.kind != TESS_ZONE_TRACK && z.kind != TESS_ZONE_CELL &&
+        if (dbl && z.kind != TESS_ZONE_ROW && z.kind != TESS_ZONE_TRACK && z.kind != TESS_ZONE_CELL && z.kind != TESS_ZONE_OP &&
             !(z.kind == TESS_ZONE_MUTE && z.role == 1))
             return false;   // (OK, YES: once, however often clicked; MIXER's MUTE word: double-click SOLO; HOME's track:
                             // double-click its sounds; a cell: the browser's sound kept)
@@ -1138,18 +1161,51 @@ bool Panel::wheel(int x, int y, int notches)
     return true;
 }
 
+bool Panel::hwheel(int notches)
+{
+    if (!notches || (hwheel_at && frame - hwheel_at < 8u))   // (8 frames at 30 a second)
+        return false;
+    const int want = notches > 0 ? 1 : -1;
+    for (auto &z : zones)
+        if (z.kind == TESS_ZONE_TAB && z.row == want)   // (the tab next to the shown one, or the arrow to it)
+        {
+            hwheel_at = frame ? frame : 1u;
+            zone_act(z, TESS_ZA_CLICK, 0);
+            return true;
+        }
+    return false;
+}
+
+bool Panel::side_button(bool fwd, bool down)
+{
+    const uint32_t was = kbd_buttons, bit = 1u << (fwd ? B_OCTUP : B_OCTDN);
+    kbd_buttons = down ? kbd_buttons | bit : kbd_buttons & ~bit;
+    if (kbd_buttons == was) return false;
+    merge_held();
+    return true;
+}
+
 // ---- TESSERA's shell: the project page's look (docs/index.html), flat and 1-bit: black and #111 body, Tessera yellow
 // for what is live or lit, a dim yellow for lines, warm white for what is held, warm grey for words; corners cut a
 // dot, buttons with a lip that sit down when lit or held; the menu under the mark
 
 namespace
 {
-const uint32_t T_YEL = 0xFFFFD020, T_DIM = 0xFF3B3007, T_HELD = 0xFFE6E0D0, T_WORD = 0xFFB9B2A0, T_OFF = 0xFF5F5A4C,
-               T_BLACK = 0xFF000000, T_BODY = 0xFF111111;
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 10, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+// the inks of TESSERA's shell, by skin: NIGHT (black, Tessera yellow) and DAY (paper, amber, dark words); set as each
+// frame is drawn (draw_native). BLACK is a box's inside (the screens keep their own black)
+struct Skin { uint32_t yel, dim, held, word, off, black, body; };
+const Skin NIGHT = {0xFFFFD020, 0xFF3B3007, 0xFFE6E0D0, 0xFFB9B2A0, 0xFF5F5A4C, 0xFF000000, 0xFF111111},
+           DAY = {0xFFB57A00, 0xFFCFC6AE, 0xFF2A2620, 0xFF4A4438, 0xFF9A9280, 0xFFFFFFFF, 0xFFEDE8DA};
+uint32_t T_YEL = NIGHT.yel, T_DIM = NIGHT.dim, T_HELD = NIGHT.held, T_WORD = NIGHT.word, T_OFF = NIGHT.off,
+         T_BLACK = NIGHT.black, T_BODY = NIGHT.body;
+void skin(const Skin &k)
+{
+    T_YEL = k.yel, T_DIM = k.dim, T_HELD = k.held, T_WORD = k.word, T_OFF = k.off, T_BLACK = k.black, T_BODY = k.body;
+}
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 11, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
 // SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT; ABOUT (a dotted line between each group)
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_ABOUT };
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_OUTS, ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
@@ -1159,11 +1215,20 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
-// SIZE's choices, right to left (0: no more): FM-1 mode 200 150 100, EXPANDED 125 100
-int size_choice(bool expanded, int i)
+// SIZE's choices, right to left: FM-1 mode's presets 200 150 100 75, EXPANDED's 150 125 100 75, and last (leftmost)
+// the size now when it is none of those (a frame dragged to it); into out, how many
+int size_choices(bool expanded, int now, int *out)
 {
-    static const int FM1[3] = {200, 150, 100}, EXP[3] = {125, 100, 0};
-    return i < 0 || i > 2 ? 0 : expanded ? EXP[i] : FM1[i];
+    static const int FM1[4] = {200, 150, 100, 75}, EXP[4] = {150, 125, 100, 75};
+    int n = 0;
+    bool listed = false;
+    for (int i = 0; i < 4; i++)
+    {
+        out[n++] = expanded ? EXP[i] : FM1[i];
+        listed |= out[n - 1] == now;
+    }
+    if (!listed && now > 0) out[n++] = now;
+    return n;
 }
 // LISTEN's < value >: each one's left and right, from SEG_RIGHT leftwards
 const int LISTEN_SEG[3][2] = {{108, 136}, {32, 104}, {0, 28}};
@@ -1195,6 +1260,7 @@ void dotted(Canvas &c, int x0, int x1, int y, uint32_t col)
 
 void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2)
 {
+    skin(day() ? DAY : NIGHT);
     Canvas c{px, width()};
     static const double kPi = 3.14159265358979;
     const int PW = width();
@@ -1219,11 +1285,30 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     c.box(lx, 20, 10, 10, T_YEL);
     if (!midi_lit) c.box(lx + 2, 22, 6, 6, T_BLACK);
     c.ptext(lx + 16, 18, "MIDI", 2, T_WORD);
+    int vx = PW - 36;
     if (!version.empty())
     {
         std::string ver = (gen_on() ? "" : "PLUGIN ") + version;   // (GENERATE's strip: the version alone)
         for (auto &ch : ver) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
-        c.ptext(PW - 36 - Canvas::ptext_w(ver.c_str(), 2), 18, ver.c_str(), 2, T_WORD);
+        vx -= Canvas::ptext_w(ver.c_str(), 2);
+        c.ptext(vx, 18, ver.c_str(), 2, T_WORD);
+    }
+    // the skin's switch left of the version: the sun by night, the moon by day (the skin a click gives, as the project
+    // page's LIGHT / DARK buttons)
+    skin_x = vx - 30;
+    if (day())
+    {
+        c.circle(skin_x + 8, 24, 7, T_WORD);
+        c.circle(skin_x + 11, 21, 6, T_BODY);
+    }
+    else
+    {
+        c.circle(skin_x + 8, 24, 4, T_WORD);
+        for (int k = 0; k < 8; k++)
+        {
+            double a = k * kPi / 4;
+            c.box(skin_x + 7 + (int)std::lround(std::cos(a) * 7), 23 + (int)std::lround(std::sin(a) * 7), 2, 2, T_WORD);
+        }
     }
 
     // the screen: a dim hairline, a gap, the 240 x 240 at 1:1; under it the track and its bank
@@ -1269,7 +1354,16 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         const Knob &k = knobs[i];
         bool turning = turned[i] && frame - turned[i] < 15;
         uint32_t ring = turning ? T_HELD : T_YEL;
-        c.ptext_c(k.x, k.y - 48, k.name, 2, T_WORD);
+        // the name: KNOB 1..4 the page's setting under them (its column's zone; none: dim), the value under the knob
+        // (Andamento's DIAL screen, the FM-1 screen's names in full); the left ones by what they turn here
+        static const char *LEFT[3] = {"PAGE", "TRACK", "BROWSE"};   // (SELECT, ALGORITHM, PRESETS)
+        const tess_zone_t *kz = k.role >= 3 ? knob_zone(k.role) : nullptr;
+        const char *name = kz ? kz->name : k.role >= 0 && k.role < 3 ? LEFT[k.role] : k.name;
+        const int room = k.role >= 3 ? (expanded() ? XK_PITCH : 104) - 8 : 100;
+        c.ptext_c(k.x, k.y - 48, name, Canvas::ptext_w(name, 2) <= room ? 2 : 1,
+                  k.role >= 3 && !kz ? T_OFF : T_WORD);
+        if (kz && kz->value[0])
+            c.ptext_c(k.x, k.y + k.r + 8, kz->value, Canvas::ptext_w(kz->value, 2) <= room ? 2 : 1, T_YEL);
         c.circle(k.x, k.y, k.r, ring);
         c.circle(k.x, k.y, k.r - 4, T_BLACK);
         if (k.role < 0 || turning)
@@ -1295,7 +1389,14 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             border = T_YEL, ink = T_YEL;
         int y = b.y + (down ? 2 : 0), h = b.h - (down ? 2 : 0), bottom = down ? 2 : 4;
         nbox(c, b.x, y, b.w, h, border, fill, bottom);
-        c.ptext_c(b.x + b.w / 2, (y + 2 + y + h - bottom) / 2 - 7, b.face, 2, ink);
+        const int fs = Canvas::ptext_w(b.face, 2) <= b.w - 2 ? 2 : 1, mid = (y + 2 + y + h - bottom) / 2;
+        if (b.sub)   // (a renamed button: the FM-1's name under it, small)
+        {
+            c.ptext_c(b.x + b.w / 2, mid - 11, b.face, fs, ink);
+            c.ptext_c(b.x + b.w / 2, mid + 6, b.sub, 1, ink == T_WORD ? T_OFF : ink);
+        }
+        else
+            c.ptext_c(b.x + b.w / 2, mid - 7, b.face, fs, ink);
     }
 
     // the keys: naturals a dim outline, sharps dim and solid; held warm white; lit, an LED on the key (Theo
@@ -1319,6 +1420,9 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         }
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
+    for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
+        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine))
+            c.ptext_c(b.x + b.w / 2, b.y + b.h + 6, "HOLD: MORE", 1, T_YEL);
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
     for (size_t i = 0; i < files.size(); i++)
@@ -1349,8 +1453,8 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
 
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
-    static const char *NAMES[MENU_ROWS] = {"SHELL", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
-                                                "LISTEN", "SPLIT", "ABOUT"};
+    static const char *NAMES[MENU_ROWS] = {"SKIN", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
+                                                "LISTEN", "SPLIT", "OUTPUTS", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -1372,7 +1476,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             c.ptext(right - Canvas::ptext_w(">", 2), y + 11, ">", 2, T_YEL);
             right -= Canvas::ptext_w(">", 2) + 10;
             if (r == ROW_SHELL)
-                c.ptext(right - Canvas::ptext_w(SHELLS[shell_].name, 2), y + 11, SHELLS[shell_].name, 2, T_YEL);
+                c.ptext(right - Canvas::ptext_w(day() ? "DAY" : "NIGHT", 2), y + 11, day() ? "DAY" : "NIGHT", 2, T_YEL);
             else if (ink_now >= 0 && ink_now < (int)inks.size())   // (as its swatch: a four-ink palette in quarters)
             {
                 const uint32_t *k = inks[ink_now].rgb;
@@ -1387,15 +1491,17 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             seg("EXPANDED", expanded_, true);
             seg("FM-1", !expanded_, true);
         }
-        else if (r == ROW_SIZE)   // the window's size (EXPANDED: 100 or 125)
-            for (int i = 0; i < 3; i++)
+        else if (r == ROW_SIZE)   // the window's size: the mode's presets (and the size now, if none of them)
+        {
+            int ch[5], n = size_choices(expanded_, size_now, ch);
+            for (int i = 0; i < n; i++)
             {
-                int pct = size_choice(expanded_, i);
-                if (!pct) break;
+                int pct = ch[i];
                 char t[8];
                 std::snprintf(t, sizeof t, "%d", pct);
                 seg(t, size_now == pct, true);
             }
+        }
         else if (r == ROW_FM1)   // OFF / ON, and under them what the FM-1 is doing
         {
             seg("ON", fm1_on, true);
@@ -1412,6 +1518,11 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         {
             seg("ON", hover_help_, true);
             seg("OFF", !hover_help_, true);
+        }
+        else if (r == ROW_OUTS)   // the track ports: STEREO pairs or MONO (from the DAW's next load; this one's dim)
+        {
+            seg("STEREO", !outs_mono_, true);
+            seg("MONO", outs_mono_, true);
         }
         else if (r == ROW_LISTEN || r == ROW_SPLIT)   // < OFF > / < CH 16 >, < 48 >: fixed widths (LISTEN_SEG)
         {
@@ -1439,18 +1550,18 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     }
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
-    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SPLIT) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_OUTS) + ROW_H + 8, T_DIM);
 
-    if (menu_sub == 1)   // the shells, the one shown marked
+    if (menu_sub == 1)   // the skins, NIGHT and DAY, the one shown marked (the FM-1's shells are no longer offered)
     {
-        int y0 = shell_sub_y(), h = 20 + NSHELLS * SUB_ROW;
+        int y0 = shell_sub_y(), h = 20 + 2 * SUB_ROW;
         nbox(c, SUB_X, y0, 232, h, T_DIM, T_BLACK);
-        for (int j = 0; j < NSHELLS; j++)
+        for (int j = 0; j < 2; j++)
         {
             int y = y0 + 10 + j * SUB_ROW;
             if (sub_hover == j) c.box(SUB_X + 2, y, 228, SUB_ROW, T_DIM);
-            if (j == shell_) c.box(SUB_X + 16, y + 11, 8, 8, T_YEL);
-            c.ptext(SUB_X + 34, y + 8, SHELLS[j].name, 2, sub_hover == j ? T_YEL : T_WORD);
+            if (j == (day() ? 1 : 0)) c.box(SUB_X + 16, y + 11, 8, 8, T_YEL);
+            c.ptext(SUB_X + 34, y + 8, j ? "DAY" : "NIGHT", 2, sub_hover == j ? T_YEL : T_WORD);
         }
     }
     else if (menu_sub == 2 && !inks.empty())   // the inks as swatches (a four-ink palette in quarters), the name below
@@ -1599,7 +1710,7 @@ int Panel::sub_at(int x, int y) const
     if (menu_sub == 1)
     {
         int j = (y - shell_sub_y() - 10) / SUB_ROW;
-        if (x >= SUB_X && x < SUB_X + 232 && y >= shell_sub_y() + 10 && j >= 0 && j < NSHELLS)
+        if (x >= SUB_X && x < SUB_X + 232 && y >= shell_sub_y() + 10 && j >= 0 && j < 2)
             return j;
     }
     else if (menu_sub == 2)
@@ -1616,9 +1727,10 @@ int Panel::sub_at(int x, int y) const
 bool Panel::menu_click(int x, int y)
 {
     int j = sub_at(x, y);
-    if (j >= 0 && menu_sub == 1)
+    if (j >= 0 && menu_sub == 1)   // (NIGHT: TESSERA's shell, DAY: its day skin)
     {
         menu_open = false;
+        j = j ? NSHELLS - 1 : 0;
         if (j != shell_)
         {
             set_shell(j);
@@ -1679,6 +1791,21 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
+    if (r == ROW_OUTS)   // STEREO (the right) or MONO: the setting; the ports change when the DAW loads Cosmati again
+    {
+        int st_l = SEG_RIGHT - seg_w("STEREO"), mo_r = st_l - 4, mo_l = mo_r - seg_w("MONO");
+        int pick = x >= st_l && x < SEG_RIGHT ? 0 : x >= mo_l && x < mo_r ? 1 : -1;
+        if (pick >= 0 && (pick == 1) != outs_mono_)
+        {
+            outs_mono_ = pick == 1;
+            outs_req = pick;
+            if (outs_mono_ != outs_live_)
+                note(outs_mono_ ? "TRACK OUTPUTS MONO WHEN THE DAW LOADS COSMATI AGAIN"
+                                : "TRACK OUTPUTS STEREO WHEN THE DAW LOADS COSMATI AGAIN");
+        }
+        menu_sub = 0;
+        return false;
+    }
     if (r == ROW_SPLIT)   // < and > move it an octave (a C, 12..108)
     {
         int sg = listen_seg_at(x), n = split_note + (sg == 0 ? -12 : sg == 2 ? 12 : 0);
@@ -1703,7 +1830,7 @@ bool Panel::menu_click(int x, int y)
         menu_sub = 0;
         return false;
     }
-    if (r == ROW_SIZE)   // 100, 150 or 200; EXPANDED 100 or 125 (elsewhere on the row: nothing)
+    if (r == ROW_SIZE)   // a preset (the size now: nothing to ask; elsewhere on the row: nothing)
     {
         int pct = size_seg_at(x);
         if (pct > 0 && pct != size_now)
@@ -1722,13 +1849,13 @@ bool Panel::menu_click(int x, int y)
 
 int Panel::size_seg_at(int x) const
 {
-    int right = SEG_RIGHT;
-    for (int i = 0; i < 3 && size_choice(expanded_, i); i++)   // (right to left, as drawn)
+    int right = SEG_RIGHT, ch[5], n = size_choices(expanded_, size_now, ch);
+    for (int i = 0; i < n; i++)   // (right to left, as drawn)
     {
         char t[8];
-        std::snprintf(t, sizeof t, "%d", size_choice(expanded_, i));
+        std::snprintf(t, sizeof t, "%d", ch[i]);
         int l = right - seg_w(t);
-        if (x >= l && x < right) return size_choice(expanded_, i);
+        if (x >= l && x < right) return ch[i];
         right = l - 4;
     }
     return -1;
@@ -1839,6 +1966,15 @@ tess_zone_t Panel::zone_here(int zi, int x, int y) const
     if (z.kind == TESS_ZONE_ROLL)
         z.x = (uint16_t)(x - (SCREEN_X + SCREEN_S / 32)), z.y = (uint16_t)(y - (SCREEN_Y + SCREEN_S / 32));
     return z;
+}
+
+// the screen's column a knob turns (role 3..6: KNOB 1..4), its name and value; none on this page: nullptr
+const tess_zone_t *Panel::knob_zone(int role) const
+{
+    for (auto &z : zones)
+        if (z.kind == TESS_ZONE_KNOB && z.role == role && z.name[0])
+            return &z;
+    return nullptr;
 }
 
 void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
