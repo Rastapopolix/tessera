@@ -40,6 +40,14 @@ static int step_history_context(void)
            !(song.playing && (song.rec & (1u << song.sel)));
 }
 
+#if TESS_HAS_POINTER
+static uint8_t roll_stroke;                             /* (ui_roll.c: a mouse drag over the steps, one undo step till
+                                                         * the mouse lets go) */
+#define ROLL_STROKE roll_stroke
+#else
+#define ROLL_STROKE 0
+#endif
+
 /* before the input: a change from outside the manual editor starts a fresh history. The audio ISR may record: the
  * steps are compared and copied with the IRQs off */
 static void step_history_sync_locked(void)
@@ -124,7 +132,7 @@ static void step_history_end(void)
         memcpy(step_history.live, TSEL->step, sizeof step_history.live);
     }
     fm1_irq_on();
-    if (!ui.entry_open && !ui.step_move)
+    if (!ui.entry_open && !ui.step_move && !ROLL_STROKE)
         step_history_finish();
 }
 

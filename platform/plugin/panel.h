@@ -104,7 +104,7 @@ class Panel
     /* the modifier keys as the window has them at a click, a drag or a wheel (the GUIs call it first): type, Ctrl (Cmd on
      * a Mac): a click on a value opens a box to type it (Enter sets it, Esc not); fine, Shift: a drag or the wheel turns
      * a value a detent at a time, a drag four times as far a detent */
-    void set_mods(bool type, bool fine) { mod_type = type, mod_fine = fine; }
+    void set_mods(bool type, bool fine, bool alt = false) { mod_type = type, mod_fine = fine, mod_alt = alt; }
     bool entry_open() const { return entry_on; }
     /* a right-click's menu (Cosmati audit G2), at the mouse: on a value (a column, a mixer strip's LEVEL / PAN / send)
      * HELP, DEFAULT, COPY VALUE, PASTE VALUE, RANDOM, TYPE A VALUE; on a track (HOME's column, a TRACKS row) COPY
@@ -235,7 +235,8 @@ class Panel
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
     bool typing_ = false;   // the view's: NAME open
-    bool mod_type = false, mod_fine = false;   // (set_mods)
+    bool mod_type = false, mod_fine = false, mod_alt = false;   // (set_mods)
+    int roll_way = 0, roll_x0 = 0, roll_y0 = 0, paint_x = 0;   // (a drag on NOTES' steps: which way, from where)
     enum { CTX_VALUE = 1, CTX_TRACK };
     int ctx_kind = 0, ctx_x = 0, ctx_y = 0, ctx_track = 0, ctx_hover = -1;   // (the right-click's menu: none, a value's, a track's)
     tess_zone_t ctx_zone = {};
