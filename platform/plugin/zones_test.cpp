@@ -738,15 +738,19 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
     tess_core_key_words(2);   // (an FM-1 on USB playing Cosmati: its OCT- / OCT+, the section buttons theirs still)
     tap(B_HOME);
     std::string seq;
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)   // (SETTINGS one of them since #1058; SETUP opens on its last page, TEMPO here)
     {
         press_section(TESS_SEC_SETUP);
         seq += page_now() + " ";
     }
     t = tabs_now();
-    CHECK(seq == "TEMPO SYSTEM MIDI IN MIDI OUT TEMPO ", "FM-1 on USB: SETUP round its pages (%s)", seq.c_str());
+    CHECK(seq == "TEMPO SYSTEM MIDI IN MIDI OUT SETTINGS TEMPO ", "FM-1 on USB: SETUP round its pages (%s)", seq.c_str());
     CHECK(t.find("SYSTEM|") != std::string::npos && t.find("PATTERNS|") == std::string::npos &&
               t.find("CHAIN|") == std::string::npos, "..its tabs SETUP's, not the FM-1 families' (%s)", t.c_str());
+    for (int i = 0; i < 6 && page_now() != "SETTINGS"; i++) press_section(TESS_SEC_SETUP);
+    tap(B_HOME);
+    CHECK(page_now() != "SETTINGS" && find("GROUND", TESS_ZONE_ROW) < 0, "HOME on SETTINGS: its list shut too (%s)",
+          page_now().c_str());
     tap(B_HOME);
     tess_core_key_words(0);
     run(10);
