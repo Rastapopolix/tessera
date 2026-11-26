@@ -299,7 +299,12 @@ static uint32_t gen_sheet_rows(void)
     sr.n = 0;
     if (m == TESS_ENG_QUAD) sr_add("Range", PID_TESS(TX_QD_RANGE), tr);
     else if (m == TESS_ENG_CONSTEL) sr_add("Size", PID_TESS(TX_CS_SIZE), tr);
-    else if (m == TESS_ENG_GRIDS) sr_add("Fourth part", PID_TESS(TX_GRD_TOMS), tr);
+    else if (m == TESS_ENG_GRIDS) {
+        sr_add("Fourth part", PID_TESS(TX_GRD_TOMS), tr);
+#if TESS_ATLAS_BANKS
+        sr_add("Bank", PID_TESS(TX_GRD_BANK), tr);    /* (the map X and Y scan: ALL or a genre's) */
+#endif
+    }
     else if (m == TESS_ENG_ANSWER) {                    /* (REPLY: SPACE and CHORD; BEND: TIME and BREAK in their */
         if (tessera_answer(tr)->mode == TESS_AN_BEND) { /* rows; MODE the third in both) */
             sr_add("Time", PID_TESS(TX_AN_TIME), tr);

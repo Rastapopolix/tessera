@@ -3416,6 +3416,9 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_GRD_TOMS: return tessera.grids[tr].toms;
     case TX_CH_ULEN: return gen_chord_ulen(&tessera.chord[tr]);
     case TX_GRD_PART4: return tessera.grids[tr].part4;
+#if TESS_ATLAS_BANKS
+    case TX_GRD_BANK: return tessera.grids[tr].bank;
+#endif
     case TX_ACC_LIMIT: return tessera.acc_limit[tr] ? tessera.acc_limit[tr] : (int32_t)TESS_ACC_LIMIT_DEF;
     case TX_FC_FORM: return tessera.fc_form;            /* (form chaining's: the project's, whichever track) */
     case TX_FC_PHRASE: return tessera.fc_phrase;
@@ -3615,6 +3618,9 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.sv_how[tr] = (uint8_t)v;
         return;
     case TX_GRD_PART4: tessera.grids[tr].part4 = (uint8_t)tess_clampi(v, 0, GEN_GRIDS_P4_N - 1); return;
+#if TESS_ATLAS_BANKS
+    case TX_GRD_BANK: tessera.grids[tr].bank = (uint8_t)tess_clampi(v, 0, GEN_AB_N - 1); return;
+#endif
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); return;
     case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); return;
     case TX_MIDI_CH: tessera.midi_ch[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_MIDI_OFF); return;

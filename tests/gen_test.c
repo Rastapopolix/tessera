@@ -317,6 +317,14 @@ static void morph_tests(void)
 }
 
 /* ------------------------------------------------------------------ Grids --- */
+/* Grids' map (BANK ALL) at x, y: gen.c gen_grids_level of a generator there */
+static uint32_t gl_xy(uint32_t step, uint32_t part, uint32_t x, uint32_t y)
+{
+    gen_grids_t g;
+    memset(&g, 0, sizeof g);
+    g.x = (uint8_t)x, g.y = (uint8_t)y;
+    return gen_grids_level(&g, step, part);
+}
 static void grids_tests(void)
 {
     /* the map read against Grids itself: values from its resources.cc and ReadDrumMap (U8Mix), off the nodes too */
@@ -324,7 +332,7 @@ static void grids_tests(void)
                                      {30, 1, 200, 77, 114}, {16, 2, 128, 128, 74}, {2, 0, 63, 191, 0}};
     int ref = 1, range = 1, rest = 1, draws = 1, silent = 1, full = 1, len = 1, same = 1, mut = 1;
     for (uint32_t i = 0; i < sizeof REF / sizeof REF[0]; i++)
-        ref &= gen_grids_level(REF[i][0], REF[i][1], REF[i][2], REF[i][3]) == REF[i][4];
+        ref &= gl_xy(REF[i][0], REF[i][1], REF[i][2], REF[i][3]) == REF[i][4];
     for (uint32_t x = 0; x <= 255; x += 51)
         for (uint32_t y = 0; y <= 255; y += 85)
             for (uint32_t dens = 0; dens <= 100; dens += 25)
@@ -342,7 +350,7 @@ static void grids_tests(void)
                         if (!dens) silent &= !o.gate;
                         if (dens == 100u && !chaos)          /* every step the map gives a chance plays */
                             for (uint32_t p = 0; p < 3u; p++)
-                                full &= ((o.parts >> p) & 1u) == (gen_grids_level(st * 2u, p, x, y) > 0u);
+                                full &= ((o.parts >> p) & 1u) == (gl_xy(st * 2u, p, x, y) > 0u);
                     }
                 }
     {   /* 16 steps a bar at 16ths (the map's even 32nds), 32 at 32nds */
@@ -407,7 +415,7 @@ static void grids_tests(void)
                             toms &= o.parts < 16u && !((o.accent >> GEN_GRIDS_TOM) & 1u);
                             if (!tom) continue;
                             toms &= t && dens && !(o.parts & 3u) &&
-                                    (gen_grids_level(st * 2u, 0u, x, y) || gen_grids_level(st * 2u, 1u, x, y));
+                                    (gl_xy(st * 2u, 0u, x, y) || gl_xy(st * 2u, 1u, x, y));
                             if (o.parts == 1u << GEN_GRIDS_TOM) toms &= o.note == 45 && o.vel == 96;
                             if (dens == 50u) n30 += t == 30u, n100 += t == 100u;
                         }

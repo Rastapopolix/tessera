@@ -77,6 +77,8 @@ def texts():
     begin = src.index("static const pid_entry_t PIDS[] = {")
     end = src.index("\n};", begin)
     body = src[begin:end].replace("\\\n", " ")
+    # the 8-track builds' own entries: the pack is the FM-1's (tools/build.py), which leaves them out
+    body = re.sub(r"^#if TESS_ATLAS_BANKS\b.*?^#endif[^\n]*$", "", body, flags=re.S | re.M)
     macros, out, i = {}, [], body.index("{") + 1
     for m in re.finditer(r"^#define\s+(\w+)\s+(.*)$", body, re.M):
         macros[m.group(1)] = strings(m.group(2), macros)

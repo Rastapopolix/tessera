@@ -162,6 +162,7 @@ case $SOUND in 0 | 1 | only) ;; *) echo "SOUND=0, 1 or only"; exit 2 ;; esac
 [ "$PARALLEL" -ge 1 ] 2>/dev/null || { echo "PARALLEL=n, n >= 1"; exit 2; }
 python3 tools/gen_scales.py --check || exit 1
 python3 tools/audio_contract.py --check || exit 1
+python3 tools/gen_atlas_banks.py --check || exit 1
 [ -f build/tessera.fwsc ] || { echo "run ./build.sh first"; exit 1; }
 TABLES=0; [ -f build/gen/melodee_tables.h ] && TABLES=1
 PIL=0; python3 -c "import PIL" 2>/dev/null && PIL=1

@@ -52,6 +52,18 @@ typedef struct {
  * patterns, blended between the four nearest; TOMS a fourth part, the kick's and the snare's near misses, on a sound
  * of its own (PART4: a tom, the clap, the open hat, the rim, the bell) (OCT- held on GEN: KICK, SNR, HAT, a
  * black key its sound; TOMS: the GEN sheet) */
+/* ATLAS's genre banks (Cosmati and Andamento: an 8-track build's; the project's part TSP_ABANK): BANK picks the map X
+ * and Y scan, Grids' own (ALL) or one of a genre's, written for Tessera (gen_atlas_banks.h); the FM-1 plays ALL */
+#ifndef TESS_ATLAS_BANKS
+#if defined(CORE_TRACKS) && CORE_TRACKS > 4
+#define TESS_ATLAS_BANKS 1
+#else
+#define TESS_ATLAS_BANKS 0
+#endif
+#endif
+enum { GEN_AB_ALL, GEN_AB_DUB, GEN_AB_REGGAE, GEN_AB_TECHNO, GEN_AB_HIPHOP, GEN_AB_DNB, GEN_AB_HOUSE, GEN_AB_AMBIENT,
+       GEN_AB_BREAKS, GEN_AB_ELECTRO, GEN_AB_GARAGE, GEN_AB_HALFTIME, GEN_AB_DOWNTEMPO, GEN_AB_AFRO,
+       GEN_AB_N };                                 /* (saved: append only) */
 #define GEN_GRIDS_PARTS 4u   /* kick, snare, hat, the fourth */
 #define GEN_GRIDS_TOM 3u     /* (the part TOMS plays: no pattern of its own on the map) */
 #define GEN_GRIDS_P4_N 5u    /* the fourth part's sounds (gen.c GEN_GRIDS_P4_NOTE) */
@@ -65,6 +77,9 @@ typedef struct {
                            * before; the knobs show 100 - thin) */
     uint8_t  toms;        /* 0..100: how far under the line a kick or snare may miss and still play the fourth; 0 none */
     uint8_t  part4;       /* the fourth part's sound, 0..GEN_GRIDS_P4_N - 1: TOM, CLAP, HATOP, RIM, BELL */
+#if TESS_ATLAS_BANKS
+    uint8_t  bank;        /* the map: 0 ALL (Grids' own), else a genre's (gen_atlas_banks.h, GEN_AB_*) */
+#endif
 } gen_grids_t;
 
 /* 6. Bounce (Theo's): balls crossing a 256 x 256 box a fixed distance a step, no gravity; a wall a ball hits plays a
