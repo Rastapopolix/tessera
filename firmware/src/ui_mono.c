@@ -3540,9 +3540,9 @@ static int mo_stage_empty(void)
         if ((k < TESSERA_TRACKS && tessera.mode[k] != TESS_ENG_OFF) || !seq_is_empty(&trk[k]) ||
             notes_have_recording(&trk[k]))
             return 0;
-    mo_textc("PRESS GENERATE,", 64, 92, MO_INK);     /* (three short lines, clear of the screen's edges) */
-    mo_textc("OPEN A DEMO", 64, 101, MO_DIM);
-    mo_textc("OR PLAY", 64, 110, MO_DIM);
+    mo_stage_tnums();                                   /* (the columns' numbers stay; the hint under them) */
+    mo_textc("PLAY, GENERATE", 64, 102, MO_INK);
+    mo_textc("OR OPEN A DEMO", 64, 112, MO_DIM);
     return 1;
 }
 #else

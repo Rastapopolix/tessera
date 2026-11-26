@@ -1764,7 +1764,7 @@ int main(int argc, char **argv)
         run(q, 0.3);
     }
 
-    {   // G13: a new project, stopped, nothing to play: HOME says what to do (PRESS GENERATE, OPEN A DEMO OR PLAY)
+    {   // G13: a new project, stopped, nothing to play: HOME says what to do (PLAY, GENERATE OR OPEN A DEMO, under the T1..T4 numbers)
         Panel q;
         q.set_inks(inks);
         q.set_shell(0);
