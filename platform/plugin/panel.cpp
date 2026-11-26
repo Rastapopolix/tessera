@@ -972,7 +972,7 @@ bool Panel::down(int x, int y)
         drag = NONE;
         return menu_click(x, y);
     }
-    if (native() && skin_x > 0 && x >= skin_x - 2 && x < skin_x + 18 && y >= 12 && y < 36)   // the sun / moon: the other skin
+    if (native() && skin_x > 0 && x >= skin_x - 7 && x < skin_x + 23 && y >= 9 && y < 39)   // the sun / moon: the other skin
     {
         drag = NONE;
         int j = day() ? 0 : shell_count() - 1;
@@ -1676,18 +1676,35 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     // the skin's switch left of the version: the sun by night, the moon by day (the skin a click gives, as the project
     // page's LIGHT / DARK buttons)
     skin_x = vx - 30;
-    if (day())
-    {
-        c.circle(skin_x + 8, 24, 7, T_WORD);
-        c.circle(skin_x + 11, 21, 6, T_BODY);
-    }
-    else
-    {
-        c.circle(skin_x + 8, 24, 4, T_WORD);
-        for (int k = 0; k < 8; k++)
+    {   // LANDSCAPE's own sun and moon (ui_land.c), cell for cell, a cell 2 px: the moon a disc of 5 cut by one of 4 up
+        // and right; the sun a ring of 4 (3 cut) and eight rays two cells long, 6 and 7 out
+        const int mx = skin_x + 8, my = 24;
+        auto cell = [&](int x, int y, uint32_t ink) { c.box(mx + 2 * x - 1, my + 2 * y - 1, 2, 2, ink); };
+        auto disc = [&](int ox, int oy, int r, uint32_t ink) {   // (mo_disc's rows)
+            for (int y = -r; y <= r; y++)
+            {
+                int w = 0;
+                while ((w + 1) * (w + 1) + y * y <= r * r + r)
+                    w++;
+                for (int x = -w; x <= w; x++)
+                    cell(ox + x, oy + y, ink);
+            }
+        };
+        if (day())
         {
-            double a = k * kPi / 4;
-            c.box(skin_x + 7 + (int)std::lround(std::cos(a) * 7), 23 + (int)std::lround(std::sin(a) * 7), 2, 2, T_WORD);
+            disc(0, 0, 5, T_WORD);
+            disc(3, -2, 4, T_BODY);
+        }
+        else
+        {
+            disc(0, 0, 4, T_WORD);
+            disc(0, 0, 3, T_BODY);
+            for (int i = 0; i < 16; i++)   // (mo_cos / mo_sin: 127 a unit, an eighth of a turn apart)
+            {
+                int r = 6 + (i & 1);
+                double a = (i >> 1) * kPi / 4;
+                cell(r * (int)std::lround(std::cos(a) * 127) / 127, r * (int)std::lround(std::sin(a) * 127) / 127, T_WORD);
+            }
         }
     }
 

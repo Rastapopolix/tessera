@@ -140,6 +140,16 @@ static const char *pal_name(uint32_t i)
 #else
 #define UX_PAL UI_PALETTES[ux.pal]
 #endif
+#if TESS_HAS_POINTER && MELODEE_LOOK
+/* a front end's screen on paper (Cosmati's DAY): its inks a quarter darker, its dim text nearer the ink, so thin
+ * strokes do not wash out on a large or scaled-down window (Theo 2026-11-26); the FM-1's own as #557 tuned them */
+#define UX_LIGHT_DARKEN 25
+#define UX_DIM_PCT (ux_ground ? 74 : UI_DIM_PCT)
+#define UX_MID_PCT (ux_ground ? 92 : UI_MID_PCT)
+#else
+#define UX_DIM_PCT UI_DIM_PCT
+#define UX_MID_PCT UI_MID_PCT
+#endif
 #if CORE_TRACKS > 4 && MELODEE_LOOK
 #define T_TRK(k) ux_trk(k)                             /* track k's colour (the mixer, lanes, track chips): ux_trk */
 #else
@@ -184,8 +194,8 @@ static uint8_t ux_multi;         /* MOSAIC: TEXT follows THEME (not in ux: a fie
 static void palette_text(const ui_pal_t *p, uint16_t text)   /* MOSAIC: TEXT and what palette_set mixes from it */
 {
     ux.text = ux.rec = text;
-    ux.mid = ux_mix(p->bg, text, UI_MID_PCT);
-    ux.dim = ux_mix(p->bg, text, UI_DIM_PCT);
+    ux.mid = ux_mix(p->bg, text, UX_MID_PCT);
+    ux.dim = ux_mix(p->bg, text, UX_DIM_PCT);
     ux.line = ux_mix(p->bg, text, UI_LINE_PCTS[ux.pal]);
     ux.raise = ux_mix(p->surf, text, UI_RAISE_PCT);
     ux.key = ux_mix(p->bg, text, UI_KEY_PCT);
@@ -217,7 +227,11 @@ static void palette_set(uint32_t i)
         ux_lpal.name = p->name;
         ux_lpal.bg = UI_LIGHT_BG; ux_lpal.surf = UI_LIGHT_SURF;
         for (j = 0; j < 4u; j++)
+#ifdef UX_LIGHT_DARKEN
+            ux_lpal.trk[j] = ux_mix(pal_light(ux.pal, j), 0x0000u, UX_LIGHT_DARKEN);
+#else
             ux_lpal.trk[j] = pal_light(ux.pal, j);
+#endif
         ux_lpal.text = ux_lpal.trk[0];
         ux_lpal.accent = pal_light(ux.pal, 4u);
         p = ux_p = &ux_lpal;
@@ -229,8 +243,8 @@ static void palette_set(uint32_t i)
     ux.mono = 0;
 #endif
     ux.bg = p->bg; ux.surf = p->surf; ux.text = p->text; ux.accent = p->accent;
-    ux.mid = ux_mix(p->bg, p->text, UI_MID_PCT);
-    ux.dim = ux_mix(p->bg, p->text, UI_DIM_PCT);
+    ux.mid = ux_mix(p->bg, p->text, UX_MID_PCT);
+    ux.dim = ux_mix(p->bg, p->text, UX_DIM_PCT);
     ux.line = ux_mix(p->bg, p->text, UI_LINE_PCTS[ux.pal]);     /* (NIGHT's fainter: the design's) */
     ux.ink = p->bg;
     ux.raise = ux_mix(p->surf, p->text, UI_RAISE_PCT);

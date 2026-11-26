@@ -433,6 +433,17 @@ int main(int argc, char **argv)
               "SKIN: DAY picked from the menu (%d)", q.shell());
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/11_tessera_day.ppm", px);
+        if (!out.empty())   // (DAY with GROUND LIGHT, as picking DAY sets it: the screen on paper)
+        {
+            tess_core_ground(1);
+            run(q, 0.3);
+            tess_core_view(&v);
+            q.draw(px.data(), v);
+            ppm(out + "/11b_tessera_day_light.ppm", px);
+            tess_core_ground(0);
+            run(q, 0.3);
+            tess_core_view(&v);
+        }
         CHECK(px[320 * Panel::W + 12] == 0xFFEDE8DAu, "the DAY skin's paper body (%08X)", px[320 * Panel::W + 12]);
         q.down(q.skin_switch_x() + 8, 24);   // the moon, left of the version
         q.up(q.skin_switch_x() + 8, 24);
