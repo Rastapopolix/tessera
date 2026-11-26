@@ -3464,6 +3464,23 @@ static void mo_stage_wave(int32_t top, int32_t h, uint16_t c)   /* the output, t
         py = y;
     }
 }
+#if CORE_TRACKS > 4
+#define MO_STAGE_WT 98                                  /* (8 tracks: the wave under the columns' numbers) */
+/* 8 tracks: each column's track number under it (T1..T4 or T5..T8: a one-ink palette tells the banks apart), the
+ * selected one ink */
+static void mo_stage_tnums(void)
+{
+    uint32_t k;
+    char b[3] = {'T', 0, 0};
+    for (k = 0; k < 4u; k++) {
+        b[1] = (char)('1' + UI_BASE + k);
+        mo_textc(b, (int32_t)k * 30 + 15, 90, UI_BASE + k == song.sel % NTRK ? MO_INK : MO_DIM);
+    }
+}
+#else
+#define MO_STAGE_WT 90
+#define mo_stage_tnums() ((void)0)
+#endif
 static void mo_stage_panel(void)
 {
     uint32_t sel = song.sel % NTRK, bits[4], i, n = 0, pcs = 0, root = 0, held = 0, l;
@@ -3471,7 +3488,8 @@ static void mo_stage_panel(void)
     char b[40];
     const char *q;
     if (drum_track(TSEL)) {                             /* a DRUM track: its lanes, lit as they hit */
-        mo_stage_wave(90, 12, MO_DIM);
+        mo_stage_tnums();
+        mo_stage_wave(MO_STAGE_WT, 102 - MO_STAGE_WT, MO_DIM);
         for (l = 0; l < NLANE; l++) {
             int32_t x = 1 + (int32_t)(l % 4u) * 30, y = 104 + (int32_t)(l / 4u) * 0;
             char ab[6];
@@ -3501,15 +3519,17 @@ static void mo_stage_panel(void)
         held |= live_held[sel][i];
     }
     fm1_irq_on();
-    mo_stage_wave(90, 28, held ? MO_DIM : MO_INK);
+    mo_stage_wave(MO_STAGE_WT, 118 - MO_STAGE_WT, held ? MO_DIM : MO_INK);
     for (i = 0; i < 128u; i++)
         if ((bits[i >> 5] >> (i & 31u)) & 1u) {
             pcs |= 1u << (i % 12u);
             if (n < sizeof note) note[n] = (uint8_t)i;
             n++;
         }
-    if (!n)
+    if (!n) {                                           /* (nothing played: the columns' numbers; else the chord) */
+        mo_stage_tnums();
         return;
+    }
     q = micro_active(TSEL) ? 0 : chord_of(pcs, note[0] % 12u, &root);
     b[0] = 0;
     if (q) {
