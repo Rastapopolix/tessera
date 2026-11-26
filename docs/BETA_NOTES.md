@@ -10,6 +10,7 @@ what you expected and what happened).
 ## New since 3.7.6
 
 ## Fixed
+- LIGHTS OFF: the keys on MIXER and PERF no longer blink to show what can be pressed; the mute, solo, FILL and HOLD states still light (hold GLO for the blinking map).
 
 ## Good to know
 
