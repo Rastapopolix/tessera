@@ -45,6 +45,7 @@
 #include <clap/ext/params.h>
 #include <clap/ext/state.h>
 #include <clap/ext/draft/undo.h>
+#include <clap/ext/remote-controls.h>
 
 #include "core_copies.h"
 #include "gui.h"
@@ -232,6 +233,13 @@ struct Tessera : GuiLink
     void host_undo(const char *what);
     void param_event(const clap_output_events_t *out, uint32_t at, int i, int32_t v);
     uint32_t param_look_of(int i);
+    // the host's controller knobs (CLAP remote controls, Cosmati audit G14): one page, the shown page's KNOB 1..4 then
+    // its OCT- layer (tess_core_page_knobs), read again with each view; changed: the host told on its main thread
+    std::mutex rc_lock;
+    clap_remote_controls_page_t rc_page{};   // rc_lock
+    std::atomic<bool> rc_changed{false};
+    clap_id rc_id(uint32_t pid, uint32_t track);
+    void rc_take();
 
     // gui.h: the window's side of the queue
     void view(tess_view_t &v) override
@@ -1329,6 +1337,60 @@ void Tessera::params_out(const clap_output_events_t *out, uint32_t at, bool all)
     }
 }
 
+// ---- the host's controller knobs (the core locked: the audio thread, or p_init)
+
+// the parameter a core (pid, track) is, or CLAP_INVALID_ID (not one of the list: MASTER's, a device setting)
+clap_id Tessera::rc_id(uint32_t pid, uint32_t track)
+{
+    tess_param_t info;
+    if (pid == 0xFFFFu || !core->param_info(pid, track, &info) || !info.settable)
+        return CLAP_INVALID_ID;
+    if (!info.per_track && !std::strncmp(info.name, "MACRO ", 6) && info.name[6] >= '1' && info.name[6] <= '4' &&
+        !info.name[7])
+        return PARAM_MACRO1 + (clap_id)(info.name[6] - '1');   // (ids 1..4: params_make)
+    if (pid >= 0x1000u || (info.per_track && track >= NTRACKS))
+        return CLAP_INVALID_ID;
+    uint32_t slot = !info.per_track ? PARAM_SONG : track < PARAM_SONG ? track : track + 1u;
+    clap_id id = PARAM_PID + slot * 0x1000u + pid;
+    return param_index(id) >= 0 ? id : CLAP_INVALID_ID;
+}
+void Tessera::rc_take()
+{
+    uint32_t pid[8], trk[8];
+    char title[CLAP_NAME_SIZE];
+    core->page_knobs(pid, trk, title, sizeof title);
+    clap_remote_controls_page_t pg{};
+    std::snprintf(pg.section_name, sizeof pg.section_name, "T%u", (unsigned)core->track() + 1);
+    std::snprintf(pg.page_name, sizeof pg.page_name, "%s", title[0] ? title : "TESSERA");
+    uint32_t h = 2166136261u;   // (the page's id: FNV-1a of its name and knobs, so a host can tell pages apart)
+    for (const char *c = pg.page_name; *c; c++) h = (h ^ (uint8_t)*c) * 16777619u;
+    for (uint32_t k = 0; k < CLAP_REMOTE_CONTROLS_COUNT; k++)
+    {
+        pg.param_ids[k] = rc_id(pid[k], trk[k]);
+        for (int b = 0; b < 32; b += 8) h = (h ^ (pg.param_ids[k] >> b & 0xFFu)) * 16777619u;
+    }
+    pg.page_id = h;
+    pg.is_for_preset = false;
+    std::lock_guard<std::mutex> g(rc_lock);
+    if (!std::memcmp(&pg, &rc_page, sizeof pg))
+        return;
+    rc_page = pg;
+    if (!rc_changed.exchange(true) && host->request_callback)
+        host->request_callback(host);   // (p_on_main_thread)
+}
+
+uint32_t rc_count(const clap_plugin_t *) { return 1; }
+bool rc_get(const clap_plugin_t *p, uint32_t index, clap_remote_controls_page_t *page)
+{
+    auto *t = self(p);
+    if (index != 0)
+        return false;
+    std::lock_guard<std::mutex> g(t->rc_lock);
+    *page = t->rc_page;
+    return true;
+}
+const clap_plugin_remote_controls_t remote_controls_ext = {rc_count, rc_get};
+
 // ---- plugin
 
 bool p_init(const clap_plugin_t *p)
@@ -1398,6 +1460,8 @@ bool p_init(const clap_plugin_t *p)
         if (!var.empty()) t->gen_variation = std::atoi(var.c_str()) < 0 ? 0 : std::atoi(var.c_str()) > 100 ? 100 : std::atoi(var.c_str());
     }
     t->params_make();
+    t->rc_take();
+    t->rc_changed = false;   // (the host asks for the first page itself)
     return true;
 }
 
@@ -1608,6 +1672,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         if (v.owns_lock())
         {
             t->core->view(&t->shared_view);
+            t->rc_take();   // (the controller knobs follow the page)
             if (t->tracks_on.load(std::memory_order_relaxed))   // (EXPANDED: TRACKS too)
                 t->core->tracks_view(t->shared_tracks.get(), TESS_TRACKS_W, TESS_TRACKS_H);
             t->view_due = (uint32_t)(t->rate / 30);
@@ -2116,6 +2181,8 @@ const void *p_get_extension(const clap_plugin_t *, const char *id)
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &state;
     if (!std::strcmp(id, CLAP_EXT_PRESET_LOAD) || !std::strcmp(id, CLAP_EXT_PRESET_LOAD_COMPAT)) return &preset_load_ext;
     if (!std::strcmp(id, CLAP_EXT_LATENCY)) return &latency_ext;
+    if (!std::strcmp(id, CLAP_EXT_REMOTE_CONTROLS) || !std::strcmp(id, CLAP_EXT_REMOTE_CONTROLS_COMPAT))
+        return &remote_controls_ext;
     return nullptr;
 }
 
@@ -2131,6 +2198,21 @@ void p_on_main_thread(const clap_plugin_t *p)
         t->toast(!said.empty() && said != "HOLD GENERATE FOR BEFORE" ? said
                  : st >= 0 && st < (int)t->core->gen_styles() ? std::string("LISTEN: ") + t->core->gen_style((uint32_t)st)
                                                                : std::string("LISTEN: GENERATED"));
+    }
+    if (t->rc_changed.exchange(false))   // (the shown page changed: the host's controller knobs follow it)
+    {
+        auto *hrc = static_cast<const clap_host_remote_controls_t *>(t->host->get_extension(t->host, CLAP_EXT_REMOTE_CONTROLS));
+        if (!hrc) hrc = static_cast<const clap_host_remote_controls_t *>(t->host->get_extension(t->host, CLAP_EXT_REMOTE_CONTROLS_COMPAT));
+        if (hrc)
+        {
+            clap_id page;
+            {
+                std::lock_guard<std::mutex> g(t->rc_lock);
+                page = t->rc_page.page_id;
+            }
+            if (hrc->changed) hrc->changed(t->host);
+            if (hrc->suggest_page) hrc->suggest_page(t->host, page);
+        }
     }
     if (!t->text_stale.exchange(false))
         return;

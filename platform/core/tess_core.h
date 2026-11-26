@@ -337,6 +337,11 @@ uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out
  * (its count): the text filters the list to the sounds whose name has it, any case; "" shows them all again */
 uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *track);
 uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text);
+/* the shown page's eight knobs, for a host's controller knobs (the plugin: CLAP remote controls; a build with
+ * TESS_HAS_POINTER, else none): pid[k] / track[k] (8 each) the central ID and track KNOB k + 1 sets (k 0..3), then with
+ * OCT- held (k 4..7, on a page with an OCT- layer; a knob that sets the same both ways only once); pid 0xFFFF: none
+ * (an action, a list's row, a page's own knob). name: the page's title (cap bytes, terminated). How many there are */
+uint32_t tess_core_page_knobs(uint32_t *pid, uint32_t *track, char *name, uint32_t cap);
 
 /* ---- a DAW's transport (a build with TESS_HOST_CLOCK). Each host block while the DAW plays, before its audio, and
  * once when it stops. playing: its PLAY; bpm: its tempo; beats: its position at the block's start (quarter notes
