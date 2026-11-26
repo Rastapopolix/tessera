@@ -252,6 +252,7 @@ class Panel
     bool entry_on = false;  // a value's box open: its zone, the text typed so far
     tess_zone_t entry_zone = {};
     std::string entry_text;
+    bool entry_find = false;   // the box is the browser's FIND: each key filters at once, Esc clears
     bool expanded_ = false;
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none

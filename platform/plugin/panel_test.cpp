@@ -1326,6 +1326,31 @@ int main(int argc, char **argv)
                 CHECK(!a.empty() && a == b6 && tess_core_track() == 0, "T6 loads T1's pick (%s, %s), T1 stays selected", a.c_str(),
                       b6.c_str());
                 (void)frame;
+                // G5: the browser's count clicked, FIND: a box; each key filters the list at once, Esc clears it
+                if (screen_xy("FIND", TESS_ZONE_CELL, -128, &x, &y))
+                {
+                    e.input.typed.clear();
+                    CHECK(e.down(x, y) && e.entry_open() && e.typing(), "G5: the count clicked: FIND's box, typing");
+                    e.up(x, y);
+                    for (char ch : std::string("pad")) e.text((uint32_t)ch);
+                    CHECK(e.input.typed.size() == 3 && !std::strcmp(e.input.typed.back().text, "pad"), "FIND: each key handed on (%zu)",
+                          e.input.typed.size());
+                    run(e, 0.3);
+                    tess_core_view(&v);
+                    int found = -1;
+                    for (uint32_t i = 0; i < v.zone_count; i++)
+                        if (v.zones[i].kind == TESS_ZONE_CELL && !std::strcmp(v.zones[i].name, "FIND")) found = (int)i;
+                    CHECK(found >= 0 && !std::strcmp(v.zones[found].value, "PAD"), "the core filters by PAD");
+                    tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+                    e.draw(wide.data(), v, &t2);
+                    if (!out.empty()) ppm(out + "/16c_find.ppm", wide, Panel::W_EXPANDED);
+                    e.input.typed.clear();
+                    CHECK(e.text(TESS_TEXT_CANCEL) && !e.entry_open() && e.input.typed.size() == 1 && !e.input.typed[0].text[0],
+                          "Esc: FIND cleared, the box shut");
+                    run(e, 0.3);
+                }
+                else
+                    CHECK(false, "G5: the browser's FIND cell");
                 if (screen_xy("BACK", TESS_ZONE_KEY, -128, &x, &y))   // (BACK: T1's own sound again)
                 {
                     e.down(x, y), e.up(x, y);

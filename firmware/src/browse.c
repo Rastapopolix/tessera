@@ -287,6 +287,34 @@ static int list_keep(uint32_t m, uint32_t src, uint32_t k)
            m >= LM_CAT ? entry_cat(src, k) == CAT_ORDER[m - LM_CAT] : 0;
 }
 
+#if TESS_HAS_POINTER
+/* FIND (a mouse's builds: the browser's search box, Cosmati audit G5): the list keeps only sounds whose name has the
+ * text typed, any case; empty: all. Cleared when the browser is left (browse_poll) */
+static char br_find[16];
+static void entry_label(uint32_t e, uint32_t k, char *tag, char *nm);   /* ui_graph.c */
+static char find_up(char c) { return c >= 'a' && c <= 'z' ? (char)(c - 32) : c; }
+static int list_found(uint32_t src, uint32_t k)
+{
+    char tag[8], nm[16];
+    const char *h;
+    uint32_t i, j;
+    if (!br_find[0])
+        return 1;
+    tag[0] = nm[0] = 0;
+    entry_label(src, k, tag, nm);
+    h = nm[0] ? nm : tag;
+    for (i = 0; h[i]; i++) {
+        for (j = 0; br_find[j] && h[i + j] && find_up(h[i + j]) == find_up(br_find[j]); j++)
+            ;
+        if (!br_find[j])
+            return 1;
+    }
+    return 0;
+}
+#else
+#define list_found(src, k) 1
+#endif
+
 /* one pass over the list LIST keeps: *total its length; the place of entry (ws, wk) (total: not in it); entry n in
  * *as, *ak (USER_GENERAL, UP_SLOTS past the end). The segments: 2 per engine in ENGINE_ORDER (factory, native), then
  * the user presets */
@@ -317,7 +345,7 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
         for (i = 0; i < recent_n; i++) {
             src = recent[i] >> 8;
             k = recent[i] & 0xFFu;
-            if (!entry_ok(src, k))
+            if (!entry_ok(src, k) || !list_found(src, k))
                 continue;
             if (src == ws && k == wk)
                 pos = c;
@@ -334,7 +362,7 @@ static uint32_t list_scan(uint32_t m, uint32_t ws, uint32_t wk, uint32_t n, uint
                 k = !i ? init : i - 1u + (i - 1u >= init);  /* then the rest in order (FM6: F1.., ZEN-1's after F24) */
                 if (slot && !(src == USER_GENERAL ? up_used(k) : native_used(src_engine(src, k), k)))
                     continue;
-                if (!list_keep(m, src, k))
+                if (!list_keep(m, src, k) || !list_found(src, k))
                     continue;
                 if (src == ws && k == wk)
                     pos = c;
@@ -411,10 +439,58 @@ static void browse_commit(void)                             /* load the pending 
     ui.force = 1;
 }
 #define BROWSE_REST_MS 120u
+#if TESS_HAS_POINTER
+/* AUDITION (a mouse's builds, Cosmati audit G5): a sound loaded from the browser while the transport is stopped plays a
+ * short phrase on its track, so a click on a sound is heard: root, fifth, octave, root (a drum kit: kick, hat, snare,
+ * hat). PLAY, a key played, another track or another load ends it */
+static struct { uint8_t on, i, trk, note; uint32_t t; } aud;
+static const uint16_t AUD_AT[5] = {0, 200, 400, 600, 1300};   /* each note's start, then the end (ms) */
+static void audition_off(void)
+{
+    if (aud.note)
+        trk_note_off(&trk[aud.trk % NTRK], aud.note);
+    aud.note = 0;
+}
+static void audition_start(void)
+{
+    audition_off();
+    aud.on = !song.playing;
+    aud.i = 0;
+    aud.trk = song.sel;
+    aud.t = fm1_ms;
+}
+static void audition_poll(void)
+{
+    static const uint8_t MEL[4] = {0, 7, 12, 0}, DRM[4] = {36, 42, 38, 42};
+    track_t *t = &trk[aud.trk % NTRK];
+    uint32_t dt = fm1_ms - aud.t, held = live_held[aud.trk % NTRK][0] | live_held[aud.trk % NTRK][1] |
+                                          live_held[aud.trk % NTRK][2] | live_held[aud.trk % NTRK][3];
+    if (!aud.on)
+        return;
+    if (song.playing || aud.trk != song.sel || held || aud.i >= 4u && dt >= AUD_AT[4]) {
+        audition_off();
+        aud.on = 0;
+        return;
+    }
+    if (aud.i < 4u && dt >= AUD_AT[aud.i]) {
+        audition_off();
+        aud.note = drum_track(t) ? DRM[aud.i] : (uint8_t)(48 + t->p[P_ROOT] % 12 + MEL[aud.i]);
+        trk_note_on(t, aud.note, 96);
+        aud.i++;
+    }
+}
+#endif
 static void browse_poll(void)
 {
     if (brw.on && fm1_ms - brw.t >= BROWSE_REST_MS)
         browse_commit();
+#if TESS_HAS_POINTER
+    audition_poll();
+    if (br_find[0] && (ui.home || cur_page()->graph != GR_BROWSE)) {   /* (the browser left: FIND cleared) */
+        br_find[0] = 0;
+        ui.force = 1;
+    }
+#endif
 }
 
 /* a turn of the knob role by s detents: the list moves by its acceleration (list_accel), wrapping at its ends on a
