@@ -21,6 +21,7 @@ enum { UZ_CHORD = 18 };                                /* CHORD USER's cards on 
 enum { UZ_EGRID = 19 };
 enum { UZ_SLIDER = 20 };                               /* a bar that sets its knob's value (TESS_ZONE_SLIDER; ui_mono.c) */                                /* ENTRIES' arrangement grid's cells (TESS_ZONE_EGRID; ui_mono.c) */
 enum { UZ_DROP = 22 };                                 /* the TRACKS screen's DROP (TESS_ZONE_DROP; ui_tracks.c) */
+enum { UZ_SEND = 23 };                                 /* NOTES' SEND lane's steps (TESS_ZONE_SEND; ui_mono.c) */
 enum { UZ_G_COLS, UZ_G_LIST, UZ_G_KEYS, UZ_G_TRACKS, UZ_G_SIDES, UZ_G_STRIPS, UZ_G_TABS, UZ_G_HEAD, UZ_G_PIC, UZ_GROUPS };
 #define UZ_MAX 64
 typedef struct {

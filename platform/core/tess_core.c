@@ -90,6 +90,7 @@ void tess_core_boot(void)
 _Static_assert(TESS_ZONES == UZ_MAX, "tess_core.h TESS_ZONES is ui_zones.c's UZ_MAX");
 _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zones.c's UZ_ROLL");
 _Static_assert(TESS_ZONE_DROP == UZ_DROP, "tess_core.h TESS_ZONE_DROP is ui_zones.c's UZ_DROP");
+_Static_assert(TESS_ZONE_SEND == UZ_SEND, "tess_core.h TESS_ZONE_SEND is ui_zones.c's UZ_SEND");
 enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION,
        ZQ_FINE, ZQ_MAP };
 #define ZQ_N 256u
@@ -387,6 +388,34 @@ static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
     ui.force = 1;
 }
 
+#if TESS_HAS_POINTER
+/* NOTES' SEND lane (TESS_ZONE_SEND, ui_mono.c mo_send_lane): step's MOTION event on the echo's send. CLICK: none there,
+ * one at 127; one there, gone. HELP: gone. TURN or WHEEL n: 4 a detent, from the track's own send where none was. The
+ * same rules as NOTES' keys: STOP TO EDIT while a chain plays or the track records */
+static void core_send_lane(int32_t step, uint32_t action, int32_t n)
+{
+    track_t *t = TSEL;
+    uint32_t id = send_lane_param();
+    int32_t v;
+    if (step < 0 || step >= NSTEP || trk_index(t) >= MOTION_TRACKS) return;
+    if (chain_busy() || live_rec_sel()) {
+        ui_message("STOP TO EDIT");
+        return;
+    }
+    v = send_lane_at(t, (uint32_t)step, id);
+    if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) {
+        if (v >= 0) motion_delete_event(t, (uint32_t)step, id | 512u);
+        else if (motion_set_event(t, (uint32_t)step, id, 127) == 2) ui_message("MOTION FULL");
+    } else if (action == TESS_ZA_HELP) {
+        if (v >= 0) motion_delete_event(t, (uint32_t)step, id | 512u);
+    } else if ((action == TESS_ZA_TURN || action == TESS_ZA_WHEEL || action == TESS_ZA_TURN_FINE) && n) {
+        if (v < 0) v = clamp(motion_base_value(t, id), 0, 127);
+        v = clamp(v + n * (action == TESS_ZA_TURN_FINE ? 1 : 4), 0, 127);
+        if (motion_set_event(t, (uint32_t)step, id, (int16_t)v) == 2) ui_message("MOTION FULL");
+    }
+    ui.force = 1;
+}
+#endif
 #if TESSERA_TRACKS > 4
 /* ENTRIES' arrangement grid edited a cell at a time (TESS_ZONE_EGRID): a click the next kind (AUTO IN OUT FADE), a
  * right-click AUTO; a letter's head the whole column, as its first track's cell goes */
@@ -652,6 +681,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_HELP, (uint32_t)(z->vrole - EN_K1), 1);
         } else if (z->kind == TESS_ZONE_POINT && (z->row & 0x200) && zone_live(z)) {
             zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
+        } else if (z->kind == TESS_ZONE_SEND) {
+            core_send_lane(z->row, action, 0);        /* (NOTES' SEND lane: a right-click, the step's event gone) */
         } else if (z->kind == TESS_ZONE_CHORD) {
             core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
 #if TESSERA_TRACKS > 4
@@ -808,6 +839,9 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             break;
         }
         core_mute_solo(z->kind, (uint32_t)z->row);
+        break;
+    case TESS_ZONE_SEND:                              /* NOTES' SEND lane: a step's send, full, none, turned */
+        core_send_lane(z->row, action, n);
         break;
     case TESS_ZONE_CHORD:                             /* CHORD USER's cards: a root turned, a chord added or taken */
         core_chord_user(z->row, action, n);

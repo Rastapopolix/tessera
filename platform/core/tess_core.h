@@ -161,6 +161,11 @@ enum { TESS_ZONE_MAP = 21 };
 /* DROP: the TRACKS screen's DROP (an 8-track build's, core.h TESS_DUB). CLICK: DROP pressed (all but the anchors out on
  * the next bar, again: back in; entries.c dub_drop_press). Its value: OFF, NEXT BAR (waiting) or ON */
 enum { TESS_ZONE_DROP = 22 };
+/* SEND: NOTES' SEND lane (TESS_HAS_POINTER; SHIFT held or latched on NOTES, tracks 1..4: MOTION's), a step a column;
+ * row the step. It writes MOTION events on the echo's send (FX MODE SPLIT with an ECHO slot: that slot's SEND, else FX
+ * SEND). CLICK: no event there, one at 127; one there, gone. HELP (a right-click): gone. TURN or WHEEL n: the step's
+ * send n x 4 up (- down), an event made from the track's own send where there was none */
+enum { TESS_ZONE_SEND = 23 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;

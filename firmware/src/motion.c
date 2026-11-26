@@ -124,7 +124,8 @@ static int motion_param(uint32_t id)
     /* Sound only: transport, routing, voice allocation and discrete engine
      * changes never become automation. Continuous mix parameters are safe. */
     return id != P_RECQ && id < P_COUNT && (id <= P_REL || (id >= P_ED_FLT && id <= P_LD_AMP) ||
-        id == P_GLIDE || id == P_PAN ||
+        id == P_GLIDE || id == P_PAN || (id >= P_FXSEND && id <= P_FXSEND3) ||   /* (the sends: NOTES' SEND lane, a
+                                                     * turn while recording; older firmware refuses such a project) */
         id == P_DETUNE || id == P_SPRD || (id >= P_LN0 && id <= P_LN7) || (id >= P_FM1_ATK && id <= P_FM4_LEVEL) || id >= P_E0);   /* (not the chord keys) */
 }
 static int motion_valid(const motion_store_t *m)

@@ -1387,6 +1387,64 @@ static bool lit(int cx, int cy)   // a Mono cell drawn in (its top-left pixel)
 {
     return v.screen[(2 * cy) * TESS_SCREEN + 2 * cx] != v.screen[0];
 }
+static void send_lane()   // NOTES' SEND lane (Tessadub step 4): SHIFT held, a bar a step; a click full, again none; a drag
+{                         // up and down; a right-click gone; SHIFT let go, the roll again; T5: no lane (MOTION's tracks)
+    tess_core_project_new();
+    run(50);
+    if (reach(B_SEQ, "NOTES", TESS_ZONE_ROLL) < 0) { CHECK(false, "SEND lane: no NOTES"); return; }
+    tess_core_buttons(TESS_BTN_SHIFT);
+    run(10);
+    int i = find("SEND S1", TESS_ZONE_SEND), j = find("SEND S16", TESS_ZONE_SEND);
+    CHECK(i >= 0 && j >= 0 && find("NOTES", TESS_ZONE_ROLL) < 0 && std::string(v.zones[i].value) == "-",
+          "NOTES, SHIFT held: the SEND lane, a zone a step, none set (%s)", i >= 0 ? v.zones[i].value : "?");
+    auto sdo = [&](const char *nm, uint32_t a, int n) {
+        int k = find(nm, TESS_ZONE_SEND);
+        if (k < 0) return std::string("?");
+        tess_zone_t z = v.zones[k];
+        tess_core_zone_do(&z, a, n);
+        run(5);
+        k = find(nm, TESS_ZONE_SEND);
+        return k < 0 ? std::string("?") : std::string(v.zones[k].value);
+    };
+    CHECK(sdo("SEND S1", TESS_ZA_CLICK, 0) == "127", "  a click on step 1: full (127)");
+    CHECK(sdo("SEND S1", TESS_ZA_TURN, -5) == "107", "  dragged down 5: 107");
+    CHECK(sdo("SEND S1", TESS_ZA_CLICK, 0) == "-", "  a click again: none");
+    std::string w = sdo("SEND S5", TESS_ZA_WHEEL, 2);
+    CHECK(w != "-" && w != "?", "  the wheel on step 5: an event from the track's own send (%s)", w.c_str());
+    CHECK(sdo("SEND S5", TESS_ZA_HELP, 0) == "-", "  a right-click: gone");
+    sdo("SEND S2", TESS_ZA_CLICK, 0), sdo("SEND S3", TESS_ZA_TURN, 10), sdo("SEND S9", TESS_ZA_CLICK, 0);
+    sdo("SEND S9", TESS_ZA_TURN, -12);
+    if (const char *o = std::getenv("LANE_PPM"))   // (a look at it: steps 2, 3, 9 set)
+        if (FILE *f = std::fopen(o, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", (unsigned)TESS_SCREEN, (unsigned)TESS_SCREEN);
+            for (uint32_t i = 0; i < (uint32_t)TESS_SCREEN * TESS_SCREEN; i++)
+            {
+                uint16_t p = v.screen[i];
+                unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                        (unsigned char)((p & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    tess_core_buttons(TESS_BTN_POINTER);
+    run(10);
+    CHECK(find("NOTES", TESS_ZONE_ROLL) >= 0 && find("SEND S1", TESS_ZONE_SEND) < 0, "SHIFT let go: the roll again");
+    if (tess_core_tracks() >= 8)
+    {
+        tess_core_track_select(4);
+        run(20);
+        tess_core_buttons(TESS_BTN_SHIFT);
+        run(10);
+        CHECK(find("SEND S1", TESS_ZONE_SEND) < 0, "T5, SHIFT held: no lane (MOTION records T1-T4)");
+        tess_core_buttons(0);
+        run(10);
+        tess_core_track_select(0);
+        run(10);
+    }
+    tess_core_buttons(0);
+    run(10);
+}
 static void roll()   // NOTES as a piano roll (batch 4): a click a note, a chord, a drag its pitch, a right-click gone
 {
     tess_core_project_new();
@@ -2199,6 +2257,7 @@ int main(int argc, char **argv)
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
+    send_lane();
     paint();
     drop_sound();
     constel_drag();
