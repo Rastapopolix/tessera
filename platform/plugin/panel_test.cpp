@@ -603,7 +603,30 @@ int main(int argc, char **argv)
         q.up(254, hy);
         CHECK(!q.hover_help() && q.take_hover_request() == 0, "HOVER HELP OFF asks for off");
         // OUTPUTS: STEREO to start; MONO asks once (the ports change from the DAW's next load)
-        int oy = 46 + 10 + 9 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_OUTS)'s middle)
+        // TRACK: its list (copy, paste, paste the sound, move up, down), each a request for the selected track; the
+        // keys (Ctrl+C ..) the same; T1 can't move up
+        int ty = 46 + 10 + 9 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_TRACK)'s middle)
+        CHECK(q.take_track_request().what == Panel::TR_NONE, "TRACK: nothing asked to start");
+        q.down(100, ty), q.up(100, ty);   // (the row: its list)
+        int ly0 = ty - 18 - 10 + 10;      // (the list's first row's top)
+        q.down(400, ly0 + 15), q.up(400, ly0 + 15);
+        Panel::TrackRequest tr = q.take_track_request();
+        CHECK(tr.what == Panel::TR_COPY && !q.menu_shown(), "TRACK > COPY asked (%d), the menu shut", tr.what);
+        q.down(100, 25), q.up(100, 25);
+        q.down(100, ty), q.up(100, ty);
+        q.down(400, ly0 + 3 * 30 + 15), q.up(400, ly0 + 3 * 30 + 15);
+        CHECK(q.take_track_request().what == Panel::TR_NONE && q.menu_shown(), "MOVE T1 UP: nothing (no place to go)");
+        q.move(400, ly0 + 2 * 30 + 15);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/14b_tessera_track.ppm", px);   // (the menu: TRACK's list, PASTE SOUND under the mouse)
+        q.down(400, ly0 + 2 * 30 + 15), q.up(400, ly0 + 2 * 30 + 15);
+        CHECK(q.take_track_request().what == Panel::TR_PASTE_SOUND, "PASTE SOUND asked");
+        CHECK(q.shortcut('V') && q.take_track_request().what == Panel::TR_PASTE && q.shortcut('_') &&
+                  q.take_track_request().what == Panel::TR_DOWN && q.shortcut('C') && q.take_track_request().what == Panel::TR_COPY,
+              "Ctrl+V, Alt+Down, Ctrl+C: their requests");
+        CHECK(!q.shortcut('X'), "Ctrl+X: not Cosmati's");
+        q.down(100, 25), q.up(100, 25);
+        int oy = 46 + 10 + 10 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_OUTS)'s middle)
         CHECK(q.take_outs_request() == -1, "OUTPUTS: nothing asked to start");
         q.down(200, oy);   // MONO
         q.up(200, oy);

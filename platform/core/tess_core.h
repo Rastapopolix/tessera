@@ -217,6 +217,19 @@ void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h);
  * LEVEL n steps. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
 void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n);
 
+/* ---- a track copied, pasted, moved (an 8-track build's; a 4-track build: none, each call refused). A copy is bytes a
+ * front end may keep or hand to another instance of the same build (tess_track.c has the layout).
+ * copy: track's copy into out, its length (0 = cap too small; tess_core_tsp_max() always holds one).
+ * paste: a copy into track: TESS_PASTE_TRACK the track whole (its MIDI OUT channel stays the target's; its mods and
+ * references keep their track numbers), TESS_PASTE_SOUND the sound alone (as a user preset load). 0 done, 1 refused.
+ * swap: tracks a and b change places whole, every reference to them (mods, FOLLOW, BRANCH, LOGIC, SOURCE, QUAD LINK,
+ * timed notes, motion; the selected track) renumbered: a move up or down. 0 done, 1 refused. Motion is tracks 1..4's:
+ * a track moved or pasted past 4 has none */
+enum { TESS_PASTE_TRACK = 0, TESS_PASTE_SOUND = 1 };
+uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap);
+uint32_t tess_core_track_paste(uint32_t track, uint32_t what, const uint8_t *in, uint32_t len);
+uint32_t tess_core_track_swap(uint32_t a, uint32_t b);
+
 /* ---- the project, as a .tsp record (TSP1: byte for byte what SAVE > PROJECT writes on the FM-1) */
 /* the music as it is now: its length, 0 = failed/too big */
 uint32_t tess_core_save(uint8_t *out, uint32_t cap);

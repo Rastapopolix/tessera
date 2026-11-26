@@ -1099,10 +1099,55 @@ static uint32_t xt_src(uint32_t v) { return v == TESS_SD_KEYS ? PROJ_NTRK + 1u :
 /* the cords' block as the FM-1 reads it: a cord that touches a track past 4 left out (XTRK keeps it) */
 static uint32_t xt_cord_out(const uint8_t *c) { return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK; }
 
+/* track t whole, as XTRK keeps each of tracks 5..8 (and a copied track, tess_core_track_copy): its sound, patterns,
+ * the Tessera block, its own settings, references, DIRs, SONG rows, PAT GEN slots */
+static void xt_trk_put(tsp_w_t *w, uint32_t t)
+{
+    uint8_t v[TSP_STEP_BYTES];
+    uint32_t b, i, n;
+    track_t *k = &trk[t];
+    uint8_t blk[TESS_PK_TRACK], dw[DRUM_WIRE_BYTES];
+    tsp_byte(w, k->eng_req); tsp_byte(w, k->preset); tsp_byte(w, P_COUNT);
+    for (i = 0; i < P_COUNT; i++) tsp_u16(w, (uint16_t)k->p[i]);
+    tsp_byte(w, k->pattern);
+    pattern_commit(k);
+    for (b = 0; b < NPAT; b++) {
+        static const step_t empty = {{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
+        const step_t *s = pattern_at(t, b)->step;
+        for (i = n = 0; i < NSTEP; i++) n += memcmp(&s[i], &empty, sizeof empty) != 0;
+        tsp_byte(w, n);
+        for (i = 0; i < NSTEP; i++)
+            if (memcmp(&s[i], &empty, sizeof empty)) {
+                if (!tsp_step_pack(v, &s[i])) w->ok = 0;
+                tsp_byte(w, i); tsp_bytes(w, v, sizeof v);
+            }
+    }
+    for (b = 0; b < NPAT; b++)
+        for (i = 0; i < 4u; i++) tsp_byte(w, (uint8_t)pattern_at(t, b)->timing[i]);
+    {
+        uint8_t native[FP_SIZE + 1u], packed[FM6_PACKED];
+        memcpy(native, fm6_patch[t], sizeof native);
+        fm6_pack(native, packed);
+        tsp_bytes(w, packed, sizeof packed);
+        tsp_bytes(w, fm6_fn[t], FM6_NFN);
+    }
+    tsp_bytes(w, or_patch_of(k), OR_N);
+    drum_patch_pack(dw, &drum_patch[t]);
+    tsp_bytes(w, dw, sizeof dw);
+    tessera_pack_track(blk, t);
+    tsp_bytes(w, blk, sizeof blk);
+    for (i = 0; i < XT_NB; i++) tsp_byte(w, XT_B[i][t]);
+    tsp_byte(w, (uint32_t)(tessera.midi_tr[t] + TESS_MIDI_TR));
+    tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
+    tsp_bytes(w, pattern_dir[t], NPAT);
+    for (i = 0; i < CHAIN_ROWS; i++) tsp_byte(w, chain_patterns[i][t]);
+    if (tessera.pat_gen[t]) tsp_bytes(w, tessera_pg_slots(t), NPAT * TESS_PG_BYTES);
+}
+
 static void xtrk_put(tsp_w_t *w)
 {
-    uint8_t c[CORD_PK_BYTES], v[TSP_STEP_BYTES];
-    uint32_t t, b, i, n;
+    uint8_t c[CORD_PK_BYTES];
+    uint32_t t, i, n;
     tsp_begin(w, TSP_XTRK, 1);
     tsp_byte(w, XT_VER); tsp_byte(w, NTRK);
     for (t = 0; t < PROJ_NTRK; t++) {
@@ -1117,45 +1162,7 @@ static void xtrk_put(tsp_w_t *w)
     tsp_byte(w, n);
     for (i = 0; i < CORD_MAX; i++)
         if (xt_cord_out(c + i * 6u)) { tsp_byte(w, i); tsp_bytes(w, c + i * 6u, 6u); }
-    for (t = PROJ_NTRK; t < NTRK; t++) {
-        track_t *k = &trk[t];
-        uint8_t blk[TESS_PK_TRACK], dw[DRUM_WIRE_BYTES];
-        tsp_byte(w, k->eng_req); tsp_byte(w, k->preset); tsp_byte(w, P_COUNT);
-        for (i = 0; i < P_COUNT; i++) tsp_u16(w, (uint16_t)k->p[i]);
-        tsp_byte(w, k->pattern);
-        pattern_commit(k);
-        for (b = 0; b < NPAT; b++) {
-            static const step_t empty = {{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
-            const step_t *s = pattern_at(t, b)->step;
-            for (i = n = 0; i < NSTEP; i++) n += memcmp(&s[i], &empty, sizeof empty) != 0;
-            tsp_byte(w, n);
-            for (i = 0; i < NSTEP; i++)
-                if (memcmp(&s[i], &empty, sizeof empty)) {
-                    if (!tsp_step_pack(v, &s[i])) w->ok = 0;
-                    tsp_byte(w, i); tsp_bytes(w, v, sizeof v);
-                }
-        }
-        for (b = 0; b < NPAT; b++)
-            for (i = 0; i < 4u; i++) tsp_byte(w, (uint8_t)pattern_at(t, b)->timing[i]);
-        {
-            uint8_t native[FP_SIZE + 1u], packed[FM6_PACKED];
-            memcpy(native, fm6_patch[t], sizeof native);
-            fm6_pack(native, packed);
-            tsp_bytes(w, packed, sizeof packed);
-            tsp_bytes(w, fm6_fn[t], FM6_NFN);
-        }
-        tsp_bytes(w, or_patch_of(k), OR_N);
-        drum_patch_pack(dw, &drum_patch[t]);
-        tsp_bytes(w, dw, sizeof dw);
-        tessera_pack_track(blk, t);
-        tsp_bytes(w, blk, sizeof blk);
-        for (i = 0; i < XT_NB; i++) tsp_byte(w, XT_B[i][t]);
-        tsp_byte(w, (uint32_t)(tessera.midi_tr[t] + TESS_MIDI_TR));
-        tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
-        tsp_bytes(w, pattern_dir[t], NPAT);
-        for (i = 0; i < CHAIN_ROWS; i++) tsp_byte(w, chain_patterns[i][t]);
-        if (tessera.pat_gen[t]) tsp_bytes(w, tessera_pg_slots(t), NPAT * TESS_PG_BYTES);
-    }
+    for (t = PROJ_NTRK; t < NTRK; t++) xt_trk_put(w, t);
     for (i = n = 0; i < RECORD_MAX; i++)
         n += recording[i].vel && (recording[i].owner & REC_OWNER_MASK) >= PROJ_NTRK * NPAT;
     tsp_u16(w, n);
@@ -1165,12 +1172,107 @@ static void xtrk_put(tsp_w_t *w)
     tsp_end(w);
 }
 
+/* xt_trk_put's track at *pp (up to e) checked; with apply, into track t: 1 good (*pp past it), 0 refused (with
+ * apply: checked by a pass without it first, so a bad one changes nothing) */
+static int xt_trk_get(const uint8_t **pp, const uint8_t *e, uint32_t t, int apply)
+{
+    const uint8_t *p = *pp;
+    uint32_t b, i, n;
+#define XT_NEED(k) do { if ((uint32_t)(e - p) < (uint32_t)(k)) return 0; } while (0)
+    track_t *k = &trk[t];
+    uint32_t eng, gone;
+    XT_NEED(3u);
+    if (p[0] >= NENGINES || p[2] != P_COUNT) return 0;
+    eng = p[0]; gone = !ENG_BUILT(eng);
+    if (gone) eng = ENGI_FALLBACK;
+    XT_NEED(3u + 2u * P_COUNT + 1u);
+    if (p[3u + 2u * P_COUNT] >= NPAT) return 0;
+    if (apply) {
+        k->eng_req = (uint8_t)eng; k->user = 0; k->user_native = 0;
+        for (i = 0; i < P_COUNT; i++) {
+            const param_desc_t *d = param_desc_of(eng, i);
+            int16_t s = (int16_t)tsp_u16_at(p + 3u + 2u * i);
+            k->p[i] = param_reserved(i) ? 0 : gone && i >= P_E0 ? d->def : (int16_t)clamp(s, d->min, d->max);
+        }
+        k->preset = gone ? 0u : (uint8_t)(ENGINES[eng]->npresets ? p[1] % ENGINES[eng]->npresets : 0u);
+        k->pattern = p[3u + 2u * P_COUNT];
+    }
+    p += 3u + 2u * P_COUNT + 1u;
+    for (b = 0; b < NPAT; b++) {
+        pattern_t *pt = pattern_at(t, b);
+        XT_NEED(1u);
+        n = *p++;
+        if (n > NSTEP) return 0;
+        XT_NEED(n * (1u + TSP_STEP_BYTES));
+        if (apply)
+            for (i = 0; i < NSTEP; i++) pt->step[i] = (step_t){{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
+        for (i = 0; i < n; i++, p += 1u + TSP_STEP_BYTES) {
+            step_t s;
+            if (p[0] >= NSTEP || !tsp_step_unpack(&s, p + 1)) return 0;
+            if (apply) pt->step[p[0]] = s;
+        }
+    }
+    XT_NEED(NPAT * 4u);
+    for (b = 0; b < NPAT; b++)
+        for (i = 0; i < 4u; i++)
+            if (apply) pattern_at(t, b)->timing[i] = (int16_t)clamp(p[b * 4u + i], TP[P_SLEN + i].min, TP[P_SLEN + i].max);
+    p += NPAT * 4u;
+    XT_NEED(FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK);
+    for (i = 0; i < FM6_PACKED; i++) if (p[i] > 127u) return 0;
+    if (!fm6_fn_ok(p + FM6_PACKED) || !or_patch_ok(p + FM6_PACKED + FM6_NFN)) return 0;
+    {
+        drum_patch_t dp;
+        const uint8_t *tb = p + FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES;
+        if (!drum_patch_unpack(&dp, p + FM6_PACKED + FM6_NFN + OR_N) || !drum_patch_valid(&dp)) return 0;
+        if (!tessera_unpack_track(tb, t, 0)) return 0;
+        if (apply) {
+            uint8_t v[FP_SIZE + 1u];
+            fm6_unpack(p, v);
+            fm6_set_patch(t, v);
+            memcpy(fm6_fn[t], p + FM6_PACKED, FM6_NFN);
+            if (!or_set_patch(t, p + FM6_PACKED + FM6_NFN)) or_track_loaded(k);
+            drum_patch[t] = dp;
+            tessera_unpack_track(tb, t, 1);
+        }
+    }
+    p += FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK;
+    XT_NEED(XT_NB + 3u + NPAT + CHAIN_ROWS);
+    for (i = 0; i < XT_NB; i++) if (p[i] > XT_BMAX[i]) return 0;
+    if (p[XT_NB] > 2u * TESS_MIDI_TR || p[XT_NB + 1u] > NTRK || p[XT_NB + 2u] > TESS_SD_KEYS) return 0;
+    for (i = 0; i < NPAT; i++) if (p[XT_NB + 3u + i] >= SEQ_DIRS) return 0;
+    for (i = 0; i < CHAIN_ROWS; i++) if (p[XT_NB + 3u + NPAT + i] >= NPAT) return 0;
+    if (apply) {
+        for (i = 0; i < XT_NB; i++) XT_B[i][t] = p[i];
+        tessera.midi_tr[t] = (int8_t)((int32_t)p[XT_NB] - (int32_t)TESS_MIDI_TR);
+        tessera.follow_hold[t] = p[XT_NB + 1u]; tessera.sd_src[t] = p[XT_NB + 2u];
+        memcpy(pattern_dir[t], p + XT_NB + 3u, NPAT);
+        for (i = 0; i < CHAIN_ROWS; i++) chain_patterns[i][t] = p[XT_NB + 3u + NPAT + i];
+    }
+    {
+        uint32_t pg = p[XT_NB - 1u];   /* (PAT GEN, XT_B's last) */
+        p += XT_NB + 3u + NPAT + CHAIN_ROWS;
+        if (pg) {
+            XT_NEED(NPAT * TESS_PG_BYTES);
+            for (b = 0; b < NPAT; b++) if (!tessera_pg_check(t, p + b * TESS_PG_BYTES)) return 0;
+            if (apply) tessera_pg_put(t, p);
+            p += NPAT * TESS_PG_BYTES;
+        }
+    }
+    if (apply) {
+        memcpy(k->step, pattern_at(t, k->pattern)->step, sizeof k->step);
+        for (i = 0; i < 4u; i++) k->p[P_SLEN + i] = pattern_at(t, k->pattern)->timing[i];
+    }
+    *pp = p;
+    return 1;
+#undef XT_NEED
+}
+
 /* the part checked whole (a length, a range, a step, a patch, a track of the Tessera block): 1 good. With apply, it is
  * loaded too (after tsp_restore of tracks 1..4): checked first, then applied, so a bad part changes nothing */
 static int xtrk_read(const uint8_t *p, uint32_t len, int apply)
 {
     const uint8_t *e = p + len;
-    uint32_t t, b, i, n, ver, nr;
+    uint32_t t, i, n, ver, nr;
 #define XT_NEED(k) do { if ((uint32_t)(e - p) < (uint32_t)(k)) return 0; } while (0)
     XT_NEED(2u);
     ver = p[0];
@@ -1209,91 +1311,8 @@ static int xtrk_read(const uint8_t *p, uint32_t len, int apply)
             TESS_IRQ_ON();
         }
     }
-    for (t = PROJ_NTRK; t < NTRK; t++) {
-        track_t *k = &trk[t];
-        uint32_t eng, gone;
-        XT_NEED(3u);
-        if (p[0] >= NENGINES || p[2] != P_COUNT) return 0;
-        eng = p[0]; gone = !ENG_BUILT(eng);
-        if (gone) eng = ENGI_FALLBACK;
-        XT_NEED(3u + 2u * P_COUNT + 1u);
-        if (p[3u + 2u * P_COUNT] >= NPAT) return 0;
-        if (apply) {
-            k->eng_req = (uint8_t)eng; k->user = 0; k->user_native = 0;
-            for (i = 0; i < P_COUNT; i++) {
-                const param_desc_t *d = param_desc_of(eng, i);
-                int16_t s = (int16_t)tsp_u16_at(p + 3u + 2u * i);
-                k->p[i] = param_reserved(i) ? 0 : gone && i >= P_E0 ? d->def : (int16_t)clamp(s, d->min, d->max);
-            }
-            k->preset = gone ? 0u : (uint8_t)(ENGINES[eng]->npresets ? p[1] % ENGINES[eng]->npresets : 0u);
-            k->pattern = p[3u + 2u * P_COUNT];
-        }
-        p += 3u + 2u * P_COUNT + 1u;
-        for (b = 0; b < NPAT; b++) {
-            pattern_t *pt = pattern_at(t, b);
-            XT_NEED(1u);
-            n = *p++;
-            if (n > NSTEP) return 0;
-            XT_NEED(n * (1u + TSP_STEP_BYTES));
-            if (apply)
-                for (i = 0; i < NSTEP; i++) pt->step[i] = (step_t){{0}, 0, ST_REST, 0, 0, 0, 0, 0, 0, 0};
-            for (i = 0; i < n; i++, p += 1u + TSP_STEP_BYTES) {
-                step_t s;
-                if (p[0] >= NSTEP || !tsp_step_unpack(&s, p + 1)) return 0;
-                if (apply) pt->step[p[0]] = s;
-            }
-        }
-        XT_NEED(NPAT * 4u);
-        for (b = 0; b < NPAT; b++)
-            for (i = 0; i < 4u; i++)
-                if (apply) pattern_at(t, b)->timing[i] = (int16_t)clamp(p[b * 4u + i], TP[P_SLEN + i].min, TP[P_SLEN + i].max);
-        p += NPAT * 4u;
-        XT_NEED(FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK);
-        for (i = 0; i < FM6_PACKED; i++) if (p[i] > 127u) return 0;
-        if (!fm6_fn_ok(p + FM6_PACKED) || !or_patch_ok(p + FM6_PACKED + FM6_NFN)) return 0;
-        {
-            drum_patch_t dp;
-            const uint8_t *tb = p + FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES;
-            if (!drum_patch_unpack(&dp, p + FM6_PACKED + FM6_NFN + OR_N) || !drum_patch_valid(&dp)) return 0;
-            if (!tessera_unpack_track(tb, t, 0)) return 0;
-            if (apply) {
-                uint8_t v[FP_SIZE + 1u];
-                fm6_unpack(p, v);
-                fm6_set_patch(t, v);
-                memcpy(fm6_fn[t], p + FM6_PACKED, FM6_NFN);
-                if (!or_set_patch(t, p + FM6_PACKED + FM6_NFN)) or_track_loaded(k);
-                drum_patch[t] = dp;
-                tessera_unpack_track(tb, t, 1);
-            }
-        }
-        p += FM6_PACKED + FM6_NFN + OR_N + DRUM_WIRE_BYTES + TESS_PK_TRACK;
-        XT_NEED(XT_NB + 3u + NPAT + CHAIN_ROWS);
-        for (i = 0; i < XT_NB; i++) if (p[i] > XT_BMAX[i]) return 0;
-        if (p[XT_NB] > 2u * TESS_MIDI_TR || p[XT_NB + 1u] > NTRK || p[XT_NB + 2u] > TESS_SD_KEYS) return 0;
-        for (i = 0; i < NPAT; i++) if (p[XT_NB + 3u + i] >= SEQ_DIRS) return 0;
-        for (i = 0; i < CHAIN_ROWS; i++) if (p[XT_NB + 3u + NPAT + i] >= NPAT) return 0;
-        if (apply) {
-            for (i = 0; i < XT_NB; i++) XT_B[i][t] = p[i];
-            tessera.midi_tr[t] = (int8_t)((int32_t)p[XT_NB] - (int32_t)TESS_MIDI_TR);
-            tessera.follow_hold[t] = p[XT_NB + 1u]; tessera.sd_src[t] = p[XT_NB + 2u];
-            memcpy(pattern_dir[t], p + XT_NB + 3u, NPAT);
-            for (i = 0; i < CHAIN_ROWS; i++) chain_patterns[i][t] = p[XT_NB + 3u + NPAT + i];
-        }
-        {
-            uint32_t pg = p[XT_NB - 1u];   /* (PAT GEN, XT_B's last) */
-            p += XT_NB + 3u + NPAT + CHAIN_ROWS;
-            if (pg) {
-                XT_NEED(NPAT * TESS_PG_BYTES);
-                for (b = 0; b < NPAT; b++) if (!tessera_pg_check(t, p + b * TESS_PG_BYTES)) return 0;
-                if (apply) tessera_pg_put(t, p);
-                p += NPAT * TESS_PG_BYTES;
-            }
-        }
-        if (apply) {
-            memcpy(k->step, pattern_at(t, k->pattern)->step, sizeof k->step);
-            for (i = 0; i < 4u; i++) k->p[P_SLEN + i] = pattern_at(t, k->pattern)->timing[i];
-        }
-    }
+    for (t = PROJ_NTRK; t < NTRK; t++)
+        if (!xt_trk_get(&p, e, t, apply)) return 0;
     XT_NEED(2u);
     n = tsp_u16_at(p); p += 2;
     if (n > RECORD_MAX) return 0;

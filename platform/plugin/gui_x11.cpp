@@ -279,6 +279,18 @@ class GuiX11 : public Gui
             case KeyRelease:
             {
                 // the computer keyboard (panel.h key): X's keycode - 8 is the PC scan code for the main keys
+                if (e.type == KeyPress && (e.xkey.state & (ControlMask | Mod1Mask)))   // TRACK (panel.h shortcut)
+                {
+                    KeySym ks = XLookupKeysym(&e.xkey, 0);
+                    bool ctrl = e.xkey.state & ControlMask, alt = e.xkey.state & Mod1Mask, shift = e.xkey.state & ShiftMask;
+                    char c = ctrl && !alt && ks == XK_c   ? 'C'
+                             : ctrl && !alt && ks == XK_v ? (shift ? 'v' : 'V')
+                             : alt && !ctrl && ks == XK_Up   ? '^'
+                             : alt && !ctrl && ks == XK_Down ? '_'
+                                                             : 0;
+                    if (c && panel.shortcut(c))
+                        break;
+                }
                 if (e.xkey.state & (ControlMask | Mod1Mask))
                     break;   // (the host's)
                 if (e.type == KeyRelease && XEventsQueued(dpy, QueuedAfterReading))

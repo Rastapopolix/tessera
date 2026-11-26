@@ -1617,3 +1617,4 @@ uint32_t tess_core_gen_last(uint32_t *style, uint32_t *seed, uint32_t *variation
     return 0;
 }
 #endif
+#include "tess_track.c"                                /* a track copied, pasted, moved */

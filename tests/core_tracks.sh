@@ -4,7 +4,8 @@
 # 4-track build does. Each demo loads in both and plays SECS seconds. The 8-track save adds XTRK (tracks 5..8,
 # project_tsp.c); read by the 4-track build and saved again, it must be byte for byte the 4-track build's own save
 # (tracks 5..8 must not touch tracks 1..4). Then tests/xtrk_test.c: tracks 5..8 with content save, load and save
-# again the same, and the 4-track build reads that record. Needs build/gen (tools/build.py).
+# again the same, and the 4-track build reads that record; tests/track_copy_test.c: a track copied, pasted, swapped
+# (platform/core/tess_track.c). Needs build/gen (tools/build.py).
 # usage: tests/core_tracks.sh [out-dir]
 set -u
 cd "$(dirname "$0")/.."
@@ -45,5 +46,11 @@ $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_H
     { echo "core_tracks: quad8_test failed to build"; exit 1; }
 "$OUT/quad8_test" > "$OUT/quad8_test.log" || { cat "$OUT/quad8_test.log"; fails=$((fails + 1)); }
 tail -1 "$OUT/quad8_test.log"
+$CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
+    -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+    '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/track_copy_test.c -o "$OUT/track_copy_test" -lm ||
+    { echo "core_tracks: track_copy_test failed to build"; exit 1; }
+"$OUT/track_copy_test" demos/still-tide.tsp > "$OUT/track_copy_test.log" || { cat "$OUT/track_copy_test.log"; fails=$((fails + 1)); }
+tail -1 "$OUT/track_copy_test.log"
 "$OUT/tracks4" load "$OUT/xtrk.tsp" "$OUT/xtrk.4.tsp" || { echo "FAIL: the 4-track build refuses an 8-track record with XTRK"; fails=$((fails + 1)); }
 [ "$fails" -eq 0 ]

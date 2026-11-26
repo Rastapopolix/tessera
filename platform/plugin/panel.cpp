@@ -733,6 +733,13 @@ bool Panel::key(int code, bool down)
 // its own). true: the window should take the file request now
 bool Panel::shortcut(char c)
 {
+    static const char TR_KEYS[] = "CVv^_";
+    if (const char *k = c ? std::strchr(TR_KEYS, c) : nullptr)   // TRACK's: not while NAME takes the keys
+    {
+        if (typing_) return false;
+        track_req = {TR_COPY + (int)(k - TR_KEYS), track_now};
+        return true;
+    }
     if (!standalone_ || (c != 'O' && c != 'S'))
         return false;
     file_req = c == 'O' ? FILE_OPEN : FILE_SAVE;
@@ -1202,10 +1209,12 @@ void skin(const Skin &k)
 {
     T_YEL = k.yel, T_DIM = k.dim, T_HELD = k.held, T_WORD = k.word, T_OFF = k.off, T_BLACK = k.black, T_BODY = k.body;
 }
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 11, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 12, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
-// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT; ABOUT (a dotted line between each group)
-enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_OUTS, ROW_ABOUT };
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT, TRACK, OUTPUTS; ABOUT (a dotted line between each
+// group)
+enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_TRACK, ROW_OUTS,
+       ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
@@ -1240,6 +1249,11 @@ const int GEN_Y = 10, GEN_H = 28, GB_X = 316, GB_W = 112, GS_X = 436, GS_W = 168
           GD_X = 708, GD_W = 112, GL_Y = GEN_Y + GEN_H + 6, GL_ROW = 26;
 
 int ink_sub_y() { return row_y(ROW_INK) - 10; }
+// TRACK's list: what each does to the selected track (%d: its number), and its key (Cmd / Option on a Mac)
+const char *const TRACK_DO[5] = {"COPY T%d", "PASTE ONTO T%d", "PASTE SOUND ONTO T%d", "MOVE T%d UP", "MOVE T%d DOWN"},
+                  *const TRACK_KEY[5] = {"CTRL+C", "CTRL+V", "CTRL+SHIFT+V", "ALT+UP", "ALT+DOWN"};
+const int TRACK_SUB_W = 420;
+int track_sub_y() { return row_y(ROW_TRACK) - 10; }
 
 // a box with its corners cut a dot (2 px): border, then the fill inside, `bottom` its lower edge's width
 void nbox(Canvas &c, int x, int y, int w, int h, uint32_t border, uint32_t fill, int bottom = 2)
@@ -1454,12 +1468,13 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
     static const char *NAMES[MENU_ROWS] = {"SKIN", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
-                                                "LISTEN", "SPLIT", "OUTPUTS", "ABOUT"};
+                                                "LISTEN", "SPLIT", "TRACK", "OUTPUTS", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
-        bool on = menu_hover == r || (r == ROW_SHELL && menu_sub == 1) || (r == ROW_INK && menu_sub == 2);
-        bool active = r == ROW_SHELL || r == ROW_INK;
+        bool on = menu_hover == r || (r == ROW_SHELL && menu_sub == 1) || (r == ROW_INK && menu_sub == 2) ||
+                  (r == ROW_TRACK && menu_sub == 3);
+        bool active = r == ROW_SHELL || r == ROW_INK || r == ROW_TRACK;
         if (on && active) c.box(MENU_X + 2, y, MENU_W - 4, ROW_H, T_DIM);
         c.ptext(MENU_X + 16, y + 11, NAMES[r], 2, on && active ? T_YEL : T_WORD);
         int right = MENU_X + MENU_W - 16;
@@ -1471,12 +1486,18 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             c.ptext(right + 6, y + 11, t, 2, chosen ? T_BLACK : there ? T_WORD : T_OFF);
             right -= 4;
         };
-        if (r == ROW_SHELL || r == ROW_INK)
+        if (r == ROW_SHELL || r == ROW_INK || r == ROW_TRACK)
         {
             c.ptext(right - Canvas::ptext_w(">", 2), y + 11, ">", 2, T_YEL);
             right -= Canvas::ptext_w(">", 2) + 10;
             if (r == ROW_SHELL)
                 c.ptext(right - Canvas::ptext_w(day() ? "DAY" : "NIGHT", 2), y + 11, day() ? "DAY" : "NIGHT", 2, T_YEL);
+            else if (r == ROW_TRACK)   // (the selected track: its list copies, pastes, moves it)
+            {
+                char t[8];
+                std::snprintf(t, sizeof t, "T%d", track_now + 1);
+                c.ptext(right - Canvas::ptext_w(t, 2), y + 11, t, 2, T_YEL);
+            }
             else if (ink_now >= 0 && ink_now < (int)inks.size())   // (as its swatch: a four-ink palette in quarters)
             {
                 const uint32_t *k = inks[ink_now].rgb;
@@ -1562,6 +1583,21 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             if (sub_hover == j) c.box(SUB_X + 2, y, 228, SUB_ROW, T_DIM);
             if (j == (day() ? 1 : 0)) c.box(SUB_X + 16, y + 11, 8, 8, T_YEL);
             c.ptext(SUB_X + 34, y + 8, j ? "DAY" : "NIGHT", 2, sub_hover == j ? T_YEL : T_WORD);
+        }
+    }
+    else if (menu_sub == 3)   // TRACK's list, each with its key
+    {
+        int y0 = track_sub_y(), h = 20 + 5 * SUB_ROW;
+        nbox(c, SUB_X, y0, TRACK_SUB_W, h, T_DIM, T_BLACK);
+        for (int j = 0; j < 5; j++)
+        {
+            int y = y0 + 10 + j * SUB_ROW;
+            char t[32];
+            std::snprintf(t, sizeof t, TRACK_DO[j], track_now + 1);
+            bool there = !(j == 3 && track_now == 0) && !(j == 4 && track_now == tracks_ - 1);   // (no place to go)
+            if (sub_hover == j && there) c.box(SUB_X + 2, y, TRACK_SUB_W - 4, SUB_ROW, T_DIM);
+            c.ptext(SUB_X + 18, y + 8, t, 2, !there ? T_OFF : sub_hover == j ? T_YEL : T_WORD);
+            c.ptext(SUB_X + TRACK_SUB_W - 16 - Canvas::ptext_w(TRACK_KEY[j], 1), y + 11, TRACK_KEY[j], 1, T_OFF);
         }
     }
     else if (menu_sub == 2 && !inks.empty())   // the inks as swatches (a four-ink palette in quarters), the name below
@@ -1713,6 +1749,12 @@ int Panel::sub_at(int x, int y) const
         if (x >= SUB_X && x < SUB_X + 232 && y >= shell_sub_y() + 10 && j >= 0 && j < 2)
             return j;
     }
+    else if (menu_sub == 3)
+    {
+        int j = (y - track_sub_y() - 10) / SUB_ROW;
+        if (x >= SUB_X && x < SUB_X + TRACK_SUB_W && y >= track_sub_y() + 10 && j >= 0 && j < 5)
+            return j;
+    }
     else if (menu_sub == 2)
         for (int j = 0; j < (int)inks.size(); j++)
         {
@@ -1736,6 +1778,14 @@ bool Panel::menu_click(int x, int y)
             set_shell(j);
             shell_req = j;
         }
+        return false;
+    }
+    if (j >= 0 && menu_sub == 3)   // (a move with no place to go: nothing)
+    {
+        if ((j == 3 && track_now == 0) || (j == 4 && track_now == tracks_ - 1)) return false;
+        menu_open = false;
+        menu_sub = 0;
+        track_req = {TR_COPY + j, track_now};
         return false;
     }
     if (j >= 0 && menu_sub == 2)
@@ -1842,6 +1892,7 @@ bool Panel::menu_click(int x, int y)
     }
     if (r == ROW_SHELL) menu_sub = menu_sub == 1 ? 0 : 1;
     else if (r == ROW_INK) menu_sub = menu_sub == 2 ? 0 : 2;
+    else if (r == ROW_TRACK) menu_sub = menu_sub == 3 ? 0 : 3;
     else if (r < 0) menu_open = false;   // (ABOUT: nothing to pick)
     sub_hover = -1;
     return false;

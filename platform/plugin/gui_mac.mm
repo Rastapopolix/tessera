@@ -334,6 +334,19 @@ bool v_key(id self, NSEvent *e, bool down)
         g->files();
         return true;
     }
+    if (g && down)   // TRACK (panel.h shortcut): Cmd+C copies, Cmd+V pastes, Cmd+Shift+V the sound; Option+Up / Down moves
+    {
+        NSEventModifierFlags m = e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl |
+                                                    NSEventModifierFlagOption);
+        bool shift = e.modifierFlags & NSEventModifierFlagShift;
+        char c = m == NSEventModifierFlagCommand && e.keyCode == 8   ? 'C'
+                 : m == NSEventModifierFlagCommand && e.keyCode == 9 ? (shift ? 'v' : 'V')
+                 : m == NSEventModifierFlagOption && e.keyCode == 126 ? '^'
+                 : m == NSEventModifierFlagOption && e.keyCode == 125 ? '_'
+                                                                       : 0;
+        if (c && g->panel.shortcut(c))
+            return true;
+    }
     if (!g || (e.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption)))
         return false;   // (the host's)
     if (down && g->panel.typing())   // NAME open: the character the layout gives, typed
