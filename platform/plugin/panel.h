@@ -25,6 +25,8 @@ struct PanelInput
     struct ZoneAct { tess_zone_t z; uint32_t action; int32_t n; };
     std::vector<ZoneAct> zones, tzones;
     std::vector<uint32_t> text;       // characters typed while NAME is open, for tess_core_text
+    struct Typed { tess_zone_t z; char text[24]; };
+    std::vector<Typed> typed;         // a value typed for a zone (Ctrl / Cmd-click it): tess_core_zone_type
     bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
     bool away = false;                // a click on nothing while a picker, sheet or help card is open: tess_core_away
     bool hover_changed = false;       // HOVER HELP: the zone the mouse rests on changed (kind 0: none): tess_core_hover
@@ -98,7 +100,12 @@ class Panel
     // a character typed on the computer keyboard (the window's, as the layout gives it; TESS_TEXT_* for Backspace,
     // Enter, Esc, the arrows, Delete): while NAME is open it goes to the name (true: the panel's, not a key)
     bool text(uint32_t ch);
-    bool typing() const { return typing_; }
+    bool typing() const { return typing_ || entry_on; }
+    /* the modifier keys as the window has them at a click, a drag or a wheel (the GUIs call it first): type, Ctrl (Cmd on
+     * a Mac): a click on a value opens a box to type it (Enter sets it, Esc not); fine, Shift: a drag or the wheel turns
+     * a value a detent at a time, a drag four times as far a detent */
+    void set_mods(bool type, bool fine) { mod_type = type, mod_fine = fine; }
+    bool entry_open() const { return entry_on; }
     /* the standalone app (no DAW: tessera_clap.cpp's free-running host): Space plays and stops, Ctrl+O / Ctrl+S (Cmd on
      * a Mac) open and save; in a DAW those keys stay the DAW's */
     void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)
@@ -223,6 +230,10 @@ class Panel
     void draw_native(uint32_t *px, const tess_view_t &v, double breath, const tess_tracks_t *t2);
     bool menu_open = false;
     bool typing_ = false;   // the view's: NAME open
+    bool mod_type = false, mod_fine = false;   // (set_mods)
+    bool entry_on = false;  // a value's box open: its zone, the text typed so far
+    tess_zone_t entry_zone = {};
+    std::string entry_text;
     bool expanded_ = false;
     int mode_req = -1;
     int mode_seg_at(int x) const;   // MODE's row: 0 FM-1, 1 EXPANDED, -1 none

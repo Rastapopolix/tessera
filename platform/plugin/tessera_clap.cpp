@@ -270,6 +270,8 @@ struct Tessera : GuiLink
         in.tzones.clear();
         pending.text.insert(pending.text.end(), in.text.begin(), in.text.end());
         in.text.clear();
+        pending.typed.insert(pending.typed.end(), in.typed.begin(), in.typed.end());
+        in.typed.clear();
         pending.changed = true;
         in.changed = false;
     }
@@ -1313,6 +1315,9 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
             for (uint32_t ch : pi.text)   // typed into NAME
                 t->core->text(ch);
             pi.text.clear();
+            for (auto &a : pi.typed)   // a value typed (Ctrl / Cmd-click)
+                t->core->zone_type(&a.z, a.text);
+            pi.typed.clear();
             if (pi.away)               // a click away: a picker, a sheet or a pinned help card closed
                 t->core->away();
             pi.away = false;

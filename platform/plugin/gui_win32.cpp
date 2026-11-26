@@ -83,6 +83,7 @@ class GuiWin32 : public Gui
         case WM_LBUTTONDOWN:
             SetCapture(h);
             SetFocus(h);
+            g->panel.set_mods((wp & MK_CONTROL) != 0, (wp & MK_SHIFT) != 0);   // (Ctrl: type a value, Shift: fine)
             g->input(g->panel.down(x, y));
             return 0;
         case WM_RBUTTONDOWN:   // a button or key latched
@@ -90,6 +91,7 @@ class GuiWin32 : public Gui
             g->input(g->panel.latch(x, y));
             return 0;
         case WM_MOUSEMOVE:
+            g->panel.set_mods((wp & MK_CONTROL) != 0, (wp & MK_SHIFT) != 0);
             g->input(g->panel.move(x, y));
             return 0;
         case WM_LBUTTONUP:
@@ -189,6 +191,7 @@ class GuiWin32 : public Gui
             g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
             int n = g->wheel_acc / WHEEL_DELTA;
             g->wheel_acc -= n * WHEEL_DELTA;
+            g->panel.set_mods((GET_KEYSTATE_WPARAM(wp) & MK_CONTROL) != 0, (GET_KEYSTATE_WPARAM(wp) & MK_SHIFT) != 0);
             if (n)
                 g->input(g->panel.wheel(p.x, p.y, n));
             return 0;

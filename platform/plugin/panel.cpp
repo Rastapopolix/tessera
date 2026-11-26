@@ -370,7 +370,35 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     else
         zones2.clear();
     draw_body(px, v, t2);
-    draw_hover(px);
+    if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
+    if (!entry_on)
+    {
+        draw_hover(px);
+        return;
+    }
+    // a value's box: under the screen, centred on the value, its name, the text typed and a cursor, what the keys do
+    Canvas c{px, width()};
+    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
+    const tess_zone_t &z = entry_zone;
+    std::string name = z.name, typed = entry_text + "_";
+    for (auto &ch : name) ch = ch >= 'a' && ch <= 'z' ? (char)(ch - 32) : ch;
+    const char *hint = "ENTER: SET   ESC: NOT";
+    int nw = Canvas::ptext_w(name.c_str(), 2), tw = Canvas::ptext_w(typed.c_str(), 3), hw = Canvas::ptext_w(hint, 2);
+    int w = nw + 14 + (tw > 120 ? tw : 120) + 14 + hw + 20, h = 34;
+    int ox = SCREEN_X + SCREEN_S / 32, x = ox + z.x + z.w / 2 - w / 2, y = SCREEN_Y + SCREEN_S + 3;
+    if (x < 8) x = 8;
+    if (x + w > width() - 8) x = width() - 8 - w;
+    {   // (the value boxed, two pixels)
+        int zx = ox + z.x, zy = SCREEN_Y + SCREEN_S / 32 + z.y;
+        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
+        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+    }
+    c.box(x, y, w, h, BLACK);
+    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
+    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
+    c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
+    c.ptext(x + 10 + nw + 14, y + 7, typed.c_str(), 3, YEL);
+    c.ptext(x + w - 10 - hw, y + 11, hint, 2, WORD);
 }
 
 void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
@@ -658,6 +686,21 @@ void Panel::merge_held()
 // buttons on the number row in the panel's order, [ ] OCT
 bool Panel::text(uint32_t ch)
 {
+    if (entry_on && ch)   // a value's box (Ctrl / Cmd-click): every character its, Enter sets it, Esc not
+    {
+        if (ch == TESS_TEXT_OK)
+        {
+            PanelInput::Typed t{entry_zone, {}};
+            std::snprintf(t.text, sizeof t.text, "%s", entry_text.c_str());
+            if (!entry_text.empty()) input.typed.push_back(t);
+            entry_on = false;
+        }
+        else if (ch == TESS_TEXT_CANCEL) entry_on = false;
+        else if (ch == TESS_TEXT_BACK || ch == TESS_TEXT_DELETE) { if (!entry_text.empty()) entry_text.pop_back(); }
+        else if (ch >= 32 && ch < 127 && entry_text.size() < 20) entry_text += (char)ch;
+        input.changed = true;
+        return true;
+    }
     if (!typing_ || !keys_on_ || menu_open || !ch) return false;
     input.text.push_back(ch);
     input.changed = true;
@@ -778,6 +821,13 @@ bool Panel::down(int x, int y)
     last_x = x;
     last_y = y;
     acc = acc_y = 0;
+    if (entry_on)   // (a click anywhere: a value's box shut, unset)
+    {
+        entry_on = false;
+        drag = NONE;
+        input.changed = true;
+        return true;
+    }
     if (native() && menu_open)   // (a click with the menu open is the menu's, inside or out)
     {
         drag = NONE;
@@ -860,6 +910,15 @@ bool Panel::down(int x, int y)
     if (zi >= 0)   // the screen: a zone (a double-click: the same zone, soon, where the first was)
     {
         const tess_zone_t z = zones[zi];
+        if (mod_type && (z.kind == TESS_ZONE_KNOB || z.kind == TESS_ZONE_LEVEL || z.kind == TESS_ZONE_PAN))
+        {   // Ctrl / Cmd-click a value: a box to type it in (Cosmati audit G1)
+            entry_on = true;
+            entry_zone = z;
+            entry_text.clear();
+            drag = NONE;
+            input.changed = true;
+            return true;
+        }
         double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
         bool dbl = click_known && zone_like(click_zone) == zi && now - click_t < 0.4 && std::abs(x - click_x) < 6 &&
                    std::abs(y - click_y) < 6;
@@ -1016,11 +1075,12 @@ bool Panel::move(int x, int y)
     int dx = x - last_x, dy = last_y - y;   // up or right: clockwise (the larger of the two)
     last_x = x;
     last_y = y;
-    if (drag == ZONE2)   // TRACKS' tempo: a detent every 8 px
+    if (drag == ZONE2)   // TRACKS' tempo: a detent every 8 px (Shift: every 32)
     {
+        const int step = mod_fine ? 32 : 8;
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
-        int n = acc / 8;
-        if (n) { acc -= n * 8; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
+        int n = acc / step;
+        if (n) { acc -= n * step; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
         return false;
     }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
@@ -1045,11 +1105,12 @@ bool Panel::move(int x, int y)
             return true;
         }
     }
-    else if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px
+    else if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px (Shift: fine, every 32, never sped up)
     {
+        const int step = mod_fine ? 32 : 8;
         acc += std::abs(dx) > std::abs(dy) ? dx : dy;
-        int n = acc / 8;
-        if (n) { acc -= n * 8; zone_still = click_known = false; zone_act(drag_zone, TESS_ZA_TURN, n); return true; }   // (turned: no click, nor half a double-click)
+        int n = acc / step;
+        if (n) { acc -= n * step; zone_still = click_known = false; zone_act(drag_zone, mod_fine ? (uint32_t)TESS_ZA_TURN_FINE : (uint32_t)TESS_ZA_TURN, n); return true; }   // (turned: no click, nor half a double-click)
     }
     else if (drag == GEN_VAR)   // VAR: 5 a detent, a detent every 8 px
     {
@@ -1158,7 +1219,9 @@ bool Panel::wheel(int x, int y, int notches)
     int zi = zone_at(x, y);
     if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
-        zone_act(zone_here(zi, x, y), TESS_ZA_WHEEL, notches);   // (NOTES' steps: the note under the mouse)
+        const tess_zone_t &zw = zones[zi];
+        bool fine = mod_fine && (zw.kind == TESS_ZONE_KNOB || zw.kind == TESS_ZONE_LEVEL || zw.kind == TESS_ZONE_PAN);
+        zone_act(zone_here(zi, x, y), fine ? (uint32_t)TESS_ZA_TURN_FINE : (uint32_t)TESS_ZA_WHEEL, notches);   // (NOTES' steps: the note under the mouse; Shift: a value a detent at a time)
         return true;
     }
     int i = knob_at(x, y);

@@ -55,6 +55,8 @@ static double run(Panel &p, double seconds)   // as the plugin's audio thread: i
         in.zones.clear();
         for (auto &a : in.tzones) tess_core_tracks_do(&a.z, a.action, a.n);
         in.tzones.clear();
+        for (auto &a : in.typed) tess_core_zone_type(&a.z, a.text);
+        in.typed.clear();
         in.changed = false;
     }
     for (int n = (int)(seconds * tess_core_rate() / 441); n > 0; n--)
@@ -939,6 +941,43 @@ int main(int argc, char **argv)
             std::printf("zones: %s %s, wheel %s, drag %s, double-click %s\n", m.name, v0.c_str(), v1.c_str(), v2.c_str(),
                         v.zones[mix].value);
             CHECK(std::string(v.zones[mix].value) != v2, "%s back to its default (%s)", m.name, v.zones[mix].value);
+            // G1: Shift, a drag a detent every 32 px, never sped up; Ctrl / Cmd-click, a box to type the value in
+            z.input.zones.clear();
+            z.set_mods(false, true);
+            z.down(mx, my);
+            for (int i = 1; i <= 4; i++) z.move(mx, my - 16 * i);
+            z.up(mx, my - 64);
+            turned = 0;
+            for (auto &a : z.input.zones) turned += a.action == TESS_ZA_TURN_FINE ? a.n : 0;
+            CHECK(turned == 2, "Shift-drag up 64 px: two fine detents (%d)", turned);
+            CHECK(z.wheel(mx, my, 1) && z.input.zones.back().action == TESS_ZA_TURN_FINE, "Shift-wheel: a fine detent");
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            z.set_mods(true, false);
+            CHECK(z.down(mx, my) && z.entry_open() && z.typing(), "Ctrl-click on %s: its box, typing", m.name);
+            z.up(mx, my);
+            z.set_mods(false, false);
+            z.draw(px.data(), v);
+            if (!out.empty()) ppm(out + "/09b_zone_type.ppm", px);
+            for (char ch : std::string("7x")) z.text((uint32_t)ch);
+            z.text(TESS_TEXT_BACK);
+            z.text('5');
+            CHECK(z.text(TESS_TEXT_OK) && !z.entry_open() && z.input.typed.size() == 1 && !std::strcmp(z.input.typed[0].text, "75"),
+                  "\"7x\", Backspace, \"5\", Enter: \"75\" handed on (%s)", z.input.typed.empty() ? "-" : z.input.typed[0].text);
+            run(z, 0.3);
+            tess_core_view(&v);
+            CHECK(std::string(v.zones[mix].value) == "75%", "%s typed: 75%% (%s)", m.name, v.zones[mix].value);
+            z.set_mods(true, false);
+            z.down(mx, my), z.up(mx, my);
+            z.set_mods(false, false);
+            z.text('1');
+            CHECK(z.text(TESS_TEXT_CANCEL) && !z.entry_open() && z.input.typed.empty(), "Esc: the box shut, nothing set");
+            z.set_mods(true, false);
+            z.down(mx, my), z.up(mx, my);
+            z.set_mods(false, false);
+            CHECK(z.down(5, 5) && !z.entry_open(), "a click away shuts it");
+            z.up(5, 5);
         }
     }
 

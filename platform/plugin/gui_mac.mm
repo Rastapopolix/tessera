@@ -253,6 +253,7 @@ void v_down(id self, SEL, NSEvent *e)
     {
         [[self window] makeFirstResponder:self];
         NSPoint p = g->where(e);
+        g->panel.set_mods(e.modifierFlags & NSEventModifierFlagCommand, e.modifierFlags & NSEventModifierFlagShift);   // (Cmd: type a value, Shift: fine)
         if (e.modifierFlags & NSEventModifierFlagControl)   // Ctrl-click: as a right-click, a latch
             g->input(g->panel.latch((int)p.x, (int)p.y));
         else
@@ -281,6 +282,7 @@ void v_drag(id self, SEL, NSEvent *e)
     if (GuiMac *g = gui_of(self))
     {
         NSPoint p = g->where(e);
+        g->panel.set_mods(e.modifierFlags & NSEventModifierFlagCommand, e.modifierFlags & NSEventModifierFlagShift);
         g->input(g->panel.move((int)p.x, (int)p.y));
     }
 }
@@ -322,6 +324,7 @@ void v_wheel(id self, SEL, NSEvent *e)
         return;
     g->wheel_acc -= n;
     NSPoint p = g->where(e);
+    g->panel.set_mods(e.modifierFlags & NSEventModifierFlagCommand, e.modifierFlags & NSEventModifierFlagShift);
     g->input(g->panel.wheel((int)p.x, (int)p.y, n));
 }
 bool v_key(id self, NSEvent *e, bool down)
