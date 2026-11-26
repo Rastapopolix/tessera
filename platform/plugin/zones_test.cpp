@@ -1500,6 +1500,42 @@ static void paint()   // G3: a drag across NOTES' steps paints or erases a run; 
     tap(B_HOME);
 }
 
+static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row: that track loads it, the selected one stays
+{
+    if (tess_core_tracks() < 8) return;
+    tess_core_project_new();
+    run(50);
+    tess_core_key_words(1);
+    tess_core_track_select(0);
+    tap(B_HOME);
+    act(find("T1", TESS_ZONE_TRACK), TESS_ZA_DOUBLE, 0, 40);
+    int below = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].role == 4 && (int8_t)(v.zones[i].row & 0xFF) == 1) below = i;
+    CHECK(below >= 0, "G4: T1's browser, a sound below the one shown");
+    if (below < 0) { tess_core_key_words(0); return; }
+    std::string name = v.zones[below].value;
+    act(below, TESS_ZA_CLICK, 0, 80);   // (the press picks it, as the panel's does)
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    int t1 = tfind(TESS_ZONE_TRACK, 0), t6 = tfind(TESS_ZONE_TRACK, 5);
+    CHECK(t1 >= 0 && t6 >= 0, "TRACKS: T1's and T6's rows");
+    if (t1 < 0 || t6 < 0) { tess_core_key_words(0); return; }
+    std::string picked = tv.zones[t1].value, before = tv.zones[t6].value;
+    CHECK(picked != before, "T1 picked %s (%s), T6 %s", picked.c_str(), name.c_str(), before.c_str());
+    {
+        tess_zone_t z = tv.zones[t6];
+        tess_core_tracks_do(&z, TESS_ZA_SOUND, 0);
+        run(40);
+    }
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    t6 = tfind(TESS_ZONE_TRACK, 5);
+    CHECK(t6 >= 0 && picked == tv.zones[t6].value, "dropped on T6's row: T6 loads %s (%s)", picked.c_str(),
+          t6 >= 0 ? tv.zones[t6].value : "?");
+    CHECK(tess_core_track() == 0 && find("SOUND", TESS_ZONE_CELL) >= 0, "T1 still selected, its browser still open");
+    tess_core_key_words(0);
+    tap(B_HOME);
+}
+
 static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
 {
     tap(B_HOME);
@@ -1726,6 +1762,7 @@ int main(int argc, char **argv)
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
     paint();
+    drop_sound();
     smap();
     chord_user();
     sections();

@@ -1256,6 +1256,82 @@ int main(int argc, char **argv)
                             wide[y * Panel::W_EXPANDED + x] != wide[y * Panel::W_EXPANDED + x + 1];
             CHECK(kept >= n * 98 / 100, "125 %%: the pixels land (%d of %d)", kept, n);
         }
+        {   // G4: a browser's sound dragged onto a TRACKS row: that track loads it (the project kept and put back after)
+            std::vector<uint8_t> kept(tess_core_tsp_max());
+            kept.resize(tess_core_save(kept.data(), (uint32_t)kept.size()));
+            auto screen_xy = [&](const char *name, uint32_t kind, int8_t row, int *zx, int *zy) {
+                tess_core_view(&v);
+                tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+                e.draw(wide.data(), v, &t2);
+                for (uint32_t i = 0; i < v.zone_count; i++)
+                    if (!std::strcmp(v.zones[i].name, name) && v.zones[i].kind == kind && (row == -128 || (int8_t)(v.zones[i].row & 0xFF) == row))
+                    {
+                        *zx = 292 + 8 + v.zones[i].x + v.zones[i].w / 2, *zy = 44 + 8 + v.zones[i].y + v.zones[i].h / 2;
+                        return true;
+                    }
+                return false;
+            };
+            int x, y;
+            tess_core_track_select(0);
+            for (int i = 0; i < 3 && !screen_xy("T1", TESS_ZONE_TRACK, -128, &x, &y); i++)
+            {
+                tess_core_buttons(1u << 6);
+                run(e, 0.1);
+                tess_core_buttons(0);
+                run(e, 0.3);
+            }
+            if (screen_xy("T1", TESS_ZONE_TRACK, -128, &x, &y))
+            {
+                e.down(x, y), e.up(x, y), e.down(x, y), e.up(x, y);   // (T1's sounds)
+                run(e, 0.3);
+            }
+            bool in = screen_xy("SOUND", TESS_ZONE_CELL, 1, &x, &y);
+            CHECK(in, "G4: T1's browser in EXPANDED, a sound under the card");
+            int tx = -1, ty = -1;
+            for (uint32_t i = 0; i < t2.zone_count; i++)
+                if (t2.zones[i].kind == TESS_ZONE_TRACK && t2.zones[i].row == 5)
+                    tx = 568 + t2.zones[i].x + t2.zones[i].w / 3, ty = 52 + t2.zones[i].y + t2.zones[i].h / 2;
+            CHECK(tx > 0, "TRACKS: T6's row");
+            if (in && tx > 0)
+            {
+                e.input.tzones.clear();
+                e.down(x, y);
+                e.move(x + 3, y);
+                CHECK(!e.input.tzones.size(), "pressed, 3 px: nothing yet");
+                for (int i = 1; i <= 8; i++) e.move(x + (tx - x) * i / 8, y + (ty - y) * i / 8);
+                run(e, 0.3);
+                tess_core_view(&v);
+                tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+                e.draw(wide.data(), v, &t2);
+                if (!out.empty()) ppm(out + "/16b_drag_sound.ppm", wide, Panel::W_EXPANDED);
+                int frame = 0;
+                for (int px2 = tx - 40; px2 < tx + 40; px2++) frame += wide[(ty - 30) * Panel::W_EXPANDED + px2] == 0xFFFFD020u;
+                e.up(tx, ty);
+                CHECK(e.input.tzones.size() == 1 && e.input.tzones[0].action == TESS_ZA_SOUND && e.input.tzones[0].z.row == 5,
+                      "let go on T6's row: SOUND for T6 (%zu)", e.input.tzones.size());
+                run(e, 0.3);
+                tess_core_tracks_view(&t2, TESS_TRACKS_W, TESS_TRACKS_H);
+                std::string a, b6;
+                for (uint32_t i = 0; i < t2.zone_count; i++)
+                    if (t2.zones[i].kind == TESS_ZONE_TRACK && t2.zones[i].row == 0) a = t2.zones[i].value;
+                    else if (t2.zones[i].kind == TESS_ZONE_TRACK && t2.zones[i].row == 5) b6 = t2.zones[i].value;
+                CHECK(!a.empty() && a == b6 && tess_core_track() == 0, "T6 loads T1's pick (%s, %s), T1 stays selected", a.c_str(),
+                      b6.c_str());
+                (void)frame;
+                if (screen_xy("BACK", TESS_ZONE_KEY, -128, &x, &y))   // (BACK: T1's own sound again)
+                {
+                    e.down(x, y), e.up(x, y);
+                    run(e, 0.5);
+                }
+            }
+            tess_core_buttons(1u << 6);
+            run(e, 0.1);
+            tess_core_buttons(0);
+            run(e, 0.3);
+            tess_core_load(kept.data(), (uint32_t)kept.size());
+            tess_core_track_select(3);   // (as the checks before left it)
+            run(e, 0.2);
+        }
         e.set_shell(1);
         CHECK(e.width() == Panel::W && !e.expanded(), "an FM-1 shell: FM-1 mode (%d)", e.width());
         e.set_shell(0);

@@ -307,7 +307,9 @@ class Panel
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag
-    enum { NONE, KNOB, BUTTON, KEY, ZONE, ZONE2, GEN_BUTTON, GEN_VAR } drag = NONE;
+    enum { NONE, KNOB, BUTTON, KEY, ZONE, ZONE2, GEN_BUTTON, GEN_VAR, SOUND } drag = NONE;
+    bool sound_live = false;   // (a browser's sound dragged past 5 px: on its way to a TRACKS row)
+    void sound_draw(uint32_t *px);
     int drag_i = -1, last_x = 0, last_y = 0, acc = 0, acc_y = 0;
     bool zone_still = false;
     bool closable_ = false;

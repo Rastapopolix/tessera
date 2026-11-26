@@ -391,6 +391,11 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
         ctx_draw(px);
         return;
     }
+    if (drag == SOUND && sound_live)
+    {
+        sound_draw(px);
+        return;
+    }
     if (!entry_on)
     {
         draw_hover(px);
@@ -419,6 +424,34 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     c.ptext(x + 10, y + 11, name.c_str(), 2, WORD);
     c.ptext(x + 10 + nw + 14, y + 7, typed.c_str(), 3, YEL);
     c.ptext(x + w - 10 - hw, y + 11, hint, 2, WORD);
+}
+
+// a browser's sound dragged: its name in a box under the mouse; the TRACKS row under it framed (let go there: loaded)
+void Panel::sound_draw(uint32_t *px)
+{
+    Canvas c{px, width()};
+    const uint32_t YEL = 0xFFFFD020, BLACK = 0xFF000000, WORD = 0xFFB9B2A0;
+    int z2 = zone2_at(last_x, last_y);
+    bool on = z2 >= 0 && zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row >= 0;
+    if (on)
+    {
+        const tess_zone_t &z = zones2[z2];
+        int zx = T2_X + T2_IN + z.x, zy = T2_Y + T2_IN + z.y;
+        c.box(zx, zy, z.w, 2, YEL), c.box(zx, zy + z.h - 2, z.w, 2, YEL);
+        c.box(zx, zy, 2, z.h, YEL), c.box(zx + z.w - 2, zy, 2, z.h, YEL);
+    }
+    std::string name = drag_zone.value[0] ? drag_zone.value : "SOUND";
+    char row[24] = "";
+    if (on) std::snprintf(row, sizeof row, "  > T%d", zones2[z2].row + 1);
+    int nw = Canvas::ptext_w(name.c_str(), 2), rw = row[0] ? Canvas::ptext_w(row, 2) : 0, w = nw + rw + 20, h = 26;
+    int x = last_x + 14, y = last_y + 10;
+    if (x + w > width() - 4) x = width() - 4 - w;
+    if (y + h > H - 4) y = last_y - 10 - h;
+    c.box(x, y, w, h, BLACK);
+    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
+    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
+    c.ptext(x + 10, y + 7, name.c_str(), 2, YEL);
+    if (row[0]) c.ptext(x + 10 + nw, y + 7, row, 2, WORD);
 }
 
 void Panel::draw_body(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
@@ -995,6 +1028,15 @@ bool Panel::down(int x, int y)
             return true;
         }
         drag = NONE;
+        if (z.kind == TESS_ZONE_CELL && !std::strcmp(z.name, "SOUND") && !dbl && expanded())   // the browser's sound: picked
+        {                                  // (the click), then held, it can be dragged onto a TRACKS row (EXPANDED)
+            zone_act(z, TESS_ZA_CLICK, 0);
+            drag = SOUND;
+            drag_zone = z;
+            sound_live = false;
+            roll_x0 = x, roll_y0 = y;
+            return true;
+        }
         if (dbl && z.kind != TESS_ZONE_ROW && z.kind != TESS_ZONE_TRACK && z.kind != TESS_ZONE_CELL && z.kind != TESS_ZONE_OP &&
             z.kind != TESS_ZONE_EGRID && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
             return false;   // (OK, YES: once, however often clicked; MIXER's MUTE word: double-click SOLO; HOME's track:
@@ -1133,6 +1175,12 @@ bool Panel::move(int x, int y)
         int n = acc / step;
         if (n) { acc -= n * step; input.tzones.push_back({drag_zone, TESS_ZA_TURN, n}); input.changed = true; return true; }
         return false;
+    }
+    if (drag == SOUND)   // a browser's sound on its way: past 5 px it follows the mouse (sound_draw)
+    {
+        if (!sound_live && std::abs(x - roll_x0) < 5 && std::abs(y - roll_y0) < 5) return false;
+        sound_live = true;
+        return true;
     }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
     {                                                        // every 3 px (+ right, + up)
@@ -1286,7 +1334,7 @@ bool Panel::latch(int x, int y)
     return true;
 }
 
-bool Panel::up(int, int)
+bool Panel::up(int x, int y)
 {
     bool ch = false;
     if (drag == GEN_BUTTON && !gen_swapped)   // GENERATE let go before half a second: a new piece
@@ -1296,6 +1344,17 @@ bool Panel::up(int, int)
     if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_ROLL && !zone_still) { zone_act(drag_zone, TESS_ZA_DROP, 0); ch = true; }   // (a
     // drag on NOTES' steps let go: its edits one undo step)
+    if (drag == SOUND && sound_live)   // let go on a TRACKS row: that track loads it (the sound shown, the click's)
+    {
+        int z2 = zone2_at(x, y);
+        if (z2 >= 0 && zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row >= 0)
+        {
+            input.tzones.push_back({zones2[z2], TESS_ZA_SOUND, 0});
+            input.changed = true;
+        }
+        ch = true;
+    }
+    sound_live = false;
     if (drag == ZONE && zone_still) { zone_act(drag_zone, TESS_ZA_CLICK, 0); ch = true; }   // (a help card's text, a
     zone_still = false;                                                                       // knob's column: a click)
     drag = NONE;
