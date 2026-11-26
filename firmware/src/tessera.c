@@ -2679,7 +2679,7 @@ static uint8_t *tess_put_v11(uint8_t *o, const tessera_constel_t *c)
  * 2), ROT, its walk (3 bits a chord) */
 static uint8_t *tess_put_v12(uint8_t *o, const tessera_chord_t *c)
 {
-    *o++ = c->prog; *o++ = (uint8_t)(c->bars | c->hit << 2 | ((uint32_t)c->oct & 7u) << 4); *o++ = c->rot;
+    *o++ = c->prog; *o++ = (uint8_t)(c->bars | GEN_CH_SAVED(c->hit) << 2 | ((uint32_t)c->oct & 7u) << 4); *o++ = c->rot;   /* (a chop: TSP_CHOP) */
     return tess_put16(o, (uint16_t)(c->walk[0] | c->walk[1] << 3 | c->walk[2] << 6 | c->walk[3] << 9));
 }
 /* version 13's part (after version 12's 135 bytes): Grids' KICK, SNR, HAT turned round (as held: 0 all of DENS), TOMS;
@@ -3784,7 +3784,7 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_SR_LOOP: tessera.series[tr].loop = (uint8_t)tess_clampi(v, 0, GEN_SR_LOOP); return;
     case TX_CH_PROG: tessera.chord[tr].prog = (uint8_t)tess_clampi(v, 0, GEN_CH_PROGS - 1); return;
     case TX_CH_BARS: tessera.chord[tr].bars = (uint8_t)tess_clampi(v, 0, GEN_CH_BARS - 1); return;
-    case TX_CH_HIT: tessera.chord[tr].hit = (uint8_t)tess_clampi(v, 0, GEN_CH_HITS - 1); return;
+    case TX_CH_HIT: tessera.chord[tr].hit = (uint8_t)tess_clampi(v, 0, (int32_t)GEN_CH_HITS - 1); return;
     case TX_CH_OCT: tessera.chord[tr].oct = (int8_t)tess_clampi(v, -2, 2); return;
     default:
         return;

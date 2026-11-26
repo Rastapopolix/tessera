@@ -963,7 +963,8 @@ static void gen_chord_fill(gen_chord_t *g, uint32_t seed)
 static void gen_chord_start(gen_chord_t *g) { g->n = 0; }
 /* Chord pad: a strike on the chord's first step (HOLD: held to its end), on every beat (BEAT) or every step (STEP);
  * OFF BEAT a stab on each beat's "and", halfway between the beats (a triplet beat: its last third; steps of a beat or
- * longer: every second step), for the step's GATE. The note: the chord's degree (tessera.c makes the chord); the
+ * longer: every second step), for the step's GATE. The chops (8-track builds): DOUBLE the "and" and the 16th after it,
+ * BUBBLE every 16th but the beat's (an organ bubble), the "and" louder; steps of an 8th or longer: OFF BEAT's. The note: the chord's degree (tessera.c makes the chord); the
  * first strike of a chord louder. The CV: the degree */
 static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *out)
 {
@@ -975,10 +976,16 @@ static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *ou
     g->idx = (uint8_t)i;
     g->deg = (uint8_t)deg;
     if (g->hit == GEN_CH_OFF) out->gate = (uint8_t)(in % off == (off + 1u) / 2u);
+#if TESS_CHOPS
+    else if (g->hit == GEN_CH_DOUBLE)                   /* (the "and" and the 16th after it; 8th steps: the "and") */
+        out->gate = (uint8_t)(in % off == (off + 1u) / 2u || (beat >= 4u && in % beat == beat / 2u + 1u));
+    else if (g->hit == GEN_CH_BUBBLE)                   /* (every 16th but the beat's; 8th steps: the "and") */
+        out->gate = (uint8_t)(beat >= 4u ? in % beat != 0u : in % off == (off + 1u) / 2u);
+#endif
     else out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
     g->hold = (uint16_t)(g->hit == GEN_CH_HOLD ? len : g->hit == GEN_CH_BEAT ? (len - in < beat ? len - in : beat) : 0u);
     {                                                   /* (the strike's place, for MOVE WHEN) */
-        uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat : g->hit == GEN_CH_OFF ? off : len;
+        uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat : g->hit >= GEN_CH_OFF ? off : len;
         uint32_t spb = clk->steps_per_bar ? clk->steps_per_bar : 16u;
         g->sk = (uint8_t)(g->n % spb / per);
         g->sn = (uint8_t)(spb / per);
@@ -986,6 +993,11 @@ static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *ou
         g->bar = (uint8_t)(g->n / spb);
     }
     out->note = (uint8_t)deg;
+#if TESS_CHOPS
+    if (g->hit >= GEN_CH_DOUBLE)                        /* (the "and" leads; the chop's others softer) */
+        out->vel = (uint8_t)(in % off == (off + 1u) / 2u ? 100u : g->hit == GEN_CH_DOUBLE ? 78u : 70u);
+    else
+#endif
     out->vel = (uint8_t)(in && !(g->hit == GEN_CH_OFF && in < off) ? 84u : 104u);
     out->cv = (int16_t)(deg * 32767u / 6u);
     g->n++;
@@ -1073,11 +1085,13 @@ static void gen_chord_save(const gen_chord_t *g, gen_sec_t *s)
 {
     s->reg = (uint16_t)((g->walk[0] & 7u) | (g->walk[1] & 7u) << 3 | (g->walk[2] & 7u) << 6 | (g->walk[3] & 7u) << 9 |
                         (g->rot & 7u) << 12);
-    s->p0 = (uint8_t)((g->prog & 7u) | (g->bars & 3u) << 3 | (g->hit & 3u) << 5);
+    s->p0 = (uint8_t)((g->prog & 7u) | (g->bars & 3u) << 3 | (GEN_CH_SAVED(g->hit) & 3u) << 5 |
+                      (g->hit >= GEN_CH_DOUBLE) << 7);   /* (a chop: the 2 bits another firmware plays, bit 7 set) */
 }
 static void gen_chord_load(gen_chord_t *g, const gen_sec_t *s)
 {
     uint32_t p = s->p0 & 7u, h = (s->p0 >> 5) & 3u;
+    if (TESS_CHOPS && (s->p0 >> 7)) h = h == GEN_CH_OFF ? GEN_CH_DOUBLE : h == GEN_CH_STEP ? GEN_CH_BUBBLE : h;   /* (a chop) */
     for (uint32_t i = 0; i < GEN_CH_WALK_N; i++) g->walk[i] = (uint8_t)(((s->reg >> (3u * i)) & 7u) % 7u);
     g->rot = (uint8_t)((s->reg >> 12) & 7u);
     g->prog = (uint8_t)(p < GEN_CH_PROGS ? p : GEN_CH_POP);

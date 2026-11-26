@@ -31,6 +31,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_FLOURISH
        TSP_FLOUR = 53,
 #endif
+#if TESS_CHOPS
+       TSP_CHOP = 54,
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -103,7 +106,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_FLOUR (an 8-track build's only: the FM-1 skips it): FLOURISH,
                                               * every track's WHERE, then every track's WHAT, then every track's HEAT
                                               * (a byte each: tessera.fl_*), written only when one WHERE is not OFF;
-                                              * none: OFF */
+                                              * none: OFF;
+                                              * TSP_CHOP (an 8-track build's only: the FM-1 skips it): each track's
+                                              * CHORD HIT when a chop (gen.h GEN_CH_DOUBLE, BUBBLE), else 0, written
+                                              * only when one is; the TRACKS part keeps what others play (OFFBEAT,
+                                              * STEP); none: as that part has it */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -125,6 +132,9 @@ _Static_assert(TSP_ABANK == 52 && TESSERA_TRACKS <= 255u, "the parts' numbers ar
 #endif
 #if TESS_FLOURISH
 _Static_assert(TSP_FLOUR == 53 && 3u * TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_CHOPS
+_Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stored: never renumbered");
 #endif
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -641,6 +651,18 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_end(&w);
         }
 #endif
+#if TESS_CHOPS
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (CHORD HIT's chops: only when a track has one) */
+            if (tessera.chord[t].hit >= GEN_CH_DOUBLE) {
+                tsp_begin(&w, TSP_CHOP, 1);
+                for (t = 0; t < TESSERA_TRACKS; t++) {
+                    uint8_t h = tessera.chord[t].hit >= GEN_CH_DOUBLE ? tessera.chord[t].hit : 0u;
+                    tsp_bytes(&w, &h, 1);
+                }
+                tsp_end(&w);
+                break;
+            }
+#endif
 #if TESS_FLOURISH
         for (t = 0; t < TESSERA_TRACKS; t++)           /* (FLOURISH: only when one track has one) */
             if (tessera.fl_where[t]) {
@@ -771,6 +793,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
 #endif
 #if TESS_FLOURISH
     {TSP_FLOUR, 3u, 2u, 2u * TESSERA_TRACKS, 3u * TESSERA_TRACKS},   /* (WHERE, WHAT 0..3; HEAT 0..2) */
+#endif
+#if TESS_CHOPS
+    {TSP_CHOP, GEN_CH_BUBBLE, 0, TESSERA_TRACKS, TESSERA_TRACKS},   /* (0, or DOUBLE / BUBBLE; 1..3 read as none) */
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1134,6 +1159,12 @@ static void tsp_restore(const uint8_t *raw)
         } else
             xtrk_none();
     }
+#endif
+#if TESS_CHOPS
+    if (tsp_seen.at[TSP_CHOP])                         /* (CHORD HIT's chops over the stand-ins of the TRACKS part and,
+                                                        * for tracks 5..8, XTRK's: so last) */
+        for (t = 0; t < TESSERA_TRACKS; t++)
+            if (raw[tsp_seen.at[TSP_CHOP] + t] >= GEN_CH_DOUBLE) tessera.chord[t].hit = raw[tsp_seen.at[TSP_CHOP] + t];
 #endif
 }
 
