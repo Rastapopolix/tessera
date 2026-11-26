@@ -916,6 +916,15 @@ static void mo_pic_morph(const gen_morph_t *g)
     mo_text("B", 1, 74, MO_DIM);
     mo_box(14, 92, 104, 6, MO_INK);                     /* where it sits between A and B */
     mo_fill(15, 93, (int32_t)g->morph_pos * 102 / 127, 4, MO_INK);
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (a zone: the bar sets POS, KNOB 2, where it is clicked) */
+        char v[8];
+        fmt_int(v, (int32_t)g->morph_pos * 100 / 127);
+        str_cpy(v + str_len(v), "%", 2);
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_SLIDER, 14, 90, 104, 10, EN_K2, -1, 0, "POS", v);
+    }
+#endif
 }
 static void mo_pic_lfo(track_t *t)
 {

@@ -370,6 +370,7 @@ class Panel
     int zone_at(int x, int y) const;
     int zone2_at(int x, int y) const;   // a TRACKS zone under the mouse (EXPANDED), -1 none
     int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
-    tess_zone_t zone_here(int zi, int x, int y) const;   // zone zi as the core takes it from (x, y): a ROLL with the place
+    tess_zone_t zone_here(int zi, int x, int y) const;
+    int slider_at(const tess_zone_t &z, int x) const;   // (a SLIDER: where x is across it, 0..1000)   // zone zi as the core takes it from (x, y): a ROLL with the place
     void zone_act(const tess_zone_t &z, uint32_t action, int n);
 };
