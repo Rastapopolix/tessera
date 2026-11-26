@@ -208,7 +208,7 @@ Instruō and DivKid.
 Thanks to the testers and everyone who reported a bug or asked for a feature: BobFromson, pavig-coder (u/paulvigo on Reddit, for all
 the feedback), bambalaya,
 alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd, morgulbrut, @nrittamurti, Inputsignwave
-Charles Vestal (FM-1 Screen Reader), and
+Charles Vestal (FM-1 Screen Reader), u/dreaminganimal on Reddit (a more consistent UI), @jfworld on YouTube (a calmer LANDSCAPE), and
 @bitmap303 on YouTube, whose comment gave Tessera its tagline, "a pocket rabbit hole".
 
 See

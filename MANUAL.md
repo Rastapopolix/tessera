@@ -3752,7 +3752,8 @@ Thanks to the people who tested Tessera, reported bugs and asked for features: B
 Reddit, for all the feedback), bambalaya,
 alxantdroid, resocut, João Durães, tv-glotzer, il1893, fairplay, alexwlloyd and morgulbrut on GitHub, @nrittamurti on
 YouTube for the KNOBS ideas, Inputsignwave, Charles Vestal for the
-[FM-1 Screen Reader](https://charlesvestal.github.io/fm1-reader/), and @bitmap303 on YouTube, whose comment gave Tessera
+[FM-1 Screen Reader](https://charlesvestal.github.io/fm1-reader/), u/dreaminganimal on Reddit for the feedback that made
+the UI more consistent, @jfworld on YouTube for the calmer LANDSCAPE, and @bitmap303 on YouTube, whose comment gave Tessera
 its tagline, "a pocket rabbit hole".
 
 Every third-party part and its licence is listed in [LICENSING.md](LICENSING.md).
