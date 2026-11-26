@@ -3529,12 +3529,33 @@ static void mo_stage_tnums(void)
 #define MO_STAGE_WT 90
 #define mo_stage_tnums() ((void)0)
 #endif
+#if TESS_HAS_POINTER
+/* a project with nothing to play (no steps, no recording, no generator on any track), stopped: what to do next, in
+ * the panel's place (Cosmati audit G13) */
+static int mo_stage_empty(void)
+{
+    uint32_t k;
+    if (song.playing || stage.out) return 0;
+    for (k = 0; k < NTRK; k++)
+        if ((k < TESSERA_TRACKS && tessera.mode[k] != TESS_ENG_OFF) || !seq_is_empty(&trk[k]) ||
+            notes_have_recording(&trk[k]))
+            return 0;
+    mo_stage_tnums();                                   /* (the columns' numbers stay; the hint under them) */
+    mo_textc("PLAY, GENERATE", 64, 102, MO_INK);
+    mo_textc("OR OPEN A DEMO", 64, 112, MO_DIM);
+    return 1;
+}
+#else
+#define mo_stage_empty() 0
+#endif
 static void mo_stage_panel(void)
 {
     uint32_t sel = song.sel % NTRK, bits[4], i, n = 0, pcs = 0, root = 0, held = 0, l;
     uint8_t note[8];
     char b[40];
     const char *q;
+    if (mo_stage_empty())
+        return;
     if (drum_track(TSEL)) {                             /* a DRUM track: its lanes, lit as they hit */
         mo_stage_tnums();
         mo_stage_wave(MO_STAGE_WT, 102 - MO_STAGE_WT, MO_DIM);
