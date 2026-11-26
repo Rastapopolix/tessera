@@ -94,6 +94,17 @@ enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, 
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
+#if TESS_HAS_POINTER
+/* SETUP's SETTINGS page (ui.c cs_pages): the menu's list shown as a page while the sections are on */
+static int cs_settings_on(void) { return ui_csec && !ui.home && cur_page()->graph == GR_SETTINGS; }
+static void cs_settings_leave(void)                   /* the list closed, the page stays to step from (not HOME) */
+{
+    settings_save();
+    ui.menu = 0;
+    menu_cols = 0;
+    ui.force = 1;
+}
+#endif
 static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
 {
     if (zq_w - zq_r < ZQ_N)
@@ -158,6 +169,8 @@ static void zq_run(void)
         break;
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
                                                        * picker (as the FM-1's buttons, which those take) */
+        if (ui.menu == 1 && cs_settings_on())        /* (on SETUP's SETTINGS: the list closes, the section opens) */
+            cs_settings_leave();
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
         ui.force = 1;
         break;
@@ -172,6 +185,8 @@ static void zq_run(void)
         ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
+        if (ui.menu == 1 && cs_settings_on())
+            cs_settings_leave();
         page_scroll(sg);
         ui.force = 1;
         break;
@@ -685,6 +700,20 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if ((z->row & 0x400) && action == TESS_ZA_TURN)   /* (up-down only: CONSTELLATION's ship, its brackets) */
+            break;
+        if (z->row & 0x800) {                         /* (vrole the selected track's TX_* itself, on no knob's layer:
+                                                       * up a step more (row bit 1: less), a double-click its default) */
+            uint32_t id = PID_TESS((uint32_t)z->vrole);
+            tess_param_t pi;
+            if (z->vrole < 0 || !tess_core_param_info(id, song.sel, &pi)) break;
+            if (action == TESS_ZA_TURN_Y)
+                tess_core_param_set(id, song.sel, tess_core_param_get(id, song.sel) + ((z->row & 2) ? -n : n));
+            else if (action == TESS_ZA_DOUBLE)
+                tess_core_param_set(id, song.sel, pi.def);
+            ui.force = 1;
+            break;
+        }
         if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
                                                        * a right-click one less, the wheel or a drag up and down) */
             if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);

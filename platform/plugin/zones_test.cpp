@@ -707,7 +707,15 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
     press_section(TESS_SEC_PIECE);
     CHECK(page_now() == "CHAIN", "PIECE again: the next (%s)", page_now().c_str());
     press_section(TESS_SEC_SETUP);
-    CHECK(page_now() == "TEMPO", "SETUP: TEMPO first (%s)", page_now().c_str());
+    t = tabs_now();
+    CHECK(page_now() == "SETTINGS" && t.find("SETTINGS|TEMPO|SYSTEM|") != std::string::npos,
+          "SETUP: SETTINGS first, the menu's list with SETUP's tabs (%s / %s)", page_now().c_str(), t.c_str());
+    bool rows = false;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_ROW && !std::strcmp(v.zones[i].name, "GROUND")) rows = true;
+    CHECK(rows, "..the settings' rows (GROUND among them)");
+    press_section(TESS_SEC_SETUP);
+    CHECK(page_now() == "TEMPO", "SETUP again: TEMPO, the list closed (%s)", page_now().c_str());
     t = tabs_now();
     CHECK(t.find("SYSTEM|") != std::string::npos && t.find("PATTERNS|") == std::string::npos, "..with SYSTEM, MIDI (%s)",
           t.c_str());
@@ -1644,6 +1652,52 @@ static void scale_keys()   // G10: the keys that give no new note in the scale d
     tess_core_project_new();
 }
 
+static void constel_drag()   // CONSTELLATION: the ship dragged up and down sets Y, a bracket dragged away widens SIZE
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_track_select(0);
+    CHECK(tess_core_param_set(0x200, 0, 10), "CONSTL: T1's MODE set to CONSTELLATION");   // (TX_N_MODE: CONSTL)
+    run(10);
+    tess_core_key_words(1);
+    tap(B_HOME);
+    press_section(TESS_SEC_GEN);
+    auto find_pt = [&](const char *name, int flags) {
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_POINT && !std::strcmp(v.zones[i].name, name) && v.zones[i].row == flags)
+                return (int)i;
+        return -1;
+    };
+    int ship = -1;
+    for (int g = 0; g < 8 && ship < 0; g++)
+    {
+        ship = find_pt("Y", 0xC00);
+        if (ship < 0) press_section(TESS_SEC_GEN);
+    }
+    CHECK(ship >= 0 && find_pt("SIZE", 0xC00) >= 0 && find_pt("SIZE", 0xC02) >= 0,
+          "CONSTL: the ship (Y) and both brackets (SIZE) are zones (page %s)", page_now().c_str());
+    if (ship >= 0)
+    {
+        const uint32_t py = 0x200 + (uint32_t)v.zones[ship].vrole, ps = 0x200 + (uint32_t)v.zones[find_pt("SIZE", 0xC00)].vrole;
+        int32_t y0 = tess_core_param_get(py, 0);
+        act(ship, TESS_ZA_TURN, 3);   // (sideways: nothing)
+        CHECK(tess_core_param_get(py, 0) == y0, "..a sideways drag leaves Y (%d)", tess_core_param_get(py, 0));
+        act(find_pt("Y", 0xC00), TESS_ZA_TURN_Y, 3);
+        CHECK(tess_core_param_get(py, 0) == y0 + 3, "..up 3 turns Y 3 up (%d -> %d)", y0, tess_core_param_get(py, 0));
+        int32_t s0 = tess_core_param_get(ps, 0);
+        act(find_pt("SIZE", 0xC00), TESS_ZA_TURN_Y, 2);
+        int32_t s1 = tess_core_param_get(ps, 0);
+        act(find_pt("SIZE", 0xC02), TESS_ZA_TURN_Y, 2);   // (up: the bottom bracket in, SIZE back)
+        int32_t s2 = tess_core_param_get(ps, 0);
+        CHECK(s1 == s0 + 2 && s2 == s0, "..the top bracket up widens SIZE, the bottom one up narrows it (%d %d %d)", s0, s1, s2);
+        act(find_pt("SIZE", 0xC00), TESS_ZA_DOUBLE);
+        CHECK(tess_core_param_get(ps, 0) == 2, "..a double-click: SIZE's default (%d)", tess_core_param_get(ps, 0));
+    }
+    tap(B_HOME);
+    tess_core_key_words(0);
+    tess_core_project_new();
+}
+
 static void live_motion()   // G8: KNOB 1..4's places in the view; TRACKS rows: a meter and a note's flash while playing
 {
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
@@ -2024,6 +2078,7 @@ int main(int argc, char **argv)
     roll();
     paint();
     drop_sound();
+    constel_drag();
     live_motion();
     macro_mods();
     scale_keys();

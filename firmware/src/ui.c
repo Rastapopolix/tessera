@@ -469,8 +469,15 @@ static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
     return pg->fam == FAM_GEN && pg->graph == GR_STEPS && seqm_get(song.sel) < 2u;
 }
 
+#if TESS_HAS_POINTER
+static uint8_t ui_csec;                                 /* (below: the sections on) */
+#endif
 static int page_visible(uint32_t i)
 {
+#if TESS_HAS_POINTER
+    if (PAGES[i].graph == GR_SETTINGS)                  /* SETTINGS: SETUP's page while the sections are on */
+        return ui_csec;
+#endif
     if (!seqm_page_ok(i))
         return 0;
     if (PAGES[i].graph == GR_LAND || PAGES[i].graph == GR_PERF)                      /* LANDSCAPE: the Mono look's (ui_land.c) */
@@ -769,14 +776,15 @@ static uint32_t cs_of(uint32_t i)                       /* page i's section, UI_
     }
     return UI_SEC_N;
 }
-/* section s's pages, in order (SOUND: the engine's, then ENV's; SETUP: TEMPO first) */
+/* section s's pages, in order (SOUND: the engine's, then ENV's; SETUP: SETTINGS, then TEMPO, then GLO's) */
 static uint32_t cs_pages(uint32_t s, uint8_t *pg)
 {
     uint32_t pass, i, n = 0;
-    for (pass = 0; pass < 2u; pass++)
+    for (pass = 0; pass < 3u; pass++)
         for (i = 0; i < NPAGES; i++) {
-            uint32_t f = PAGES[i].fam, second = s == UI_SEC_SOUND ? f == FAM_ENV : s == UI_SEC_SETUP ? f == FAM_GLO : 0u;
-            if (cs_of(i) == s && second == pass && page_visible(i)) pg[n++] = (uint8_t)i;
+            uint32_t f = PAGES[i].fam, at = s == UI_SEC_SOUND ? f == FAM_ENV :
+                                            s == UI_SEC_SETUP ? (PAGES[i].graph == GR_SETTINGS ? 0u : f == FAM_GLO ? 2u : 1u) : 0u;
+            if (cs_of(i) == s && at == pass && page_visible(i)) pg[n++] = (uint8_t)i;
         }
     return n;
 }

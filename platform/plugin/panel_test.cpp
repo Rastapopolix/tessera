@@ -1660,7 +1660,8 @@ int main(int argc, char **argv)
         q.key(0x2A, false);
         run(q, 0.3);
         frames(1);
-        press(TESS_BTN_SECTION(TESS_SEC_SETUP));   // (TEMPO .. a knob page: Up turns SELECT as ever)
+        press(TESS_BTN_SECTION(TESS_SEC_SETUP));   // (SETTINGS first, a list: SETUP again, TEMPO, a knob page:
+        press(TESS_BTN_SECTION(TESS_SEC_SETUP));   //  Up turns SELECT as ever)
         q.input.enc[0] = 0;
         CHECK(q.key(Panel::KEY_UP, true) && q.input.enc[0] == 1, "Up on a knob page: SELECT up, as before");
         q.key(Panel::KEY_UP, false);
@@ -1694,6 +1695,20 @@ int main(int argc, char **argv)
             CHECK(!q.map_shown() && v.map_sec == TESS_SEC_PIECE && !std::strcmp(v.map_name[TESS_SEC_PIECE][v.map_at], "LANDSCAPE"),
                   "LANDSCAPE clicked: its page, the map shut (%d %d)", v.map_sec, v.map_at);
             CHECK(q.shortcut('M') && q.map_shown() && !q.key(0x01, true) && !q.map_shown(), "Esc shuts the map");
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+        }
+        if (!out.empty())   // SETUP: its first page SETTINGS, the menu's list over SETUP's tabs
+        {
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_SETUP));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+            ppm(out + "/30b_setup_settings.ppm", px);
             tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));
             run(q, 0.1);
             tess_core_buttons(0);
