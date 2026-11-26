@@ -707,7 +707,15 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
     press_section(TESS_SEC_PIECE);
     CHECK(page_now() == "CHAIN", "PIECE again: the next (%s)", page_now().c_str());
     press_section(TESS_SEC_SETUP);
-    CHECK(page_now() == "TEMPO", "SETUP: TEMPO first (%s)", page_now().c_str());
+    t = tabs_now();
+    CHECK(page_now() == "SETTINGS" && t.find("SETTINGS|TEMPO|SYSTEM|") != std::string::npos,
+          "SETUP: SETTINGS first, the menu's list with SETUP's tabs (%s / %s)", page_now().c_str(), t.c_str());
+    bool rows = false;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_ROW && !std::strcmp(v.zones[i].name, "GROUND")) rows = true;
+    CHECK(rows, "..the settings' rows (GROUND among them)");
+    press_section(TESS_SEC_SETUP);
+    CHECK(page_now() == "TEMPO", "SETUP again: TEMPO, the list closed (%s)", page_now().c_str());
     t = tabs_now();
     CHECK(t.find("SYSTEM|") != std::string::npos && t.find("PATTERNS|") == std::string::npos, "..with SYSTEM, MIDI (%s)",
           t.c_str());

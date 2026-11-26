@@ -94,6 +94,17 @@ enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, 
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
+#if TESS_HAS_POINTER
+/* SETUP's SETTINGS page (ui.c cs_pages): the menu's list shown as a page while the sections are on */
+static int cs_settings_on(void) { return ui_csec && !ui.home && cur_page()->graph == GR_SETTINGS; }
+static void cs_settings_leave(void)                   /* the list closed, the page stays to step from (not HOME) */
+{
+    settings_save();
+    ui.menu = 0;
+    menu_cols = 0;
+    ui.force = 1;
+}
+#endif
 static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
 {
     if (zq_w - zq_r < ZQ_N)
@@ -158,10 +169,14 @@ static void zq_run(void)
         break;
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
                                                        * picker (as the FM-1's buttons, which those take) */
+        if (ui.menu == 1 && cs_settings_on())        /* (on SETUP's SETTINGS: the list closes, the section opens) */
+            cs_settings_leave();
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
         ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
+        if (ui.menu == 1 && cs_settings_on())
+            cs_settings_leave();
         page_scroll(sg);
         ui.force = 1;
         break;

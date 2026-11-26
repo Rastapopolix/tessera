@@ -1636,6 +1636,20 @@ int main(int argc, char **argv)
         const tess_zone_t *k1 = q.knob_zone(3);
         CHECK(k1 && k1->value[0], "FX 1: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
         if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
+        if (!out.empty())   // SETUP: its first page SETTINGS, the menu's list over SETUP's tabs
+        {
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_SETUP));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+            ppm(out + "/30b_setup_settings.ppm", px);
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+        }
         uint64_t h0 = screen_hash(v);
         CHECK(!q.hwheel(-1), "sideways left on the first page: nothing (it stops)");
         CHECK(q.hwheel(1), "sideways right: the next page");
