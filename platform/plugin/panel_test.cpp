@@ -899,7 +899,7 @@ int main(int argc, char **argv)
     // ---- the screen's zones: FX's MIX column under the mouse
     {
         Panel z;
-        z.set_shell(1);
+        z.set_shell(0);   // (COSMATI's own shell: the screen where the FM-1's is)
         tess_core_buttons(1u << 0);   // FX
         run(z, 0.05);
         tess_core_buttons(0);
