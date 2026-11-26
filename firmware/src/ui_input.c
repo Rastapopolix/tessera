@@ -2365,6 +2365,18 @@ static void ui_input(void)
             song.seq_mode = 0;
         }
     }
+#if TESS_HAS_POINTER
+    if (!ui.menu && !ui.home && cur_page()->graph == GR_SETTINGS) {   /* SETUP's SETTINGS page: the menu's list (its */
+        ui.menu = 1;                                    /* BACK: HOME, menu_close; a section or a tab: that page) */
+        ui.menu_sel = 0;
+        menu_cols = 0;
+        ui.confirm = 0;
+        name_close();
+        new_close();
+        ui.force = 1;
+        song.seq_mode = 0;
+    }
+#endif
     if (ui.menu || ui.confirm || name_on()) {
         /* REC does nothing in the menu, a dialog or NAME (no transport start there) */
     } else if (chain_busy() && rec == BT_TAP) {
