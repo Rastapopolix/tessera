@@ -322,10 +322,11 @@ void Panel::layout()
 // on USB plays the instance (its OCT- / OCT+ as ever)
 void Panel::key_words()
 {
-    const bool words = native() && !(fm1_on && fm1_mine);
-    if (words != input.key_words)
+    const bool words = native() && !(fm1_on && fm1_mine && fm1_live);   // (LOOKING for one: still ours)
+    if (words != input.key_words || native() != input.sections)
     {
         input.key_words = words;
+        input.sections = native();   // (the section buttons stay while an FM-1 plays it: the footer theirs)
         input.changed = true;
     }
 }
@@ -1826,7 +1827,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     }
     draw_key_labels(px, mix(T_BODY, T_YEL, 0.62));
     for (auto &b : buttons)   // the page has a sheet: say so under OK (held: the sheet; the mouse holds it as long)
-        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine))
+        if (b.bit == B_OCTUP && sheet_ && !(fm1_on && fm1_mine && fm1_live))
             c.ptext_c(b.x + b.w / 2, b.y + b.h + 6, "HOLD: MORE", 1, T_YEL);
 
     // OPEN, SAVE and the bank switch, centred under the keys; what the last one did beside them
@@ -2643,11 +2644,13 @@ void Panel::draw_hover(uint32_t *px)
         c.box(SCREEN_X, y, (expanded() ? T2_X + T2_W : SCREEN_X + SCREEN_S) - SCREEN_X, h, T_BODY);
     if (x < SX - 80) x = SX - 80;
     if (x + w > SX + SW + 80) x = SX + SW + 80 - w;
-    c.box(x, y, w, h, BLACK);
-    c.box(x, y, w, 2, YEL), c.box(x, y + h - 2, w, 2, YEL);
-    c.box(x, y, 2, h, YEL), c.box(x + w - 2, y, 2, h, YEL);
-    c.ptext(x + 10, y + 7, name.c_str(), 2, WORD);
-    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, YEL);
+    // (the cards in the shell's inks: DAY's paper, amber and dark words; NIGHT's and the FM-1 shells' black and yellow)
+    const uint32_t CB = native() ? T_BLACK : BLACK, CY = native() ? T_YEL : YEL, CW = native() ? T_WORD : WORD;
+    c.box(x, y, w, h, CB);
+    c.box(x, y, w, 2, CY), c.box(x, y + h - 2, w, 2, CY);
+    c.box(x, y, 2, h, CY), c.box(x + w - 2, y, 2, h, CY);
+    c.ptext(x + 10, y + 7, name.c_str(), 2, CW);
+    if (vw) c.ptext(x + 10 + nw + 14, y + 4, value.c_str(), 3, CY);
     // HOVER HELP: resting half a second, the zone's help text in a box under the card (over the keys, never the screen)
     double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
     if (!hover_help_ || z2 >= 0 || drag != NONE || view_help.empty() || now - hover_t < 0.5 ||
@@ -2674,9 +2677,9 @@ void Panel::draw_hover(uint32_t *px)
     if (bx < 8) bx = 8;
     if (bx + hw > width() - 8) bx = width() - 8 - hw;
     if (by + bh > H - 4) by = H - 4 - bh;
-    c.box(bx, by, hw, bh, BLACK);
-    c.box(bx, by, hw, 2, YEL), c.box(bx, by + bh - 2, hw, 2, YEL);
-    c.box(bx, by, 2, bh, YEL), c.box(bx + hw - 2, by, 2, bh, YEL);
+    c.box(bx, by, hw, bh, CB);
+    c.box(bx, by, hw, 2, CY), c.box(bx, by + bh - 2, hw, 2, CY);
+    c.box(bx, by, 2, bh, CY), c.box(bx + hw - 2, by, 2, bh, CY);
     for (size_t i = 0; i < lines.size(); i++)
-        c.ptext(bx + 12, by + 9 + (int)i * lh, lines[i].c_str(), 2, WORD);
+        c.ptext(bx + 12, by + 9 + (int)i * lh, lines[i].c_str(), 2, CW);
 }

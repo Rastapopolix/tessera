@@ -53,7 +53,9 @@ enum { TESS_BTN_SHIFT = 1u << 16, TESS_BTN_OCT_DOWN = 1u << 17, TESS_BTN_OCT_UP 
 void tess_core_buttons(uint32_t mask);
 /* 1: the front end shows BACK, OK and SHIFT buttons and octave buttons of its own (Smalti's shell; a build with
  * TESS_HAS_POINTER): the screen's hints name BACK / OK / SHIFT where they said OCT- / OCT+, and OCT- / OCT+ no longer
- * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways */
+ * step the octave on Stage or NOTES (TESS_BTN_OCT_DOWN / _UP do). 0 (the start): the FM-1's words and ways. 2: the
+ * section buttons below without the key words (Cosmati's shell while an FM-1 on USB plays it: its OCT- / OCT+ as
+ * ever, the footer and the page count still the shown section's) */
 void tess_core_key_words(int on);
 /* With the key words on (Cosmati's shell), the front end's own section buttons, one each, in place of the FM-1's FX
  * SEL ENV LFO EDIT GLO ARP SEQ (HOME, SAVE, PLAY, REC stay): its bit in tess_core_buttons' labels, TESS_BTN_SECTION(s)
@@ -348,6 +350,8 @@ uint32_t tess_core_bpm(void);
 /* the Mono look's ink by name, as MENU > COLOR sets it ("YELLOW", "HOT PINK": tools/gen_ui_palettes.py MONO_INK): 1 if
  * set, 0 for an unknown name or a build without the Mono look. A device setting: not in the project */
 uint32_t tess_core_ink(const char *name);
+/* MENU > GROUND: 1 LIGHT (the light inks, on paper), 0 DARK; the setting as it is now. A device setting, as the ink */
+uint32_t tess_core_ground(int light);
 /* MENU > COLOR's choices: how many (0 without the Mono look); for i below that, choice i's name and its four track
  * colours as 0xRRGGBB (alike for one ink; MOSAIC, SUNSET, OCEAN, NEON differ). name or rgb may be 0 */
 uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4]);

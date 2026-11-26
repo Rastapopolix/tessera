@@ -859,11 +859,12 @@ void tess_core_away(void)
 void tess_core_key_words(int on)
 {
 #if TESS_HAS_POINTER
-    if ((uint8_t)(on != 0) != uz_key_words) {
-        uz_key_words = (uint8_t)(on != 0);
-        ui.force = 1;                                 /* (the hints again, in the other words) */
+    uint8_t words = (uint8_t)(on == 1), sec = (uint8_t)(on != 0);
+    if (words != uz_key_words || sec != ui_csec) {
+        uz_key_words = words;
+        ui.force = 1;                                 /* (the hints again, in the other words; the footer's tabs) */
     }
-    ui_csec = uz_key_words;                           /* (the shell's own section buttons: ui.c cs_open) */
+    ui_csec = sec;                                    /* (the shell's own section buttons: ui.c cs_open) */
 #else
     (void)on;
 #endif
@@ -1873,6 +1874,21 @@ uint32_t tess_core_ink(const char *name)
     (void)name;
 #endif
     return 0;
+}
+
+uint32_t tess_core_ground(int light)
+{
+#if MELODEE_LOOK
+    if ((uint8_t)(light != 0) != ux_ground) {
+        ux_ground = (uint8_t)(light != 0);
+        palette_set(settings.palette);
+        ui.force = 1;
+    }
+    return ux_ground;
+#else
+    (void)light;
+    return 0;
+#endif
 }
 
 uint32_t tess_core_ink_at(uint32_t i, const char **name, uint32_t rgb[4])

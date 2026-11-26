@@ -245,6 +245,7 @@ struct Tessera : GuiLink
         pending.buttons = in.buttons;
         pending.keys = in.keys;
         pending.key_words = in.key_words;
+        pending.sections = in.sections;
         pending.away = pending.away || in.away;
         in.away = false;
         if (in.hover_changed)
@@ -984,11 +985,16 @@ void Tessera::shell_picked(int i)
     if (i < 0 || i >= Panel::shell_count())
         return;
     bool wide = win_expanded(), skin = Panel::shell_native(shell_i) && Panel::shell_native(i);
+    const int day = Panel::shell_count() - 1;   // (DAY: TESSERA's last shell, Panel::shell_native)
+    bool ground = i == day || shell_i == day;
     shell_i = i;
-    if (!skin)   // (NIGHT <-> DAY: the ink stays as it is)
+    if (!skin || ground)   // (NIGHT <-> DAY: the ink stays as it is)
     {
         std::lock_guard<std::mutex> g(core_lock);
-        core->ink(Panel::shell_ink(i));
+        if (!skin)
+            core->ink(Panel::shell_ink(i));
+        if (ground)   // (to DAY: GROUND LIGHT, from it: DARK; MENU > GROUND turns it after, till the next shell)
+            core->ground(i == day ? 1 : 0);
     }
     projfile::setting_put("shell", Panel::shell_id(i));
     if (wide != win_expanded())   // (EXPANDED is TESSERA's shell's: an FM-1 shell is FM-1 mode, and back)
@@ -1503,7 +1509,8 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         {
             t->win_buttons = pi.buttons;
             t->win_keys = pi.keys;
-            t->core->key_words(pi.key_words ? 1 : 0);   // (TESSERA's shell: BACK / OK / SHIFT of its own)
+            t->core->key_words(pi.key_words ? 1 : pi.sections ? 2 : 0);   // (TESSERA's shell: BACK / OK / SHIFT,
+                                                                             // its sections; an FM-1 on USB: sections)
             t->core->buttons(t->win_buttons | t->fm1_buttons | TESS_BTN_POINTER);   // (new presses: the mouse's)
             t->core->keys(t->win_keys | t->fm1_keys);
             bool master_turned = pi.master >= 0;

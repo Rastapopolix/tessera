@@ -28,6 +28,7 @@ struct PanelInput
     struct Typed { tess_zone_t z; char text[24]; };
     std::vector<Typed> typed;         // a value typed for a zone (Ctrl / Cmd-click it): tess_core_zone_type
     bool key_words = false;           // TESSERA's shell, its own BACK / OK / SHIFT shown: tess_core_key_words
+    bool sections = false;            // TESSERA's shell, its section buttons (an FM-1 on USB too): tess_core_key_words 2
     bool away = false;                // a click on nothing while a picker, sheet or help card is open: tess_core_away
     bool hover_changed = false;       // HOVER HELP: the zone the mouse rests on changed (kind 0: none): tess_core_hover
     tess_zone_t hover = {};
