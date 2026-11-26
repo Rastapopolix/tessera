@@ -95,6 +95,9 @@ int main(int argc, char **argv)
 
     /* TRACK: T2 onto T6 */
     setup(n);
+    tessera.chord[1].uq[0] = CH_MAJ7;                 /* (CHORD USER's quality, ENTRIES' grid: T2 IN in A, OUT in C) */
+    tessera.et_grid[0] |= 1u << 2;
+    tessera.et_grid[2] |= 2u << 2;
     len = tess_core_track_copy(1, cp, sizeof cp);
     CHECK(len > 0u && len <= tess_core_tsp_max(), "T2 copied (%u B)", len);
     CHECK(!tess_core_track_copy(1, cp, 20), "..not into 20 B");
@@ -105,6 +108,8 @@ int main(int argc, char **argv)
               tessera.sub_human[5] == 9,
           "..its steps, timing, SONG column, settings");
     CHECK(tessera.midi_ch[5] == 6, "..T6's MIDI channel kept (%u)", tessera.midi_ch[5]);
+    CHECK(tessera.chord[5].uq[0] == CH_MAJ7 && (tessera.et_grid[0] >> 10 & 3u) == 1u && (tessera.et_grid[2] >> 10 & 3u) == 2u,
+          "..its CHORD USER qualities and ENTRIES' grid cells");
     CHECK(cords_onto(5, 4) == 1u && cords_onto(1, 4) == 1u, "..the mod from T5 onto it, T2's kept too");
     CHECK(cords[5].dst_trk == 6 && cords[5].src_trk == 1, "..a mod from T2 elsewhere untouched");
     CHECK(notes_of(5) == 1u && notes_of(1) == 1u, "..its timed note (T6 %u, T2 %u)", notes_of(5), notes_of(1));
@@ -128,10 +133,15 @@ int main(int argc, char **argv)
 
     /* SWAP: T2 and T6, then back */
     setup(n);
+    tessera.chord[1].uq[2] = CH_SUS4;                 /* (T2: a USER quality, FADE in B) */
+    tessera.et_grid[1] |= 3u << 2;
     a = tess_core_save(buf_a, sizeof buf_a);
     {
         uint8_t e2 = trk[1].eng_req, e6 = trk[5].eng_req;
         CHECK(!tess_core_track_swap(1, 5), "T2 and T6 swapped");
+        CHECK(tessera.chord[5].uq[2] == CH_SUS4 && tessera.chord[1].uq[2] == 0 && (tessera.et_grid[1] >> 10 & 3u) == 3u &&
+                  !(tessera.et_grid[1] >> 2 & 3u),
+              "..their CHORD USER qualities and grid cells");
         CHECK(trk[5].eng_req == e2 && trk[1].eng_req == e6 && trk[5].p[P_LEVEL] == 31 && trk[1].p[P_LEVEL] == 35,
               "..their sounds");
         CHECK(tessera.evolve[0].follow == 6 && tessera.evolve[6].br_to == 6 && tessera.evolve[2].lg_with == 2 &&
