@@ -1075,15 +1075,16 @@ static void slot_tabs()   // a slot page (FM6's STORE): its family's tabs in the
                         }
                         std::fclose(f);
                     }
-                int next = -1;
-                for (uint32_t z = 0; z < v.zone_count; z++)
-                    if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == 1) next = (int)z;
+                int next = -1;   // (the tab beside it: STORE is the EDIT pages' last, so the one before)
+                for (int side = 1; side >= -1 && next < 0; side -= 2)
+                    for (uint32_t z = 0; z < v.zone_count; z++)
+                        if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == side) next = (int)z;
                 std::string want = next >= 0 ? v.zones[next].value : "";
                 act(next, TESS_ZA_CLICK, 0, 40);
                 int here = -1;
                 for (uint32_t z = 0; z < v.zone_count; z++)
                     if (v.zones[z].kind == TESS_ZONE_TAB && v.zones[z].row == 0) here = (int)z;
-                CHECK(next >= 0 && here >= 0 && want == v.zones[here].value, "from STORE, the next tab clicked: %s",
+                CHECK(next >= 0 && here >= 0 && want == v.zones[here].value, "from STORE, the tab beside it clicked: %s",
                       want.c_str());
                 break;
             }
