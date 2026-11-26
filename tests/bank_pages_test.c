@@ -2,12 +2,13 @@
  * Copyright (C) 2026 Theo Dainis (melodee-tess) */
 /* The pages at 8 tracks (CORE_TRACKS 8, the Mono look: the plugin, Andamento): a page that shows four tracks shows the
  * selected track's bank (core.h UI_BASE: 1..4 or 5..8), and its knobs work on that bank.
- *   HOME, MIXER, MIDI IN, MIDI OUT, ENTRIES, PATTERNS, SONG: T5 selected, the page differs from T1's under the header,
+ *   HOME, MIXER, MIDI IN, MIDI OUT, PATTERNS, SONG: T5 selected, the page differs from T1's under the header,
  *   and is the same whichever track of the bank is picked but for the pick; HOME and MIXER outline the selected
  *   column at the left (not off the screen); nothing is drawn below the lists' last row before the foot.
  *   MIDI OUT KNOB 2 (T6 selected) sets T6's channel, OCT- held its TRANSPOSE; PATTERNS KNOB 2 queues T6's pattern;
  *   ENTRIES OCT- held KNOB 1 sets T5's ROLE; MIXER KNOB 3 sets T7's level. T1..T4 untouched.
- *   MATRIX: the rows follow FROM's bank and the columns TO's.
+ *   MATRIX: the rows follow FROM's bank and the columns TO's. (ENTRIES at 8 tracks is the grid of all eight, T1-T4 left
+ *   and T5-T8 right, whichever bank: ui_mono.c mo_pic_egrid, tests/egrid_test.c; only its OCT- knobs follow the bank.)
  * Built: clang -Ibuild/gen -Ifirmware/src -Itests -DMELODEE_USB_AUDIO=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8
  *        tests/bank_pages_test.c -lm (core-api.yml). At 4 tracks it checks nothing and passes. */
 #define UI_TEST_NO_MAIN 1
@@ -55,7 +56,7 @@ static uint32_t lit_rows(uint32_t y0, uint32_t y1)      /* rows y0..y1 with anyt
 
 static int test_pages(void)
 {
-    static const char *const PG[] = {"", "MIXER", "MIDI IN", "MIDI OUT", "ENTRIES", "PATTERNS", "SONG"};
+    static const char *const PG[] = {"", "MIXER", "MIDI IN", "MIDI OUT", "PATTERNS", "SONG"};
     uint32_t i;
     int bad = 0;
     char w[96];
@@ -85,8 +86,6 @@ static int test_pages(void)
                                                          drawn((uint32_t)CARD_X(0) - 1u, PV_STRIP_TOP + 40u));
     pick(4, "MIDI IN");                                 /* four rows (54 .. 98 cells), nothing over the foot's line */
     bad += check("MIDI IN: four rows, none past the fourth", lit_rows(2u * 98u, 2u * 99u - 1u) == 0u);
-    pick(4, "ENTRIES");
-    bad += check("ENTRIES: four rows, none past the fourth", lit_rows(2u * 98u, 2u * 99u - 1u) == 0u);
     for (i = 4; i < 8u; i++) trk[i].p[P_MUTE] = 0;
     chain_config.count = 0;
     return bad;

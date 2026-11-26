@@ -355,6 +355,27 @@ static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
     ui.force = 1;
 }
 
+#if TESSERA_TRACKS > 4
+/* ENTRIES' arrangement grid edited a cell at a time (TESS_ZONE_EGRID): a click the next kind (AUTO IN OUT FADE), a
+ * right-click AUTO; a letter's head the whole column, as its first track's cell goes */
+static void core_egrid(int32_t row, uint32_t action)
+{
+    uint32_t s = (uint32_t)(row & 0xFF) / 16u, tr = (uint32_t)row & 15u, c, g, k;
+    if (action == TESS_ZA_DOUBLE) action = TESS_ZA_CLICK;   /* (quick clicks: each one the next) */
+    if (row < 0 || (action != TESS_ZA_CLICK && action != TESS_ZA_HELP)) return;
+    if (row & 0x100) s = (uint32_t)row & 0xFFu, tr = 0;
+    if (s >= ET_G_SECS || tr >= TESSERA_TRACKS) return;
+    g = tessera.et_grid[s];
+    c = action == TESS_ZA_HELP ? ET_G_AUTO : ((g >> (2u * tr) & 3u) + 1u) & 3u;
+    for (k = 0; k < TESSERA_TRACKS; k++)
+        if (k == tr || (row & 0x100))
+            g = (g & ~(3u << (2u * k))) | c << (2u * k);
+    TESS_IRQ_OFF();
+    tessera.et_grid[s] = (uint16_t)g;
+    TESS_IRQ_ON();
+    ui.force = 1;
+}
+#endif
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
@@ -388,6 +409,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
         } else if (z->kind == TESS_ZONE_CHORD) {
             core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
+#if TESSERA_TRACKS > 4
+        } else if (z->kind == TESS_ZONE_EGRID) {
+            core_egrid(z->row, action);               /* (ENTRIES' grid: a right-click, AUTO) */
+#endif
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
             core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
@@ -527,6 +552,11 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_CHORD:                             /* CHORD USER's cards: a root turned, a chord added or taken */
         core_chord_user(z->row, action, n);
         break;
+#if TESSERA_TRACKS > 4
+    case TESS_ZONE_EGRID:                             /* ENTRIES' grid: a cell's next kind, or a column's */
+        core_egrid(z->row, action);
+        break;
+#endif
     case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
         if (smap.on && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && z->row >= 0) {
             sec_build();
@@ -549,10 +579,12 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         if (action == TESS_ZA_TURN)
             zq_turn(z->role, n);
         break;
-    case TESS_ZONE_LEVEL:                             /* MIXER's strips: a track's level, pan */
+    case TESS_ZONE_LEVEL:                             /* MIXER's strips: a track's level (role 0..2: FX SEND 1..3, the
+                                                       * inspector's), pan */
     case TESS_ZONE_PAN:
         if (z->row >= 0 && z->row < (int32_t)NTRK && (action == TESS_ZA_TURN || action == TESS_ZA_DOUBLE)) {
-            uint32_t p = z->kind == TESS_ZONE_LEVEL ? (uint32_t)P_LEVEL : (uint32_t)P_PAN;
+            uint32_t p = z->kind == TESS_ZONE_PAN ? (uint32_t)P_PAN : z->role >= 0 && z->role < (int)FX_SLOTS ?
+                         (uint32_t)P_FXSEND + (uint32_t)z->role : (uint32_t)P_LEVEL;
             const param_desc_t *pd = pid_desc(p, (uint32_t)z->row);
             int32_t v = action == TESS_ZA_DOUBLE ? pd->def : (int32_t)trk[z->row].p[p] + n;
             pid_set(p, (uint32_t)z->row, v < pd->min ? pd->min : v > pd->max ? pd->max : v);
@@ -1047,9 +1079,10 @@ static void key_legend(uint32_t k, char *sh, char *lg)
     if (l == LAYER_GLO) {
         static const char *const W[4] = {"ALL", "HLD", "FIL", "TAP"}, *const WL[4] = {"UNMUTE ALL", "HOLD (2X: LATCH)",
                                          "FILL (HELD)", "TAP TEMPO"};
-        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + UI_BASE + p), a[2] = 0;
+        uint32_t t = glo_key_trk(k);
+        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + t), a[2] = 0;
         b[0] = 'T', b[1] = a[1], b[2] = 0;
-        if (p < UI_NT && UI_BASE + p < NTRK)
+        if (t < NTRK)
             key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
         else if (!blk && p >= 4u && p < 8u)
             key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
@@ -1205,8 +1238,9 @@ void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h)
     _Static_assert(TESS_TRACKS_W == T2_W_MAX && TESS_TRACKS_H == T2_H_MAX && TESS_TRACKS_ZONES == T2_ZONES,
                    "tess_core.h's TRACKS sizes are ui_tracks.c's");
     _Static_assert(TESS_ZONE_MUTE == T2_Z_MUTE && TESS_ZONE_SOLO == T2_Z_SOLO && TESS_ZONE_LEVEL == T2_Z_LEVEL &&
-                   TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
+                   TESS_ZONE_PAN == T2_Z_PAN && TESS_ZONE_TRACK == UZ_TRACK, "tess_core.h's TRACKS zones are ui_tracks.c's");
     tracks_draw((int32_t)(w < 1u ? 1u : w), (int32_t)(h < 1u ? 1u : h), (fm1_ms / 250u) & 1u);
+    if (w >= TESS_TRACKS_W) t2_seen = 1, t2_seen_ms = fm1_ms;   /* (the large one: MIXER's strips there, ui.c mix_inspect) */
     v->w = (uint32_t)t2_w, v->h = (uint32_t)t2_h;
     for (i = 0; i < v->w * v->h; i++)                  /* (drawn as RGB565 already: no LCD byte order here) */
         v->screen[i] = t2_px[i];
@@ -1252,9 +1286,14 @@ void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n)
 #endif
     } else if ((z->kind == TESS_ZONE_MUTE || z->kind == TESS_ZONE_SOLO) && click) {
         core_mute_solo(z->kind, tr);
-    } else if (z->kind == TESS_ZONE_LEVEL && !click && n) {
-        int32_t v = (trk[tr].p[P_LEVEL] & 127) + n;
-        pid_set(P_LEVEL, tr, v < 0 ? 0 : v > 127 ? 127 : v);
+    } else if (z->kind == TESS_ZONE_LEVEL || z->kind == TESS_ZONE_PAN) {   /* (the level, a send, PAN: turned; a
+                                                                            * double-click its default) */
+        uint32_t p = z->kind == TESS_ZONE_PAN ? (uint32_t)P_PAN : z->role >= 0 && z->role < (int)FX_SLOTS ?
+                     (uint32_t)P_FXSEND + (uint32_t)z->role : (uint32_t)P_LEVEL;
+        int32_t v = trk[tr].p[p] + n;
+        if (action == TESS_ZA_DOUBLE) v = TP[p].def;
+        else if (click || !n) return;
+        pid_set(p, tr, v < TP[p].min ? TP[p].min : v > TP[p].max ? TP[p].max : v);
     }
     ui.force = 1;
 #else

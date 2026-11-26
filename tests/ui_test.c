@@ -5791,8 +5791,8 @@ static int engine_cycle(const char *const *want, uint32_t n)   /* EDIT tapped fr
 static int test_edit_cycle(void)
 {
     static const char *const CYC_A[] = {"EDIT 1", "EDIT 2", "VOICE", "VOICE"};   /* (SELECT stops at the last) */   /* (VOICE: VOICE 1-3's list) */
-    static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "STORE", "ALGO", "FREQ", "OUT", "EG RATE", "EG LVL", "SCALE",
-                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "VOICE"};
+    static const char *const CYC_F[] = {"EDIT 1", "EDIT 2", "ALGO", "FREQ", "OUT", "EG RATE", "EG LVL", "SCALE",
+                                        "CURVE", "PITCH EG", "PITCH LV", "FM LFO", "FM BEND", "VOICE", "STORE", "STORE"};
     static const char *const CYC_D[] = {"EDIT 1", "EDIT 2", "OP1 ENV", "OP2 ENV", "OP3 ENV", "OP4 ENV",
                                         "OP LEVEL", "VOICE", "VOICE"};
     int bad = 0, ok;
@@ -6311,6 +6311,20 @@ static int test_land_lights(void)
                 lit[t0] |= (key_light(14u + k) == 2u) << k;
         }
         bad += check("  MIXER: its map still blinks", lit[0] != lit[1]);
+        settings_lights = LIGHTS_OFF;
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0, lit[t0] = 0; k < 27u; k++)
+                lit[t0] |= (key_light(14u + k) == 2u) << k;
+        }
+        bad += check("  MIXER, LIGHTS OFF: no blinking, the tracks' keys lit (their state)", lit[0] == lit[1] && lit[0] == bl);
+        go_page(GR_PERF);
+        for (t0 = 0; t0 < 2u; t0++) {
+            fm1_ms += 250u; frame(); ui_leds();
+            for (k = 0, lit[t0] = 0; k < 27u; k++)
+                lit[t0] |= (key_light(14u + k) == 2u) << k;
+        }
+        bad += check("  PERF, LIGHTS OFF: the same", lit[0] == lit[1] && lit[0] == bl);
     }
     settings_lights = LIGHTS_MID;
     led_pos_init();

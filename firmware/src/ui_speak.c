@@ -313,7 +313,8 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
     if (!ui.home && (cur_page()->scope == SC_TRK || cur_page()->graph == GR_MIDICH)) {   /* MIXER, MIDI OUT: knob k
                                                          * is track k's */
         b[0] = 'T';
-        b[1] = (char)('1' + UI_BASE + k);              /* (8 tracks: the selected track's bank) */
+        b[1] = (char)('1' + (mix_inspect() ? song.sel : UI_BASE + k));   /* (8 tracks: the selected track's bank; the
+                                                                         * inspector: the selected track) */
         b[2] = ' ';
         b += 3;
         size -= 3u;

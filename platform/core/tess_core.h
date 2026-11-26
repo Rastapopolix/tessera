@@ -120,7 +120,7 @@ void tess_core_screen(tess_screen_t *s);
  * double-click: its knobs turned to it, one or two; turn or wheel: its first knob); MIXER's strips: MUTE and SOLO
  * (click: as on TRACKS, below), LEVEL and PAN (turn or wheel: its track's; double-click: its default, centre); SCROLL:
  * a text to read (ABOUT, a HELP card: wheel up, up the text; a drag up, further down, as a page is pushed) */
-enum { TESS_ZONES = 48 };
+enum { TESS_ZONES = 64 };
 enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_ZONE_CELL = 8, TESS_ZONE_PAN, TESS_ZONE_SCROLL,
        TESS_ZONE_TAB, TESS_ZONE_TEMPO, TESS_ZONE_PICK, TESS_ZONE_POINT };   /* (TAB: a page's tab in the footer, or its arrow; click: that page. TEMPO:
                                             * the header's BPM; turn or wheel: a step each, double-click: 120. A DAW's
@@ -144,6 +144,10 @@ enum { TESS_ZONE_SMAP = 17 };
  * or the progression's length for the "+" card after it. TURN or WHEEL n: that chord's root n scale degrees up (- down);
  * CLICK on "+": a chord more (a fourth above the last); HELP (a right-click) on a card: that chord gone (one stays) */
 enum { TESS_ZONE_CHORD = 18 };
+/* EGRID: a cell of ENTRIES' arrangement grid (an 8-track build's ENTRIES page); row: the FORM letter * 16 + the track
+ * (0..7), or 0x100 + the letter for its head. CLICK: the cell's next kind, AUTO IN OUT FADE round (a head: every
+ * track's cell in that letter, as its first track's next); HELP (a right-click): AUTO again (a head: the column) */
+enum { TESS_ZONE_EGRID = 19 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
@@ -209,10 +213,13 @@ void tess_core_track_select(uint32_t t);
 /* ---- screen 2, TRACKS (a build whose profile has a second screen, TESS_SCR_COUNT 2: the plugin's EXPANDED mode; else
  * w and h 0 and nothing drawn). Every track at once, a row each (number, role, engine, pattern, the 16 steps of the bar
  * playing with the playhead, level, M, S), the selected one boxed; drawn when asked, at the size asked: 480 x 240 (2 px
- * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen) */
-enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 33 };
-/* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO and _LEVEL (row: the
- * track), then TESS_ZONE_TRACK, the rows */
+ * a cell of the 5 x 7 face) or a small one such as 128 x 64 (1 px a cell, 21 characters a row: Andamento's screen).
+ * While MIXER is the page (480 x 240): a strip a track instead (number and role, a fader with a meter, the level in dB,
+ * PAN, the FX sends, M, S) */
+enum { TESS_TRACKS_W = 480, TESS_TRACKS_H = 240, TESS_TRACKS_ZONES = 72 };
+/* its zones (the plugin: TESS_HAS_POINTER), in the order a hit is looked for: TESS_ZONE_MUTE, _SOLO, _LEVEL (role -1 the
+ * level, 0..2 FX SEND 1..3) and TESS_ZONE_PAN (MIXER's strips) (row: the track), then TESS_ZONE_TRACK, the rows (a
+ * strip's head) */
 enum { TESS_ZONE_MUTE = 5, TESS_ZONE_SOLO, TESS_ZONE_LEVEL };
 typedef struct {
     uint32_t w, h;                   /* as drawn (0 0: no TRACKS page in this build) */
@@ -223,8 +230,8 @@ typedef struct {
 void tess_core_tracks_view(tess_tracks_t *v, uint32_t w, uint32_t h);
 /* what the mouse did on a TRACKS zone, as tess_tracks_t gave it: a row's CLICK selects that track (as
  * tess_core_track_select), its DOUBLE selects it and opens its EDIT page; M's CLICK is GLO's mute key (MENU MUTES: now, or waits for the bar or phrase); S's CLICK
- * latches that track's solo, or lets it go (GLO's white keys solo while held; this one stays); TURN n on the level: its
- * LEVEL n steps. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
+ * latches that track's solo, or lets it go (GLO's white keys solo while held; this one stays); TURN n on the level, a
+ * send or PAN: it n steps, DOUBLE its default. Mute and the level are the project's, saved as ever; the latched solo is not, as GLO's isn't */
 void tess_core_tracks_do(const tess_zone_t *z, uint32_t action, int32_t n);
 
 /* ---- a track copied, pasted, moved (an 8-track build's; a 4-track build: none, each call refused). A copy is bytes a

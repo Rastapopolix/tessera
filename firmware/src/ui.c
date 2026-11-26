@@ -323,6 +323,20 @@ static const page_t *cur_page(void)
 {
     return page_over ? page_over : arp2_on() ? arp2_page() : midiin2_on() ? &MIDIIN2_PAGE : &PAGES[ui.page];
 }
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+/* the TRACKS screen shown (the plugin's EXPANDED: tess_core_tracks_view asks for it each frame), and MIXER the page:
+ * the strips are there, so the FM-1 screen is the selected track's inspector (Cosmati audit I1; ui_pages.c pv_inspect,
+ * ui_input.c tracks_edit, ui_draw.c's knobs) */
+static uint32_t t2_seen_ms;
+static uint8_t t2_seen;
+static int mix_inspect(void)
+{
+    return t2_seen && fm1_ms - t2_seen_ms < 500u && !ui.home && cur_page()->scope == SC_TRK;
+}
+static const uint8_t MIX_ID[4] = {P_LEVEL, P_PAN, P_FXSEND, P_FXSEND2};   /* (its knobs) */
+#else
+#define mix_inspect() 0
+#endif
 
 /* the quick layers (ui_layer.c): a button held, the keys and KNOB 1..4 are its shortcuts, its map over the page */
 /* the one hold time (the key grammar, tessera-notes audit-2026-11 M0): a button held this long is a hold (btn_hold:
