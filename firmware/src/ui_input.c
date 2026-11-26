@@ -2366,7 +2366,7 @@ static void ui_input(void)
         }
     }
 #if TESS_HAS_POINTER
-    if (!ui.menu && !ui.home && cur_page()->graph == GR_SETTINGS) {   /* SETUP's SETTINGS page: the menu's list (its */
+    if (!ui.menu && !ui.home && !ui.home_t0 && home != BT_TAP && cur_page()->graph == GR_SETTINGS) {   /* SETUP's SETTINGS page: the menu's list (its */
         ui.menu = 1;                                    /* BACK: HOME, menu_close; a section or a tab: that page) */
         ui.menu_sel = 0;
         menu_cols = 0;
