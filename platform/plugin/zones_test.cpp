@@ -1120,6 +1120,118 @@ static void roll()   // NOTES as a piano roll (batch 4): a click a note, a chord
     run(20);
 }
 
+static bool roll_has(int step)   // NOTES' roll: a bar drawn on step (0..15)
+{
+    int x = 3 + step * 7 + step / 4 * 2 + 2;
+    for (int cy = 64; cy < 91; cy++) if (lit(x, cy)) return true;   // (row 91: the baseline under every step)
+    return false;
+}
+static void ldo(int step, int lane, uint32_t a, int n = 0)   // the drum grid: the mouse on lane (0..7), step
+{
+    int i = find("GRID", TESS_ZONE_ROLL);
+    if (i < 0) return;
+    tess_zone_t z = v.zones[i];
+    z.x = (uint16_t)(2 * (18 + step * 6 + step / 4 + 2)), z.y = (uint16_t)(2 * (15 + lane * 10 + 3));
+    tess_core_zone_do(&z, a, n);
+    run(30);
+}
+static bool glit(int cx, int cy)   // the grid's cell drawn in (against the gap left of the cells, at that row)
+{
+    return v.screen[(2 * cy) * TESS_SCREEN + 2 * cx] != v.screen[(2 * cy) * TESS_SCREEN + 2 * 16];
+}
+static bool lane_hit(int step, int lane) { return glit(18 + step * 6 + step / 4 + 1, 15 + lane * 10 + 2); }
+static bool lane_acc(int step, int lane) { return glit(18 + step * 6 + step / 4, 15 + lane * 10 + 1); }
+static void paint()   // G3: a drag across NOTES' steps paints or erases a run; Alt-drags a note's length, velocity; the
+{                     // drum grid the same, a hit for a note, up or down its accent
+    tess_core_project_new();
+    run(50);
+    tess_core_track_select(0);
+    int i = reach(B_SEQ, "NOTES", TESS_ZONE_ROLL);
+    CHECK(i >= 0, "G3: NOTES' roll");
+    if (i < 0) return;
+    rdo(0, 80, TESS_ZA_GRAB);   // pressed on an empty step 1, dragged across to step 4: four notes
+    for (int k = 1; k <= 3; k++) rdo(k, 80, TESS_ZA_PAINT);
+    rdo(3, 80, TESS_ZA_DROP);
+    CHECK(roll_has(0) && roll_has(1) && roll_has(2) && roll_has(3) && !roll_has(4), "a drag from empty step 1 to 4: four notes");
+    rdo(9, 80, TESS_ZA_GRAB);   // a quick drag right to left skips nothing: steps 10 back to 7
+    rdo(6, 80, TESS_ZA_PAINT);
+    rdo(6, 80, TESS_ZA_DROP);
+    CHECK(roll_has(6) && roll_has(7) && roll_has(8) && roll_has(9) && !roll_has(5) && !roll_has(10),
+          "a drag from step 10 back to 7 in one go: all four painted");
+    rdo(1, 90, TESS_ZA_GRAB);   // pressed on step 2's note: erasing, steps 2 and 3
+    rdo(2, 90, TESS_ZA_PAINT);
+    rdo(2, 90, TESS_ZA_DROP);
+    CHECK(roll_has(0) && !roll_has(1) && !roll_has(2) && roll_has(3), "a drag from step 2's note to 3: both erased, 1 and 4 kept");
+    // the whole stroke one undo step: EDIT held, OCT-
+    tess_core_buttons(1u << B_EDIT);
+    run(60);
+    tess_core_buttons(1u << B_EDIT | 1u << B_OCTDN);
+    run(5);
+    tess_core_buttons(1u << B_EDIT);
+    run(5);
+    tess_core_buttons(0);
+    run(30);
+    CHECK(roll_has(1) && roll_has(2) && roll_has(6), "one undo: the erase stroke back whole, the strokes before kept");
+    rdo(0, 90, TESS_ZA_GRAB);   // Alt and a drag across step 1's note: two steps longer
+    rdo(0, 90, TESS_ZA_LENGTH, 1);
+    rdo(0, 90, TESS_ZA_DROP);
+    CHECK(kval("STEP").rfind("1/", 0) == 0 && kval("LENGTH") == "1", "a note can't grow over the next one (LENGTH %s)",
+          kval("LENGTH").c_str());
+    rdo(3, 90, TESS_ZA_GRAB);   // step 4's note: steps 5, 6 are free
+    rdo(3, 90, TESS_ZA_LENGTH, 1);
+    rdo(3, 90, TESS_ZA_LENGTH, 1);
+    rdo(3, 90, TESS_ZA_DROP);
+    CHECK(kval("STEP").rfind("4/", 0) == 0 && kval("LENGTH") == "3", "Alt-drag across step 4's note: 3 steps long (%s)",
+          kval("LENGTH").c_str());
+    rdo(3, 90, TESS_ZA_GRAB);
+    rdo(3, 90, TESS_ZA_LENGTH, -1);
+    rdo(3, 90, TESS_ZA_DROP);
+    CHECK(kval("LENGTH") == "2", "and back one: 2 (%s)", kval("LENGTH").c_str());
+    std::string v0 = kval("VEL");
+    rdo(3, 90, TESS_ZA_GRAB);   // Alt and a drag up: its velocity, 4 a detent
+    rdo(3, 90, TESS_ZA_VELOCITY, 2);
+    rdo(3, 90, TESS_ZA_DROP);
+    CHECK(std::atoi(kval("VEL").c_str()) == std::atoi(v0.c_str()) + 8, "Alt-drag up two: VEL %s, then %s", v0.c_str(),
+          kval("VEL").c_str());
+
+    // the drum grid (a DRUM track's NOTES)
+    int g = -1;
+    for (uint32_t tr = 0; tr < tess_core_tracks() && g < 0; tr++)
+    {
+        tess_core_track_select(tr);
+        run(10);
+        tap(B_HOME);
+        tap(B_SEQ);
+        run(10);
+        act(find("NOTE", TESS_ZONE_TAB), TESS_ZA_CLICK);
+        g = find("GRID", TESS_ZONE_ROLL);
+    }
+    CHECK(g >= 0, "a DRUM track's NOTES: the grid's zone");
+    if (g < 0) { tess_core_track_select(0); return; }
+    bool h0 = lane_hit(0, 1);
+    ldo(0, 1, TESS_ZA_CLICK);
+    CHECK(lane_hit(0, 1) != h0, "a click on a cell toggles its hit");
+    if (!lane_hit(0, 1)) ldo(0, 1, TESS_ZA_CLICK);
+    for (int k = 1; k < 8; k++) if (lane_hit(k, 1)) ldo(k, 1, TESS_ZA_HELP);
+    CHECK(!lane_hit(1, 1) && !lane_hit(5, 1), "right-clicks clear hits");
+    ldo(2, 1, TESS_ZA_GRAB);   // off a hit: a drag across draws the lane's hits
+    ldo(5, 1, TESS_ZA_PAINT);
+    ldo(5, 1, TESS_ZA_DROP);
+    CHECK(lane_hit(2, 1) && lane_hit(3, 1) && lane_hit(4, 1) && lane_hit(5, 1) && !lane_hit(6, 1), "a drag from 3 to 6: four hits");
+    ldo(3, 1, TESS_ZA_GRAB);   // on a hit: erasing
+    ldo(4, 1, TESS_ZA_PAINT);
+    ldo(4, 1, TESS_ZA_DROP);
+    CHECK(lane_hit(2, 1) && !lane_hit(3, 1) && !lane_hit(4, 1) && lane_hit(5, 1), "a drag from a hit: erased");
+    ldo(2, 1, TESS_ZA_GRAB);   // up on a hit: accented; down: not
+    ldo(2, 1, TESS_ZA_TURN, 1);
+    ldo(2, 1, TESS_ZA_DROP);
+    CHECK(lane_acc(2, 1), "a drag up on a hit: accented");
+    ldo(2, 1, TESS_ZA_WHEEL, -1);
+    CHECK(lane_hit(2, 1) && !lane_acc(2, 1), "the wheel down: not");
+    tess_core_track_select(0);
+    tap(B_HOME);
+}
+
 static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
 {
     tap(B_HOME);
@@ -1343,6 +1455,7 @@ int main(int argc, char **argv)
     tracks(argc > 1 ? argv[1] : nullptr);
     mosaic(argc > 2 ? argv[2] : nullptr);
     roll();
+    paint();
     smap();
     chord_user();
     hosted_words();

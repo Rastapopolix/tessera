@@ -1148,6 +1148,12 @@ static void mo_pic_grid(const track_t *t)
 static void mo_grid_panel(void)
 {
     int32_t top;
+#if TESS_HAS_POINTER
+    if (!cv_under) {                                    /* (a zone over the lanes, a hit a click: ui_roll.c lane_do) */
+        uz_begin(UZ_G_PIC);
+        uz_add(UZ_G_PIC, UZ_ROLL, 16, PV_GRID_Y / 2 + 4, 102, NLANE * 10, -1, -1, 0x4000, "GRID", "");
+    }
+#endif
     for (top = 0; top < PV_GRID_H; top += 120) {
         int32_t sh = PV_GRID_H - top < 120 ? PV_GRID_H - top : 120;
         cv_begin(240, (uint32_t)sh, MO_BG);

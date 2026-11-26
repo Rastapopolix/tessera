@@ -386,13 +386,26 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
                                                        * its zone moved with it): kept, OK */
         return;
     }
+    if (action == TESS_ZA_DROP) {                     /* (a drag let go: wherever the screen is now) */
+        roll_drop();
+        return;
+    }
     if (!z || !zone_live(z))
         return;
-    if (z->kind == TESS_ZONE_ROLL) {                  /* NOTES' steps: the note at the mouse's place (ui_roll.c) */
-        if (action == TESS_ZA_WHEEL) roll_do(ROLL_GRAB, z->x, z->y, 0);
-        roll_do(action == TESS_ZA_CLICK ? ROLL_ADD : action == TESS_ZA_HELP ? ROLL_DEL : action == TESS_ZA_GRAB ?
-                ROLL_GRAB : action == TESS_ZA_TURN || action == TESS_ZA_WHEEL ? ROLL_MOVE : action ==
-                TESS_ZA_TURN_CHORD ? ROLL_MOVE_ALL : 0u, z->x, z->y, n);
+    if (z->kind == TESS_ZONE_ROLL) {                  /* NOTES' steps: the note at the mouse's place (ui_roll.c); a
+                                                       * DRUM track's grid (row bit 14) */
+        uint32_t op = action == TESS_ZA_CLICK ? ROLL_ADD : action == TESS_ZA_HELP ? ROLL_DEL : action == TESS_ZA_GRAB ?
+                      ROLL_GRAB : action == TESS_ZA_TURN || action == TESS_ZA_WHEEL ? ROLL_MOVE : action ==
+                      TESS_ZA_TURN_CHORD ? ROLL_MOVE_ALL : action == TESS_ZA_PAINT ? ROLL_PAINT : action ==
+                      TESS_ZA_LENGTH ? ROLL_LEN : action == TESS_ZA_VELOCITY ? ROLL_VEL : 0u;
+        int lanes = (z->row & 0x4000) != 0;
+        if (action == TESS_ZA_WHEEL) {
+            if (lanes) lane_do(ROLL_GRAB, z->x, z->y, 0);
+            else roll_do(ROLL_GRAB, z->x, z->y, 0);
+        }
+        if (lanes) lane_do(op, z->x, z->y, n);
+        else roll_do(op, z->x, z->y, n);
+        if (action == TESS_ZA_WHEEL) roll_drop();
         return;
     }
     if (action == TESS_ZA_HELP) {                     /* a value's column or a list's row: what it does */

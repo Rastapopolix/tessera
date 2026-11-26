@@ -122,7 +122,9 @@ enum { TESS_ZONE_KNOB = 1, TESS_ZONE_ROW, TESS_ZONE_KEY, TESS_ZONE_TRACK, TESS_Z
  * that pitch (a step with notes: one more, a chord of up to 4; on one of them: that one picked); HELP (a right-click):
  * the note there removed; GRAB (the button pressed there), then TURN n (dragged: n rows up, - down): that note's
  * pitch, in key when the track quantises, over its chord's other notes; TURN_CHORD n: the whole chord, its shape kept;
- * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records */
+ * WHEEL n: the note under the mouse n rows. As the keys: STOP TO EDIT while a chain plays or the track records. A DRUM
+ * track's NOTES (row bit 14): the grid's lanes, a hit for a note: CLICK toggles it, HELP clears it, TURN or WHEEL n on a
+ * hit accents it (+) or not (-). Its drags: TESS_ZA_PAINT .. TESS_ZA_DROP, below */
 enum { TESS_ZONE_ROLL = 15 };
 /* OP: FM6's algorithm chart, an operator's box (row: the operator, 0..5 for OP 1..6). CLICK: that operator picked (as
  * SELECT on its pages); DOUBLE: its pages opened, the one last used there */
@@ -145,6 +147,12 @@ enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP,
 enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
 enum { TESS_ZA_TURN_FINE = 8 };   /* TURN n a detent at a time, never sped up (Shift held: fine steps) */
 enum { TESS_ZA_RANDOM = 9 };      /* the zone's parameter (tess_core_zone_param) set to a value at random in its range */
+/* ROLL's drags (x, y the mouse's place now): PAINT, a drag across the steps from where it was pressed: each step crossed
+ * gets a note at the mouse's pitch if the press was off a note, else loses its note (a DRUM track's grid: the pressed
+ * lane's hits, on or off); LENGTH n (Alt and a drag across): the pressed note n steps longer, - shorter; VELOCITY n (Alt
+ * and a drag up or down): its velocity 4 a detent (the grid: TURN on a hit, + accented, - not); DROP: the mouse let go
+ * after a drag, the drag's edits one undo step (any zone, or none) */
+enum { TESS_ZA_PAINT = 10, TESS_ZA_LENGTH, TESS_ZA_VELOCITY, TESS_ZA_DROP };
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */

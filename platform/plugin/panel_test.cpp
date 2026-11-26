@@ -1067,8 +1067,37 @@ int main(int argc, char **argv)
         r.input.buttons |= 1u << 16;   // (SHIFT held: panel.cpp BIT_SHIFT, latched or the Shift key)
         r.down(mx, my), r.move(mx, my + 6), r.up(mx, my + 6);
         r.input.buttons &= ~(1u << 16);
-        CHECK(!r.input.zones.empty() && r.input.zones.back().action == TESS_ZA_TURN_CHORD && r.input.zones.back().n == -1,
-              "Shift + a drag down: the chord a row down");
+        CHECK(r.input.zones.size() == 3 && r.input.zones[1].action == TESS_ZA_TURN_CHORD && r.input.zones[1].n == -1 &&
+                  r.input.zones[2].action == TESS_ZA_DROP,
+              "Shift + a drag down: the chord a row down, then let go (DROP)");
+        // G3: across, a stroke (PAINT at the place, every 3 px); Alt across, its length (a step every 14 px); Alt up, its
+        // velocity (a detent every 6 px); a still click no DROP
+        r.input.zones.clear();
+        r.down(mx, my);
+        for (int i = 1; i <= 10; i++) r.move(mx + 3 * i, my + (i & 1));
+        r.up(mx + 30, my);
+        int paints = 0, turns = 0;
+        for (auto &a : r.input.zones) paints += a.action == TESS_ZA_PAINT, turns += a.action == TESS_ZA_TURN;
+        CHECK(paints >= 8 && !turns && r.input.zones.back().action == TESS_ZA_DROP, "a drag across: a stroke (%d PAINTs), DROP", paints);
+        {
+            int last = -1;
+            for (auto &a : r.input.zones) if (a.action == TESS_ZA_PAINT) last = a.z.x;
+            CHECK(last == 50 + 30, "..each PAINT at the mouse's place (last x %d)", last);
+        }
+        r.input.zones.clear();
+        r.set_mods(false, false, true);
+        r.down(mx, my), r.move(mx + 10, my), r.move(mx + 30, my), r.up(mx + 30, my);
+        int len = 0, vel = 0;
+        for (auto &a : r.input.zones) len += a.action == TESS_ZA_LENGTH ? a.n : 0;
+        CHECK(len == 2, "Alt + a drag 30 px across: two steps longer (%d)", len);
+        r.input.zones.clear();
+        r.down(mx, my), r.move(mx, my - 6), r.move(mx, my - 18), r.up(mx, my - 18);
+        for (auto &a : r.input.zones) vel += a.action == TESS_ZA_VELOCITY ? a.n : 0;
+        CHECK(vel == 3, "Alt + a drag 18 px up: velocity three detents (%d)", vel);
+        r.set_mods(false, false, false);
+        r.input.zones.clear();
+        r.down(mx, my), r.up(mx, my);
+        CHECK(r.input.zones.size() == 2 && r.input.zones[1].action == TESS_ZA_CLICK, "a still click: GRAB, CLICK, no DROP");
         r.input.zones.clear();
         CHECK(r.latch(mx, my) && r.input.zones.size() == 1 && r.input.zones[0].action == TESS_ZA_HELP &&
                   r.input.zones[0].z.x == 50, "a right-click on the roll: HELP there (remove)");

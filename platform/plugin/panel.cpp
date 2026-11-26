@@ -4,6 +4,7 @@
  * into a pixel buffer */
 #include "panel.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -205,6 +206,7 @@ const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 60;   //
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
 const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18, BIT_HELP = 19;
+enum { RW_NONE, RW_PITCH, RW_VEL, RW_PAINT, RW_LENGTH };   // (a drag on NOTES' steps: Panel::roll_way)
 }   // namespace
 
 Panel::Panel()
@@ -951,6 +953,7 @@ bool Panel::down(int x, int y)
             drag_zone = zone_here(zi, x, y);
             zone_still = true;
             acc = 0;
+            roll_way = RW_NONE, roll_x0 = paint_x = x, roll_y0 = y;
             zone_act(drag_zone, TESS_ZA_GRAB, 0);
             return true;
         }
@@ -1120,17 +1123,42 @@ bool Panel::move(int x, int y)
         if (nx || ny) { zone_still = click_known = false; return true; }
         return false;
     }
-    if (drag == ZONE && drag_zone.kind == TESS_ZONE_ROLL)   // a note: a row every 6 px up or down; with SHIFT (held,
-    {                                                      // latched or the Shift key) its whole chord
-        acc += dy;
-        int n = acc / 6;
-        if (n)
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_ROLL)   // the first 5 px pick the way: up or down, a note's pitch
+    {                                                      // (Alt: its velocity); across, a stroke (Alt: its length)
+        if (roll_way == RW_NONE)
         {
-            acc -= n * 6;
+            int tx = x - roll_x0, ty = roll_y0 - y;
+            if (std::abs(tx) < 5 && std::abs(ty) < 5)
+                return false;
+            roll_way = std::abs(tx) > std::abs(ty) ? (mod_alt ? RW_LENGTH : RW_PAINT) : (mod_alt ? RW_VEL : RW_PITCH);
+            acc = roll_way == RW_LENGTH ? tx : roll_way == RW_PAINT ? 0 : ty;
+            paint_x = roll_x0;
             zone_still = click_known = false;
-            zone_act(drag_zone, input.buttons >> BIT_SHIFT & 1u ? (uint32_t)TESS_ZA_TURN_CHORD : (uint32_t)TESS_ZA_TURN, n);
+        }
+        else
+            acc += roll_way == RW_LENGTH ? dx : dy;
+        if (roll_way == RW_PAINT)   // the place, each 3 px across (the core paints each step crossed once)
+        {
+            if (std::abs(x - paint_x) < 3)
+                return false;
+            paint_x = x;
+            tess_zone_t at = drag_zone;
+            at.x = (uint16_t)std::clamp(x - (SCREEN_X + SCREEN_S / 32), 0, 65535);
+            at.y = (uint16_t)std::clamp(y - (SCREEN_Y + SCREEN_S / 32), 0, 65535);
+            zone_act(at, TESS_ZA_PAINT, 0);
             return true;
         }
+        // a row every 6 px up or down (with SHIFT, held, latched or the Shift key: the whole chord); a step every 14 px
+        // across (a column of the roll)
+        const int step = roll_way == RW_LENGTH ? 14 : 6, n = acc / step;
+        if (n)
+        {
+            acc -= n * step;
+            zone_act(drag_zone, roll_way == RW_LENGTH ? (uint32_t)TESS_ZA_LENGTH : roll_way == RW_VEL ? (uint32_t)TESS_ZA_VELOCITY :
+                                input.buttons >> BIT_SHIFT & 1u ? (uint32_t)TESS_ZA_TURN_CHORD : (uint32_t)TESS_ZA_TURN, n);
+            return true;
+        }
+        return false;
     }
     else if (drag == ZONE)   // a value's column: as a knob, a detent every 8 px (Shift: fine, every 32, never sped up)
     {
@@ -1245,6 +1273,8 @@ bool Panel::up(int, int)
     gen_swapped = false;
     if (drag == BUTTON) { mouse_buttons &= ~(1u << buttons[drag_i].bit); merge_held(); ch = true; }
     if (drag == KEY) { mouse_keys &= ~(1u << keys[drag_i].k); merge_held(); ch = true; }
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_ROLL && !zone_still) { zone_act(drag_zone, TESS_ZA_DROP, 0); ch = true; }   // (a
+    // drag on NOTES' steps let go: its edits one undo step)
     if (drag == ZONE && zone_still) { zone_act(drag_zone, TESS_ZA_CLICK, 0); ch = true; }   // (a help card's text, a
     zone_still = false;                                                                       // knob's column: a click)
     drag = NONE;
