@@ -285,7 +285,8 @@ class GuiX11 : public Gui
                 {
                     KeySym ks = XLookupKeysym(&e.xkey, 0);
                     bool ctrl = e.xkey.state & ControlMask, alt = e.xkey.state & Mod1Mask, shift = e.xkey.state & ShiftMask;
-                    char c = ctrl && !alt && ks == XK_c   ? 'C'
+                    char c = ctrl && !alt && ks == XK_r   ? (shift ? 'r' : 'R')   // (DICE, MUTATE)
+                             : ctrl && !alt && ks == XK_c ? 'C'
                              : ctrl && !alt && ks == XK_v ? (shift ? 'v' : 'V')
                              : alt && !ctrl && ks == XK_Up   ? '^'
                              : alt && !ctrl && ks == XK_Down ? '_'
