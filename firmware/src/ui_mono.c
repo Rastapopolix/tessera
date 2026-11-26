@@ -71,8 +71,12 @@ static void mo_uz_col(uint32_t c, int key, const char *shown, int32_t x, int32_t
         str_cpy(v + str_len(v), mo_col[c].unit, sizeof v - str_len(v));
     if (key && (str_eq(shown, "OCT+") || str_eq(shown, "OCT-")))
         uz_add(UZ_G_COLS, UZ_KEY, x, 21, w, 15, -1, -1, str_eq(shown, "OCT+") ? B_OCTUP : B_OCTDN, mo_col[c].label, shown);
-    else if (!key)
-        uz_add(UZ_G_COLS, UZ_KNOB, (int32_t)c * 30, 10, 30, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+    else if (!key) {                                  /* (the column, wider where its value's box is: the mouse's
+                                                         * outline round both, never across the box) */
+        int32_t x0 = x - 1 < (int32_t)c * 30 ? x - 1 : (int32_t)c * 30, x1 = x + w + 1 > (int32_t)c * 30 + 30 ? x + w + 1 : (int32_t)c * 30 + 30;
+        x0 = x0 < 0 ? 0 : x0, x1 = x1 > 120 ? 120 : x1;
+        uz_add(UZ_G_COLS, UZ_KNOB, x0, 10, x1 - x0, 41, EN_K1 + (int32_t)c, -1, 0, mo_col[c].label, v);
+    }
 }
 #endif
 

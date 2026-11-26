@@ -196,7 +196,7 @@ static void t2_strip(uint32_t k, int32_t x, uint32_t blink)
     int32_t fh, pan = t->p[P_PAN], cx = x + 15;
     char b[16], nm[8], lv[8];
     b[0] = (char)('1' + k), b[1] = 0;                   /* the head: number, role */
-    if (sel) t2_box(x + 1, 13, 28, 91, MO_TRK(k));
+    if (sel) t2_box(x + 1, 13, 28, 93, MO_TRK(k));   /* (round M and S too, a clear cell under them) */
     if (sel) t2_inv(b, cx - 2, 15, MO_TRK(k), MO_BG);
     else t2_text(b, cx - 2, 15, ink);
     t2_role(k, nm);
@@ -277,12 +277,12 @@ static void tracks_draw(int32_t w, int32_t h, uint32_t blink)
         for (k = 0; k < NTRK; k++)                      /* the rows */
             t2_row(k, 14 + (int32_t)k * 11, 11, 0, blink);
     }
-    t2_fill(0, 105, 240, 1, MO_DIM);                    /* the selected track's sound; the hint */
+    t2_fill(0, 107, 240, 1, MO_DIM);                    /* the selected track's sound; the hint */
     b[0] = 'T', b[1] = (char)('1' + song.sel % NTRK), b[2] = ' ';
     trk_short_name(song.sel % NTRK, b + 3);
-    t2_text(b, 4, 109, MO_INK);
+    t2_text(b, 4, 111, MO_INK);
 #if TESS_HAS_POINTER
-    t2_textr(mixer ? "DRAG A FADER, CLICK M OR S" : "CLICK A ROW TO SELECT", 236, 109,
+    t2_textr(mixer ? "DRAG A FADER, CLICK M OR S" : "CLICK A ROW TO SELECT", 236, 111,
              MO_DIM);
 #endif
 }
