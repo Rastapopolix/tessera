@@ -371,6 +371,12 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
         zones2.clear();
     draw_body(px, v, t2);
     if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
+    if (ctx_kind == CTX_VALUE && zone_like(ctx_zone) < 0) ctx_kind = 0;
+    if (ctx_kind)
+    {
+        ctx_draw(px);
+        return;
+    }
     if (!entry_on)
     {
         draw_hover(px);
@@ -719,6 +725,11 @@ bool Panel::key(int code, bool down)
     for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
     for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
     for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
+    if (code == 0x01 && ctx_kind)    // Esc: a right-click's menu shut
+    {
+        if (down) ctx_kind = 0;
+        return false;
+    }
     if (code == 0x01 && menu_open)   // Esc: the menu shut
     {
         if (down) menu_open = false;
@@ -821,6 +832,15 @@ bool Panel::down(int x, int y)
     last_x = x;
     last_y = y;
     acc = acc_y = 0;
+    if (ctx_kind)   // the right-click's menu: a row does its job, anywhere else shuts it
+    {
+        int r = ctx_row_at(x, y);
+        if (r >= 0) ctx_do(r);
+        ctx_kind = 0;
+        drag = NONE;
+        input.changed = true;
+        return true;
+    }
     if (entry_on)   // (a click anywhere: a value's box shut, unset)
     {
         entry_on = false;
@@ -1046,6 +1066,13 @@ bool Panel::down(int x, int y)
 
 bool Panel::move(int x, int y)
 {
+    if (ctx_kind)   // a right-click's menu: the row under the mouse lit
+    {
+        ctx_hover = ctx_row_at(x, y);
+        last_x = x;
+        last_y = y;
+        return false;
+    }
     if (native() && menu_open)
     {
         menu_hover = menu_row_at(x, y);
@@ -1158,7 +1185,33 @@ bool Panel::latch(int x, int y)
 {
     if (native() && menu_open)
         return false;
+    if (ctx_kind || entry_on)   // (a menu or a value's box open: a right-click shuts it)
+    {
+        ctx_kind = 0, entry_on = false;
+        return true;
+    }
     int zi = zone_at(x, y);
+    if (zi >= 0 && (zones[zi].kind == TESS_ZONE_KNOB || zones[zi].kind == TESS_ZONE_LEVEL || zones[zi].kind == TESS_ZONE_PAN))
+    {   // a value: its menu (HELP first)
+        ctx_zone = zones[zi];
+        ctx_open(CTX_VALUE, x, y);
+        return true;
+    }
+    if (zi >= 0 && zones[zi].kind == TESS_ZONE_TRACK && zones[zi].row >= 0)   // HOME's track: its menu
+    {
+        ctx_track = zones[zi].row;
+        ctx_open(CTX_TRACK, x, y);
+        return true;
+    }
+    {
+        int z2 = zone2_at(x, y);   // a TRACKS row (EXPANDED): its track's menu
+        if (z2 >= 0 && zones2[z2].kind == TESS_ZONE_TRACK && zones2[z2].row >= 0)
+        {
+            ctx_track = zones2[z2].row;
+            ctx_open(CTX_TRACK, x, y);
+            return true;
+        }
+    }
     if (zi >= 0)   // the screen: a value's column or a list's row, its help card (tess_core_zone_do TESS_ZA_HELP)
     {
         const tess_zone_t &z = zones[zi];
@@ -2089,6 +2142,85 @@ const tess_zone_t *Panel::knob_zone(int role) const
         if (z.kind == TESS_ZONE_KNOB && z.role == role && z.name[0])
             return &z;
     return nullptr;
+}
+
+// ---- a right-click's menu (Cosmati audit G2)
+namespace
+{
+const int CTX_W = 230, CTX_RH = 28;
+}
+void Panel::ctx_open(int kind, int x, int y)
+{
+    static const char *const VAL[] = {"HELP", "DEFAULT", "COPY VALUE", "PASTE VALUE", "RANDOM", "TYPE A VALUE"};
+    static const char *const TRK[] = {"COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN"};
+    ctx_row.clear();
+    if (kind == CTX_VALUE)
+        for (const char *r : VAL) ctx_row.push_back(r);
+    else
+        for (const char *r : TRK) ctx_row.push_back(r);
+    if (kind == CTX_TRACK)
+    {
+        char t[24];
+        std::snprintf(t, sizeof t, "T%d", ctx_track + 1);   // (whose: its number over the rows)
+        ctx_row.insert(ctx_row.begin(), t);
+    }
+    int h = (int)ctx_row.size() * CTX_RH + 8;
+    ctx_x = x + CTX_W > width() - 8 ? width() - 8 - CTX_W : x;
+    ctx_y = y + h > H - 8 ? H - 8 - h : y;
+    ctx_kind = kind;
+    ctx_hover = -1;
+    drag = NONE;
+    input.changed = true;
+}
+int Panel::ctx_row_at(int x, int y) const
+{
+    if (!ctx_kind || x < ctx_x || x >= ctx_x + CTX_W || y < ctx_y + 4) return -1;
+    int r = (y - ctx_y - 4) / CTX_RH;
+    if (r < 0 || r >= (int)ctx_row.size()) return -1;
+    if (ctx_kind == CTX_TRACK && r == 0) return -1;   // (the track's number: no job)
+    if (ctx_kind == CTX_VALUE && r == 3 && clip_value.empty()) return -1;   // (PASTE VALUE: nothing copied yet)
+    return r;
+}
+void Panel::ctx_do(int r)
+{
+    if (ctx_kind == CTX_VALUE)
+    {
+        switch (r)
+        {
+        case 0: zone_act(ctx_zone, TESS_ZA_HELP, 0); break;
+        case 1: zone_act(ctx_zone, TESS_ZA_DOUBLE, 0); break;   // (a double-click: its default)
+        case 2: clip_value = ctx_zone.value; break;
+        case 3:
+        {
+            PanelInput::Typed t{ctx_zone, {}};
+            std::snprintf(t.text, sizeof t.text, "%s", clip_value.c_str());
+            input.typed.push_back(t);
+            break;
+        }
+        case 4: zone_act(ctx_zone, TESS_ZA_RANDOM, 0); break;
+        case 5: entry_on = true, entry_zone = ctx_zone, entry_text.clear(); break;
+        default: break;
+        }
+    }
+    else if (ctx_kind == CTX_TRACK && r >= 1 && r <= 5)
+        track_req = {TR_COPY + (r - 1), ctx_track};
+    input.changed = true;
+}
+void Panel::ctx_draw(uint32_t *px)
+{
+    Canvas c{px, width()};
+    const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, DIM = 0xFF5A5446, BLACK = 0xFF000000;
+    int h = (int)ctx_row.size() * CTX_RH + 8;
+    c.box(ctx_x, ctx_y, CTX_W, h, BLACK);
+    c.box(ctx_x, ctx_y, CTX_W, 2, YEL), c.box(ctx_x, ctx_y + h - 2, CTX_W, 2, YEL);
+    c.box(ctx_x, ctx_y, 2, h, YEL), c.box(ctx_x + CTX_W - 2, ctx_y, 2, h, YEL);
+    for (int r = 0; r < (int)ctx_row.size(); r++)
+    {
+        int y = ctx_y + 4 + r * CTX_RH;
+        bool head = ctx_kind == CTX_TRACK && r == 0, off = !head && ctx_row_at(ctx_x + 4, y + 4) < 0;
+        if (r == ctx_hover && !off && !head) c.box(ctx_x + 4, y, CTX_W - 8, CTX_RH - 2, YEL);
+        c.ptext(ctx_x + 12, y + 7, ctx_row[r].c_str(), 2, head ? YEL : off ? DIM : r == ctx_hover ? BLACK : WORD);
+    }
 }
 
 void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)

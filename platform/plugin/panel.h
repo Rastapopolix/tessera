@@ -106,6 +106,11 @@ class Panel
      * a value a detent at a time, a drag four times as far a detent */
     void set_mods(bool type, bool fine) { mod_type = type, mod_fine = fine; }
     bool entry_open() const { return entry_on; }
+    /* a right-click's menu (Cosmati audit G2), at the mouse: on a value (a column, a mixer strip's LEVEL / PAN / send)
+     * HELP, DEFAULT, COPY VALUE, PASTE VALUE, RANDOM, TYPE A VALUE; on a track (HOME's column, a TRACKS row) COPY
+     * TRACK, PASTE TRACK, PASTE SOUND, MOVE UP, MOVE DOWN (as TRACK's, for that track). A click on a row does it, a click
+     * elsewhere or Esc shuts it. ctx_rows: the rows shown (empty: none) */
+    std::vector<std::string> ctx_rows() const { return ctx_kind ? ctx_row : std::vector<std::string>{}; }
     /* the standalone app (no DAW: tessera_clap.cpp's free-running host): Space plays and stops, Ctrl+O / Ctrl+S (Cmd on
      * a Mac) open and save; in a DAW those keys stay the DAW's */
     void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)
@@ -231,6 +236,15 @@ class Panel
     bool menu_open = false;
     bool typing_ = false;   // the view's: NAME open
     bool mod_type = false, mod_fine = false;   // (set_mods)
+    enum { CTX_VALUE = 1, CTX_TRACK };
+    int ctx_kind = 0, ctx_x = 0, ctx_y = 0, ctx_track = 0, ctx_hover = -1;   // (the right-click's menu: none, a value's, a track's)
+    tess_zone_t ctx_zone = {};
+    std::vector<std::string> ctx_row;
+    std::string clip_value;   // (COPY VALUE: the value as shown, PASTE VALUE types it)
+    void ctx_open(int kind, int x, int y);
+    int ctx_row_at(int x, int y) const;
+    void ctx_do(int row);
+    void ctx_draw(uint32_t *px);
     bool entry_on = false;  // a value's box open: its zone, the text typed so far
     tess_zone_t entry_zone = {};
     std::string entry_text;
