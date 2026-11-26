@@ -735,6 +735,19 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
     CHECK(f1 == "FX 1" && n > 2 && n < 12, "FX: round its pages and back to FX 1 (%d)", n);
     tap(B_HOME);
     CHECK(!(v.lit_buttons & (TESS_BTN_SECTION(TESS_SEC_N) - TESS_BTN_SECTION(0))), "HOME: no section lit");
+    tess_core_key_words(2);   // (an FM-1 on USB playing Cosmati: its OCT- / OCT+, the section buttons theirs still)
+    tap(B_HOME);
+    std::string seq;
+    for (int i = 0; i < 5; i++)
+    {
+        press_section(TESS_SEC_SETUP);
+        seq += page_now() + " ";
+    }
+    t = tabs_now();
+    CHECK(seq == "TEMPO SYSTEM MIDI IN MIDI OUT TEMPO ", "FM-1 on USB: SETUP round its pages (%s)", seq.c_str());
+    CHECK(t.find("SYSTEM|") != std::string::npos && t.find("PATTERNS|") == std::string::npos &&
+              t.find("CHAIN|") == std::string::npos, "..its tabs SETUP's, not the FM-1 families' (%s)", t.c_str());
+    tap(B_HOME);
     tess_core_key_words(0);
     run(10);
 }

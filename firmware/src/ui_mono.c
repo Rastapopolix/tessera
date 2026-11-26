@@ -366,8 +366,13 @@ static void mo_place(char *at)
     uint16_t idx[16];
     uint32_t cur, n = mo_tabs(idx, &cur);
     at[0] = 0;
+#if TESS_HAS_POINTER
+    if (n < 2u || &PAGES[idx[cur]] != cur_page())     /* (a front end: on every page that has others, all alike) */
+        return;
+#else
     if (!n || &PAGES[idx[cur]] != cur_page() || mo_tabs_fit(idx, n))
         return;
+#endif
     fmt_int(at, (int32_t)cur + 1);
     str_cpy(at + str_len(at), "/", 2);
     fmt_int(at + str_len(at), (int32_t)n);
@@ -488,6 +493,14 @@ static void mo_head(void)
         if (str_len(t) > (uint32_t)room / 6u)
             MO_HOOK_CUT(t, "title");
         t[room / 6] = 0;                                /* (room before the position and the engine) */
+#if TESS_HAS_POINTER
+        if (at[0]) {                                    /* (a front end: the place first, at the left, on every page */
+            mo_text(at, 1, 1, MO_DIM);                  /* in the same spot: Theo 2026-11-26) */
+            MO_HOOK_PLACE(at);
+            mo_text(t, mo_tw(at) + 7, 1, MO_INK);
+            at[0] = 0;
+        } else
+#endif
         mo_text(t, 1, 1, MO_INK);
     }
     if (at[0]) {
@@ -3161,24 +3174,34 @@ static void mo_dhead(const char *chip, const char *msg, int32_t bat)
         x -= MO_BATT_W + 2;
         mo_battery(x, bat);
     }
+    int32_t cx = 0;                                     /* (the chip's left) */
     if (!msg && !ui.home && !ui.menu && !new_on() && !sec_map_on()) {   /* a page: its place (4/9) */
         mo_place(t);
+#if TESS_HAS_POINTER
+        if (t[0]) {                                     /* (a front end: at the left, before the chip, as mo_head) */
+            mo_text(t, 1, 1, MO_DIM);
+            MO_HOOK_PLACE(t);
+            cx = mo_tw(t) + 5;
+            x -= cx;
+        }
+#else
         if (t[0] && (int32_t)str_len(chip) * 6 <= x - mo_tw(t) - 6 - 6) {   /* (the chip first) */
             x -= mo_tw(t) + 6;
             mo_text(t, x, 1, MO_DIM);
             MO_HOOK_PLACE(t);
         }
+#endif
     }
     mo_ascii(t, msg ? msg : chip, sizeof t);
     if (str_len(t) > (uint32_t)(x - 6) / 6u)
         MO_HOOK_CUT(t, "chip");
     mo_cut(b, t, (uint32_t)(x - 6) / 6u);
-    mo_fill(0, 0, mo_tw(b) + 3, 8, MO_INK);
-    mo_text(b, 1, 1, MO_BG);
+    mo_fill(cx, 0, mo_tw(b) + 3, 8, MO_INK);
+    mo_text(b, cx + 1, 1, MO_BG);
     if (!msg && song.octave) {                          /* the octave shift, signed */
         t[0] = song.octave > 0 ? '+' : '-';
         fmt_int(t + 1, song.octave < 0 ? -song.octave : song.octave);
-        mo_text(t, mo_tw(b) + 6, 1, MO_INK);
+        mo_text(t, cx + mo_tw(b) + 6, 1, MO_INK);
     }
     mo_head_line(8, hold);
     cv_blit(0, Y_HEAD);
@@ -4417,8 +4440,17 @@ static void mo_song(void)
         int32_t x, bat, right;
         cv_begin(240, 120, MO_BG);
         cv_oy = -(int32_t)s * 120;
-        mo_fill(0, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
-        x = mo_text("SONG", 1, 1, MO_BG) + 4;
+        x = 0;
+#if TESS_HAS_POINTER
+        mo_place(b);                                    /* (a front end: the place at the left, as mo_head) */
+        if (b[0]) {
+            mo_text(b, 1, 1, MO_DIM);
+            MO_HOOK_PLACE(b);
+            x = mo_tw(b) + 5;
+        }
+#endif
+        mo_fill(x, 0, mo_tw("SONG") + 3, 8, MO_INK);    /* the header */
+        x = mo_text("SONG", x + 1, 1, MO_BG) + 4;
 #if CORE_TRACKS > 4
         if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted (as mo_head) */
             mo_inv("5-8", x, 1);
@@ -4452,7 +4484,11 @@ static void mo_song(void)
             if (jam_on)
                 mo_disc(right - mo_tw(b) - 5, 4, 2, MO_INK);
         } else {                                        /* else SONG's place among SEQ's pages (as mo_head) */
+#if TESS_HAS_POINTER
+            b[0] = 0;                                   /* (a front end: at the left already) */
+#else
             mo_place(b);
+#endif
             if (b[0]) {
                 mo_textr(b, right, 1, MO_DIM);
                 MO_HOOK_PLACE(b);
