@@ -824,8 +824,14 @@ int main(int argc, char **argv)
                 std::string before = m.value;
                 const int mx = 292 + 8 + m.x + m.w / 2, my = 44 + 8 + m.y + m.h / 2;
                 q.draw(px.data(), v);
-                CHECK(q.latch(mx, my) && q.input.zones.size() == 1 && q.input.zones[0].action == TESS_ZA_HELP,
-                      "a right-click on KNOB 2's column asks for its help");
+                CHECK(q.latch(mx, my) && q.input.zones.empty() && q.ctx_rows().size() == 6 && q.ctx_rows()[0] == "HELP" &&
+                          q.ctx_rows()[5] == "TYPE A VALUE",
+                      "a right-click on KNOB 2's column: its menu, HELP first (G2)");
+                q.draw(px.data(), v);
+                if (!out.empty()) ppm(out + "/10f_tessera_value_menu.ppm", px);
+                CHECK(q.down(mx + 20, my + 4 + 7) && q.input.zones.size() == 1 && q.input.zones[0].action == TESS_ZA_HELP,
+                      "..its HELP row asks for its help");
+                q.up(mx + 20, my + 11);
                 q.input.buttons = 0;
                 std::vector<uint16_t> card = shot(0.3);
                 CHECK(card != fx, "its help card over FX");
@@ -980,6 +986,57 @@ int main(int argc, char **argv)
             z.set_mods(false, false);
             CHECK(z.down(5, 5) && !z.entry_open(), "a click away shuts it");
             z.up(5, 5);
+            // G2: the value's menu: COPY VALUE, the value turned, PASTE VALUE puts it back; RANDOM; a track's menu
+            auto row_y = [&](int r) { return my + 4 + r * 28 + 10; };
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            std::string kept = v.zones[mix].value;
+            z.latch(mx, my), z.down(mx + 20, row_y(2)), z.up(mx + 20, row_y(2));   // COPY VALUE
+            z.latch(mx, my);
+            CHECK(z.ctx_rows().size() == 6, "the menu again");
+            z.down(5, 5), z.up(5, 5);
+            CHECK(z.ctx_rows().empty() && z.input.typed.empty(), "a click away: shut, nothing done");
+            z.wheel(mx, my, 6);
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            CHECK(std::string(v.zones[mix].value) != kept, "%s turned (%s, was %s)", m.name, v.zones[mix].value, kept.c_str());
+            z.latch(mx, my), z.down(mx + 20, row_y(3)), z.up(mx + 20, row_y(3));   // PASTE VALUE
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            CHECK(std::string(v.zones[mix].value) == kept, "COPY VALUE, PASTE VALUE: %s back (%s)", kept.c_str(), v.zones[mix].value);
+            z.latch(mx, my), z.down(mx + 20, row_y(4)), z.up(mx + 20, row_y(4));   // RANDOM
+            CHECK(!z.input.zones.empty() && z.input.zones.back().action == TESS_ZA_RANDOM, "RANDOM asked for");
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            tess_core_buttons(1u << 6);   // HOME: a track's menu
+            run(z, 0.05);
+            tess_core_buttons(0);
+            run(z, 0.3);
+            tess_core_view(&v);
+            z.draw(px.data(), v);
+            int tz = -1;
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TRACK && v.zones[i].row == 2) tz = (int)i;
+            CHECK(tz >= 0, "HOME: T3's zone");
+            if (tz >= 0)
+            {
+                const tess_zone_t &t3 = v.zones[tz];
+                int tx = 292 + 8 + t3.x + t3.w / 2, ty = 44 + 8 + t3.y + t3.h / 2;
+                z.take_track_request();
+                CHECK(z.latch(tx, ty) && z.ctx_rows().size() == 6 && z.ctx_rows()[0] == "T3" && z.ctx_rows()[4] == "MOVE UP",
+                      "a right-click on T3: its menu (T3, COPY .. MOVE DOWN)");
+                z.draw(px.data(), v);
+                if (!out.empty()) ppm(out + "/09c_track_menu.ppm", px);
+                int ry = ty + 4 + 4 * 28 + 10;
+                if (ry + 30 > Panel::H) ry = Panel::H - 8 - 6 * 28 - 8 + 4 + 4 * 28 + 10;
+                z.down(tx + 20, ry), z.up(tx + 20, ry);
+                Panel::TrackRequest rq = z.take_track_request();
+                CHECK(rq.what == Panel::TR_UP && rq.track == 2, "..MOVE UP: T3 asked up (%d, T%d)", rq.what, rq.track + 1);
+            }
         }
     }
 

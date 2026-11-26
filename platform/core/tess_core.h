@@ -158,6 +158,7 @@ typedef struct {
 enum { TESS_ZA_TURN, TESS_ZA_CLICK, TESS_ZA_DOUBLE, TESS_ZA_WHEEL, TESS_ZA_HELP, TESS_ZA_TURN_Y };
 enum { TESS_ZA_GRAB = 6, TESS_ZA_TURN_CHORD };   /* (ROLL's: above) */
 enum { TESS_ZA_TURN_FINE = 8 };   /* TURN n a detent at a time, never sped up (Shift held: fine steps) */
+enum { TESS_ZA_RANDOM = 9 };      /* the zone's parameter (tess_core_zone_param) set to a value at random in its range */
 /* POINT: a marker in a picture (an envelope's corner, a SHAPE node, a cross-hair) dragged both ways: TURN n its role's
  * knob (left-right; row bit 0: right turns it down), TURN_Y n its vrole's (up-down, + up; row bit 1: up turns it down); either -1: none. The wheel:
  * the up-down knob, else the other; double-click: both to their defaults */

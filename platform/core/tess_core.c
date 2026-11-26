@@ -386,6 +386,19 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
     int32_t d, k;
+    if (action == TESS_ZA_RANDOM) {                   /* (a value's menu: RANDOM) */
+        static uint32_t seed = 0x9E3779B9u;
+        uint32_t pid, tr;
+        tess_param_t info;
+        if (!tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable ||
+            info.max <= info.min)
+            return;
+        seed ^= fm1_ms * 2654435761u;
+        seed ^= seed << 13, seed ^= seed >> 17, seed ^= seed << 5;
+        tess_core_param_set(pid, tr, info.min + (int32_t)(seed % (uint32_t)(info.max - info.min + 1)));
+        ui.force = 1;
+        return;
+    }
     if (action == TESS_ZA_TURN_FINE) {                /* (as TURN, a detent at a time) */
         zq_fine = 1;
         tess_core_zone_do(z, TESS_ZA_TURN, n);
