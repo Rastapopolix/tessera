@@ -1927,6 +1927,45 @@ uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *tra
 #endif
     return 0;
 }
+/* the shown page's knobs for a host's controller (Cosmati audit G14): KNOB 1..4 as help_find has them (as
+ * tess_core_zone_param asks), then the same with OCT- held, the buttons only pretended while asking */
+uint32_t tess_core_page_knobs(uint32_t *pid, uint32_t *track, char *name, uint32_t cap)
+{
+    uint32_t k, n = 0;
+    for (k = 0; k < 8u; k++)
+        pid[k] = 0xFFFFu, track[k] = 0;
+    if (name && cap) name[0] = 0;
+#if TESS_HAS_POINTER
+    {
+        uint8_t keep[sizeof help];                    /* (the help card's state and the buttons as they were) */
+        uint32_t tr0 = help_tr, b0 = fm1_in.buttons, dn = 1u << panel.btn[B_OCTDN], up = 1u << panel.btn[B_OCTUP], l;
+        const page_t *pg;
+        int layer;
+        memcpy(keep, &help, sizeof help);
+        fm1_in.buttons = b0 & ~dn;
+        pg = ui.home ? stage_page() : cur_page();
+        if (name && cap) str_cpy(name, pg->title ? pg->title : "", cap);
+        layer = !ui.home && !ui.menu && !ui.confirm && oct_dn_page();
+        for (l = 0; l < (layer ? 2u : 1u); l++) {
+            fm1_in.buttons = l ? (b0 | dn) & ~up : b0 & ~dn;
+            for (k = 0; k < 4u; k++) {
+                uint32_t at = l * 4u + k, tr;
+                help_find(k);
+                if (help.pid == PID_NONE || !pid_find(help.pid))
+                    continue;
+                tr = help_tr % NTRK;
+                if (l && pid[k] == help.pid && track[k] == tr)
+                    continue;                         /* (the same knob both ways: once) */
+                pid[at] = help.pid, track[at] = tr, n++;
+            }
+        }
+        fm1_in.buttons = b0;
+        memcpy(&help, keep, sizeof help);
+        help_tr = tr0;
+    }
+#endif
+    return n;
+}
 uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text)
 {
 #if TESS_HAS_POINTER

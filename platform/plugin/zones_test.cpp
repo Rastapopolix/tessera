@@ -2019,6 +2019,44 @@ static void beta10()   // beta10's mouse bugs: boxed values click, FM6's chart a
     run(20);
     tap(B_HOME);
 }
+static void page_knobs()   // G14: the shown page's eight knobs for a DAW's controller (CLAP remote controls)
+{
+    uint32_t pid[8], tr[8];
+    char name[32];
+    tess_core_track_select(0);
+    tap(B_HOME);
+    tap(B_FX);
+    uint32_t n = tess_core_page_knobs(pid, tr, name, sizeof name);
+    int same = 0, k0 = 0;
+    while (k0 < (int)v.zone_count && v.zones[k0].kind != TESS_ZONE_KNOB) k0++;
+    for (int k = 0; k < 4 && k0 + k < (int)v.zone_count; k++)
+    {
+        uint32_t zp, zt;
+        if (tess_core_zone_param(&v.zones[k0 + k], &zp, &zt)) same += zp == pid[k] && zt == tr[k];
+        else same += pid[k] == 0xFFFFu;
+    }
+    CHECK(n >= 2 && same == 4 && name[0], "G14: FX's KNOB 1..4 as their zones turn (%u, %d same, \"%s\")", n, same, name);
+    int lay = 0;
+    for (int k = 4; k < 8; k++) lay += pid[k] != 0xFFFFu;
+    CHECK(lay == 0, "G14: FX has no OCT- layer: knobs 5..8 none (%d)", lay);
+    uint32_t pid2[8], tr2[8];
+    char name2[32];
+    tess_core_page_knobs(pid2, tr2, name2, sizeof name2);
+    run(5);
+    CHECK(!std::memcmp(pid, pid2, sizeof pid) && !std::strcmp(name, name2) && count(TESS_ZONE_KNOB) == 4,
+          "G14: asked again, the same, and the page as it was");
+    for (int i = 0; i < 16 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
+    uint32_t lvl = pid_named("LEVEL"), pan = pid_named("PAN");
+    tess_core_page_knobs(pid, tr, name, sizeof name);
+    int ok = 0;
+    for (uint32_t k = 0; k < 4; k++)
+        ok += pid[k] == lvl && tr[k] == k && pid[4 + k] == pan && tr[4 + k] == k;
+    CHECK(ok == 4, "G14: MIXER: knobs 1..4 T1..T4's LEVEL, 5..8 (OCT- held) their PAN (%d, \"%s\")", ok, name);
+    run(5);
+    CHECK(find_strip(TESS_ZONE_PAN, "T1", "PAN") >= 0,
+          "G14: MIXER as it was after asking (OCT- only pretended)");
+    tap(B_HOME);
+}
 int main(int argc, char **argv)
 {
     tess_core_boot();
@@ -2039,6 +2077,7 @@ int main(int argc, char **argv)
     tweak_marks();
     beta10();
     typed_values();
+    page_knobs();
     mixer8();
     keys8();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
