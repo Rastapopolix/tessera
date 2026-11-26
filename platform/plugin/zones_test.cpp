@@ -471,6 +471,70 @@ static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns
     tess_core_track_select(0);
     run(20);
 }
+static void egrid()   // ENTRIES' arrangement grid (8 tracks): a cell a track and FORM letter; a click the next kind,
+{                     // a right-click AUTO, a letter's head the whole column
+    tap(B_HOME);
+    for (int k = 0; k < 16 && find("T1 SECTION A", TESS_ZONE_EGRID) < 0; k++) tap(B_GLO);
+    int i = find("T1 SECTION A", TESS_ZONE_EGRID);
+    CHECK(i >= 0 && count(TESS_ZONE_EGRID) == 8 * 3 + 6, "ENTRIES: a zone a cell, 8 tracks x A B C, and the heads (%d)",
+          count(TESS_ZONE_EGRID));
+    if (i < 0) { dump("entries"); tap(B_HOME); return; }
+    CHECK(!std::strcmp(v.zones[i].value, "AUTO"), "a cell starts AUTO (%s)", v.zones[i].value);
+    act(i, TESS_ZA_CLICK);
+    CHECK(!std::strcmp(v.zones[find("T1 SECTION A", TESS_ZONE_EGRID)].value, "IN"), "a click: IN");
+    act(find("T1 SECTION A", TESS_ZONE_EGRID), TESS_ZA_DOUBLE);   // (a quick second click: the next again)
+    CHECK(!std::strcmp(v.zones[find("T1 SECTION A", TESS_ZONE_EGRID)].value, "OUT"), "a quick second click: OUT");
+    act(find("T8 SECTION C", TESS_ZONE_EGRID), TESS_ZA_CLICK);
+    act(find("T8 SECTION C", TESS_ZONE_EGRID), TESS_ZA_CLICK);
+    act(find("T8 SECTION C", TESS_ZONE_EGRID), TESS_ZA_CLICK);
+    CHECK(!std::strcmp(v.zones[find("T8 SECTION C", TESS_ZONE_EGRID)].value, "FADE"), "three clicks: FADE (T8, C)");
+    if (const char *shot = std::getenv("EGRID_PPM"))   // (a picture of the grid, to look at)
+    {
+        tess_screen_t sc;
+        tess_core_screen(&sc);
+        if (FILE *f = std::fopen(shot, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+            for (uint32_t k = 0; k < sc.w * sc.h; k++)
+            {
+                uint16_t p = sc.pixels[k];
+                unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                        (unsigned char)((p & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    }
+    static uint8_t rec[1 << 17];
+    uint32_t len = tess_core_save(rec, sizeof rec);
+    act(find("T1 SECTION A", TESS_ZONE_EGRID), TESS_ZA_HELP);
+    CHECK(!std::strcmp(v.zones[find("T1 SECTION A", TESS_ZONE_EGRID)].value, "AUTO"), "a right-click: AUTO");
+    act(find("SECTION B", TESS_ZONE_EGRID), TESS_ZA_CLICK);
+    int all = 0;
+    for (int k = 1; k <= 8; k++)
+    {
+        char nm[16];
+        std::snprintf(nm, sizeof nm, "T%d SECTION B", k);
+        int j = find(nm, TESS_ZONE_EGRID);
+        all += j >= 0 && !std::strcmp(v.zones[j].value, "IN");
+    }
+    CHECK(all == 8, "B's head: every track IN in B (%d)", all);
+    act(find("SECTION B", TESS_ZONE_EGRID), TESS_ZA_HELP);
+    tess_core_load(rec, len);
+    run(20);
+    CHECK(!std::strcmp(v.zones[find("T1 SECTION A", TESS_ZONE_EGRID)].value, "OUT") &&
+              !std::strcmp(v.zones[find("T8 SECTION C", TESS_ZONE_EGRID)].value, "FADE") &&
+              !std::strcmp(v.zones[find("T2 SECTION B", TESS_ZONE_EGRID)].value, "AUTO"),
+          "the project keeps the grid");
+    for (int k = 0; k < 3; k++)   // (back to every cell AUTO)
+    {
+        char nm[16];
+        std::snprintf(nm, sizeof nm, "SECTION %c", 'A' + k);
+        act(find(nm, TESS_ZONE_EGRID), TESS_ZA_HELP);
+    }
+    tap(B_HOME);
+    run(20);
+}
 static void hosted_words()   // inside a DAW the MIDI page's input is the DAW's, CLK's INT the DAW's (TESS_HOSTED)
 {
     tap(B_HOME);
@@ -1291,6 +1355,7 @@ int main(int argc, char **argv)
     roll();
     smap();
     chord_user();
+    egrid();
     hosted_words();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
