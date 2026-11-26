@@ -230,6 +230,10 @@ typedef struct {
                                       * TESS_HAS_POINTER; else 0) */
     uint32_t sheet;                  /* 1: the page has a sheet, which OCT+ (OK) held opens (a build with TESS_HAS_POINTER;
                                       * else 0) */
+    /* KNOB 1..4's settings now, for a front end's knob rings (Cosmati audit G8; a build with TESS_HAS_POINTER): where
+     * each one's value is in its range, 0..1000 (-1: the knob sets nothing there), and where the mods have it now (-1:
+     * no mod reaches it) */
+    int16_t knob_at[4], knob_mod[4];
     uint64_t locked;                 /* bit i: zones[i]'s parameter is LOCKed (TESS_ZA_LOCK) */
     uint32_t dice_back;              /* 1: a DICE or MUTATE can be put back (TESS_ZA_DICE -1) */
 } tess_view_t;
