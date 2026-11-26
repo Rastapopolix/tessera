@@ -750,7 +750,9 @@ int main(int argc, char **argv)
             win.x11 = parent;
             CHECK(gui->set_parent(p, &win) && gui->show(p), "set_parent + show");
             tr.flags = CLAP_TRANSPORT_IS_PLAYING | CLAP_TRANSPORT_HAS_TEMPO;
-            for (int i = 0; i < 30; i++)   // 1 s: audio blocks and the window's timer, as a host interleaves them
+            // 1 s: audio blocks and the window's timer, as a host interleaves them; asked for its picture (the site's,
+            // plugin-site.yml), on until any toast has gone (Panel::NOTE_FRAMES, 120 frames), so none is in it
+            for (int i = 0; i < (argc > 4 ? 30 + 130 : 30); i++)
             {
                 for (int b = 0; b < 3; b++) p->process(p, &proc);
                 tim->on_timer(p, 0);
