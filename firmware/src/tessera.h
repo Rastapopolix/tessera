@@ -268,6 +268,10 @@ typedef struct {
     uint8_t          et_fade;                    /* 1..4: a FADE's bars (default 2) */
     uint8_t          et_role[TESSERA_TRACKS];    /* 0 AUTO, 1 BASS, 2 RHYTHM, 3 HARMONY, 4 MELODY, 5 ANCHOR (never out) */
     uint8_t          et_order[TESSERA_TRACKS];   /* 0 AUTO (by ROLE), 1..4 comes in 1st..4th (entries.c et_rank) */
+#if TESSERA_TRACKS > 4
+    uint16_t         et_grid[3];                 /* the arrangement grid (an 8-track build's): FORM letter A, B, C's
+                                                  * cells, 2 bits a track (ET_G_*, entries.c); 0 every one AUTO */
+#endif
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
     uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */

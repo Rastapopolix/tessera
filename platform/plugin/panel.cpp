@@ -974,9 +974,10 @@ bool Panel::down(int x, int y)
         }
         drag = NONE;
         if (dbl && z.kind != TESS_ZONE_ROW && z.kind != TESS_ZONE_TRACK && z.kind != TESS_ZONE_CELL && z.kind != TESS_ZONE_OP &&
-            !(z.kind == TESS_ZONE_MUTE && z.role == 1))
+            z.kind != TESS_ZONE_EGRID && !(z.kind == TESS_ZONE_MUTE && z.role == 1))
             return false;   // (OK, YES: once, however often clicked; MIXER's MUTE word: double-click SOLO; HOME's track:
-                            // double-click its sounds; a cell: the browser's sound kept)
+                            // double-click its sounds; a cell: the browser's sound kept; ENTRIES' grid: each click
+                            // its next kind)
         zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_CLICK, 0);
         return true;
     }

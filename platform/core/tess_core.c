@@ -355,6 +355,27 @@ static void core_chord_user(int32_t slot, uint32_t action, int32_t n)
     ui.force = 1;
 }
 
+#if TESSERA_TRACKS > 4
+/* ENTRIES' arrangement grid edited a cell at a time (TESS_ZONE_EGRID): a click the next kind (AUTO IN OUT FADE), a
+ * right-click AUTO; a letter's head the whole column, as its first track's cell goes */
+static void core_egrid(int32_t row, uint32_t action)
+{
+    uint32_t s = (uint32_t)(row & 0xFF) / 16u, tr = (uint32_t)row & 15u, c, g, k;
+    if (action == TESS_ZA_DOUBLE) action = TESS_ZA_CLICK;   /* (quick clicks: each one the next) */
+    if (row < 0 || (action != TESS_ZA_CLICK && action != TESS_ZA_HELP)) return;
+    if (row & 0x100) s = (uint32_t)row & 0xFFu, tr = 0;
+    if (s >= ET_G_SECS || tr >= TESSERA_TRACKS) return;
+    g = tessera.et_grid[s];
+    c = action == TESS_ZA_HELP ? ET_G_AUTO : ((g >> (2u * tr) & 3u) + 1u) & 3u;
+    for (k = 0; k < TESSERA_TRACKS; k++)
+        if (k == tr || (row & 0x100))
+            g = (g & ~(3u << (2u * k))) | c << (2u * k);
+    TESS_IRQ_OFF();
+    tessera.et_grid[s] = (uint16_t)g;
+    TESS_IRQ_ON();
+    ui.force = 1;
+}
+#endif
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
@@ -407,6 +428,10 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zq_turn(z->vrole, -1);                    /* (BOUNCE's picture: a right-click a ball less) */
         } else if (z->kind == TESS_ZONE_CHORD) {
             core_chord_user(z->row, action, 0);       /* (CHORD USER's card: a right-click takes the chord) */
+#if TESSERA_TRACKS > 4
+        } else if (z->kind == TESS_ZONE_EGRID) {
+            core_egrid(z->row, action);               /* (ENTRIES' grid: a right-click, AUTO) */
+#endif
         } else if (z->kind == TESS_ZONE_MUTE && z->role == 1 && z->row >= 0 && z->row < (int32_t)NTRK) {
             help_unpin();                             /* MIXER's MUTE word: a right-click solos the track (again: */
             core_mute_solo(TESS_ZONE_SOLO, (uint32_t)z->row);   /* off), as a click mutes it */
@@ -546,6 +571,11 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
     case TESS_ZONE_CHORD:                             /* CHORD USER's cards: a root turned, a chord added or taken */
         core_chord_user(z->row, action, n);
         break;
+#if TESSERA_TRACKS > 4
+    case TESS_ZONE_EGRID:                             /* ENTRIES' grid: a cell's next kind, or a column's */
+        core_egrid(z->row, action);
+        break;
+#endif
     case TESS_ZONE_SMAP:                              /* EDIT's map: the tile's page (its row and tile, then OCT+) */
         if (smap.on && (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) && z->row >= 0) {
             sec_build();
@@ -1057,9 +1087,10 @@ static void key_legend(uint32_t k, char *sh, char *lg)
     if (l == LAYER_GLO) {
         static const char *const W[4] = {"ALL", "HLD", "FIL", "TAP"}, *const WL[4] = {"UNMUTE ALL", "HOLD (2X: LATCH)",
                                          "FILL (HELD)", "TAP TEMPO"};
-        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + UI_BASE + p), a[2] = 0;
+        uint32_t t = glo_key_trk(k);
+        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + t), a[2] = 0;
         b[0] = 'T', b[1] = a[1], b[2] = 0;
-        if (p < UI_NT && UI_BASE + p < NTRK)
+        if (t < NTRK)
             key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
         else if (!blk && p >= 4u && p < 8u)
             key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
