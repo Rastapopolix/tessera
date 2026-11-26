@@ -453,6 +453,10 @@ static void help_find(uint32_t k)
     if (pg->scope == SC_TRK) {                          /* MIXER: KNOB k track k's LEVEL, OCT- held its PAN */
         help.pid = (uint16_t)PID_TRACK(oct_dn_only() ? P_PAN : P_LEVEL);
         help_tr = k;
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+        if (mix_inspect())                              /* (the inspector: the selected track's LEVEL, PAN, SENDs) */
+            help.pid = (uint16_t)PID_TRACK(MIX_ID[k & 3u]), help_tr = song.sel;
+#endif
         return;
     }
     if (pg->graph == GR_PATGRID) {                      /* PATTERNS: KNOB k track k's */

@@ -370,6 +370,119 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
+static int tfind_role(uint32_t kind, int track, int role)
+{
+    for (uint32_t i = 0; i < tv.zone_count; i++)
+        if (tv.zones[i].kind == kind && tv.zones[i].row == track && tv.zones[i].role == role) return (int)i;
+    return -1;
+}
+static void mixer8()   // MIXER on the TRACKS screen (Cosmati audit I1): a strip a track, its fader, PAN, sends, M, S
+{
+    if (tess_core_tracks() < 8) return;
+    tap(B_HOME);
+    for (int i = 0; i < 16 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    int heads = 0, pans = 0;
+    for (uint32_t i = 0; i < tv.zone_count; i++) heads += tv.zones[i].kind == TESS_ZONE_TRACK, pans += tv.zones[i].kind == TESS_ZONE_PAN;
+    CHECK(heads == 8 && pans == 8 && tfind_role(TESS_ZONE_LEVEL, 7, 0) >= 0, "MIXER: 8 strips, each a PAN and a send (%d, %d)",
+          heads, pans);
+    {
+        int a = tfind(TESS_ZONE_TRACK, 0), b = tfind(TESS_ZONE_TRACK, 7);
+        CHECK(a >= 0 && b >= 0 && tv.zones[b].x > tv.zones[a].x + 400 && tv.zones[b].y == tv.zones[a].y,
+              "..side by side, T1 left, T8 right");
+    }
+    if (const char *o = std::getenv("MIXER_PPM"))   // (a look at it)
+        if (FILE *f = std::fopen(o, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", tv.w, tv.h);
+            for (uint32_t i = 0; i < tv.w * tv.h; i++)
+            {
+                uint16_t p = tv.screen[i];
+                unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                        (unsigned char)((p & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    uint32_t lvl = pid_named("LEVEL"), pan = pid_named("PAN"), mute = pid_named("MUTE");
+    int32_t l0 = tess_core_param_get(lvl, 5), p0 = tess_core_param_get(pan, 5);
+    tact(TESS_ZONE_LEVEL, 5, TESS_ZA_TURN, -10);
+    CHECK(tess_core_param_get(lvl, 5) == l0 - 10, "T6's fader dragged down 10 (%d, was %d)", tess_core_param_get(lvl, 5), l0);
+    tact(TESS_ZONE_LEVEL, 5, TESS_ZA_DOUBLE);
+    CHECK(tess_core_param_get(lvl, 5) == 104, "..a double-click: its default (%d)", tess_core_param_get(lvl, 5));
+    tact(TESS_ZONE_PAN, 5, TESS_ZA_TURN, 8);
+    CHECK(tess_core_param_get(pan, 5) == p0 + 8, "T6's PAN turned (%d)", tess_core_param_get(pan, 5));
+    tact(TESS_ZONE_PAN, 5, TESS_ZA_DOUBLE);
+    CHECK(tess_core_param_get(pan, 5) == 0, "..a double-click: centred");
+    {
+        int i = tfind_role(TESS_ZONE_LEVEL, 6, 0);
+        std::string s0 = i >= 0 ? tv.zones[i].value : "?";
+        if (i >= 0) { tess_zone_t z = tv.zones[i]; tess_core_tracks_do(&z, TESS_ZA_TURN, 20); run(10); }
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        i = tfind_role(TESS_ZONE_LEVEL, 6, 0);
+        CHECK(i >= 0 && s0 != tv.zones[i].value, "T7's send turned (%s -> %s)", s0.c_str(), i >= 0 ? tv.zones[i].value : "?");
+    }
+    int32_t m0 = tess_core_param_get(mute, 7);
+    tact(TESS_ZONE_MUTE, 7, TESS_ZA_CLICK);
+    CHECK(tess_core_param_get(mute, 7) != m0 && tval(TESS_ZONE_MUTE, 7) == "ON", "T8's M mutes it");
+    tact(TESS_ZONE_MUTE, 7, TESS_ZA_CLICK);
+    CHECK(tess_core_param_get(mute, 7) == m0, "..again: not");
+    tact(TESS_ZONE_TRACK, 5, TESS_ZA_CLICK);
+    run(10);
+    CHECK(tess_core_track() == 5, "a click on T6's head selects it (T%u)", tess_core_track() + 1);
+
+    // the FM-1 screen, the TRACKS screen shown: the selected track's inspector (its LEVEL, PAN, sends, M / S)
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    run(10);
+    CHECK(find_strip(TESS_ZONE_LEVEL, "T6", "LEVEL") >= 0 && find_strip(TESS_ZONE_LEVEL, "T5", "LEVEL") < 0 &&
+              find_strip(TESS_ZONE_PAN, "T6", "PAN") >= 0,
+          "EXPANDED: MIXER on the FM-1 screen is T6's inspector, no bank of strips");
+    if (const char *o = std::getenv("INSPECT_PPM"))   // (a look at it)
+        if (FILE *f = std::fopen(o, "wb"))
+        {
+            tess_screen_t sc;
+            tess_core_screen(&sc);
+            std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+            for (uint32_t p = 0; p < sc.w * sc.h; p++)
+            {
+                uint16_t c = sc.pixels[p];
+                unsigned char rgb[3] = {(unsigned char)((c >> 11) << 3), (unsigned char)(((c >> 5) & 63) << 2),
+                                        (unsigned char)((c & 31) << 3)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    {
+        int sn = find_strip(TESS_ZONE_LEVEL, "T6", "FX SEND");
+        if (sn < 0) sn = find_strip(TESS_ZONE_LEVEL, "T6", "SEND 1");
+        uint32_t send = pid_named("FX SEND");
+        int32_t s0 = send != 0xFFFFu ? tess_core_param_get(send, 5) : -1;
+        if (sn >= 0) act(sn, TESS_ZA_TURN, 5, 10);
+        CHECK(sn >= 0 && s0 >= 0 && tess_core_param_get(send, 5) == (s0 + 5 > 127 ? 127 : s0 + 5),
+              "..its send's bar turned (%d, was %d)", s0 >= 0 ? tess_core_param_get(send, 5) : -1, s0);
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        l0 = tess_core_param_get(lvl, 5);
+        tess_core_enc(3, 3);
+        run(10);
+        CHECK(tess_core_param_get(lvl, 5) > l0, "..KNOB 1 turns T6's level (%d, was %d)", tess_core_param_get(lvl, 5), l0);
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        p0 = tess_core_param_get(pan, 5);
+        tess_core_enc(4, -4);
+        run(10);
+        CHECK(tess_core_param_get(pan, 5) < p0, "..KNOB 2 its PAN (%d, was %d)", tess_core_param_get(pan, 5), p0);
+        int32_t l1 = tess_core_param_get(lvl, 1);
+        run(60);   // (the TRACKS screen no longer asked for: the strips again)
+        CHECK(find_strip(TESS_ZONE_LEVEL, "T5", "LEVEL") >= 0, "TRACKS gone: the bank's strips again");
+        (void)l1;
+    }
+    tess_core_track_select(0);
+    tap(B_HOME);
+    run(10);
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    pans = 0;
+    for (uint32_t i = 0; i < tv.zone_count; i++) pans += tv.zones[i].kind == TESS_ZONE_PAN;
+    CHECK(!pans, "HOME: the rows again (%d PAN zones)", pans);
+}
 static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lower octave's mute / solo T1-T4, the upper's T5-T8
 {
     tap(B_HOME);
@@ -1319,6 +1432,7 @@ int main(int argc, char **argv)
     points();
     tweak_marks();
     beta10();
+    mixer8();
     keys8();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
     run(50);
