@@ -1033,7 +1033,8 @@ static void mo_send_lane(const track_t *t, uint32_t pg, uint32_t len, int32_t ba
         mo_textc("SEND LANE: T1-T4", 60, base - 14, MO_DIM);
         return;
     }
-    mo_text(nm, 1, 61, MO_INK);
+    mo_fill(46, 54, 44, 8, MO_BG);                      /* (LEN's place in the header: the send's name) */
+    mo_text(nm, 46, 54, MO_INK);
     uz_begin(UZ_G_PIC);
     for (i = 0; i < 16u; i++) {
         uint32_t si = pg * 16u + i;
@@ -1062,7 +1063,7 @@ static void mo_send_lane(const track_t *t, uint32_t pg, uint32_t len, int32_t ba
             uz_add(UZ_G_PIC, UZ_SEND, x - 1, base - 26, 7, 30, -1, -1, (int32_t)si, zn, val);
         }
     }
-    mo_text("CLICK: FULL / NONE, DRAG: AMOUNT", 1, 101, MO_DIM);
+    mo_text("CLICK FULL, DRAG", 1, 101, MO_DIM);                /* (20 letters at most on the line) */
 }
 #endif
 static void mo_pic_notes(const track_t *t)

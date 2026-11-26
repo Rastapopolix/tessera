@@ -1404,6 +1404,21 @@ static void send_lane()   // NOTES' SEND lane (Tessadub step 4): SHIFT held, a b
     std::string w = sdo("SEND S5", TESS_ZA_WHEEL, 2);
     CHECK(w != "-" && w != "?", "  the wheel on step 5: an event from the track's own send (%s)", w.c_str());
     CHECK(sdo("SEND S5", TESS_ZA_HELP, 0) == "-", "  a right-click: gone");
+    sdo("SEND S2", TESS_ZA_CLICK, 0), sdo("SEND S3", TESS_ZA_TURN, 10), sdo("SEND S9", TESS_ZA_CLICK, 0);
+    sdo("SEND S9", TESS_ZA_TURN, -12);
+    if (const char *o = std::getenv("LANE_PPM"))   // (a look at it: steps 2, 3, 9 set)
+        if (FILE *f = std::fopen(o, "wb"))
+        {
+            std::fprintf(f, "P6\n%u %u\n255\n", (unsigned)TESS_SCREEN, (unsigned)TESS_SCREEN);
+            for (uint32_t i = 0; i < (uint32_t)TESS_SCREEN * TESS_SCREEN; i++)
+            {
+                uint16_t p = v.screen[i];
+                unsigned char rgb[3] = {(unsigned char)((p >> 11 & 31) * 255 / 31), (unsigned char)((p >> 5 & 63) * 255 / 63),
+                                        (unsigned char)((p & 31) * 255 / 31)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
     tess_core_buttons(TESS_BTN_POINTER);
     run(10);
     CHECK(find("NOTES", TESS_ZONE_ROLL) >= 0 && find("SEND S1", TESS_ZONE_SEND) < 0, "SHIFT let go: the roll again");
