@@ -64,6 +64,9 @@ struct GuiLink
     virtual std::string gen_recall(int dir) { (void)dir; return ""; }
     virtual void gen_pick(int style, int variation) { (void)style; (void)variation; }
     virtual Panel::GenState gen_state() { return {}; }
+    /* TRACK (TESSERA's menu, Ctrl+C / Ctrl+V ..; on the host's main thread): what (Panel::TR_*) done to track; what to
+     * show under the keys */
+    virtual std::string track_do(int what, int track) { (void)what; (void)track; return ""; }
     /* KEYS (TESSERA's menu): whether the computer keyboard plays Tessera, the same for every window (a setting) */
     // LISTEN: the MIDI channel whose notes set the key and GENERATE (listen.h), 0 off; this instance's
     virtual int listen_channel() { return 0; }
@@ -122,7 +125,8 @@ inline void gui_listen_tick(Panel &panel, GuiLink *link)
     panel.set_outs(link->outs_mono(), link->outs_live_mono());
 }
 
-/* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown) */
+/* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown); TRACK's
+ * picks handed on */
 inline void gui_gen_tick(Panel &panel, GuiLink *link)
 {
     if (!panel.gen_known())
@@ -142,6 +146,13 @@ inline void gui_gen_tick(Panel &panel, GuiLink *link)
             panel.note(said);
     }
     panel.set_gen(link->gen_state());
+    Panel::TrackRequest t = panel.take_track_request();   // (TRACK: copy, paste, move)
+    if (t.what != Panel::TR_NONE)
+    {
+        std::string said = link->track_do(t.what, t.track);
+        if (!said.empty())
+            panel.note(said);
+    }
 }
 
 /* the plugin's version, for the window's ABOUT (TESS_VERSION, CMakeLists.txt) */

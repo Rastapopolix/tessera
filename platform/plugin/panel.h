@@ -103,7 +103,14 @@ class Panel
      * a Mac) open and save; in a DAW those keys stay the DAW's */
     void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)
     bool standalone() const { return standalone_; }
-    bool shortcut(char c);   // 'O' or 'S' with Ctrl / Cmd: true if taken (then the window's files())
+    bool shortcut(char c);   // 'O' or 'S' with Ctrl / Cmd: true if taken (then the window's files()); and TRACK's (below)
+    /* TRACK (TESSERA's menu, and keys): the selected track copied, a copy pasted onto it (the track whole, or its sound
+     * alone), or the track moved a place up or down (swapped with its neighbour). Ctrl+C, Ctrl+V, Ctrl+Shift+V,
+     * Alt+Up, Alt+Down (Cmd and Option on a Mac): shortcut 'C', 'V', 'v', '^', '_'. A pick asks (take_track_request);
+     * the instance answers with a note under the keys */
+    enum { TR_NONE, TR_COPY, TR_PASTE, TR_PASTE_SOUND, TR_UP, TR_DOWN };
+    struct TrackRequest { int what = TR_NONE, track = 0; };
+    TrackRequest take_track_request() { TrackRequest r = track_req; track_req = TrackRequest{}; return r; }
     bool release_keys();
     /* KEYS (TESSERA's menu): the computer keyboard plays Tessera (on), or every key is left to the DAW (off). A click
      * asks (take_keys_request: 1 on, 0 off, -1 none); the window remembers it */
@@ -197,6 +204,7 @@ class Panel
     bool gen_names_asked = false;
     GenState gen{};
     GenRequest gen_req{};
+    TrackRequest track_req{};
     bool gen_list = false, gen_swapped = false;
     int gen_list_hover = -1;
     uint32_t gen_down_frame = 0;

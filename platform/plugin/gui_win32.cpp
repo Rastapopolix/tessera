@@ -125,6 +125,10 @@ class GuiWin32 : public Gui
         case WM_CAPTURECHANGED:
             g->input(g->panel.up(0, 0));
             return 0;
+        case WM_SYSKEYDOWN:   // Alt+Up / Alt+Down: TRACK's move (panel.h shortcut); any other, the host's
+            if ((wp == VK_UP || wp == VK_DOWN) && GetKeyState(VK_CONTROL) >= 0 && g->panel.shortcut(wp == VK_UP ? '^' : '_'))
+                return 0;
+            break;
         case WM_KEYDOWN:
         case WM_KEYUP:
         {
@@ -135,6 +139,9 @@ class GuiWin32 : public Gui
                 g->files();
                 return 0;
             }
+            if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 && (wp == 'C' || wp == 'V') &&
+                g->panel.shortcut(wp == 'V' && GetKeyState(VK_SHIFT) < 0 ? 'v' : (char)wp))
+                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone)
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;

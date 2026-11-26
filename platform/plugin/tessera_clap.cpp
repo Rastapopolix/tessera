@@ -344,6 +344,7 @@ struct Tessera : GuiLink
     std::vector<std::string> gen_styles() override;
     std::string generate(int style, int variation) override;
     std::string gen_swap() override;
+    std::string track_do(int what, int track) override;
     std::string gen_recall(int dir) override;
     void gen_pick(int style, int variation) override;
     Panel::GenState gen_state() override;
@@ -566,6 +567,66 @@ std::string Tessera::gen_seed(uint32_t seed, int style)
     if (gen_made.size() > GEN_KEEP) gen_made.erase(gen_made.begin());
     gen_at = (int)gen_made.size() - 1;
     return gen_made.size() == 1 ? "HOLD GENERATE FOR BEFORE" : "";   // (the strip shows the style and the seed)
+}
+
+// TRACK's copy: one for every Cosmati in this process (a track copied in one pastes into another; the copies are the
+// same build's, so each reads the others')
+static std::mutex track_clip_lock;
+static std::vector<uint8_t> track_clip;
+static int track_clip_from = -1;
+
+// TRACK (panel.h): a track copied, a copy pasted onto it (whole or its sound), or the track moved a place (swapped
+// with its neighbour); the DAW's state and parameters are out of date after a paste or a move (one undo step)
+std::string Tessera::track_do(int what, int track)
+{
+    char said[64];
+    const char *undo = nullptr;
+    {
+        std::lock_guard<std::mutex> g(core_lock);
+        int n = (int)core->tracks();
+        if (track < 0 || track >= n)
+            return "";
+        if (what == Panel::TR_COPY)
+        {
+            std::vector<uint8_t> b(core->tsp_max());
+            uint32_t len = core->track_copy((uint32_t)track, b.data(), (uint32_t)b.size());
+            if (!len)
+                return "COULD NOT COPY THE TRACK";
+            b.resize(len);
+            std::lock_guard<std::mutex> c(track_clip_lock);
+            track_clip.swap(b);
+            track_clip_from = track;
+            std::snprintf(said, sizeof said, "T%d COPIED", track + 1);
+            return said;
+        }
+        if (what == Panel::TR_PASTE || what == Panel::TR_PASTE_SOUND)
+        {
+            bool sound = what == Panel::TR_PASTE_SOUND;
+            std::lock_guard<std::mutex> c(track_clip_lock);
+            if (track_clip.empty())
+                return "NOTHING COPIED YET (CTRL+C)";
+            if (core->track_paste((uint32_t)track, sound ? TESS_PASTE_SOUND : TESS_PASTE_TRACK, track_clip.data(),
+                                  (uint32_t)track_clip.size()))
+                return "COULD NOT PASTE";
+            std::snprintf(said, sizeof said, sound ? "T%d'S SOUND ON T%d" : "T%d PASTED ONTO T%d", track_clip_from + 1,
+                          track + 1);
+            undo = sound ? "PASTE SOUND" : "PASTE TRACK";
+        }
+        else if (what == Panel::TR_UP || what == Panel::TR_DOWN)
+        {
+            int to = track + (what == Panel::TR_UP ? -1 : 1);
+            if (to < 0 || to >= n)
+                return "";
+            if (core->track_swap((uint32_t)track, (uint32_t)to))
+                return "COULD NOT MOVE THE TRACK";
+            std::snprintf(said, sizeof said, "T%d NOW T%d", track + 1, to + 1);
+            undo = "MOVE TRACK";
+        }
+        else
+            return "";
+    }
+    changed_by_file(undo);
+    return said;
 }
 
 std::string Tessera::gen_swap()
