@@ -240,7 +240,8 @@ class Panel
     int fm1_req = -1;
     int fm1_seg_at(int x) const;       // TESSERA's menu: 0 OFF, 1 ON, -1 neither
     struct Knob { int x, y, r; const char *name; int role; double angle; };   // role -1: MASTER
-    struct Button { int x, y, w, h, bit; const char *face, *sub; const char *tip = nullptr; };   // tip: its hover card
+    struct Button { int x, y, w, h, bit; const char *face, *sub; const char *tip = nullptr; int hold = -1; };   // tip: its
+    // hover card; hold: the FM-1 button a right-click latches in its place (a section's: its FM-1 button held, GLO + ..)
     struct Key { int cx, cy, k; };
     struct FileButton { int x, y, w, h, action; const char *face; };
     std::vector<FileButton> files;

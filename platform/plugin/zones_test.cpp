@@ -640,6 +640,62 @@ static void chord_user()   // CHORD USER on GEN: a card a chord; the wheel turns
     tess_core_track_select(0);
     run(20);
 }
+static std::string page_now()   // the page shown: its footer tab's (row 0)
+{
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) return v.zones[i].value;
+    return "";
+}
+static std::string tabs_now()   // the footer's tabs' pages, in order
+{
+    std::string t;
+    for (uint32_t i = 0; i < v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].w > 6) t += std::string(v.zones[i].value) + "|";
+    return t;
+}
+static void press_section(int s)
+{
+    tess_core_buttons(TESS_BTN_SECTION(s) | TESS_BTN_POINTER);
+    run(5);
+    tess_core_buttons(0);
+    run(20);
+}
+static void sections()   // Cosmati's section buttons (key words on): a section's pages, its tabs, its light
+{
+    tess_core_key_words(1);
+    tap(B_HOME);
+    press_section(TESS_SEC_PIECE);
+    std::string p1 = page_now(), t = tabs_now();
+    CHECK(p1 == "PIECE", "PIECE: its first page (%s)", p1.c_str());
+    CHECK(t.find("CHAIN|") != std::string::npos && t.find("ENTRIES|") != std::string::npos &&
+              t.find("MIXER|") == std::string::npos, "..its tabs PIECE's, not GLO's (%s)", t.c_str());
+    CHECK(v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_PIECE), "..PIECE lit");
+    press_section(TESS_SEC_PIECE);
+    CHECK(page_now() == "CHAIN", "PIECE again: the next (%s)", page_now().c_str());
+    press_section(TESS_SEC_SETUP);
+    CHECK(page_now() == "TEMPO", "SETUP: TEMPO first (%s)", page_now().c_str());
+    t = tabs_now();
+    CHECK(t.find("SYSTEM|") != std::string::npos && t.find("PATTERNS|") == std::string::npos, "..with SYSTEM, MIDI (%s)",
+          t.c_str());
+    press_section(TESS_SEC_PIECE);
+    CHECK(page_now() == "CHAIN", "PIECE from elsewhere: the page last used there (%s)", page_now().c_str());
+    press_section(TESS_SEC_MIX);
+    CHECK(page_now() == "MIXER" && !(v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_PIECE)) &&
+              (v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_MIX)), "MIX: MIXER, MIX lit (%s)", page_now().c_str());
+    press_section(TESS_SEC_FX);
+    std::string f1 = page_now();
+    int n = 1;
+    for (; n < 12; n++)
+    {
+        press_section(TESS_SEC_FX);
+        if (page_now() == f1) break;
+    }
+    CHECK(f1 == "FX 1" && n > 2 && n < 12, "FX: round its pages and back to FX 1 (%d)", n);
+    tap(B_HOME);
+    CHECK(!(v.lit_buttons & (TESS_BTN_SECTION(TESS_SEC_N) - TESS_BTN_SECTION(0))), "HOME: no section lit");
+    tess_core_key_words(0);
+    run(10);
+}
 static void egrid()   // ENTRIES' arrangement grid (8 tracks): a cell a track and FORM letter; a click the next kind,
 {                     // a right-click AUTO, a letter's head the whole column
     tap(B_HOME);
@@ -1527,6 +1583,7 @@ int main(int argc, char **argv)
     roll();
     smap();
     chord_user();
+    sections();
     egrid();
     hosted_words();
 

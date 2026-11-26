@@ -201,10 +201,12 @@ const int KEYBED[4] = {36, 332, 928, 256};   // (EXPANDED: as wide as the window
 // twelve buttons right of it
 const int T2_X = 560, T2_Y = SCREEN_Y, T2_W = TESS_TRACKS_W + 16, T2_H = TESS_TRACKS_H + 16, T2_IN = 8;
 const int XK_X = 1124, XK_PITCH = 96, XB_X = 1080, XB_STEP = 64, XB_W = 60;   // (60: SCALE, SOUND, SHAPE at full size)
+const int XS_X = 1058, XS_STEP = 62, XS_W = 60;   // (EXPANDED's sections: seven a row, SOUND at full size)
 // TESSERA's shell: OCT+ over OCT- at the keys' left (Theo 2026-11-24), the keys that much narrower
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
-const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18, BIT_HELP = 19;
+const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18, BIT_HELP = 19, SEC_BIT = 21;   // (SEC_BIT + s: TESS_BTN_SECTION(s))
+static_assert(TESS_BTN_SECTION(0) == 1u << SEC_BIT, "SEC_BIT: the core's TESS_BTN_SECTION");
 }   // namespace
 
 Panel::Panel()
@@ -249,23 +251,33 @@ void Panel::layout()
         buttons.push_back({118, 258, 56, 34, B_OCTDN, "BACK", nullptr, "BACK  (THE FM-1'S OCT-)   KEY: ESC"});        // SHIFT, BACK, OK)
         buttons.push_back({180, 258, 50, 34, B_OCTUP, "OK", nullptr, "OK  HOLD: THE PAGE'S SHEET   KEY: ENTER"});
         buttons.push_back({236, 258, 34, 34, BIT_HELP, "?", nullptr, "HELP: TURN A KNOB  (OR RIGHT-CLICK)   KEY: F1"});
-        // the grid named by what each button opens (Andamento's groups), the FM-1's name small under a renamed one
-        // (the screen and the help still say ARP held, GLO + ...); the card: what is behind it and its key (panel.h key)
-        static const char *N1[6] = {"FX", "SCALE", "ENV", "MOD", "SOUND", "MIX"},
-                          *N2[6] = {"HOME", "SAVE", "SHAPE", "SEQ", "PLAY", "REC"},
-                          *S1[6] = {nullptr, "SEL", nullptr, "LFO", "EDIT", "GLO"},
-                          *S2[6] = {nullptr, nullptr, "ARP", nullptr, nullptr, nullptr},
-                          *K1[6] = {"FX 1-3, SENDS   KEY: 1", "SCALES, LOCK   KEY: 2", "FILTER, AMP ENVELOPES   KEY: 3",
-                                    "MODS, MATRIX, LFOS, ORGANIC   KEY: 4", "THE ENGINE'S PAGES   KEY: 5",
-                                    "MIXER, PERF, PIECE, CHAIN   KEY: 6"},
-                          *K2[6] = {"KEY: 7", "KEY: 8", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 9",
-                                    "PATTERN, TEMPO, PATTERNS, SONG   KEY: 0", "KEY: -", "KEY: ="};
-        for (int i = 0; i < 6; i++)
-        {
-            buttons.push_back({bx + i * step, 174, bw, 48, R1[i], N1[i], S1[i], K1[i]});
-            buttons.push_back({bx + i * step, 174 + 62, bw, 48, R2[i], N2[i], S2[i],
-                               R2[i] == B_PLAY && standalone_ ? "KEY: SPACE  (OR -)" : K2[i]});
-        }
+        // the sections (Theo 2026-11-26, COSMATI_AUDIT C3a): a button each for what the pages do, the FM-1's eight
+        // that shared them gone (tess_core_key_words: the core's sections, TESS_BTN_SECTION); HOME, SAVE, PLAY, REC
+        // the FM-1's. Seven a row (EXPANDED and FM-1 size alike); the card: what is behind it and its key (panel.h key)
+        // a section's right-click latches the FM-1 button it stands for (the FM-1's held gestures: GLO + a key ..)
+        static const struct { int bit; const char *face, *card; int hold; } SEC[2][7] = {
+            {{SEC_BIT + TESS_SEC_GEN, "GEN", "GENERATOR, NOTES, ARP, PATTERN   KEY: 1   RIGHT-CLICK: SEQ HELD", B_SEQ},
+             {SEC_BIT + TESS_SEC_SOUND, "SOUND", "THE ENGINE'S PAGES, ENVELOPES   KEY: 2   RIGHT-CLICK: EDIT HELD", B_EDIT},
+             {SEC_BIT + TESS_SEC_MOD, "MOD", "MODS, MATRIX, LFOS, ORGANIC   KEY: 3   RIGHT-CLICK: LFO HELD", B_LFO},
+             {SEC_BIT + TESS_SEC_FX, "FX", "FX 1-3, SENDS   KEY: 4   RIGHT-CLICK: FX HELD", B_FX},
+             {SEC_BIT + TESS_SEC_SHAPE, "SHAPE", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 5   RIGHT-CLICK: ARP HELD", B_ARP},
+             {SEC_BIT + TESS_SEC_PIECE, "PIECE", "PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG   KEY: 6   RIGHT-CLICK: GLO HELD", B_GLO},
+             {SEC_BIT + TESS_SEC_MIX, "MIX", "MIXER, PERF   KEY: 7   RIGHT-CLICK: GLO HELD", B_GLO}},
+            {{SEC_BIT + TESS_SEC_SCALE, "SCALE", "SCALES, SCL, KEY, CHORD   KEY: 8   RIGHT-CLICK: SEL HELD", B_SCL},
+             {SEC_BIT + TESS_SEC_SETUP, "SETUP", "TEMPO, SYSTEM, MIDI IN, MIDI OUT   KEY: 9   RIGHT-CLICK: GLO HELD", B_GLO},
+             {B_HOME, "HOME", "KEY: 0", -1},
+             {B_SAVE, "SAVE", "KEY: -", -1},
+             {-1, nullptr, nullptr, -1},
+             {B_PLAY, "PLAY", nullptr, -1},
+             {B_REC, "REC", "KEY: =", -1}}};
+        const int sx = x ? XS_X : 552, sstep = XS_STEP, sw = XS_W;
+        for (int r = 0; r < 2; r++)
+            for (int i = 0; i < 7; i++)
+                if (SEC[r][i].bit >= 0)
+                    buttons.push_back({sx + i * sstep, 174 + r * 62, sw, 48, SEC[r][i].bit, SEC[r][i].face, nullptr,
+                                       SEC[r][i].bit == B_PLAY ? (standalone_ ? "KEY: SPACE" : "THE DAW'S TRANSPORT RUNS IT TOO")
+                                                               : SEC[r][i].card,
+                                       SEC[r][i].hold});
         const int oy = KEYBED[1] + KEYBED[3] / 2;   // (OCT+ over OCT-, at the keys' left, round the keybed's middle)
         buttons.push_back({KEYBED[0], oy - 5 - OCT_H, OCT_W, OCT_H, BIT_OCT_UP, "OCT+", nullptr, "THE KEYS AN OCTAVE UP   KEY: PAGE UP"});
         buttons.push_back({KEYBED[0], oy + 5, OCT_W, OCT_H, BIT_OCT_DOWN, "OCT-", nullptr, "THE KEYS AN OCTAVE DOWN   KEY: PAGE DOWN"});
@@ -676,6 +688,12 @@ bool Panel::key(int code, bool down)
     for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
     for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
     for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
+    if (native())   // (TESSERA's shell: 1-9 the sections, 0 HOME, - SAVE, = REC)
+    {
+        static const int SEC_KEY[12] = {SEC_BIT + 0, SEC_BIT + 1, SEC_BIT + 2, SEC_BIT + 3, SEC_BIT + 4, SEC_BIT + 5,
+                                        SEC_BIT + 6, SEC_BIT + 7, SEC_BIT + 8, B_HOME, B_SAVE, B_REC};
+        for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = SEC_KEY[i];
+    }
     if (code == 0x01 && menu_open)   // Esc: the menu shut
     {
         if (down) menu_open = false;
@@ -904,10 +922,11 @@ bool Panel::down(int x, int y)
         return true;
     }
     if ((drag_i = knob_at(x, y)) >= 0) { drag = KNOB; return false; }
-    if ((drag_i = button_at(x, y)) >= 0 && (latch_buttons >> buttons[drag_i].bit & 1u))   // a latched one: let go
-    {
+    if ((drag_i = button_at(x, y)) >= 0 &&
+        (latch_buttons >> (buttons[drag_i].hold >= 0 ? buttons[drag_i].hold : buttons[drag_i].bit) & 1u))
+    {   // a latched one (a section: its FM-1 button latched): let go
         drag = NONE;
-        latch_buttons &= ~(1u << buttons[drag_i].bit);
+        latch_buttons &= ~(1u << (buttons[drag_i].hold >= 0 ? buttons[drag_i].hold : buttons[drag_i].bit));
         merge_held();
         return true;
     }
@@ -1117,7 +1136,7 @@ bool Panel::latch(int x, int y)
     }
     int i;
     if ((i = button_at(x, y)) >= 0)
-        latch_buttons ^= 1u << buttons[i].bit;
+        latch_buttons ^= 1u << (buttons[i].hold >= 0 ? buttons[i].hold : buttons[i].bit);   // (a section: its FM-1 button)
     else if ((i = key_at(x, y)) >= 0)
         latch_keys ^= 1u << keys[i].k;
     else
@@ -1398,7 +1417,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     {
         uint32_t bit = 1u << b.bit;
         bool lit = (v.lit_buttons & bit) || (b.bit == B_PLAY && (v.lit_buttons >> PLAY_GREEN & 1));
-        bool held = input.buttons & bit, down = lit || held;
+        bool held = input.buttons & (bit | (b.hold >= 0 ? 1u << b.hold : 0u)), down = lit || held;
         uint32_t border = T_DIM, fill = T_BLACK, ink = T_WORD;
         if (held) border = fill = T_HELD, ink = T_BLACK;
         else if (lit) border = fill = T_YEL, ink = T_BLACK;
