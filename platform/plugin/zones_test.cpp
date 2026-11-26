@@ -370,6 +370,40 @@ static void mixer()   // MIXER (GLO's first page): a strip's LEVEL, PAN, MUTE an
     CHECK(find_strip(TESS_ZONE_MUTE, "T2", "MUTE/SOLO") >= 0, "a right-click again: T2 not soloed");
     tap(B_HOME);
 }
+static void keys8()   // MIXER's keys with 8 tracks (Cosmati audit I2): the lower octave's mute / solo T1-T4, the upper's T5-T8
+{
+    tap(B_HOME);
+    for (int i = 0; i < 16 && find_strip(TESS_ZONE_PAN, "T1", "PAN") < 0; i++) tap(B_GLO);
+    uint32_t mute = pid_named("MUTE");
+    CHECK(!std::strcmp(v.key_short[1], "M1") && !std::strcmp(v.key_short[0], "S1") && !std::strcmp(v.key_short[13], "M5") &&
+              !std::strcmp(v.key_short[20], "M8") && !std::strcmp(v.key_short[14], "S5") && !std::strcmp(v.key_short[19], "S8"),
+          "keys: F#3 M1, F3 S1, F#4 M5, C#5 M8, G4 S5, C5 S8 (%s %s %s %s %s %s)", v.key_short[1], v.key_short[0],
+          v.key_short[13], v.key_short[20], v.key_short[14], v.key_short[19]);
+    CHECK(!std::strcmp(v.key_long[20], "T8 MUTE") && !v.key_short[10][0] && !std::strcmp(v.key_short[12], "TAP"),
+          "C#5 T8 MUTE (%s); D#4 nothing, F4 still TAP (%s)", v.key_long[20], v.key_short[12]);
+    int32_t m0 = tess_core_param_get(mute, 4), m1 = tess_core_param_get(mute, 0);
+    tess_core_keys(1u << 13);   // F#4
+    run(5);
+    tess_core_keys(0);
+    run(40);
+    CHECK(tess_core_param_get(mute, 4) != m0 && tess_core_param_get(mute, 0) == m1, "F#4 mutes T5, not T1 (%d, %d)",
+          tess_core_param_get(mute, 4), tess_core_param_get(mute, 0));
+    tess_core_keys(1u << 13);
+    run(5);
+    tess_core_keys(0);
+    run(40);
+    CHECK(tess_core_param_get(mute, 4) == m0, "again: unmuted");
+    tess_core_track_select(4);
+    run(20);
+    tess_core_keys(1u << 19);   // C5 held: T8 soloed
+    run(20);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T8", "SOLO") >= 0, "C5 held: T8 soloed");
+    tess_core_keys(0);
+    run(20);
+    CHECK(find_strip(TESS_ZONE_MUTE, "T8", "MUTE/SOLO") >= 0, "let go: not");
+    tess_core_track_select(0);
+    tap(B_HOME);
+}
 static void sheet_row(const char *label)   // the page's sheet (OCT+, tapped or held) and its row, double-clicked
 {
     tap(B_OCTUP);
@@ -1285,6 +1319,7 @@ int main(int argc, char **argv)
     points();
     tweak_marks();
     beta10();
+    keys8();
     tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
     run(50);
     tap(B_HOME);

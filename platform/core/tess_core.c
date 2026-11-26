@@ -1063,9 +1063,10 @@ static void key_legend(uint32_t k, char *sh, char *lg)
     if (l == LAYER_GLO) {
         static const char *const W[4] = {"ALL", "HLD", "FIL", "TAP"}, *const WL[4] = {"UNMUTE ALL", "HOLD (2X: LATCH)",
                                          "FILL (HELD)", "TAP TEMPO"};
-        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + UI_BASE + p), a[2] = 0;
+        uint32_t t = glo_key_trk(k);
+        a[0] = blk ? 'M' : 'S', a[1] = (char)('1' + t), a[2] = 0;
         b[0] = 'T', b[1] = a[1], b[2] = 0;
-        if (p < UI_NT && UI_BASE + p < NTRK)
+        if (t < NTRK)
             key_put(sh, lg, a, b, blk ? " MUTE" : " SOLO (HELD)");
         else if (!blk && p >= 4u && p < 8u)
             key_put(sh, lg, W[p - 4u], WL[p - 4u], 0);
