@@ -1666,6 +1666,7 @@ int main(int argc, char **argv)
         q.key(0x2A, false);
         run(q, 0.3);
         frames(1);
+        press(TESS_BTN_SECTION(TESS_SEC_SETUP));   // (SETTINGS first since #1058: a list)
         press(TESS_BTN_SECTION(TESS_SEC_SETUP));   // (TEMPO .. a knob page: Up turns SELECT as ever)
         q.input.enc[0] = 0;
         CHECK(q.key(Panel::KEY_UP, true) && q.input.enc[0] == 1, "Up on a knob page: SELECT up, as before");
