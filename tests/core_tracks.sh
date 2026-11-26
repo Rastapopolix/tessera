@@ -6,7 +6,8 @@
 # (tracks 5..8 must not touch tracks 1..4). Then tests/xtrk_test.c: tracks 5..8 with content save, load and save
 # again the same, and the 4-track build reads that record; tests/track_copy_test.c: a track copied, pasted, swapped
 # (platform/core/tess_track.c); tests/egrid_test.c: ENTRIES' arrangement grid obeyed, saved and read by the 4-track
-# build; tests/dub_test.c: DROP and THROW (core.h TESS_DUB). Needs build/gen (tools/build.py).
+# build; tests/abank_test.c: ATLAS's genre banks played, saved and read by the 4-track build; tests/dub_test.c: DROP
+# and THROW (core.h TESS_DUB). Needs build/gen (tools/build.py).
 # usage: tests/core_tracks.sh [out-dir]
 set -u
 cd "$(dirname "$0")/.."
@@ -66,5 +67,12 @@ $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_H
 "$OUT/egrid_test" demos/still-tide.tsp "$OUT/egrid.tsp" > "$OUT/egrid_test.log" || { cat "$OUT/egrid_test.log"; fails=$((fails + 1)); }
 tail -1 "$OUT/egrid_test.log"
 "$OUT/tracks4" load "$OUT/egrid.tsp" "$OUT/egrid.4.tsp" || { echo "FAIL: the 4-track build refuses an 8-track record with ENTRIES' grid"; fails=$((fails + 1)); }
+$CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
+    -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+    '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/abank_test.c -o "$OUT/abank_test" -lm ||
+    { echo "core_tracks: abank_test failed to build"; exit 1; }
+"$OUT/abank_test" "$OUT/abank.tsp" > "$OUT/abank_test.log" || { cat "$OUT/abank_test.log"; fails=$((fails + 1)); }
+tail -1 "$OUT/abank_test.log"
+"$OUT/tracks4" load "$OUT/abank.tsp" "$OUT/abank.4.tsp" || { echo "FAIL: the 4-track build refuses an 8-track record with ATLAS banks"; fails=$((fails + 1)); }
 "$OUT/tracks4" load "$OUT/xtrk.tsp" "$OUT/xtrk.4.tsp" || { echo "FAIL: the 4-track build refuses an 8-track record with XTRK"; fails=$((fails + 1)); }
 [ "$fails" -eq 0 ]

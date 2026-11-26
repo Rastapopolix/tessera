@@ -12,6 +12,7 @@
  *   - opened twice from the same state and played from the DAW's zero, two instances play the same audio.
  * usage: tessera-session-test path/to/Cosmati.clap   (from the repository's top: demos/) */
 #include <clap/clap.h>
+#include <clap/ext/remote-controls.h>
 #include <dlfcn.h>
 #include <string>
 
@@ -46,8 +47,14 @@ static void h_flush(const clap_host_t *) {}
 static const clap_host_params_t host_params = {h_rescan, h_clear, h_flush};
 static void h_dirty(const clap_host_t *) {}
 static const clap_host_state_t host_state = {h_dirty};
+static int rc_changes = 0;   // the remote controls' page changed (the host told)
+static clap_id rc_suggested = CLAP_INVALID_ID;
+static void h_rc_changed(const clap_host_t *) { rc_changes++; }
+static void h_rc_suggest(const clap_host_t *, clap_id page) { rc_suggested = page; }
+static const clap_host_remote_controls_t host_rc = {h_rc_changed, h_rc_suggest};
 static const void *h_get_extension(const clap_host_t *, const char *id)
 {
+    if (!std::strcmp(id, CLAP_EXT_REMOTE_CONTROLS)) return &host_rc;
     if (!std::strcmp(id, CLAP_EXT_PARAMS)) return &host_params;
     if (!std::strcmp(id, CLAP_EXT_STATE)) return &host_state;
     return nullptr;
@@ -525,6 +532,39 @@ int main(int argc, char **argv)
             CHECK(o.load(base) && o.save() == base, "a state without A / B: none kept");
         }
         o.close();
+    }
+
+    // the DAW's controller knobs (CLAP remote controls, Cosmati audit G14): one page, the shown page's knobs, each a
+    // parameter of the list or none; a page that stays the same is not announced again and again
+    {
+        Inst r;
+        CHECK(r.open() && r.load(demo), "an instance for the remote controls opens, with STILL TIDE");
+        auto *rc = (const clap_plugin_remote_controls_t *)r.p->get_extension(r.p, CLAP_EXT_REMOTE_CONTROLS);
+        CHECK(rc && rc->count && rc->get, "the remote-controls extension");
+        if (rc && rc->count && rc->get)
+        {
+            r.run(40, false);
+            r.p->on_main_thread(r.p);
+            clap_remote_controls_page_t pg = {}, none = {};
+            CHECK(rc->count(r.p) == 1 && rc->get(r.p, 0, &pg) && !rc->get(r.p, 1, &none), "one page");
+            int known = 0, bad = 0;
+            for (uint32_t k = 0; k < CLAP_REMOTE_CONTROLS_COUNT; k++)
+            {
+                if (pg.param_ids[k] == CLAP_INVALID_ID) continue;
+                double v;
+                if (r.pa->get_value(r.p, pg.param_ids[k], &v)) known++;
+                else bad++;
+            }
+            std::printf("remote controls: %s / %s, %d knobs\n", pg.section_name, pg.page_name, known);
+            CHECK(pg.page_name[0] && known >= 1 && !bad, "the page named (%s), its knobs parameters (%d, %d not)",
+                  pg.page_name, known, bad);
+            int c0 = rc_changes;
+            r.run(60, true);
+            r.p->on_main_thread(r.p);
+            CHECK(rc_changes == c0, "playing on the same page: not announced again (%d times)", rc_changes - c0);
+            CHECK(rc_changes == 0 || rc_suggested == pg.page_id, "a change suggests the page shown");
+        }
+        r.close();
     }
 
     entry->deinit();

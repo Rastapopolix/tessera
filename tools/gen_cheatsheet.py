@@ -14,6 +14,7 @@ each section's heading inverted as the device's header is.
 import base64
 import argparse
 import html
+import os
 import re
 import subprocess
 import sys
@@ -25,6 +26,11 @@ from gen_mono_webfont import build as mono_woff         # noqa: E402
 SRC = Path(__file__).resolve().parents[1]
 MD = SRC / "CHEATSHEET.md"
 OUT = SRC / "docs" / "cheatsheet"
+NAME, HTML, PDF, FOOT = "CHEATSHEET.md", "cheatsheet.html", "tessera-cheatsheet.pdf", "Tessera, generative firmware. GPL-3.0. The manual: MANUAL.md"
+if "--cosmati" in sys.argv:      # the Cosmati sheet (COSMATI_CHEATSHEET.md): cosmati-cheatsheet.pdf
+    sys.argv.remove("--cosmati")
+    MD, NAME, HTML, PDF = SRC / "COSMATI_CHEATSHEET.md", "COSMATI_CHEATSHEET.md", "cosmati-cheatsheet.html", "cosmati-cheatsheet.pdf"
+    FOOT = "Cosmati, Tessera in your DAW. GPL-3.0. The manual: COSMATI.md"
 
 CSS = """
 @page { size: A4; margin: 11mm 10mm 10mm 10mm; }
@@ -85,7 +91,7 @@ def parse(md):
 
 def page(title, intro, sections):
     out = [f"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>{html.escape(title)}</title>",
-           f"<!-- made by tools/gen_cheatsheet.py from CHEATSHEET.md: edit that, not this -->\n<style>{face()}{CSS}</style>\n"
+           f"<!-- made by tools/gen_cheatsheet.py from {NAME}: edit that, not this -->\n<style>{face()}{CSS}</style>\n"
            "</head>\n<body>\n<header>", f"<h1>{html.escape(title)}</h1>"]
     out += [f"<p>{inline(p)}</p>" for p in intro[1:]]          # (the first: where the PDF is, not for the page)
     out.append("</header>\n<main>")
@@ -93,7 +99,7 @@ def page(title, intro, sections):
         out.append(f"<section>\n<h2>{inline(head)}</h2>\n<table>")
         out += [f"<tr><td>{inline(a)}</td><td>{inline(b)}</td></tr>" for a, b in rows]
         out.append("</table>\n</section>")
-    out.append("</main>\n<footer>Tessera, generative firmware. GPL-3.0. The manual: MANUAL.md</footer>\n"
+    out.append("</main>\n<footer>" + FOOT + "</footer>\n"
                "</body>\n</html>\n")
     return "\n".join(out)
 
@@ -103,12 +109,12 @@ def main():
     ap.add_argument("--pdf", metavar="BROWSER", help="a Chromium-based browser to print the PDF with")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    page_path = OUT / "cheatsheet.html"
+    page_path = OUT / HTML
     page_path.write_text(page(*parse(MD.read_text(encoding="utf-8"))), encoding="utf-8")
     print(page_path)
     if a.pdf:
-        pdf = OUT / "tessera-cheatsheet.pdf"
-        subprocess.run([a.pdf, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+        pdf = OUT / PDF
+        subprocess.run([a.pdf] + (["--no-sandbox"] if hasattr(os, "geteuid") and os.geteuid() == 0 else []) + ["--headless", "--disable-gpu", "--no-pdf-header-footer",
                         f"--print-to-pdf={pdf}", page_path.resolve().as_uri()], check=True)
         print(pdf)
     return 0

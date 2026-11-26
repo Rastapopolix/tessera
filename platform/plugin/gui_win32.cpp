@@ -175,9 +175,10 @@ class GuiWin32 : public Gui
                 return 0;
             }
             if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 &&
-                (wp == 'C' || wp == 'V' || wp == 'R') &&
+                (wp == 'C' || wp == 'V' || wp == 'R' || wp == 'M') &&
                 g->panel.shortcut((wp == 'V' || wp == 'R') && GetKeyState(VK_SHIFT) < 0 ? (char)(wp + 32) : (char)wp))
-                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone; Ctrl+R DICE, + Shift MUTATE)
+                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone; Ctrl+R DICE, + Shift MUTATE;
+                           // Ctrl+M the page map)
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;
@@ -303,6 +304,11 @@ class GuiWin32 : public Gui
         int req = panel.take_file_request();
         if (req == Panel::FILE_NONE)
             return;
+        if (req == Panel::FILE_MANUAL)   // (MANUAL in the menu: the manual's page in the browser)
+        {
+            ShellExecuteW(nullptr, L"open", wide(Panel::manual_url()).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            return;
+        }
         if (req == Panel::FILE_MIDI || req == Panel::FILE_MIDI_DRAG)   // (no dialog: the clip goes to Documents/Tessera/
         {                                                                // MIDI)
             panel.note(link->export_midi());

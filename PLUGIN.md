@@ -1,6 +1,6 @@
 # Cosmati
 
-**Cosmati** is Tessera inside a DAW. The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
+**Cosmati** is Tessera inside a DAW (the whole guide to using it is the [Cosmati manual](COSMATI.md)). The same firmware the FM-1 plays is built as a **CLAP** instrument, a **VST3**
 instrument, an **Audio Unit** on macOS and a **standalone app**. Its window is the FM-1's panel: the same screen, buttons,
 knobs and keys, so everything in the [manual](MANUAL.md) works the same way here. This page covers only what is different
 in a DAW.
@@ -188,6 +188,7 @@ click it, or press **Esc** to let go.
   1080p screen).
 - **FM-1 USB:** OFF or ON. With it on, an FM-1 on USB plays the plugin (see
   [Playing it from your FM-1](#playing-it-from-your-fm-1)); the line under it says what the FM-1 is doing.
+- **MANUAL:** opens the [Cosmati manual](COSMATI.md) on the site, in your browser.
 - **ABOUT:** the plugin's version.
 
 In Tessera's look, the FM-1's two OCT buttons are split into what they do, each a button of its own:

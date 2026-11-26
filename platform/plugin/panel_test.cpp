@@ -664,6 +664,12 @@ int main(int argc, char **argv)
         q.down(300, oy);   // STEREO
         q.up(300, oy);
         CHECK(q.take_outs_request() == 0, "OUTPUTS STEREO asks for stereo");
+        // MANUAL: a click asks the window to open the Cosmati manual's page, and shuts the menu
+        int my = 46 + 10 + 11 * 36 + 3 * 18 + 22 + 18;   // (row_y(ROW_MANUAL)'s middle)
+        q.down(100, my), q.up(100, my);
+        CHECK(q.take_file_request() == Panel::FILE_MANUAL && !q.menu_shown(), "MANUAL asks FILE_MANUAL, the menu shut");
+        CHECK(std::string(Panel::manual_url()).find("/cosmati/") != std::string::npos, "the manual's page is /cosmati/");
+        q.down(100, 25), q.up(100, 25);   // (the menu again, for LISTEN)
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
         int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
@@ -1704,6 +1710,25 @@ int main(int argc, char **argv)
         const tess_zone_t *k1 = q.knob_zone(3);
         CHECK(k1 && k1->value[0], "FX 1: KNOB 1 named by the page (%s %s)", k1 ? k1->name : "-", k1 ? k1->value : "");
         if (!out.empty()) ppm(out + "/30_knob_names.ppm", px);
+        {   // the page map (G11): Ctrl+M opens it, a page clicked goes there and shuts it
+            CHECK(q.shortcut('M') && q.map_shown(), "Ctrl+M: the page map");
+            frames(1);
+            if (!out.empty()) ppm(out + "/30c_page_map.ppm", px);
+            int mx = 0, my = 0;
+            CHECK(q.map_place(TESS_SEC_PIECE, "LANDSCAPE", mx, my), "the map: PIECE's LANDSCAPE on it");
+            q.down(mx, my);
+            q.up(mx, my);
+            run(q, 0.3);
+            frames(1);
+            CHECK(!q.map_shown() && v.map_sec == TESS_SEC_PIECE && !std::strcmp(v.map_name[TESS_SEC_PIECE][v.map_at], "LANDSCAPE"),
+                  "LANDSCAPE clicked: its page, the map shut (%d %d)", v.map_sec, v.map_at);
+            CHECK(q.shortcut('M') && q.map_shown() && !q.key(0x01, true) && !q.map_shown(), "Esc shuts the map");
+            tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_FX));
+            run(q, 0.1);
+            tess_core_buttons(0);
+            run(q, 0.3);
+            frames(1);
+        }
         if (!out.empty())   // SETUP: its first page SETTINGS, the menu's list over SETUP's tabs
         {
             tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_SETUP));
@@ -1761,6 +1786,38 @@ int main(int argc, char **argv)
         tess_core_buttons(1u << 6);   // (HOME)
         run(q, 0.1);
         tess_core_buttons(0);
+        run(q, 0.3);
+    }
+
+    {   // G13: a new project, stopped, nothing to play: HOME says what to do (PLAY, GENERATE OR OPEN A DEMO, under the T1..T4 numbers)
+        Panel q;
+        q.set_inks(inks);
+        q.set_shell(0);
+        q.set_tracks((int)tess_core_tracks());
+        tess_core_project_new();
+        tess_core_buttons(1u << 6);   // (HOME)
+        run(q, 0.1);
+        tess_core_buttons(0);
+        run(q, 0.5);
+        auto band = [&]() {   // the screen's lower band, under the columns
+            uint64_t h = 1469598103934665603ull;
+            for (uint32_t y = 180; y < 221; y++)
+                for (uint32_t x = 0; x < TESS_SCREEN; x++) h = (h ^ v.screen[y * TESS_SCREEN + x]) * 1099511628211ull;
+            return h;
+        };
+        tess_core_view(&v);
+        q.draw(px.data(), v);
+        if (!out.empty()) ppm(out + "/31_empty_state.ppm", px);
+        uint32_t lit = 0;
+        for (uint32_t y = 184; y < 221; y++)
+            for (uint32_t x = 0; x < TESS_SCREEN; x++) lit += v.screen[y * TESS_SCREEN + x] != v.screen[200 * TESS_SCREEN + 1];
+        const uint64_t empty = band();
+        CHECK(lit > 100, "G13: a new project's HOME has words under the columns (%u px)", lit);
+        CHECK(tess_core_param_set(0x200, 0, 4), "G13: T1's generator on (MORPH)");
+        run(q, 0.5);
+        tess_core_view(&v);
+        CHECK(band() != empty, "G13: a generator on: the words gone");
+        tess_core_project_new();
         run(q, 0.3);
     }
 

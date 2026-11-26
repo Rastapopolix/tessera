@@ -532,6 +532,11 @@ enum {
     TX_QNT_LINK,                                    /* (0x2A7: QNT LINK, the project's: one value, whichever track) */
     TX_SECTION_PC,                                  /* (0x2A8: MIDI OUT's SECTION PC, any track's: form_chain.c) */
     TX_CH_WHEN, TX_CH_BY,                           /* (0x2A9, 0x2AA: CHORD's MOVE WHEN and BY, a CHORD track's) */
+#if TESS_ATLAS_BANKS
+    TX_RSV_2AB, TX_RSV_2AC, TX_RSV_2AD, TX_RSV_2AE, /* (0x2AB..0x2AE: claimed in ROADMAP for the BUS C / D settings; no
+                                                     * parameter yet) */
+    TX_GRD_BANK,                                    /* (0x2AF: ATLAS's BANK, an 8-track build's: gen.h GEN_AB_*) */
+#endif
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
@@ -539,6 +544,9 @@ _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0
                TX_CH_SDIR == 0x9D && TX_BUSB_LAG == 0xA1 && TX_MOD_DEPTH == 0xA2 && TX_AN_CHORD == 0xA3 &&
                TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8 && TX_CH_BY == 0xAA,
                "parameter ids are stored: never renumbered");
+#if TESS_ATLAS_BANKS
+_Static_assert(TX_GRD_BANK == 0xAF, "parameter ids are stored: never renumbered");
+#endif
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */

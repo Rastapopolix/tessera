@@ -155,6 +155,9 @@ enum { TESS_ZONE_EGRID = 19 };
 /* SLIDER: a bar that shows a value (MORPH's POS): role KNOB 1..4's, which it sets. TURN and WHEEL turn that knob; SET n
  * (0..1000, where the mouse is across the bar) sets the value there, min at the left */
 enum { TESS_ZONE_SLIDER = 20 };
+/* MAP: a page on the page map (Cosmati audit G11; a front end's own picture of tess_view_t's map_*, not drawn by the
+ * core): role the section (TESS_SEC_*), row the page's place in it. CLICK: that page (a menu, a dialog closed first) */
+enum { TESS_ZONE_MAP = 21 };
 /* DROP: the TRACKS screen's DROP (an 8-track build's, core.h TESS_DUB). CLICK: DROP pressed (all but the anchors out on
  * the next bar, again: back in; entries.c dub_drop_press). Its value: OFF, NEXT BAR (waiting) or ON */
 enum { TESS_ZONE_DROP = 22 };
@@ -251,6 +254,11 @@ typedef struct {
      * key_chord: the chord the CHORD track plays now ("Am7"; "" none) */
     uint32_t key_dim, key_root;
     char key_chord[12];
+    /* the page map (Cosmati audit G11; with the section buttons on, else map_n all 0): section s's pages in order,
+     * map_n[s] of them (at most 16), each one's name ("LANDSCAPE", an engine's own page title); the page shown,
+     * section map_sec (TESS_SEC_N: none, HOME) at place map_at. TESS_ZONE_MAP goes to one */
+    uint8_t map_n[TESS_SEC_N], map_sec, map_at;
+    char map_name[TESS_SEC_N][16][12];
 } tess_view_t;
 void tess_core_view(tess_view_t *v);
 /* the selected track (0 .. tess_core_tracks() - 1), and selecting one as KNOB 1 on TRACKS does (its sound, pages and
@@ -346,6 +354,11 @@ uint32_t tess_core_param_text(uint32_t pid, uint32_t track, int32_t v, char *out
  * (its count): the text filters the list to the sounds whose name has it, any case; "" shows them all again */
 uint32_t tess_core_zone_param(const tess_zone_t *z, uint32_t *pid, uint32_t *track);
 uint32_t tess_core_zone_type(const tess_zone_t *z, const char *text);
+/* the shown page's eight knobs, for a host's controller knobs (the plugin: CLAP remote controls; a build with
+ * TESS_HAS_POINTER, else none): pid[k] / track[k] (8 each) the central ID and track KNOB k + 1 sets (k 0..3), then with
+ * OCT- held (k 4..7, on a page with an OCT- layer; a knob that sets the same both ways only once); pid 0xFFFF: none
+ * (an action, a list's row, a page's own knob). name: the page's title (cap bytes, terminated). How many there are */
+uint32_t tess_core_page_knobs(uint32_t *pid, uint32_t *track, char *name, uint32_t cap);
 
 /* ---- a DAW's transport (a build with TESS_HOST_CLOCK). Each host block while the DAW plays, before its audio, and
  * once when it stops. playing: its PLAY; bpm: its tempo; beats: its position at the block's start (quarter notes
