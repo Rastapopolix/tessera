@@ -1557,6 +1557,49 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static void dice_mutate()   // G6: MUTATE nudges a track's sound, a LOCK keeps its value, PUT BACK undoes; locks saved
+{
+    tess_core_project_new();
+    run(50);
+    tess_core_locks_load(nullptr, 0);
+    const uint32_t tr = 1, atk = 1 /* P_ATK */, rel = 4 /* P_REL */;
+    tess_core_param_set(atk, tr, 40);
+    tess_core_param_set(rel, tr, 60);
+    tap(B_HOME);
+    tess_zone_t z{};
+    z.kind = TESS_ZONE_TRACK;
+    z.row = (int16_t)tr;
+    int32_t a0 = tess_core_param_get(atk, tr), r0 = tess_core_param_get(rel, tr);
+    {   // (a lock by hand, as the plugin's state would bring it back: P_REL on T2)
+        const uint8_t lk[3] = {(uint8_t)rel, 0, (uint8_t)tr};
+        tess_core_locks_load(lk, 3);
+        uint8_t out[8];
+        CHECK(tess_core_locks(nullptr, 0) == 3 && tess_core_locks(out, sizeof out) == 3 && out[0] == rel && out[2] == tr,
+              "G6: a lock loaded, and saved back the same");
+    }
+    int moved = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        tess_core_zone_do(&z, TESS_ZA_DICE, 20);
+        run(5);
+        moved += tess_core_param_get(atk, tr) != a0;
+        CHECK(tess_core_param_get(rel, tr) == r0, "MUTATE: T2's LOCKed REL kept (%d)", tess_core_param_get(rel, tr));
+    }
+    CHECK(moved > 0, "MUTATE: T2's ATTACK nudged (%d of 6)", moved);
+    tess_core_view(&v);
+    CHECK(v.dice_back, "a MUTATE to put back");
+    int32_t a1 = tess_core_param_get(atk, tr);
+    tess_core_zone_do(&z, TESS_ZA_DICE, 20);
+    run(5);
+    tess_core_zone_do(nullptr, TESS_ZA_DICE, -1);
+    run(5);
+    tess_core_view(&v);
+    CHECK(tess_core_param_get(atk, tr) == a1 && !v.dice_back, "PUT BACK: the last MUTATE undone (%d, %d)", a1,
+          tess_core_param_get(atk, tr));
+    tess_core_locks_load(nullptr, 0);
+    CHECK(!tess_core_locks(nullptr, 0), "locks cleared");
+}
+
 static float loud(int blocks)   // the loudest sample over 10 ms blocks
 {
     float pk = 0;
@@ -1857,6 +1900,7 @@ int main(int argc, char **argv)
     roll();
     paint();
     drop_sound();
+    dice_mutate();
     audition_find();
     smap();
     chord_user();

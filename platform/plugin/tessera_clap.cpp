@@ -1525,6 +1525,8 @@ void tx58_load(Tessera *t, const uint8_t *b, uint32_t n)
         }
 }
 
+static const uint32_t LOCKS_MAX = 64;   // (tess_core.c LK_MAX)
+
 bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 {
     auto *t = self(p);
@@ -1556,6 +1558,15 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
                 b.insert(b.begin() + len, ls, ls + 6);
                 len += 6;
             }
+            uint8_t lk[LOCKS_MAX * 3];   // (LOCKed values, Cosmati audit G6: after it all, only when there are any)
+            uint32_t nl = t->core->locks(lk, sizeof lk);
+            if (nl)
+            {
+                const uint8_t tag[6] = {(uint8_t)nl, (uint8_t)(nl >> 8), 'T', 'L', 'C', 'K'};
+                b.insert(b.begin() + len, lk, lk + nl);
+                b.insert(b.begin() + len + nl, tag, tag + 6);
+                len += nl + 6;
+            }
         }
     }
     if (!len)
@@ -1573,7 +1584,8 @@ bool st_save(const clap_plugin_t *p, const clap_ostream_t *s)
 bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
 {
     auto *t = self(p);
-    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size());
+    std::vector<uint8_t> b(t->core->tsp_max() + 6 + 6 + 260 + 8 + TX58_ENTRY * (uint32_t)t->params.size() +
+                           LOCKS_MAX * 3 + 6);
     uint32_t len = 0;
     for (;;)
     {
@@ -1589,6 +1601,15 @@ bool st_load(const clap_plugin_t *p, const clap_istream_t *s)
     bool ok;
     {
         std::lock_guard<std::mutex> g(t->core_lock);
+        uint32_t nl = 0;   // (LOCKs: the last part, when there are any)
+        if (len >= 6 && !std::memcmp(&b[len - 4], "TLCK", 4))
+        {
+            nl = b[len - 6] | (uint32_t)b[len - 5] << 8;
+            if (nl + 6u > len || nl > LOCKS_MAX * 3u)
+                return false;   // (not a state this build wrote)
+            len -= nl + 6;
+        }
+        t->core->locks_load(nl ? b.data() + len : nullptr, nl);
         int lc = 0, lsp = Listen::SPLIT;
         if (len >= 6 && !std::memcmp(&b[len - 6], "TLSN", 4) && b[len - 2] <= 16 && Listen::split_ok(b[len - 1]))
             lc = b[len - 2], lsp = b[len - 1], len -= 6;

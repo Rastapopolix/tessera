@@ -111,6 +111,7 @@ class Panel
      * TRACK, PASTE TRACK, PASTE SOUND, MOVE UP, MOVE DOWN (as TRACK's, for that track). A click on a row does it, a click
      * elsewhere or Esc shuts it. ctx_rows: the rows shown (empty: none) */
     std::vector<std::string> ctx_rows() const { return ctx_kind ? ctx_row : std::vector<std::string>{}; }
+    bool ctx_row_on(int r) const;   // row r of the open menu can be picked (PASTE VALUE, PUT BACK: when there is one)
     /* the standalone app (no DAW: tessera_clap.cpp's free-running host): Space plays and stops, Ctrl+O / Ctrl+S (Cmd on
      * a Mac) open and save; in a DAW those keys stay the DAW's */
     void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)
@@ -241,6 +242,10 @@ class Panel
     bool mod_type = false, mod_fine = false, mod_alt = false;   // (set_mods)
     int roll_way = 0, roll_x0 = 0, roll_y0 = 0, paint_x = 0;   // (a drag on NOTES' steps: which way, from where)
     enum { CTX_VALUE = 1, CTX_TRACK };
+    bool ctx_locked = false;          // (the value right-clicked is LOCKed: UNLOCK in its menu)
+    uint64_t locked = 0;              // the view's: zones LOCKed (a mark on each), and a DICE / MUTATE to put back
+    bool dice_back = false;
+    static constexpr int MUTATE_PCT = 8;   // MUTATE: each sound value nudged up to 8 % of its range
     int ctx_kind = 0, ctx_x = 0, ctx_y = 0, ctx_track = 0, ctx_hover = -1;   // (the right-click's menu: none, a value's, a track's)
     tess_zone_t ctx_zone = {};
     std::vector<std::string> ctx_row;
