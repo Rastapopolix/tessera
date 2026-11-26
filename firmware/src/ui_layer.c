@@ -450,9 +450,11 @@ static int glo_sounding(uint32_t t)
                                                                             * on the next line: a quick blink) */
     return !trk[t].p[P_MUTE] && !((out >> t) & 1u && !((track_solo >> t) & 1u)) && (!track_solo || ((track_solo >> t) & 1u));
 }
+/* (MIXER, PERF with LIGHTS OFF, GLO not held: no can-be-pressed blink, the states alone; LANDSCAPE: ui_input.c land_calm) */
 static uint32_t layer_leds(void)
 {
-    uint32_t k, m = 0, blink = !land_calm() && ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
+    uint32_t k, m = 0, blink = !land_calm() && !(!ui.layer && mixer_live() && settings_lights % LIGHTS_N == LIGHTS_OFF) &&
+                                ((fm1_ms / 250u) & 1u) == 0u, l = ui.layer ? ui.layer : mixer_live() ? (uint32_t)LAYER_GLO : 0u;
     uint32_t mask = scale_mask(TSEL), root = (uint32_t)TSEL->p[P_ROOT] % 12u;
     for (k = 0; k < 27u; k++) {
         uint32_t p = key_place(k), b = (uint32_t)key_black(k), on = 0, e;
