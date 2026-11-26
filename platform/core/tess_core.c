@@ -1258,6 +1258,21 @@ void tess_core_view(tess_view_t *v)
                     str_cpy(z->value, uz[i].value, sizeof z->value);
                 }
         v->zone_count = n;
+        for (i = 0; i < 4u; i++)                      /* KNOB 1..4: the value, and where the mods have it now */
+            v->knob_at[i] = v->knob_mod[i] = -1;
+        for (i = 0; i < n; i++) {
+            const tess_zone_t *z = &v->zones[i];
+            uint32_t pid, tr;
+            tess_param_t in;
+            int32_t at, sh;
+            if (z->kind != TESS_ZONE_KNOB || z->role < EN_K1 || z->role > EN_K4 || !tess_core_zone_param(z, &pid, &tr) ||
+                !tess_core_param_info(pid, tr, &in) || in.max <= in.min)
+                continue;
+            at = (pid_get(pid, tr) - in.min) * 1000 / (in.max - in.min);
+            v->knob_at[z->role - EN_K1] = (int16_t)clamp(at, 0, 1000);
+            if (cord_moves(pid, tr, &sh))
+                v->knob_mod[z->role - EN_K1] = (int16_t)clamp(at + (int32_t)(((int64_t)sh * 1000) >> 15), 0, 1000);
+        }
         v->typing = name_on() ? 1u : 0u;
         v->closable = !ui.confirm && (help.on || pop.on) ? 1u : 0u;
         v->sheet = page_sheet() != 0u;

@@ -700,8 +700,15 @@ static int tess_sound_off(const track_t *t);           /* tessera.c: SOUND OFF, 
 static int entries_note(const track_t *t, uint32_t note);   /* tessera.c entries.c: 0 while Entries has it out */
 static uint32_t entries_vel(const track_t *t, uint32_t vel);   /* entries.c: MIDI OUT's velocity, faded with a FADE */
 static void land_note(const track_t *t, uint32_t note, uint32_t vel);   /* land_feed.c: LANDSCAPE's drops */
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+static volatile uint8_t t2_note[NTRK];                 /* a note started on track k since TRACKS last looked (ui_tracks.c) */
+#endif
 static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
 {
+#if TESS_SCR_COUNT > 1 && MELODEE_LOOK
+    if (vel && !t->p[P_MUTE])
+        t2_note[(uint32_t)(t - trk) % NTRK] = 1;
+#endif
     if (!entries_note(t, note) || cord_play_shut((uint32_t)(t - trk)))   /* (PLAY shut by its mods: cord.c) */
         return;
     vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */

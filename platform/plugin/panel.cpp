@@ -1648,6 +1648,27 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             c.ptext_c(k.x, k.y + k.r + 8, kz->value, Canvas::ptext_w(kz->value, 2) <= room ? 2 : 1, T_YEL);
         c.circle(k.x, k.y, k.r, ring);
         c.circle(k.x, k.y, k.r - 4, T_BLACK);
+        if (k.role >= 3 && k.role <= 6 && v.knob_at[k.role - 3] >= 0)   // live motion (Cosmati audit G8): outside the
+        {   // ring, the value a tick on a 270-degree sweep from 7:30; the mods' place now a thin arc from it, in white
+            auto at = [&](int pm, int r, int *x, int *y) {
+                double a = (-225 + 270 * pm / 1000.0) * kPi / 180;
+                *x = k.x + (int)std::lround(std::cos(a) * r), *y = k.y + (int)std::lround(std::sin(a) * r);
+            };
+            int val = v.knob_at[k.role - 3], mod = v.knob_mod[k.role - 3], x0, y0, x1, y1;
+            at(val, k.r + 3, &x0, &y0), at(val, k.r + 8, &x1, &y1);
+            c.line(x0, y0, x1, y1, 2, T_WORD);
+            if (mod >= 0 && mod != val)
+            {
+                int lo = mod < val ? mod : val, hi = mod < val ? val : mod;
+                for (int pm = lo; pm <= hi; pm += 4)
+                {
+                    at(pm, k.r + 5, &x0, &y0);
+                    c.box(x0 - 1, y0 - 1, 2, 2, T_HELD);
+                }
+                at(mod, k.r + 2, &x0, &y0), at(mod, k.r + 9, &x1, &y1);
+                c.line(x0, y0, x1, y1, 2, T_HELD);
+            }
+        }
         if (k.role < 0 || turning)
         {
             double a = (k.angle - 90) * kPi / 180;

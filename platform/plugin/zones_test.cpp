@@ -1554,6 +1554,41 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static void live_motion()   // G8: KNOB 1..4's places in the view; TRACKS rows: a meter and a note's flash while playing
+{
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
+    run(30);
+    tess_core_track_select(0);
+    tap(B_HOME);
+    tap(B_FX);
+    int known = 0;
+    for (int i = 0; i < 4; i++) known += v.knob_at[i] >= 0 && v.knob_at[i] <= 1000;
+    CHECK(known >= 2, "G8: FX's knobs have their places in the view (%d)", known);
+    tap(B_HOME);
+    if (tess_core_tracks() < 8) return;
+    tess_core_transport(1);
+    int lit = 0, flashed = 0;
+    for (int f = 0; f < 120; f++)
+    {
+        run(2);
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        for (int k = 0; k < 8; k++)
+        {
+            int y0 = (14 + k * 11) * 2, on = 0, inv = 0;
+            for (int y = y0; y < y0 + 22; y++)
+            {
+                on += tv.screen[y * TESS_TRACKS_W + 3] != tv.screen[0];      // (the meter: cells 1-2)
+                inv += tv.screen[y * TESS_TRACKS_W + 13 * 2 - 1] != tv.screen[0];   // (the role's box edge, inverted)
+            }
+            lit += on > 0, flashed += inv > 4;
+        }
+    }
+    tess_core_transport(0);
+    run(30);
+    CHECK(lit > 20, "TRACKS: the rows' meters move while playing (%d)", lit);
+    CHECK(flashed > 0, "TRACKS: a note's flash on its role (%d)", flashed);
+}
+
 static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
 {
     tap(B_HOME);
@@ -1781,6 +1816,7 @@ int main(int argc, char **argv)
     roll();
     paint();
     drop_sound();
+    live_motion();
     smap();
     chord_user();
     sections();

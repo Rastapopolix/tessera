@@ -104,7 +104,12 @@ static void t2_level(uint32_t k, char *a)               /* dB, or OFF */
     }
 }
 
-/* one row at y (cells): x of the steps, how many, their pitch; compact: Andamento's 21 characters */
+static uint32_t t2_meter(uint32_t k);
+static uint8_t t2_hot[NTRK];                            /* a note's flash: draws left (voice.c t2_note) */
+
+/* one row at y (cells): x of the steps, how many, their pitch; compact: Andamento's 21 characters. Live motion (Cosmati
+ * audit G8): at the left edge a meter (the loudest voice's envelope now), and the role inverted for a few draws when a
+ * note starts */
 static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blink)
 {
     const track_t *t = &trk[k];
@@ -122,7 +127,19 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
         t2_text(b, compact ? 1 : 4, ty, ink);
     }
     t2_role(k, nm);
-    t2_text(nm, compact ? 12 : 13, ty, ink);
+    if (t2_note[k])
+        t2_note[k] = 0, t2_hot[k] = 3;
+    if (t2_hot[k] && !compact) {
+        t2_hot[k]--;
+        t2_inv(nm, 13, ty, ink, MO_BG);
+    } else {
+        t2_text(nm, compact ? 12 : 13, ty, ink);
+    }
+    if (!compact) {                                     /* the meter: two cells wide, up from the row's foot */
+        int32_t mh = (int32_t)t2_meter(k) * (rh - 2) / 127;
+        if (mh > 0)
+            t2_fill(1, y + rh - 1 - mh, 2, mh, ink);
+    }
     if (!compact) {
         str_cpy(b, eng_abbr(ENGINES[eng_idx(t->eng_req)]->name), 6);
         t2_text(b, 40, ty, dim);
