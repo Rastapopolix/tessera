@@ -427,9 +427,54 @@ static void mixer8()   // MIXER on the TRACKS screen (Cosmati audit I1): a strip
     CHECK(tess_core_param_get(mute, 7) != m0 && tval(TESS_ZONE_MUTE, 7) == "ON", "T8's M mutes it");
     tact(TESS_ZONE_MUTE, 7, TESS_ZA_CLICK);
     CHECK(tess_core_param_get(mute, 7) == m0, "..again: not");
-    tact(TESS_ZONE_TRACK, 4, TESS_ZA_CLICK);
+    tact(TESS_ZONE_TRACK, 5, TESS_ZA_CLICK);
     run(10);
-    CHECK(tess_core_track() == 4, "a click on T5's head selects it (T%u)", tess_core_track() + 1);
+    CHECK(tess_core_track() == 5, "a click on T6's head selects it (T%u)", tess_core_track() + 1);
+
+    // the FM-1 screen, the TRACKS screen shown: the selected track's inspector (its LEVEL, PAN, sends, M / S)
+    tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+    run(10);
+    CHECK(find_strip(TESS_ZONE_LEVEL, "T6", "LEVEL") >= 0 && find_strip(TESS_ZONE_LEVEL, "T5", "LEVEL") < 0 &&
+              find_strip(TESS_ZONE_PAN, "T6", "PAN") >= 0,
+          "EXPANDED: MIXER on the FM-1 screen is T6's inspector, no bank of strips");
+    if (const char *o = std::getenv("INSPECT_PPM"))   // (a look at it)
+        if (FILE *f = std::fopen(o, "wb"))
+        {
+            tess_screen_t sc;
+            tess_core_screen(&sc);
+            std::fprintf(f, "P6\n%u %u\n255\n", sc.w, sc.h);
+            for (uint32_t p = 0; p < sc.w * sc.h; p++)
+            {
+                uint16_t c = sc.pixels[p];
+                unsigned char rgb[3] = {(unsigned char)((c >> 11) << 3), (unsigned char)(((c >> 5) & 63) << 2),
+                                        (unsigned char)((c & 31) << 3)};
+                std::fwrite(rgb, 1, 3, f);
+            }
+            std::fclose(f);
+        }
+    {
+        int sn = find_strip(TESS_ZONE_LEVEL, "T6", "FX SEND");
+        if (sn < 0) sn = find_strip(TESS_ZONE_LEVEL, "T6", "SEND 1");
+        uint32_t send = pid_named("FX SEND");
+        int32_t s0 = send != 0xFFFFu ? tess_core_param_get(send, 5) : -1;
+        if (sn >= 0) act(sn, TESS_ZA_TURN, 5, 10);
+        CHECK(sn >= 0 && s0 >= 0 && tess_core_param_get(send, 5) == (s0 + 5 > 127 ? 127 : s0 + 5),
+              "..its send's bar turned (%d, was %d)", s0 >= 0 ? tess_core_param_get(send, 5) : -1, s0);
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        l0 = tess_core_param_get(lvl, 5);
+        tess_core_enc(3, 3);
+        run(10);
+        CHECK(tess_core_param_get(lvl, 5) > l0, "..KNOB 1 turns T6's level (%d, was %d)", tess_core_param_get(lvl, 5), l0);
+        tess_core_tracks_view(&tv, TESS_TRACKS_W, TESS_TRACKS_H);
+        p0 = tess_core_param_get(pan, 5);
+        tess_core_enc(4, -4);
+        run(10);
+        CHECK(tess_core_param_get(pan, 5) < p0, "..KNOB 2 its PAN (%d, was %d)", tess_core_param_get(pan, 5), p0);
+        int32_t l1 = tess_core_param_get(lvl, 1);
+        run(60);   // (the TRACKS screen no longer asked for: the strips again)
+        CHECK(find_strip(TESS_ZONE_LEVEL, "T5", "LEVEL") >= 0, "TRACKS gone: the bank's strips again");
+        (void)l1;
+    }
     tess_core_track_select(0);
     tap(B_HOME);
     run(10);
