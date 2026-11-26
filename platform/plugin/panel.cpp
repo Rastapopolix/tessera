@@ -377,12 +377,28 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
         key_short[k][sizeof key_short[k] - 1] = key_long[k][sizeof key_long[k] - 1] = 0;
     }
     zones.assign(v.zones, v.zones + (v.zone_count < (uint32_t)TESS_ZONES ? v.zone_count : (uint32_t)TESS_ZONES));
+    locked = v.locked, dice_back = v.dice_back != 0;
     if (expanded() && t2 && t2->w == TESS_TRACKS_W)
         zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
                                                                                           : (uint32_t)TESS_TRACKS_ZONES));
     else
         zones2.clear();
     draw_body(px, v, t2);
+    if (locked)   // LOCKed values: a padlock at each one's top right, on the screen (Cosmati audit G6)
+    {
+        static const char *const LOCK[8] = {"..###..", ".#...#.", ".#...#.", "#######", "###.###", "###.###", "#######",
+                                            "#######"};
+        const int ox = SCREEN_X + SCREEN_S / 32, oy = SCREEN_Y + SCREEN_S / 32, w = width();
+        for (size_t i = 0; i < zones.size() && i < 64; i++)
+            if (locked >> i & 1u)
+                for (int r = 0; r < 8; r++)
+                    for (int c = 0; c < 7; c++)
+                        if (LOCK[r][c] == '#')
+                        {
+                            int x = ox + zones[i].x + zones[i].w - 9 + c, y = oy + zones[i].y + 2 + r;
+                            if (x >= 0 && x < w && y >= 0 && y < H) px[y * w + x] = 0xFFFFD020u;
+                        }
+    }
     if (entry_on && zone_like(entry_zone) < 0) entry_on = false;   // (its value gone from the screen: the box too)
     if (ctx_kind == CTX_VALUE && zone_like(ctx_zone) < 0) ctx_kind = 0;
     if (ctx_kind)
@@ -863,6 +879,14 @@ bool Panel::key(int code, bool down)
 // its own). true: the window should take the file request now
 bool Panel::shortcut(char c)
 {
+    if (c == 'R' || c == 'r')   // DICE the page (Ctrl+R), MUTATE the selected track (Ctrl+Shift+R): Cosmati audit G6
+    {
+        if (typing()) return false;
+        tess_zone_t z{};
+        if (c == 'r') z.kind = TESS_ZONE_TRACK, z.row = (int16_t)track_now;
+        zone_act(z, TESS_ZA_DICE, c == 'r' ? MUTATE_PCT : 0);
+        return true;
+    }
     static const char TR_KEYS[] = "CVv^_";
     if (const char *k = c ? std::strchr(TR_KEYS, c) : nullptr)   // TRACK's: not while NAME takes the keys
     {
@@ -1322,6 +1346,7 @@ bool Panel::latch(int x, int y)
     if (zi >= 0 && (zones[zi].kind == TESS_ZONE_KNOB || zones[zi].kind == TESS_ZONE_LEVEL || zones[zi].kind == TESS_ZONE_PAN))
     {   // a value: its menu (HELP first)
         ctx_zone = zones[zi];
+        ctx_locked = zi < 64 && (locked >> zi & 1u);
         ctx_open(CTX_VALUE, x, y);
         return true;
     }
@@ -2303,13 +2328,17 @@ const int CTX_W = 230, CTX_RH = 28;
 }
 void Panel::ctx_open(int kind, int x, int y)
 {
-    static const char *const VAL[] = {"HELP", "DEFAULT", "COPY VALUE", "PASTE VALUE", "RANDOM", "TYPE A VALUE"};
-    static const char *const TRK[] = {"COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN"};
+    static const char *const VAL[] = {"HELP", "DEFAULT", "COPY VALUE", "PASTE VALUE", "RANDOM", "TYPE A VALUE", "LOCK",
+                                      "DICE THE PAGE", "PUT BACK"};
+    static const char *const TRK[] = {"COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN", "MUTATE",
+                                      "PUT BACK"};
     ctx_row.clear();
     if (kind == CTX_VALUE)
         for (const char *r : VAL) ctx_row.push_back(r);
     else
         for (const char *r : TRK) ctx_row.push_back(r);
+    if (kind == CTX_VALUE && ctx_locked)
+        ctx_row[6] = "UNLOCK";
     if (kind == CTX_TRACK)
     {
         char t[24];
@@ -2331,6 +2360,7 @@ int Panel::ctx_row_at(int x, int y) const
     if (r < 0 || r >= (int)ctx_row.size()) return -1;
     if (ctx_kind == CTX_TRACK && r == 0) return -1;   // (the track's number: no job)
     if (ctx_kind == CTX_VALUE && r == 3 && clip_value.empty()) return -1;   // (PASTE VALUE: nothing copied yet)
+    if (r == (int)ctx_row.size() - 1 && !dice_back) return -1;   // (PUT BACK: no DICE or MUTATE to put back)
     return r;
 }
 void Panel::ctx_do(int r)
@@ -2351,11 +2381,20 @@ void Panel::ctx_do(int r)
         }
         case 4: zone_act(ctx_zone, TESS_ZA_RANDOM, 0); break;
         case 5: entry_on = true, entry_zone = ctx_zone, entry_text.clear(); break;
+        case 6: zone_act(ctx_zone, TESS_ZA_LOCK, 0); break;
+        case 7: zone_act(tess_zone_t{}, TESS_ZA_DICE, 0); break;
+        case 8: zone_act(tess_zone_t{}, TESS_ZA_DICE, -1); break;
         default: break;
         }
     }
     else if (ctx_kind == CTX_TRACK && r >= 1 && r <= 5)
         track_req = {TR_COPY + (r - 1), ctx_track};
+    else if (ctx_kind == CTX_TRACK && r >= 6)   // MUTATE that track, or PUT BACK
+    {
+        tess_zone_t z{};
+        z.kind = TESS_ZONE_TRACK, z.row = (int16_t)ctx_track;
+        zone_act(z, TESS_ZA_DICE, r == 6 ? MUTATE_PCT : -1);
+    }
     input.changed = true;
 }
 void Panel::ctx_draw(uint32_t *px)

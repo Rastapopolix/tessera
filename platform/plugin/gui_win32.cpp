@@ -141,9 +141,10 @@ class GuiWin32 : public Gui
                 g->files();
                 return 0;
             }
-            if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 && (wp == 'C' || wp == 'V') &&
-                g->panel.shortcut(wp == 'V' && GetKeyState(VK_SHIFT) < 0 ? 'v' : (char)wp))
-                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone)
+            if (msg == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && GetKeyState(VK_MENU) >= 0 &&
+                (wp == 'C' || wp == 'V' || wp == 'R') &&
+                g->panel.shortcut((wp == 'V' || wp == 'R') && GetKeyState(VK_SHIFT) < 0 ? (char)(wp + 32) : (char)wp))
+                return 0;   // (TRACK: Ctrl+C copies, Ctrl+V pastes, Ctrl+Shift+V the sound alone; Ctrl+R DICE, + Shift MUTATE)
             if (GetKeyState(VK_CONTROL) < 0 || GetKeyState(VK_MENU) < 0)
                 break;
             int sc = (int)(lp >> 16 & 0xFF), code = sc;

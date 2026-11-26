@@ -238,6 +238,10 @@ class Panel
     bool mod_type = false, mod_fine = false, mod_alt = false;   // (set_mods)
     int roll_way = 0, roll_x0 = 0, roll_y0 = 0, paint_x = 0;   // (a drag on NOTES' steps: which way, from where)
     enum { CTX_VALUE = 1, CTX_TRACK };
+    bool ctx_locked = false;          // (the value right-clicked is LOCKed: UNLOCK in its menu)
+    uint64_t locked = 0;              // the view's: zones LOCKed (a mark on each), and a DICE / MUTATE to put back
+    bool dice_back = false;
+    static constexpr int MUTATE_PCT = 8;   // MUTATE: each sound value nudged up to 8 % of its range
     int ctx_kind = 0, ctx_x = 0, ctx_y = 0, ctx_track = 0, ctx_hover = -1;   // (the right-click's menu: none, a value's, a track's)
     tess_zone_t ctx_zone = {};
     std::vector<std::string> ctx_row;

@@ -382,10 +382,158 @@ static void core_egrid(int32_t row, uint32_t action)
     ui.force = 1;
 }
 #endif
+#if TESS_HAS_POINTER
+/* ---- LOCK, DICE, MUTATE (Cosmati audit G6). A lock: a parameter (its ID, its track) DICE and MUTATE leave alone, kept
+ * by the front end with its state (tess_core_locks). DICE: the page's values (its KNOB zones) rolled round their
+ * defaults, 40 % of their range either way; MUTATE: a track's sound (envelope, filter and pitch depths, LFO, ENGINE
+ * 1..8, FX 1's mix, rate and character, the FM6 operators on an FM6 track) nudged n % of each range either way. Either
+ * one can be put back once (n -1), until the next */
+#define LK_MAX 64u
+static struct { uint16_t pid; uint8_t trk; } lk[LK_MAX];
+static uint32_t lk_n;
+static struct { uint16_t pid; uint8_t trk; int16_t old; } dk[96];
+static uint32_t dk_n;
+static uint32_t dk_seed = 0x2545F491u;
+static int lk_at(uint32_t pid, uint32_t tr)
+{
+    uint32_t i;
+    for (i = 0; i < lk_n; i++)
+        if (lk[i].pid == pid && lk[i].trk == tr % NTRK)
+            return (int)i;
+    return -1;
+}
+static uint32_t dk_rand(uint32_t n)                     /* 0 .. n - 1 */
+{
+    dk_seed ^= fm1_ms * 2654435761u;
+    dk_seed ^= dk_seed << 13, dk_seed ^= dk_seed >> 17, dk_seed ^= dk_seed << 5;
+    return n ? dk_seed % n : 0u;
+}
+/* pid on track tr to v, kept for UNDO; 1 if it changed */
+static uint32_t dk_set(uint32_t pid, uint32_t tr, int32_t v)
+{
+    int32_t was = pid_get(pid, tr);
+    if (v == was || dk_n >= NELEM(dk) || !tess_core_param_set(pid, tr, v))
+        return 0;
+    dk[dk_n].pid = (uint16_t)pid, dk[dk_n].trk = (uint8_t)tr, dk[dk_n].old = (int16_t)was;
+    dk_n++;
+    return 1;
+}
+static void dk_say(const char *what, uint32_t n)
+{
+    char b[16];
+    fmt_int(b, (int32_t)n);
+    str_cpy(b + str_len(b), n == 1u ? " VALUE" : " VALUES", 8);
+    ui_say(what, b);
+    ui.force = 1;
+}
+static void dice_page(void)
+{
+    uint32_t i, pid, tr, n = 0;
+    tess_param_t in;
+    dk_n = 0;
+    for (i = 0; i < uz_n; i++) {
+        tess_zone_t z;
+        int32_t span, lo, hi;
+        if (uz[i].kind != TESS_ZONE_KNOB)
+            continue;
+        memset(&z, 0, sizeof z);
+        z.kind = uz[i].kind, z.group = uz[i].group, z.role = uz[i].role, z.vrole = uz[i].vrole, z.row = uz[i].row;
+        if (!tess_core_zone_param(&z, &pid, &tr) || !tess_core_param_info(pid, tr, &in) || !in.settable ||
+            !in.per_track || in.max <= in.min || pid == P_MUTE || pid == P_LEVEL || pid == P_SLEN || lk_at(pid, tr) >= 0)
+            continue;
+        span = (in.max - in.min) * 2 / 5;
+        lo = in.def - span < in.min ? in.min : in.def - span;
+        hi = in.def + span > in.max ? in.max : in.def + span;
+        n += dk_set(pid, tr, lo + (int32_t)dk_rand((uint32_t)(hi - lo + 1)));
+    }
+    dk_say("DICE: ", n);
+}
+static void mutate(uint32_t tr, int32_t pct)
+{
+    static const uint8_t SOUND[] = {P_ATK, P_DEC, P_SUS, P_REL, P_ED_FLT, P_ED_PIT, P_ED_SHP, P_LRATE, P_LD_PIT,
+                                    P_LD_FLT, P_LD_SHP, P_LD_AMP, P_DETUNE, P_SPRD, P_FXMIX, P_FXRATE, P_FXCHAR,
+                                    P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
+                                    P_FM1_ATK, P_FM1_DEC, P_FM1_SUS, P_FM1_REL, P_FM1_LEVEL,
+                                    P_FM2_ATK, P_FM2_DEC, P_FM2_SUS, P_FM2_REL, P_FM2_LEVEL,
+                                    P_FM3_ATK, P_FM3_DEC, P_FM3_SUS, P_FM3_REL, P_FM3_LEVEL,
+                                    P_FM4_ATK, P_FM4_DEC, P_FM4_SUS, P_FM4_REL, P_FM4_LEVEL};
+    uint32_t i, n = 0, fm = trk[tr].eng_req == ENGI_FM6;
+    tess_param_t in;
+    dk_n = 0;
+    for (i = 0; i < sizeof SOUND; i++) {
+        uint32_t pid = SOUND[i];
+        int32_t d, v;
+        if ((pid >= P_FM1_ATK && pid <= P_FM4_LEVEL && !fm) || lk_at(pid, tr) >= 0 ||
+            !tess_core_param_info(pid, tr, &in) || !in.settable || in.max <= in.min)
+            continue;
+        d = (in.max - in.min) * pct / 100;
+        if (d < 1)
+            d = 1;
+        v = pid_get(pid, tr) + (int32_t)dk_rand((uint32_t)(2 * d + 1)) - d;
+        n += dk_set(pid, tr, v < in.min ? in.min : v > in.max ? in.max : v);
+    }
+    dk_say("MUTATE: ", n);
+}
+static void dice_undo(void)
+{
+    uint32_t n = dk_n;
+    while (dk_n) {
+        dk_n--;
+        tess_core_param_set(dk[dk_n].pid, dk[dk_n].trk, dk[dk_n].old);
+    }
+    dk_say("PUT BACK: ", n);
+}
+uint32_t tess_core_locks(uint8_t *out, uint32_t cap)
+{
+    uint32_t i;
+    if (!out)
+        return lk_n * 3u;
+    for (i = 0; i < lk_n && i * 3u + 3u <= cap; i++)
+        out[i * 3u] = (uint8_t)lk[i].pid, out[i * 3u + 1u] = (uint8_t)(lk[i].pid >> 8), out[i * 3u + 2u] = lk[i].trk;
+    return i * 3u;
+}
+void tess_core_locks_load(const uint8_t *in, uint32_t len)
+{
+    uint32_t i;
+    lk_n = 0;
+    for (i = 0; in && i + 3u <= len && lk_n < LK_MAX; i += 3u)
+        if (in[i + 2u] < NTRK) {
+            lk[lk_n].pid = (uint16_t)(in[i] | (uint32_t)in[i + 1u] << 8), lk[lk_n].trk = in[i + 2u];
+            lk_n++;
+        }
+}
+#else
+uint32_t tess_core_locks(uint8_t *out, uint32_t cap) { (void)out, (void)cap; return 0; }
+void tess_core_locks_load(const uint8_t *in, uint32_t len) { (void)in, (void)len; }
+#endif
 void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
 {
 #if TESS_HAS_POINTER
     int32_t d, k;
+    if (action == TESS_ZA_DICE) {                     /* (DICE, MUTATE, put back: any zone, or none) */
+        if (n < 0)
+            dice_undo();
+        else if (n > 0)
+            mutate(z && z->kind == TESS_ZONE_TRACK && z->row >= 0 && z->row < (int32_t)NTRK ? (uint32_t)z->row : song.sel,
+                   n > 50 ? 50 : n);
+        else
+            dice_page();
+        return;
+    }
+    if (action == TESS_ZA_LOCK) {                     /* (a value's menu: LOCK, UNLOCK) */
+        uint32_t pid, tr;
+        int at;
+        if (!z || !tess_core_zone_param(z, &pid, &tr))
+            return;
+        at = lk_at(pid, tr);
+        if (at >= 0)
+            lk[at] = lk[--lk_n];
+        else if (lk_n < LK_MAX)
+            lk[lk_n].pid = (uint16_t)pid, lk[lk_n].trk = (uint8_t)(tr % NTRK), lk_n++;
+        ui_say(at >= 0 ? "UNLOCKED" : "LOCKED", "");
+        ui.force = 1;
+        return;
+    }
     if (action == TESS_ZA_RANDOM) {                   /* (a value's menu: RANDOM) */
         static uint32_t seed = 0x9E3779B9u;
         uint32_t pid, tr;
@@ -1258,6 +1406,13 @@ void tess_core_view(tess_view_t *v)
                     str_cpy(z->value, uz[i].value, sizeof z->value);
                 }
         v->zone_count = n;
+        v->locked = 0;
+        for (i = 0; lk_n && i < n; i++) {             /* (a value LOCKed: its bit) */
+            uint32_t pid, tr;
+            if (tess_core_zone_param(&v->zones[i], &pid, &tr) && lk_at(pid, tr) >= 0)
+                v->locked |= (uint64_t)1u << i;
+        }
+        v->dice_back = dk_n ? 1u : 0u;
         v->typing = name_on() ? 1u : 0u;
         v->closable = !ui.confirm && (help.on || pop.on) ? 1u : 0u;
         v->sheet = page_sheet() != 0u;
