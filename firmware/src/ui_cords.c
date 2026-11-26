@@ -27,9 +27,14 @@ static void cu_adopt(void)
 }
 
 #if TESS_MPE
-#define CU_SPT (CS_ENERGY + 2u)                         /* a track's sources (LFO .. OCHD8, then EOC, IN and SLIDE, added later) */
+#define CU_SPT0 (CS_ENERGY + 2u)                        /* a track's sources (LFO .. OCHD8, then EOC, IN and SLIDE, added later) */
 #else
-#define CU_SPT (CS_ENERGY + 1u)                         /* a track's sources (LFO .. OCHD8, then EOC and IN, added later) */
+#define CU_SPT0 (CS_ENERGY + 1u)                        /* a track's sources (LFO .. OCHD8, then EOC and IN, added later) */
+#endif
+#if TESS_LFO_SLOPE
+#define CU_SPT (CU_SPT0 + 2u)                           /* .. then LFO 90 and LFO X2 */
+#else
+#define CU_SPT CU_SPT0
 #endif
 #define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track from the selected
                                                          * one on (T3: T3, T4, T1, T2), then the project's
@@ -50,6 +55,9 @@ static const uint8_t CU_ORDER[] = {
     CU_SOUND, CD_PITCH, CD_CUTOFF, CD_SHAPE, CD_GAIN, CD_E1, CD_E2, CD_E3, CD_E4, CD_E5, CD_E6, CD_E7, CD_E8,
     CU_ENV, CD_ATTACK, CD_DECAY, CD_SUSTAIN, CD_RELEASE, CD_ENV_FLT, CD_ENV_PIT, CD_ENV_SHP,
     CU_LFO, CD_LFO_RATE, CD_LFO_DEPTH, CD_LFO_PIT, CD_LFO_FLT, CD_LFO_SHP, CD_LFO_AMP,
+#if TESS_LFO_SLOPE
+    CD_LFO_RST,
+#endif
     CU_MIX, CD_LEVEL, CD_PAN, CD_SPREAD, CD_FX_SEND, CD_FX_SEND2, CD_FX_SEND3, CD_PLAY, CD_CC,
     CU_FX, CD_FX1_MIX, CD_FX1_RATE, CD_FX1_CHAR, CD_FX2_MIX, CD_FX2_RATE, CD_FX2_CHAR, CD_FX3_MIX, CD_FX3_RATE,
     CD_FX3_CHAR,
@@ -129,6 +137,9 @@ static uint32_t cu_src_of(const cord_t *c)
 #if TESS_MPE
                                      c->src == CS_SLIDE ? CS_ENERGY + 1u :
 #endif
+#if TESS_LFO_SLOPE
+                                     c->src == CS_LFOQ ? CU_SPT0 : c->src == CS_LFO2X ? CU_SPT0 + 1u :
+#endif
                                      cu_tide(c->src) - 1u)
                               : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
@@ -141,6 +152,9 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     *tr = (uint8_t)((v / CU_SPT + song.sel) % NTRK);  /* (the tracks from the selected one on, as KNOB 3's) */
 #if TESS_MPE
     if (v % CU_SPT == CS_ENERGY + 1u) return CS_SLIDE;
+#endif
+#if TESS_LFO_SLOPE
+    if (v % CU_SPT >= CU_SPT0) return v % CU_SPT == CU_SPT0 ? CS_LFOQ : CS_LFO2X;
 #endif
     return v % CU_SPT == CS_ENERGY - 1u ? (uint32_t)CS_EOC : v % CU_SPT == CS_ENERGY ? (uint32_t)CS_IN : cu_tide(1u + v % CU_SPT);
 }

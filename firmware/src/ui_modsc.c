@@ -118,6 +118,9 @@ static int msc_select(int32_t s)
     if (msc.slot >= 0 && msc_used(cord_get((uint32_t)msc.slot)))
         v = cord_get((uint32_t)msc.slot)->src;
     v = (v - 1u + (s > 0 ? 1u : n - 1u)) % n + 1u;      /* CS_LFO .. CS_DRIFT round, never CS_OFF */
+#if TESS_LFO_SLOPE
+    while (!cord_src_name(v)) v = (v - 1u + (s > 0 ? 1u : n - 1u)) % n + 1u;   /* (past a code this build lacks) */
+#endif
     msc.src[tr] = (uint8_t)v;
     if (msc.slot >= 0 && msc_used(cord_get((uint32_t)msc.slot))) {
         cord_t c = *cord_get((uint32_t)msc.slot);

@@ -950,7 +950,7 @@ static void mo_pic_morph(const gen_morph_t *g)
 static void mo_pic_lfo(track_t *t)
 {
     int32_t x, py = 0, uni = t->p[P_LPOL] != 0, z = uni ? 98 : 80, amp = uni ? 40 : 18, now;
-    uint32_t ph = (uint32_t)t->p[P_LPHASE] << 25, step = 0xFFFFFFFFu / 116u;
+    uint32_t ph = LFO_PH0(t), step = 0xFFFFFFFFu / 116u;
     char b[16];
     const char *unit;
     mo_dash(2, z, 116, MO_DIM);

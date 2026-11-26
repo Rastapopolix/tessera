@@ -1015,7 +1015,7 @@ static void seq_start(void)
     song.rec_pass = song.rec;
     for (i = 0; i < NTRK; i++) {                   /* every track from its step 0, together */
         track_t *t = &trk[i];
-        if (t->p[P_LTRIG] && t->p[P_LSYNC]) t->lfo_ph = (uint32_t)t->p[P_LPHASE] << 25;
+        if (LFO_FREE(t) && t->p[P_LSYNC]) t->lfo_ph = LFO_PH0(t);
         seq_dir_top(t);
         t->seq_pos = 0x7FFFFFFF;                   /* step 0 fires on the first block */
         t->seq_pass = 0;

@@ -7,7 +7,11 @@ static const char *const N_LSYNC[] = {"OFF", "4BAR", "2BAR", "1/1", "1/2", "1/4"
 static const uint8_t LSYNC_DIV[11] = {0, 9, 8, 7, 6, 0, 1, 4, 2, 5, 3};   /* (8BAR on: 4BAR's, doubled; voice.c lsync_cycle) */
 static const uint8_t N_LSYNC_ORDER[15] = {0, 14, 13, 12, 11, 1, 2, 3, 4, 5, 7, 6, 9, 8, 10};   /* OFF, then slow to fast
                                                                                                 * (8T before 1/8) */
-static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H"};
+static const char *const N_LWAVE[] = {"SIN", "TRI", "SAW", "SQR", "S&H",
+#if TESS_LFO_SLOPE
+                                      "SLOPE", "EXP", "LOG",   /* (LW_SLOPE ..: core.h, voice.c lfo_slope) */
+#endif
+};
 static const char *const N_AMODE[] = {"OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "RND1"};
 static const char *const N_DIV[] = {"1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
 /* N_DIV as the knobs and lists step through it: slowest to fastest, each triplet between its straight neighbours (the
@@ -15,7 +19,11 @@ static const char *const N_DIV[] = {"1/4", "1/8", "1/16", "1/32", "8T", "16T", "
 static const uint8_t N_DIV_ORDER[10] = {9, 8, 7, 6, 0, 4, 1, 5, 2, 3};
 static const char *const N_RECQ[] = {"OFF", "1/4", "1/8", "1/16", "1/32", "8T", "16T", "1/2", "1/1", "2BAR", "4BAR"};
 static const uint8_t N_RECQ_ORDER[11] = {0, 10, 9, 8, 7, 1, 5, 2, 6, 3, 4};   /* OFF, then N_DIV_ORDER's (+1) */
-static const char *const N_LTRIG[] = {"NOTE", "FREE"};
+static const char *const N_LTRIG[] = {"NOTE", "FREE",
+#if TESS_LFO_SLOPE
+                                      "ONCE",   /* (LT_ONCE: NOTE's start, one cycle, then held: voice.c) */
+#endif
+};
 static const char *const N_LPOL[] = {"BI", "UNI"};
 static const char *const N_FX[] = {"OFF", "PHASER", "WIDTH", "FORMANT", "TAPE", "SPIT", "ECHO", "ROOM", "REVERB", "CHORUS", "FILTER", "DRIVE",
 #if MELODEE_ECHO_SYNC
@@ -315,6 +323,12 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         else if(type==11u){fx_desc.label="DRIVE";fx_desc.fmt=F_PCT;}   /* (DRIVE: fx.c fx_drive) */
         return &fx_desc;
     }
+#if TESS_LFO_SLOPE
+    if (id == P_LPHASE && LFO_SLOPE(t)) {             /* a SLOPE wave's PHS: where its top is (voice.c lfo_slope) */
+        static const param_desc_t skew = PD("SKEW", F_INT, 0, 127, 0);
+        return &skew;
+    }
+#endif
     if (id == P_MPCDEG) {                             /* a degree of the track's scale */
         static param_desc_t degree;
         degree = TP[P_MPCDEG];

@@ -18,6 +18,8 @@ C_DEFS = -DTESS_TARGET=TESS_T_DAISY -DMELODEE_USB_HOST=0 -DMELODEE_USB_AUDIO=0 -
 # the engines the FM-1 leaves out for flash, on here (Theo 2026-11-21: what the plugin adds beyond the FM-1 also
 # serves Andamento): SID, DRUM's SID KIT and SID DIGI, MACRO (Plaits, C++ below), PHASE (the CZ-1's phase distortion)
 C_DEFS += -DMELODEE_SID=1 -DMELODEE_SID_KIT=1 -DMELODEE_PLAITS=1 -DMELODEE_PHASE=1 -DMELODEE_SMF=1
+# the LFO's SLOPE waves and TRIG ONCE, its LFO 90 and LFO x2 sources and the LFO RST destination (core.h)
+C_DEFS += -DTESS_LFO_SLOPE=1
 # (Tessera's warnings are checked by its own builds)
 CFLAGS += -w
 

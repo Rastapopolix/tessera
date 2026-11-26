@@ -547,6 +547,8 @@ sound && t "SYNC ECHO: note values at the tempo, folded into the FM-1's 371 ms r
 sound && t "SYNC ECHO: note values at the tempo, the plugin's ~3 s ring" echo_sync_test_plugin:echo_sync_test -O2 $FW -DMELODEE_ECHO_RING=32768u -DCORE_TRACKS=8
 core && t "LFO SYNC + FREE after a Song Position: on the bar, as from the top (a DAW's start, loop, locate)" lfo_seek_test -O1 $FW
 core && t "LFO SYNC + FREE after a Song Position, at the plugin's 8 tracks" lfo_seek_test_8:lfo_seek_test -O1 $FW -DCORE_TRACKS=8
+core && t "LFO SLOPE (the plugin's TESS_LFO_SLOPE): SLOPE EXP LOG and SKEW, TRIG ONCE, LFO 90 / X2, LFO RST" lfo_slope_test_plugin:lfo_slope_test -O1 $FW -DTESS_LFO_SLOPE=1 -DCORE_TRACKS=8
+core && t "LFO SLOPE on the FM-1: a plugin project's SLOPE waves load as TRI, TRIG ONCE as NOTE" lfo_slope_test -O1 $FW
 sound && t "MPE (the plugin's TESS_MPE): each note's own AT and SLIDE, channels, Poly AT, CLAP BRIGHTNESS, per voice in the mods, cost" mpe_test -O2 $FW -DTESS_MPE=1 -DCORE_TRACKS=8
 core && t "EQ accelerator: register layout, isolated histories and bounded timeout" eq_hw_test
 core && job web_tests
