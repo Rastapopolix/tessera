@@ -26,6 +26,9 @@ struct GuiLink
     virtual std::string file_name() = 0;
     /* MIDI: the notes played since PLAY as a .mid clip (Documents/Tessera/MIDI); what to show */
     virtual std::string export_midi() { return ""; }
+    /* MIDI dragged off: the clip as a .mid in a temporary folder, for the system's drag (path); what to show instead
+     * when there is none (path empty) */
+    virtual std::string midi_drag_file(std::string &path) { path.clear(); return "NO CLIP TO DRAG"; }
     /* the shell the window shows (Panel::shell_count), and one picked under the keys: the instance sets its ink and
      * remembers it for the next window */
     virtual int shell() = 0;

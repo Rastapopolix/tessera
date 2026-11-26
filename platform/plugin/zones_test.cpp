@@ -15,6 +15,9 @@
  * usage: tessera-zones-test [tracks.ppm] [mosaic.ppm] (the TRACKS page as a picture, and in MOSAIC) */
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <string>
 
@@ -1554,6 +1557,79 @@ static void drop_sound()   // G4: a sound of the browser dropped on a TRACKS row
     tap(B_HOME);
 }
 
+static float loud(int blocks)   // the loudest sample over 10 ms blocks
+{
+    float pk = 0;
+    for (int b = 0; b < blocks; b++)
+    {
+        uint32_t n = tess_core_rate() / 100;
+        tess_core_render(L, R, nullptr, n);
+        for (uint32_t i = 0; i < n; i++) pk = std::max(pk, std::max(std::fabs(L[i]), std::fabs(R[i])));
+    }
+    tess_core_view(&v);
+    return pk;
+}
+static void audition_find()   // G5: a sound clicked in the browser while stopped is heard; FIND filters the list by name
+{
+    tess_core_project_new();
+    run(50);
+    tess_core_key_words(1);
+    tess_core_track_select(0);
+    tap(B_HOME);
+    act(find("T1", TESS_ZONE_TRACK) >= 0 ? find("T1", TESS_ZONE_TRACK) : find("1", 0), TESS_ZA_DOUBLE, 0, 40);
+    if (find("SOUND", TESS_ZONE_CELL) < 0)   // (4-track builds: HOME's sound row; else the browser's own way in)
+        for (int i = 0; i < 4 && find("SOUND", TESS_ZONE_CELL) < 0; i++) tap(B_SAVE);
+    int below = -1;
+    for (int i = 0; i < (int)v.zone_count; i++)
+        if (v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].role == 4 && (int8_t)(v.zones[i].row & 0xFF) == 1) below = i;
+    CHECK(below >= 0, "G5: T1's browser open");
+    if (below < 0) { tess_core_key_words(0); tap(B_HOME); return; }
+    CHECK(!tess_core_playing() && loud(30) < 0.001f, "stopped, nothing playing: silent");
+    act(below, TESS_ZA_CLICK, 0, 1);
+    float heard = loud(60);
+    CHECK(heard > 0.01f, "a sound clicked while stopped: heard (peak %.3f)", heard);
+    loud(300);
+    float after = loud(30);
+    CHECK(after < 0.001f, "the audition over: silent again (peak %.4f)", after);
+
+    int f = find("FIND", TESS_ZONE_CELL);
+    CHECK(f >= 0, "the browser's count: a FIND cell");
+    if (f >= 0)
+    {
+        tess_zone_t z = v.zones[f];
+        CHECK(!tess_core_zone_type(&z, "bass"), "FIND typed: taken");
+        run(10);
+        int n = 0, ok = 1;
+        for (uint32_t i = 0; i < v.zone_count; i++)
+            if (v.zones[i].kind == TESS_ZONE_CELL && v.zones[i].role == 4 && v.zones[i].value[0])
+            {
+                n++;
+                std::string s = v.zones[i].value;
+                for (auto &c : s) c = (char)std::toupper((unsigned char)c);
+                if (s.find("BASS") == std::string::npos) ok = 0, std::printf("  not a BASS: %s\n", v.zones[i].value);
+            }
+        CHECK(n > 0 && ok, "FIND BASS: the sounds listed all have BASS in their names (%d)", n);
+        f = find("FIND", TESS_ZONE_CELL);
+        CHECK(f >= 0 && !std::strcmp(v.zones[f].value, "BASS"), "the cell carries the text");
+        z = v.zones[f >= 0 ? f : 0];
+        tess_core_zone_type(&z, "qqqzzz");
+        run(10);
+        CHECK(find("SOUND", TESS_ZONE_CELL) < 0 || !v.zones[find("SOUND", TESS_ZONE_CELL)].value[0],
+              "FIND with no match: no sounds");
+        tess_core_zone_type(&z, "");
+        run(10);
+        CHECK(find("SOUND", TESS_ZONE_CELL) >= 0, "FIND emptied: the sounds back");
+        tess_core_zone_type(&z, "pad");
+        run(10);
+        tap(B_HOME);
+        run(10);
+        f = find("FIND", TESS_ZONE_CELL);
+        CHECK(f < 0, "HOME: no FIND cell");
+    }
+    tess_core_key_words(0);
+    tap(B_HOME);
+}
+
 static void points()   // a picture's markers dragged: ENV's corners turn ATK, DEC + SUS, REL + SUS
 {
     tap(B_HOME);
@@ -1781,6 +1857,7 @@ int main(int argc, char **argv)
     roll();
     paint();
     drop_sound();
+    audition_find();
     smap();
     chord_user();
     sections();

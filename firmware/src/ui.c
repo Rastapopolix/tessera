@@ -1389,6 +1389,9 @@ static void preset_go(uint32_t n)                    /* load list index n into t
     }
     recent_loaded();
     preset_hinted();
+#if TESS_HAS_POINTER
+    audition_start();                                   /* (stopped: the sound heard, browse.c) */
+#endif
 }
 
 /* The selected track's engine only: its factory presets, then the used user presets
