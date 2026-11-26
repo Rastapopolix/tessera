@@ -385,6 +385,7 @@ void Panel::draw(uint32_t *px, const tess_view_t &v, const tess_tracks_t *t2)
     std::memcpy(map_name, v.map_name, sizeof map_name);
     map_sec = v.map_sec, map_at = v.map_at;
     if (map_open && !map_has()) map_open = false;   // (the sections gone: an FM-1 shell)
+    lit_seen = v.lit_buttons;
     if (expanded() && t2 && t2->w == TESS_TRACKS_W)
         zones2.assign(t2->zones, t2->zones + (t2->zone_count < (uint32_t)TESS_TRACKS_ZONES ? t2->zone_count
                                                                                           : (uint32_t)TESS_TRACKS_ZONES));
@@ -831,6 +832,7 @@ bool Panel::key(int code, bool down)
     static const int BTN_SC[12] = {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D};   // 1 .. 0 - =
     static const int BTN_BIT[12] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC};
     int k = -1, b = -1;
+    if (code == 0x2A || code == 0x36) shift_held_ = down;   // (Shift: the arrows' other jobs, G12)
     for (int i = 0; i < 10; i++) if (code == WHITE_SC[i]) k = WHITE_K[i];
     for (int i = 0; i < 8; i++) if (code == BLACK_SC[i][0]) k = BLACK_SC[i][1];
     for (int i = 0; i < 9; i++) if (code == TOP_SC[i]) k = 18 + i;
@@ -888,12 +890,47 @@ bool Panel::key(int code, bool down)
         input.changed = true;
         return true;
     }
-    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)
+    if (code == KEY_UP || code == KEY_DOWN || code == KEY_LEFT || code == KEY_RIGHT)   // the arrows (G12, Theo 2026-11-26)
     {
-        if (!down) return false;
-        int role = code == KEY_UP || code == KEY_DOWN ? 0 : 1;   // SELECT, ALGORITHM
+        const bool side = code == KEY_LEFT || code == KEY_RIGHT;
+        const int dir = code == KEY_RIGHT || code == KEY_DOWN ? 1 : -1;
+        if (!down)   // (a section's button the arrow held: let go)
+        {
+            if (arrow_sec < 0) return false;
+            kbd_buttons &= ~(1u << (SEC_BIT + arrow_sec));
+            arrow_sec = -1;
+            merge_held();
+            return true;
+        }
+        if (side && shift_held_ && native())   // Shift+Left / Right: the section before / after (from HOME: GEN, SETUP)
+        {
+            if (arrow_sec >= 0) return true;   // (a repeat: once a press)
+            int cur = -1;
+            for (int s = 0; s < TESS_SEC_N; s++)
+                if (lit_seen & TESS_BTN_SECTION(s)) cur = s;
+            arrow_sec = cur < 0 ? (dir > 0 ? 0 : TESS_SEC_N - 1) : (cur + dir + TESS_SEC_N) % TESS_SEC_N;
+            kbd_buttons |= 1u << (SEC_BIT + arrow_sec);
+            merge_held();
+            return true;
+        }
+        if (side)   // Left / Right: the page before / after among the footer's tabs
+        {
+            page_step(dir);
+            return true;
+        }
+        if (shift_held_ && tracks_ > 1)   // Shift+Up / Down: the track before / after
+        {
+            input.track = (track_now + dir + tracks_) % tracks_;
+            track_now = input.track;
+            input.changed = true;
+            return true;
+        }
+        int role = 0;   // Up / Down: a list's row (its KNOB), else SELECT as before (Up turning it up)
+        bool list = false;
+        for (const auto &z : zones)
+            if (z.kind == TESS_ZONE_ROW && z.role >= 0) { role = z.role; list = true; break; }
         for (size_t i = 0; i < knobs.size(); i++)
-            if (knobs[i].role == role) turn((int)i, code == KEY_UP || code == KEY_RIGHT ? 1 : -1);
+            if (knobs[i].role == role) turn((int)i, list ? dir : -dir);
         return true;
     }
     uint32_t was_k = kbd_keys, was_b = kbd_buttons;
@@ -941,6 +978,7 @@ bool Panel::shortcut(char c)
 
 bool Panel::release_keys()
 {
+    shift_held_ = false, arrow_sec = -1;
     if (!kbd_keys && !kbd_buttons) return false;
     kbd_keys = kbd_buttons = 0;
     merge_held();
@@ -1583,11 +1621,17 @@ bool Panel::hwheel(int notches)
 {
     if (!notches || (hwheel_at && frame - hwheel_at < 8u))   // (8 frames at 30 a second)
         return false;
-    const int want = notches > 0 ? 1 : -1;
+    if (!page_step(notches > 0 ? 1 : -1))
+        return false;
+    hwheel_at = frame ? frame : 1u;
+    return true;
+}
+
+bool Panel::page_step(int dir)   // the footer's tab next to the shown one that way (or the arrow to it): its page
+{
     for (auto &z : zones)
-        if (z.kind == TESS_ZONE_TAB && z.row == want)   // (the tab next to the shown one, or the arrow to it)
+        if (z.kind == TESS_ZONE_TAB && z.row == dir)
         {
-            hwheel_at = frame ? frame : 1u;
             zone_act(z, TESS_ZA_CLICK, 0);
             return true;
         }
@@ -1866,10 +1910,10 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
         else if (v.key_dim & bit)   // (out of the scale, G10: faded into the body)
             border = mix(T_BODY, T_DIM, 0.45), fill = natural ? mix(T_BODY, T_BLACK, 0.5) : mix(T_BODY, T_DIM, 0.35);
         nbox(c, k.cx - kw / 2, k.cy - kh / 2, kw, kh, border, fill);
-        if (led)
+        if (led)   // (as far from the key's top as from its sides)
         {
             int lw = kw * 2 / 3, lh = kh / 8 < 4 ? 4 : kh / 8;
-            c.box(k.cx - lw / 2, k.cy - kh / 2 + 6, lw, lh, led);
+            c.box(k.cx - lw / 2, k.cy - kh / 2 + (kw - lw) / 2, lw, lh, led);
         }
         if (v.key_root & bit)   // the scale's root: a dot near the key's foot
         {
@@ -2752,10 +2796,14 @@ void Panel::draw_hover(uint32_t *px)
     const uint32_t YEL = 0xFFFFD020, WORD = 0xFFB9B2A0, BLACK = 0xFF000000;
     const int SX = z2 >= 0 ? T2_X : SCREEN_X, SW = z2 >= 0 ? T2_W : SCREEN_S;   // (the screen it is on)
     int ox = z2 >= 0 ? T2_X + T2_IN : SCREEN_X + SCREEN_S / 32, oy = z2 >= 0 ? T2_Y + T2_IN : SCREEN_Y + SCREEN_S / 32;
-    c.box(ox + z.x, oy + z.y, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y + z.h - 1, z.w, 1, YEL);
-    c.box(ox + z.x, oy + z.y, 1, z.h, YEL);
-    c.box(ox + z.x + z.w - 1, oy + z.y, 1, z.h, YEL);
+    {   // the outline a pixel outside the zone, and only on the screen's black: never over a line, a box or a letter
+        const int x0 = ox + z.x - 1, y0 = oy + z.y - 1, x1 = ox + z.x + z.w, y1 = oy + z.y + z.h, W = width();
+        auto dot = [&](int x, int y) {
+            if (x >= 0 && y >= 0 && x < W && y < H && (px[y * W + x] & 0xFFFFFFu) == 0) px[y * W + x] = YEL;
+        };
+        for (int x = x0; x <= x1; x++) dot(x, y0), dot(x, y1);
+        for (int y = y0; y <= y1; y++) dot(x0, y), dot(x1, y);
+    }
     if (!z.name[0] && !z.value[0]) return;
     if (!hover_help_ && drag != ZONE) return;   // (HOVER HELP OFF: the card only while a value is dragged)
     // the card: under the screen (it never covers it), centred on the zone, one line: the name, then the value large;

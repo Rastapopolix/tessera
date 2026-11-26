@@ -799,6 +799,11 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
                 mx_link((int32_t)mx_from + n, (int32_t)mx_to + (int8_t)(uint8_t)((uint16_t)z->row >> 8));
             break;
         }
+        if (action == TESS_ZA_CLICK && z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_PERF &&
+            !strncmp(z->name, "MCR", 3) && z->name[3] >= '1' && z->name[3] <= '4') {
+            macro_mods((uint32_t)(z->name[3] - '1'));   /* (PERF: a MACRO's row, its mod in MODS) */
+            break;
+        }
         if (action == TESS_ZA_TURN) {
             zq_turn(z->role, n);
             break;

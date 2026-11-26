@@ -1623,6 +1623,51 @@ int main(int argc, char **argv)
         tess_core_view(&v);
         b.draw(px.data(), v);
     }
+    // Cosmati audit G12, the arrows: Left / Right the pages, Shift+Left / Right the sections, Up / Down a list's rows,
+    // Shift+Up / Down the tracks
+    {
+        Panel q;
+        q.set_tracks((int)tess_core_tracks());
+        auto frames = [&](int n) { for (int i = 0; i < n; i++) { tess_core_view(&v); q.draw(px.data(), v); } };
+        auto press = [&](uint32_t bit) { tess_core_buttons(bit); run(q, 0.1); tess_core_buttons(0); run(q, 0.3); frames(1); };
+        tess_core_track_select(0);
+        press(TESS_BTN_SECTION(TESS_SEC_FX));
+        uint64_t h0 = screen_hash(v);
+        CHECK(q.key(Panel::KEY_RIGHT, true), "Right: taken");
+        q.key(Panel::KEY_RIGHT, false);
+        run(q, 0.3);
+        frames(1);
+        CHECK(screen_hash(v) != h0 && (v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_FX)), "Right: FX's next page");
+        q.key(Panel::KEY_LEFT, true);
+        q.key(Panel::KEY_LEFT, false);
+        run(q, 0.3);
+        frames(1);
+        CHECK(screen_hash(v) == h0, "Left: back to FX's first page");
+        q.key(0x2A, true);   // Shift
+        CHECK(q.key(Panel::KEY_RIGHT, true) && (q.input.buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE)),
+              "Shift+Right: SHAPE's button held (%08x)", q.input.buttons);
+        run(q, 0.1);
+        CHECK(q.key(Panel::KEY_RIGHT, false) && !(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE)), "..let go with the arrow");
+        run(q, 0.3);
+        frames(1);
+        CHECK(v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE), "Shift+Right from FX: SHAPE");
+        CHECK(q.key(Panel::KEY_DOWN, true) && q.input.track == 1, "Shift+Down: the next track (%d)", q.input.track);
+        q.key(Panel::KEY_DOWN, false);
+        run(q, 0.3);
+        CHECK(tess_core_track() == 1, "..T2 selected (%u)", tess_core_track());
+        CHECK(q.key(Panel::KEY_UP, true) && q.input.track == 0, "Shift+Up: back to T1");
+        q.key(Panel::KEY_UP, false);
+        q.key(0x2A, false);
+        run(q, 0.3);
+        frames(1);
+        press(TESS_BTN_SECTION(TESS_SEC_SETUP));   // (TEMPO .. a knob page: Up turns SELECT as ever)
+        q.input.enc[0] = 0;
+        CHECK(q.key(Panel::KEY_UP, true) && q.input.enc[0] == 1, "Up on a knob page: SELECT up, as before");
+        q.key(Panel::KEY_UP, false);
+        q.input.enc[0] = 0;
+        q.input.changed = false;
+        press(1u << 6);   // HOME
+    }
     // Cosmati: the knobs named by the page, sideways scroll a page (stopping at the ends), the mouse's back / forward
     {
         Panel q;
