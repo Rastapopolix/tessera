@@ -502,6 +502,28 @@ int main(int argc, char **argv)
         std::printf("note-offs: its own %.6f, the wildcard %.6f, none %.6f\n", after[0], after[1], after[2]);
         CHECK(after[2] > 1e-3 && after[0] < after[2] * 0.1 && after[1] < after[2] * 0.1,
               "a wildcard note-off ends a held note as its own note-off does");
+        // A / B (Cosmati audit G7) in the state: the part after it all ("TSNP"), loaded and saved back the same; a part
+        // that does not add up: refused
+        {
+            std::vector<uint8_t> base = o.save(), ab;
+            auto u32 = [&](uint32_t v) { for (int k = 0; k < 4; k++) ab.push_back((uint8_t)(v >> (8 * k))); };
+            for (int k = 0; k < 2; k++)
+            {
+                u32(4), ab.insert(ab.end(), {'T', 'S', 'P', '1'});
+                u32(1), ab.insert(ab.end(), {0x01, 0x00, (uint8_t)k, (uint8_t)(40 + k), 0x00});   // (P_ATK on T1 / T2)
+            }
+            ab.push_back(1), ab.push_back(0xFF);   // (B shown, MORPH not used)
+            std::vector<uint8_t> with = base;
+            uint32_t n = (uint32_t)ab.size();
+            with.insert(with.end(), ab.begin(), ab.end());
+            with.insert(with.end(), {(uint8_t)n, (uint8_t)(n >> 8), (uint8_t)(n >> 16), (uint8_t)(n >> 24), 'T', 'S', 'N', 'P'});
+            CHECK(o.load(with), "a state with A / B loads");
+            CHECK(o.save() == with, "..and saves back the same (A / B kept)");
+            std::vector<uint8_t> bad = with;
+            bad[bad.size() - 8] = 0xF0;
+            CHECK(!o.load(bad), "an A / B part that does not add up: refused");
+            CHECK(o.load(base) && o.save() == base, "a state without A / B: none kept");
+        }
         o.close();
     }
 

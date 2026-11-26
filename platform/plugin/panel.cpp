@@ -1981,23 +1981,27 @@ void Panel::gen_var_step(int n)
     gen_ask(GEN_SET);
 }
 
-// ---- A / B (Cosmati audit G7): EXPANDED's header, between GENERATE's strip and the skin's switch
+// ---- A / B (Cosmati audit G7): EXPANDED's header, between GENERATE's strip and the skin's switch: A, MORPH's word and
+// its rail, B (B's right edge 12 px left of the switch, so a longer version text moves it)
 namespace
 {
-const int SN_Y = 10, SN_H = 28, SA_X = 842, SN_W = 34, SM_X = 886, SM_W = 370, SB_X = SM_X + SM_W + 10;
+const int SN_Y = 10, SN_H = 28, SA_X = 842, SN_W = 34, SM_X = SA_X + SN_W + 92;   // (MORPH's word in the 92)
 }
+int Panel::snap_b_x() const { return (skin_x > 0 ? skin_x : width() - 180) - 12 - SN_W; }
 int Panel::snap_part_at(int x, int y) const
 {
     if (!native() || !expanded() || y < SN_Y || y >= SN_Y + SN_H)
         return -1;
+    int bx = snap_b_x();
     if (x >= SA_X && x < SA_X + SN_W) return 0;
-    if (x >= SB_X && x < SB_X + SN_W) return 1;
-    if (x >= SM_X && x < SM_X + SM_W) return 2;
+    if (x >= bx && x < bx + SN_W) return 1;
+    if (x >= SA_X + SN_W && x < bx) return 2;
     return -1;
 }
 int Panel::snap_value(int x) const
 {
-    int v = (x - SM_X - 8) * 100 / (SM_W - 16);
+    int w = snap_b_x() - 10 - SM_X;
+    int v = w > 0 ? (x - SM_X) * 100 / w : 0;
     return v < 0 ? 0 : v > 100 ? 100 : v;
 }
 void Panel::draw_snaps(uint32_t *px)
@@ -2005,9 +2009,10 @@ void Panel::draw_snaps(uint32_t *px)
     if (!native() || !expanded())
         return;
     Canvas c{px, width()};
-    for (int k = 0; k < 2; k++)   // A, B: stored filled in the word colour, the one shown in yellow; empty, an outline
+    int bx = snap_b_x();
+    for (int k = 0; k < 2; k++)   // A, B: stored in the word colour, the one shown filled yellow; empty, dim
     {
-        int x = k ? SB_X : SA_X;
+        int x = k ? bx : SA_X;
         bool on = snaps.active == k, has = snaps.has[k];
         uint32_t edge = on ? T_YEL : has ? T_WORD : T_DIM;
         nbox(c, x, SN_Y, SN_W, SN_H, edge, on ? T_YEL : T_BODY);
@@ -2015,19 +2020,15 @@ void Panel::draw_snaps(uint32_t *px)
         c.ptext(x + (SN_W - Canvas::ptext_w(t, 2)) / 2, SN_Y + 8, t, 2, on ? T_BLACK : has ? T_WORD : T_DIM);
     }
     bool both = snaps.has[0] && snaps.has[1];
-    int ly = SN_Y + SN_H / 2 - 1;
-    c.box(SM_X + 8, ly, SM_W - 16, 2, both ? T_WORD : T_DIM);   // MORPH: a rail, its ends A and B, a handle where it is
-    c.box(SM_X + 8, ly - 5, 2, 12, both ? T_WORD : T_DIM);
-    c.box(SM_X + SM_W - 10, ly - 5, 2, 12, both ? T_WORD : T_DIM);
-    const char *m = "MORPH";
-    int mw = Canvas::ptext_w(m, 2);
-    c.box(SM_X + (SM_W - mw) / 2 - 6, ly - 8, mw + 12, 18, T_BODY);
-    c.ptext(SM_X + (SM_W - mw) / 2, ly - 6, m, 2, both ? T_WORD : T_DIM);
+    uint32_t ink = both ? T_WORD : T_DIM;
+    int ly = SN_Y + SN_H / 2 - 1, w = bx - 10 - SM_X;
+    c.ptext(SA_X + SN_W + 12, SN_Y + 8, "MORPH", 2, ink);
+    if (w < 20) return;
+    c.box(SM_X, ly, w, 2, ink);   // the rail, its ends, the handle where MORPH is
+    c.box(SM_X, ly - 5, 2, 12, ink);
+    c.box(SM_X + w - 2, ly - 5, 2, 12, ink);
     if (both && snaps.morph >= 0)
-    {
-        int hx = SM_X + 8 + (SM_W - 16) * snaps.morph / 100;
-        c.box(hx - 4, SN_Y + 2, 8, SN_H - 4, T_YEL);
-    }
+        c.box(SM_X + w * snaps.morph / 100 - 4, SN_Y + 2, 8, SN_H - 4, T_YEL);
 }
 
 void Panel::draw_gen(uint32_t *px)

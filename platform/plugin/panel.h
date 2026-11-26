@@ -243,6 +243,7 @@ class Panel
     SnapState snaps;
     SnapRequest snap_req;
     int snap_value(int x) const;
+    int snap_b_x() const;
     // TESSERA's shell (shell 0): its own drawing, its layout of the buttons and files, and its menu
     void layout();
     void key_words();
