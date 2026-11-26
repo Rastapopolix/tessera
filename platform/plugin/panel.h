@@ -111,6 +111,7 @@ class Panel
      * TRACK, PASTE TRACK, PASTE SOUND, MOVE UP, MOVE DOWN (as TRACK's, for that track). A click on a row does it, a click
      * elsewhere or Esc shuts it. ctx_rows: the rows shown (empty: none) */
     std::vector<std::string> ctx_rows() const { return ctx_kind ? ctx_row : std::vector<std::string>{}; }
+    bool ctx_row_on(int r) const;   // row r of the open menu can be picked (PASTE VALUE, PUT BACK: when there is one)
     /* the standalone app (no DAW: tessera_clap.cpp's free-running host): Space plays and stops, Ctrl+O / Ctrl+S (Cmd on
      * a Mac) open and save; in a DAW those keys stay the DAW's */
     void set_standalone(bool on) { if (on != standalone_) { standalone_ = on; layout(); } }   // (PLAY's card)

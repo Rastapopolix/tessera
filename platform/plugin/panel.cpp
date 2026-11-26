@@ -2363,6 +2363,10 @@ int Panel::ctx_row_at(int x, int y) const
     if (r == (int)ctx_row.size() - 1 && !dice_back) return -1;   // (PUT BACK: no DICE or MUTATE to put back)
     return r;
 }
+bool Panel::ctx_row_on(int r) const
+{
+    return ctx_kind && r >= 0 && r < (int)ctx_row.size() && ctx_row_at(ctx_x + 4, ctx_y + 4 + r * CTX_RH + 2) == r;
+}
 void Panel::ctx_do(int r)
 {
     if (ctx_kind == CTX_VALUE)
