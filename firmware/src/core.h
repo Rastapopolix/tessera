@@ -46,6 +46,22 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define UI_BASE 0u
 #define UI_BANK(k) 0u
 #endif
+/* The dub moves (Tessadub in Cosmati, step 2): an 8-track build's (the plugin, Andamento), RAM only, nothing saved.
+ * DROP (entries.c dub_drop_press) takes out every track but the anchors on the next bar and brings them back on the
+ * one; THROW (dub_throw, while held) sends the selected track to the echo bus in full (fx.c fx_send_gain, mix.c), and
+ * with dub_throw_fb also lifts the echo's REPEAT (fx_slot_prepare), clamped short of running away */
+#ifndef TESS_DUB
+#if CORE_TRACKS > 4
+#define TESS_DUB 1
+#else
+#define TESS_DUB 0
+#endif
+#endif
+#if TESS_DUB
+static uint8_t dub_throw;                /* the tracks thrown now (bit per track) */
+static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with them */
+#define DUB_THROW_FB 120                 /* REPEAT while lifted: 120 x 220 / 32768, a 0.81 feedback (127: 0.85) */
+#endif
 #define NSTEP 64
 #define NPAT 8u
 #define HALF_FRAMES 128          /* I2S half buffer: 2.9 ms at 44.1 kHz (a key waits 0..1 half, then plays 1 half later) */

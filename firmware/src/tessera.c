@@ -3309,6 +3309,10 @@ void tessera_reset(void)
     tessera_ensure_init();
     tessera_init();
     cord_reset();                                       /* the cords are the project's too: none */
+#if TESS_DUB
+    drop_out = drop_pend = 0;                           /* (DROP and THROW are the performance's, not the project's) */
+    dub_throw = dub_throw_fb = 0;
+#endif
 }
 
 /* voice.c trk_note_on: track t's SOUND OFF (its notes to MIDI OUT and the mods only, no voice) */

@@ -46,6 +46,9 @@ static struct {
     uint16_t hold_t;                   /* D4 pressed, then (LH_TAP) a short press let go: fm1_ms */
     uint32_t solo;                     /* GLO: the keys held that solo */
     uint32_t fill;                     /* GLO: E4 held, FILL (seq.c seq_fill) */
+#if TESS_DUB
+    uint32_t thr;                      /* GLO (8 tracks): D5 / E5 held, THROW / THROW + REPEAT (core.h dub_throw) */
+#endif
     uint32_t tap[4];                   /* GLO TAP: the last taps (fm1_ms) */
     uint8_t ntap, rp_dirty;
     uint8_t snd;                       /* GLO + PRESETS turned: the sound view in the map's place (Mono) */
@@ -344,6 +347,13 @@ static uint32_t glo_key_trk(uint32_t k)
 #endif
 }
 
+#if TESS_DUB
+static void dub_drop_message(int on)                    /* DROP pressed (D#4, the TRACKS screen's button): what it did */
+{
+    ui_message(on < 0 ? "NOTHING TO DROP" : on ? (song.playing ? "DROP NEXT BAR" : "DROP") :
+               song.playing ? "BACK NEXT BAR" : "DROP OFF");
+}
+#endif
 /* a key pressed in layer l (k: 0 = F3 .. 26 = G5) */
 static void layer_key(uint32_t l, uint32_t k)
 {
@@ -354,6 +364,12 @@ static void layer_key(uint32_t l, uint32_t k)
         if (t < NTRK) {
             if (key_black(k)) mute_press(t, 0);         /* (MENU MUTES: now, or on the next bar / phrase) */
             else lys.solo |= 1u << k;                   /* (layer_masks: track_solo while held) */
+#if TESS_DUB
+        } else if (key_black(k) && p == 4u) {          /* D#4: DROP (entries.c, on the bar line) */
+            dub_drop_message(dub_drop_press());
+        } else if (!key_black(k) && (p == 12u || p == 13u)) {   /* D5 / E5: THROW while held (layer_keys) */
+            lys.thr |= 1u << k;
+#endif
         } else if (key_black(k)) {                     /* (the other black keys: nothing) */
         } else if (p == 4u) {
             mute_press(0, 1);
@@ -383,6 +399,11 @@ static void layer_keys(uint32_t keys)
     lys.solo &= kb_layer;
     lys.fill &= kb_layer;
     seq_fill = lys.fill != 0u;
+#if TESS_DUB
+    lys.thr &= kb_layer;                                /* (D5 THROW, E5 THROW + REPEAT: the selected track, while held) */
+    dub_throw = lys.thr ? (uint8_t)(1u << song.sel % NTRK) : 0u;
+    dub_throw_fb = (uint8_t)(lys.thr >> 23 & 1u);       /* (E5 is key 23, D5 key 21) */
+#endif
     glo_hold_pass();
     for (k = 0; k < 27u; k++)
         if ((lys.solo >> k) & 1u)

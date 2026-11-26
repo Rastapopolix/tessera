@@ -790,8 +790,15 @@ static int32_t fx_bus_sum_l[CTL],fx_bus_sum_r[CTL];
 static uint8_t fx_bus_separate;
 static int32_t fx_bus_slot_mix[FX_SLOTS];
 static uint32_t fx_bus_n;
+#if TESS_DUB
+static uint8_t dub_slots=1u;    /* the sends a THROW opens (fx_bus_settings): SPLIT's echo slots (none: slot 1's),
+                                 * CHAIN's one send */
+#endif
 static inline __attribute__((always_inline)) uint32_t fx_send_gain(const track_t *t)
 {
+#if TESS_DUB
+    if((dub_throw>>(uint32_t)(t-trk)&1u) && (dub_slots&1u))return 65536u;   /* (THROW: in full, 127) */
+#endif
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk)))return 65536u;
 #endif
@@ -811,6 +818,16 @@ static void fx_bus_settings(void)
 {
     memcpy(fx_bus_g,song.g+G_MFXTYPE,sizeof fx_bus_g);
     if(cord_gmask)cord_fx_bus(fx_bus_g);
+#if TESS_DUB
+    uint32_t m=0;
+    for(uint32_t slot=0;slot<FX_SLOTS;slot++){
+        int16_t *g=fx_bus_g+slot*FX_PARAMS;
+        if(!FX_IS_ECHO(g[0]))continue;
+        m|=1u<<slot;
+        if(dub_throw && dub_throw_fb && g[3]<DUB_THROW_FB)g[3]=DUB_THROW_FB;   /* (THROW + REPEAT: the echo's REPEAT up) */
+    }
+    dub_slots=(uint8_t)(song.g[G_FXMODE] && m?m:1u);
+#endif
 }
 /* Fade the return before changing topology, then reset only the global histories.
  * Inserts keep their state; separate send levels survive a round trip to CHAIN. */

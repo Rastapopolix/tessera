@@ -390,6 +390,12 @@ void entries_play(void);                            /* seq.c, PLAY: Entries from
 void entries_tick(uint32_t n);                      /* seq.c, each block before the steps: the lines, the fades */
 int entries_hand_in(uint32_t tr);                   /* GLO's mute key: an out track back in (1 if it was out) */
 void mute_press(uint32_t tr, int all);              /* GLO's mute key / UNMUTE ALL: now or on MENU MUTES' line */
+#if TESS_DUB
+int dub_drop_press(void);                           /* DROP: all but the anchors out on the next bar, again: back in
+                                                     * (-1: nothing to drop) */
+uint32_t dub_drop_state(void);                      /* bit 0 out, bit 1 waiting for the bar line */
+uint32_t dub_drop_keep(void);                       /* the tracks a DROP keeps */
+#endif
 #if TESSERA_TRACKS > 4
 uint32_t dub_form_count(void);                      /* the dub FORMs (entries.c): VERSION SHOWCASE ROCKERS ROOTS STEPPERS */
 const char *dub_form_name(uint32_t n);

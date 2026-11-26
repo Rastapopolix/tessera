@@ -158,6 +158,9 @@ enum { TESS_ZONE_SLIDER = 20 };
 /* MAP: a page on the page map (Cosmati audit G11; a front end's own picture of tess_view_t's map_*, not drawn by the
  * core): role the section (TESS_SEC_*), row the page's place in it. CLICK: that page (a menu, a dialog closed first) */
 enum { TESS_ZONE_MAP = 21 };
+/* DROP: the TRACKS screen's DROP (an 8-track build's, core.h TESS_DUB). CLICK: DROP pressed (all but the anchors out on
+ * the next bar, again: back in; entries.c dub_drop_press). Its value: OFF, NEXT BAR (waiting) or ON */
+enum { TESS_ZONE_DROP = 22 };
 typedef struct {
     uint16_t x, y, w, h;
     uint8_t kind, group;
