@@ -331,6 +331,19 @@ explains sources and destinations. In Cosmati:
   plugin only) its slide, e.g. AT onto CUTOFF and SLIDE onto SHAPE. Use ROUT SEL, the plugin's default, so every channel
   plays the selected track. Each note also bends by its own channel's bend (48 semitones, as MPE controllers expect);
   FM6 is the exception: it bends a whole track by its own range.
+- **SLOPE** (the plugin and Andamento): each track's LFO can be a function generator, in the spirit of Mutable
+  Instruments' Tides and Mannequins' Just Friends. On the LFO page:
+  - **WAVE SLOPE, EXP or LOG** is a rise and a fall, straight or curved. **PHS** becomes **SKEW**, where the top is:
+    0 shoots straight up and falls slowly (a decay), 64 is a triangle, 127 rises slowly and drops.
+  - **TRIG ONCE** starts the LFO with each phrase, as NOTE does, runs one cycle and holds at its end: an envelope you
+    can shape and sync. **EOC** fires once, at its end.
+  - On MODS, **LFO RST** starts a track's LFO again when a mod rises past half. A gate (EOC, IN, GATE, a STEP track)
+    fires a slope; a track's EOC onto another's LFO RST starts one slope as another ends.
+  - Two more sources follow a track's LFO: **LFO 90**, its wave a quarter cycle on, and **LFO X2**, at twice its rate
+    and locked to it.
+
+  On the FM-1 a SLOPE wave plays as TRI and ONCE as NOTE; mods with LFO RST, LFO 90 or LFO X2 are left out. See the
+  recipe [A swell while the drums are out](RECIPES.md#a-swell-while-the-drums-are-out-slope-cosmati).
 
 ## The long form: PIECE, ENTRIES and the song
 

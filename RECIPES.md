@@ -780,6 +780,21 @@ out (its notes still play, unheard), so it cannot tell you; IN can.
 
 For a dub tail that swells, add **T4 IN** to **SF1 CHR** at **-30**: more repeats while the drums are out.
 
+## A swell while the drums are out (SLOPE, Cosmati)
+
+A pad that opens up each time Entries takes the drums out, then closes again: one slope of the LFO, started by the
+drums leaving. Cosmati and Andamento only (the LFO's SLOPE waves, TRIG ONCE and LFO RST).
+
+1. Track 2 plays a pad; track 4 the drums. **ENTRIES** on (GLO > ENTRIES), so the drums leave now and then.
+2. Track 2's **LFO**: WAVE **LOG**, **SKEW** about **110** (a long rise, a short fall), SYNC **2BAR**, TRIG **ONCE**,
+   POL **UNI**. It now runs one two-bar swell and rests at the bottom.
+3. **MODS**, mod 1: **T4 IN** to **T2 LFO RST**, **-100**, OFFSET **+100**. While the drums play it sits at 0; when
+   they leave it jumps to 100 %, past half, and starts the swell.
+4. Mod 2: **T2 LFO** to **T2 CUTOFF**, about **+60**, tapped to **+**: the filter follows the swell.
+
+To answer the swell, add **T2 EOC** to **T3 LFO RST** at **+100**, with track 3's LFO also on TRIG ONCE: the moment
+track 2's swell ends, track 3's starts. On the FM-1 the LFO plays as a TRI on NOTE and the LFO RST mod is left out.
+
 ## A melody that steps on another track's notes (CLOCK, 3.5)
 
 A mod onto **CLOCK** makes a generator step on a gate's edges instead of its own DIV.
