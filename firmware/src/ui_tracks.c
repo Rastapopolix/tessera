@@ -117,7 +117,7 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
     uint32_t solo = (track_solo >> k) & 1u, len = (uint32_t)t->p[P_SLEN], n = compact ? 8u : 16u, i;
     uint32_t ph = song.playing && t->seq_idx < len ? t->seq_idx : 0xFFFFu, first = ph < len ? ph / n * n : 0u;
     uint16_t ink = mute ? mo_tdim(k) : MO_TRK(k), dim = mo_tdim(k);
-    int32_t sx = compact ? 56 : 90, ty = y + (rh - 7) / 2, lx = compact ? 127 : 217;
+    int32_t sx = compact ? 56 : 88, ty = y + (rh - 7) / 2, lx = compact ? 127 : 217;
     char b[16], nm[8], lv[8];
     b[0] = (char)('1' + k), b[1] = 0;
     if (sel) {
@@ -148,7 +148,8 @@ static void t2_row(uint32_t k, int32_t y, int32_t rh, int compact, uint32_t blin
     t2_text(b, compact ? 40 : 74, ty, ink);
     for (i = 0; i < n; i++) {                           /* the steps of the window the playhead is in */
         uint32_t si = first + i;
-        int32_t x = sx + (int32_t)i * (compact ? 6 : 7) + (compact ? 0 : (int32_t)(i / 4u)), cy = y + rh / 2;
+        int32_t x = sx + (int32_t)i * 6 + (compact ? 0 : 2 * (int32_t)(i / 4u)), cy = y + rh / 2;   /* (16: a clear
+                                                                 * gap before the level, "-INF" too) */
         if (si >= len)
             break;
         if (step_on(&seq_steps(t)[si % NSTEP])) t2_fill(x, cy - 3, 5, 6, ink);
