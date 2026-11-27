@@ -79,6 +79,7 @@ class Panel
     bool move(int x, int y);
     bool up(int x, int y);
     bool wheel(int x, int y, int notches);
+    bool on_screen(int x, int y) const;
     /* the wheel sideways (a tilt, a trackpad's swipe): the next page of the shown one's family (+ right), as its footer's
      * tab or arrow clicked; none past the last or before the first (the family's button wraps, this stops). One page a
      * call, and none within a quarter second of the last (one swipe, one page) */
