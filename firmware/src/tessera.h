@@ -602,7 +602,11 @@ enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON,
  * reads it (the FMODE part, XTRK) and as KICK in TSP_FKICK */
 enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_KICK };
 #define TESS_FR_COUNT (TESS_FR_KICKS ? 4u : 3u)
+#if TESS_FR_KICKS
 #define TESS_FR_SAVED(r) ((r) == TESS_FR_KICK ? (uint8_t)TESS_FR_SOURCE : (uint8_t)(r))   /* (what another firmware reads) */
+#else
+#define TESS_FR_SAVED(r) ((uint8_t)(r))                    /* (no KICK: the FM-1's image as it was) */
+#endif
 enum { TESS_DM_GM, TESS_DM_ROW, TESS_DM_COUNT };   /* TX_MIDI_DMAP: General MIDI's drum notes, or one a track in a row */
 enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */

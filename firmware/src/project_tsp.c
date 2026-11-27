@@ -551,8 +551,12 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             if (tessera.follow_how[t] | tessera.follow_rhy[t]) {
                 tsp_begin(&w, TSP_FMODE, 1);
                 tsp_bytes(&w, tessera.follow_how, PROJ_NTRK);
+#if TESS_FR_KICKS
                 for (uint32_t k = 0; k < PROJ_NTRK; k++) tsp_byte(&w, TESS_FR_SAVED(tessera.follow_rhy[k]));   /* (KICK:
                                                          * SOURCE here, TSP_FKICK keeps it) */
+#else
+                tsp_bytes(&w, tessera.follow_rhy, PROJ_NTRK);
+#endif
                 tsp_end(&w);
                 break;
             }
