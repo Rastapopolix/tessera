@@ -349,6 +349,8 @@ typedef struct {
     int32_t s[8];                /* engine state (filters, envs) */
     uint32_t age;
     uint8_t mvel;                /* mod.c: the note-on velocity (before UNISON scaling) and RAND of the note */
+    uint8_t kfade;               /* taken by BUDGET (voice_capacity_kill): blocks of its fade left (voice.c; the byte
+                                  * before mrnd was padding) */
     int16_t mrnd;
 #if TESS_MPE
     uint8_t mch, mkey;           /* per-note expression (the plugin): the MIDI channel + 1 the note came in on, 0 the

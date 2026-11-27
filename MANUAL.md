@@ -563,7 +563,8 @@ clean:
 - thin one of them (DENSITY, DROP, or a slower DIV);
 - give one a shorter note (LENGTH) or a sound with a shorter release, such as a TRIO voice or DRUM;
 - lower **BUDGET** (12, say): fewer voices ring at once, which leaves the FM-1 headroom; higher allows more, and
-  crackles sooner.
+  crackles sooner. Not too low, though: with long releases a small pool is full nearly all the time, and every new
+  note then takes a ringing voice (it fades out over about 3 ms). Lower BUDGET for CPU, not for clicks.
 
 **Watching the load on GLO > SYSTEM:**
 
@@ -579,7 +580,7 @@ clean:
 - **When it happens, the header tells you:** the four track dots at the top right fill for a moment, once when a voice
   was faded, twice when the sound was late (on HOME they show in the engine's and the battery's place). They point at
   no track: the voice faded is the quietest one, not the busiest. At most once every five seconds. A voice that BUDGET
-  takes doesn't blink. **MENU > OVERLOAD OFF** stops the blink; FADED and LATE still count. If you hear a click and
+  takes (it fades out over about 3 ms) doesn't blink. **MENU > OVERLOAD OFF** stops the blink; FADED and LATE still count. If you hear a click and
   the dots stay as they are, the FM-1 wasn't overloaded: please report it.
 - For the full picture, the web editor's [Health](#health-how-hard-the-fm-1-is-working) reads the same numbers and more.
 
