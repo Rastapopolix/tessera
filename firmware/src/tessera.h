@@ -291,6 +291,11 @@ typedef struct {
     uint8_t          fl_what[TESSERA_TRACKS];    /* FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE */
     uint8_t          fl_heat[TESSERA_TRACKS];    /* 0..2 (HEAT 1..3): the last step, the last two, the last two harder */
 #endif
+#if TESS_GEN_FIT
+    /* LANE and RANGE (an 8-track build's; tessera.c tess_fit; the record's TSP_GFIT). 0: as the generator plays */
+    uint8_t          gn_lane[TESSERA_TRACKS];    /* 0 ALL, 1..8 a DRUM lane (eng_drum.c DRUM_LANE_NOTE's order) */
+    uint8_t          gn_range[TESSERA_TRACKS];   /* 0 OFF, 1..3 octaves from the generator's home note */
+#endif
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
     uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
@@ -566,6 +571,10 @@ enum {
     TX_RSV_2B0, TX_RSV_2B1,                         /* (0x2B0, 0x2B1: claimed in ROADMAP for user samples; no parameter yet) */
     TX_FL_WHERE, TX_FL_WHAT, TX_FL_HEAT,            /* (0x2B2..0x2B4: FLOURISH, an 8-track build's: seq_sub.c fl_step) */
 #endif
+#if TESS_GEN_FIT
+    TX_GN_LANE, TX_GN_RANGE,                        /* (0x2B5, 0x2B6: a generator's LANE and RANGE, an 8-track build's:
+                                                     * tessera.c tess_fit) */
+#endif
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
@@ -580,6 +589,11 @@ _Static_assert(!TESS_BUS_CD || TESS_ATLAS_BANKS, "BUS C, D: their ids in the 8-t
 #if TESS_FLOURISH
 _Static_assert(TESS_ATLAS_BANKS && TX_FL_WHERE == 0xB2 && TX_FL_HEAT == 0xB4, "parameter ids are stored: never renumbered");
 enum { FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE, FL_WHATS };   /* TX_FL_WHAT (saved: append only) */
+#endif
+#if TESS_GEN_FIT
+_Static_assert(TESS_FLOURISH && TX_GN_LANE == 0xB5 && TX_GN_RANGE == 0xB6, "parameter ids are stored: never renumbered");
+#define TESS_GN_LANES 8u                            /* TX_GN_LANE 1..8: BD SD CP CH OH TM RS CB */
+#define TESS_GN_RANGE 3u                            /* TX_GN_RANGE 1..3 octaves */
 #endif
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };

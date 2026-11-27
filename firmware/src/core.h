@@ -75,6 +75,12 @@ static int8_t fl_semi[NTRK];
 #define DUB_FL_THROW 0u
 #define DUB_FL_FB 0u
 #endif
+/* LANE and RANGE (GEN sheet; an 8-track build's): a generator track's notes fitted where they go, tessera.c tess_fit.
+ * LANE: on a DRUM track every hit on one lane; RANGE: the notes folded by octaves into 1..3 octaves from the
+ * generator's home note. Saved in the record's TSP_GFIT */
+#ifndef TESS_GEN_FIT
+#define TESS_GEN_FIT TESS_FLOURISH
+#endif
 #if TESS_DUB
 static uint8_t dub_throw;                /* the tracks thrown now (bit per track) */
 static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with them */
