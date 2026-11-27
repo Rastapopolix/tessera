@@ -292,6 +292,12 @@ static void fm1_main(void)
     for (;;) {
         uint32_t m = fm1_ms;
         fm1_wdt_feed();
+#if TESSERA_MIDI_ONLY && TESS_GENERATE
+        {   /* (measuring only, feat/tessera-midi: keeps GENERATE in the link until its FM-1 page calls it) */
+            static volatile uint8_t gen_probe;
+            if (gen_probe) { gen_probe = 0; generate(0u, m, 0u, 0u); }
+        }
+#endif
 #if MELODEE_USB_HOST
         uh_task(fm1_ms);                                /* before usb_retry: a host port is not retried as a device */
         if (uh.msg) {                                   /* (on / off is the menu's value, not a toast; literals,
