@@ -985,7 +985,8 @@ static void gen_chord_tick(gen_chord_t *g, const gen_clock_t *clk, gen_out_t *ou
     else out->gate = (uint8_t)(!in || g->hit == GEN_CH_STEP || (g->hit == GEN_CH_BEAT && !(in % beat)));
     g->hold = (uint16_t)(g->hit == GEN_CH_HOLD ? len : g->hit == GEN_CH_BEAT ? (len - in < beat ? len - in : beat) : 0u);
     {                                                   /* (the strike's place, for MOVE WHEN) */
-        uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat : g->hit >= GEN_CH_OFF ? off : len;
+        uint32_t per = g->hit == GEN_CH_STEP ? 1u : g->hit == GEN_CH_BEAT ? beat :
+                       (TESS_CHOPS ? g->hit >= GEN_CH_OFF : g->hit == GEN_CH_OFF) ? off : len;
         uint32_t spb = clk->steps_per_bar ? clk->steps_per_bar : 16u;
         g->sk = (uint8_t)(g->n % spb / per);
         g->sn = (uint8_t)(spb / per);
@@ -1086,7 +1087,7 @@ static void gen_chord_save(const gen_chord_t *g, gen_sec_t *s)
     s->reg = (uint16_t)((g->walk[0] & 7u) | (g->walk[1] & 7u) << 3 | (g->walk[2] & 7u) << 6 | (g->walk[3] & 7u) << 9 |
                         (g->rot & 7u) << 12);
     s->p0 = (uint8_t)((g->prog & 7u) | (g->bars & 3u) << 3 | (GEN_CH_SAVED(g->hit) & 3u) << 5 |
-                      (g->hit >= GEN_CH_DOUBLE) << 7);   /* (a chop: the 2 bits another firmware plays, bit 7 set) */
+                      GEN_CH_CHOP(g->hit) << 7);   /* (a chop: the 2 bits another firmware plays, bit 7 set) */
 }
 static void gen_chord_load(gen_chord_t *g, const gen_sec_t *s)
 {

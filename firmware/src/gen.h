@@ -210,7 +210,13 @@ enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_DOUBLE, GEN_CH_
 #endif
 #endif
 #define GEN_CH_HITS (TESS_CHOPS ? 6u : 4u)
+#if TESS_CHOPS
 #define GEN_CH_SAVED(h) ((h) == GEN_CH_DOUBLE ? GEN_CH_OFF : (h) == GEN_CH_BUBBLE ? GEN_CH_STEP : (h))   /* (the 2 bits) */
+#define GEN_CH_CHOP(h) ((uint32_t)((h) >= GEN_CH_DOUBLE))   /* (a chop: a section's bit 7) */
+#else
+#define GEN_CH_SAVED(h) (h)                                 /* (no chops: the FM-1's image as it was) */
+#define GEN_CH_CHOP(h) 0u
+#endif
 #define GEN_CH_BARS 4u     /* BARS 0..3: 1/2, 1, 2, 4 bars a chord */
 #define GEN_CH_WALK_N 4u
 #define GEN_CH_USER_N 8u   /* USER's chords at most */
