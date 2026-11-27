@@ -50,7 +50,12 @@ _Static_assert(sizeof TX_N_FLWHAT / sizeof TX_N_FLWHAT[0] == FL_WHATS, "FLOURISH
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
                                         "CANON5", "CANON6", "CANON7", "CANON8", "HARM"};   /* (TESS_FH_*) */
-static const char *const TX_N_FRHY[] = {"OWN", "SOURCE", "BOTH"};   /* (TESS_FR_*) */
+static const char *const TX_N_FRHY[] = {"OWN", "SOURCE", "BOTH"
+#if TESS_FR_KICKS
+                                        , "KICK"   /* (an 8-track build's: an ATLAS source's kick part) */
+#endif
+                                       };   /* (TESS_FR_*) */
+_Static_assert(sizeof TX_N_FRHY / sizeof TX_N_FRHY[0] == TESS_FR_COUNT, "FOLLOW RHYTHM: a name a value");
 static const char *const TX_N_RATCH[] = {"x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"};
 static const char *const TX_N_SHAPE[] = {"EVEN", "ACCEL", "DECEL"};   /* (SUB_EVEN ..) */
 static const char *const TX_N_KEYLINK[] = {"OWN", "LINKED"};

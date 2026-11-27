@@ -66,6 +66,14 @@ enum { TESS_AN_REPLY, TESS_AN_BEND, TESS_AN_MODES };   /* TX_AN_MODE: REPLY wait
                                                        * (the old, default behaviour); BEND repeats each note TIME steps
                                                        * later as it is played, a delay that drifts and breaks */
 #define TESS_AN_TIME_MAX 16u                        /* TX_AN_TIME: BEND's repeat time, 1..16 steps */
+/* FOLLOW RHYTHM KICK (an 8-track build's: TESS_FR_KICK below) */
+#ifndef TESS_FR_KICKS
+#if defined(CORE_TRACKS) && CORE_TRACKS > 4
+#define TESS_FR_KICKS 1
+#else
+#define TESS_FR_KICKS 0
+#endif
+#endif
 typedef struct {
     uint8_t vary;          /* 0..100: how much an answer changes (0: as played) */
     uint8_t echo;          /* 0..100: the chance a note comes back once more, softer */
@@ -176,6 +184,10 @@ typedef struct {
     uint8_t          follow_rhy[TESSERA_TRACKS];
     uint8_t          f_anchor[TESSERA_TRACKS];     /* CONTRA: the first note followed + 1, 0 none yet (not saved) */
     uint8_t          f_seen[TESSERA_TRACKS];       /* RHYTHM: the source's f_cnt when this track last looked */
+#if TESS_FR_KICKS
+    uint8_t          k_cnt[TESSERA_TRACKS];        /* RHYTHM KICK: the kicks this ATLAS track played (not saved) */
+    uint8_t          k_seen[TESSERA_TRACKS];       /* RHYTHM KICK: the source's k_cnt when this track last looked */
+#endif
     uint8_t          f_cnt[TESSERA_TRACKS];        /* the notes this track has played since PLAY, mod 256 */
     uint8_t          f_hist[TESSERA_TRACKS][16];   /* CANON: its last 16 notes + 1 (slot f_cnt % 16), 0 none */
     uint8_t          active_gate[TESSERA_TRACKS];
@@ -585,7 +597,12 @@ enum { TESS_CB_DN2, TESS_CB_DN1, TESS_CB_UP1, TESS_CB_UP2, TESS_CB_UP3, TESS_CB_
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_HARM = TESS_FH_CANON + 8,
        TESS_FH_COUNT };
 #define TESS_FH_IS_CANON(h) ((h) >= TESS_FH_CANON && (h) < TESS_FH_HARM)
-enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_COUNT };   /* TX_TW_FRHY */
+/* TX_TW_FRHY. KICK (Tessadub in Cosmati, step 6; an 8-track build's, TESS_FR_KICKS): as SOURCE, counting only the
+ * source's kick part (an ATLAS track's: tessera.c tess_grids_play); saved as SOURCE where an older or 4-track firmware
+ * reads it (the FMODE part, XTRK) and as KICK in TSP_FKICK */
+enum { TESS_FR_OWN, TESS_FR_SOURCE, TESS_FR_BOTH, TESS_FR_KICK };
+#define TESS_FR_COUNT (TESS_FR_KICKS ? 4u : 3u)
+#define TESS_FR_SAVED(r) ((r) == TESS_FR_KICK ? (uint8_t)TESS_FR_SOURCE : (uint8_t)(r))   /* (what another firmware reads) */
 enum { TESS_DM_GM, TESS_DM_ROW, TESS_DM_COUNT };   /* TX_MIDI_DMAP: General MIDI's drum notes, or one a track in a row */
 enum { TESS_SPLIT_DOUBLE, TESS_SPLIT_PUSH, TESS_SPLIT_MIX, TESS_SPLIT_HOWS };   /* TX_SUB_SPLIT_HOW */
 #define TESS_HUMAN_MS 60u                           /* TX_SUB_HUMAN: a step up to 60 ms late */
