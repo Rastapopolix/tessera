@@ -148,8 +148,8 @@ int main(void)
         check("LFO RST: under half, nothing", t->lfo_ph == 0x40000000u);
     }
     {
-        cord_t g = C(36u, 0, CD_PITCH, 0, 50, 0);          /* (BUS C: claimed, not built here) */
-        check("a source code this build lacks is refused", !cord_set(1, &g) && !cord_src_name(36u));
+        cord_t g = C(CS_IN + 1u, 0, CD_PITCH, 0, 50, 0);   /* (SLIDE, TESS_MPE's: not built here; BUS C is since #1095) */
+        check("a source code this build lacks is refused", !cord_set(1, &g) && !cord_src_name(CS_IN + 1u));
     }
     cord_reset();
 #else
