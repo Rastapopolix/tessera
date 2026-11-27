@@ -94,7 +94,15 @@ static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND",
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_CWHEN[] = {"OFF", "LAST", "LAST 2", "ODD", "CHANGE", "RAND"};   /* (TESS_CW_*) */
 static const char *const TX_N_CBY[] = {"-2 ST", "-1 ST", "+1 ST", "+2 ST", "+3 ST", "+1 DEG", "+2 DEG", "INV+",
-                                       "INV-", "OCT+", "TOP", "LEAD"};   /* (TESS_CB_*) */
+                                       "INV-", "OCT+", "TOP", "LEAD",
+#if TESS_CH_NOTES
+                                       "NOTES",
+#endif
+                                       };   /* (TESS_CB_*) */
+_Static_assert(sizeof TX_N_CBY / sizeof TX_N_CBY[0] == TESS_CB_N, "CHORD MOVE BY: a name a move");
+#if TESS_CH_NOTES
+static const char *const TX_N_CHODEG[] = {"ST", "DEG"};
+#endif
 static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
 static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
                                           "5 s", "10 s", "20 s"};   /* (cord.c CORD_LAG_STEP) */
@@ -295,6 +303,13 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
 #if TESS_GEN_FIT
     [TX_GN_LANE] = PE("LANE", TX_N_GNLANE, 0),
     [TX_GN_RANGE] = PE("RANGE", TX_N_GNRANGE, 0),
+#endif
+#if TESS_CH_NOTES
+    [TX_CH_OFS1] = PD("NOTE 1", F_INT, -12, 12, 0),
+    [TX_CH_OFS2] = PD("NOTE 2", F_INT, -12, 12, 0),
+    [TX_CH_OFS3] = PD("NOTE 3", F_INT, -12, 12, 0),
+    [TX_CH_OFS4] = PD("NOTE 4", F_INT, -12, 12, 0),
+    [TX_CH_ODEG] = PE("IN", TX_N_CHODEG, 0),
 #endif
 };
 
@@ -965,6 +980,16 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_GN_RANGE, "GEN RANGE", "Keeps any generator's notes inside 1, 2 or 3 octaves from its home note (C2 for TURING "
                                  "and MARKOV, C3 for the others), folding the rest in by octaves, so they stay in key. "
                                  "SPAN still spreads them first. OFF: as the generator plays. GEN sheet."),
+#endif
+#if TESS_CH_NOTES                                  /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    X_(TX_CH_OFS1, "CHORD NOTE 1", "With MOVE BY NOTES, how far the chord's lowest note moves on the strikes MOVE WHEN "
+                                   "picks, -12 to 12, in semitones or scale degrees (IN). GEN sheet."),
+    X_(TX_CH_OFS2, "CHORD NOTE 2", "With MOVE BY NOTES, how far the chord's second note moves, as NOTE 1. GEN sheet."),
+    X_(TX_CH_OFS3, "CHORD NOTE 3", "With MOVE BY NOTES, how far the chord's third note moves, as NOTE 1. GEN sheet."),
+    X_(TX_CH_OFS4, "CHORD NOTE 4", "With MOVE BY NOTES, how far the chord's fourth note (and any above it) moves, as "
+                                   "NOTE 1. GEN sheet."),
+    X_(TX_CH_ODEG, "CHORD NOTES IN", "MOVE BY NOTES' offsets in semitones (ST) or steps of the track's scale (DEG: the "
+                                     "moved notes stay in key). GEN sheet."),
 #endif
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT

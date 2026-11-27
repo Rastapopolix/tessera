@@ -81,6 +81,11 @@ static int8_t fl_semi[NTRK];
 #ifndef TESS_GEN_FIT
 #define TESS_GEN_FIT TESS_FLOURISH
 #endif
+/* CHORD MOVE BY NOTES (an 8-track build's): each of the chord's four notes moved by its own offset on the strikes MOVE
+ * WHEN picks (tessera.c tess_chord_move), in semitones or scale degrees; saved in the record's TSP_CHOFS */
+#ifndef TESS_CH_NOTES
+#define TESS_CH_NOTES TESS_GEN_FIT
+#endif
 #if TESS_DUB
 static uint8_t dub_throw;                /* the tracks thrown now (bit per track) */
 static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with them */

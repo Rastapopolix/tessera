@@ -335,6 +335,15 @@ static uint32_t gen_sheet_rows(void)
         else sr_add("Breath", PID_TESS(TX_CH_BREATH), tr);
         sr_add("Move when", PID_TESS(TX_CH_WHEN), tr);
         sr_add("Move by", PID_TESS(TX_CH_BY), tr);
+#if TESS_CH_NOTES
+        if (tessera.ch_by[tr] == TESS_CB_NOTES) {       /* (BY NOTES: each note's offset, and their unit) */
+            sr_add("Note 1", PID_TESS(TX_CH_OFS1), tr);
+            sr_add("Note 2", PID_TESS(TX_CH_OFS2), tr);
+            sr_add("Note 3", PID_TESS(TX_CH_OFS3), tr);
+            sr_add("Note 4", PID_TESS(TX_CH_OFS4), tr);
+            sr_add("Notes in", PID_TESS(TX_CH_ODEG), tr);
+        }
+#endif
     }
 #if TESS_GEN_FIT
     if (m != TESS_ENG_OFF && m != TESS_ENG_GRIDS && m != TESS_ENG_CHORD) {   /* (any generator whose notes go through

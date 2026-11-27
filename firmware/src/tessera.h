@@ -255,6 +255,12 @@ typedef struct {
      * record's CHMOVE part (the two side by side), not the packed block */
     uint8_t          ch_when[TESSERA_TRACKS];    /* TESS_CW_*: OFF (as before) */
     uint8_t          ch_by[TESSERA_TRACKS];      /* TESS_CB_*: +2 ST by default */
+#if TESS_CH_NOTES
+    /* MOVE BY NOTES (an 8-track build's): each note's own move, the chord's notes from the lowest (a fifth and more:
+     * the fourth's), in semitones or (ch_odeg) scale degrees. The record's TSP_CHOFS */
+    int8_t           ch_ofs[TESSERA_TRACKS][4];  /* -12..12 */
+    uint8_t          ch_odeg[TESSERA_TRACKS];    /* 0 semitones, 1 scale degrees */
+#endif
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
@@ -575,6 +581,10 @@ enum {
     TX_GN_LANE, TX_GN_RANGE,                        /* (0x2B5, 0x2B6: a generator's LANE and RANGE, an 8-track build's:
                                                      * tessera.c tess_fit) */
 #endif
+#if TESS_CH_NOTES
+    TX_CH_OFS1, TX_CH_OFS2, TX_CH_OFS3, TX_CH_OFS4, /* (0x2B7..0x2BA: CHORD MOVE BY NOTES, each note's offset; */
+    TX_CH_ODEG,                                     /* 0x2BB: in semitones or degrees; an 8-track build's) */
+#endif
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
@@ -595,6 +605,9 @@ _Static_assert(TESS_FLOURISH && TX_GN_LANE == 0xB5 && TX_GN_RANGE == 0xB6, "para
 #define TESS_GN_LANES 8u                            /* TX_GN_LANE 1..8: BD SD CP CH OH TM RS CB */
 #define TESS_GN_RANGE 3u                            /* TX_GN_RANGE 1..3 octaves */
 #endif
+#if TESS_CH_NOTES
+_Static_assert(TESS_GEN_FIT && TX_CH_OFS1 == 0xB7 && TX_CH_ODEG == 0xBB, "parameter ids are stored: never renumbered");
+#endif
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
 #define TESS_STRUM_MS 250u                          /* TX_CH_STRUM: up to 250 ms between a chord's notes (a byte, in ms) */
@@ -606,7 +619,12 @@ enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDI
  * only) */
 enum { TESS_CW_OFF, TESS_CW_LAST, TESS_CW_LAST2, TESS_CW_ODD, TESS_CW_CHANGE, TESS_CW_RAND, TESS_CW_N };
 enum { TESS_CB_DN2, TESS_CB_DN1, TESS_CB_UP1, TESS_CB_UP2, TESS_CB_UP3, TESS_CB_DEG1, TESS_CB_DEG2, TESS_CB_INVU,
-       TESS_CB_INVD, TESS_CB_OCT, TESS_CB_TOP, TESS_CB_LEAD, TESS_CB_N };
+       TESS_CB_INVD, TESS_CB_OCT, TESS_CB_TOP, TESS_CB_LEAD,
+#if TESS_CH_NOTES
+       TESS_CB_NOTES,                               /* (an 8-track build's: each note its own, ch_ofs; the record's
+                                                     * CHMOVE part has +1 ST in its place, TSP_CHOFS the real one) */
+#endif
+       TESS_CB_N };
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, CANON 1..8 notes back, or counted
  * into the CHORD track's chord (HARM, after the 8 CANONs: older firmware loads no project that uses it) */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_HARM = TESS_FH_CANON + 8,

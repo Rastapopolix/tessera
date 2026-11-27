@@ -1679,6 +1679,15 @@ static uint32_t tess_chord_move(const track_t *t, uint32_t tr, const tessera_cho
     } else if (by == TESS_CB_TOP) {
         out[n - 1u] = (uint8_t)tess_scale_steps(t, out[n - 1u], 1);
     }
+#if TESS_CH_NOTES
+    else if (by == TESS_CB_NOTES)                       /* (each note its own: the fourth's for a fifth and above; DEG
+                                                         * in the scale, so in key; tess_chord_play keeps 0..127) */
+        for (i = 0; i < n; i++) {
+            int32_t o = tessera.ch_ofs[tr][i < 4u ? i : 3u];
+            o = tessera.ch_odeg[tr] ? tess_scale_steps(t, out[i], o) : (int32_t)out[i] + o;
+            out[i] = (uint8_t)(o < 0 ? 0 : o > 127 ? 127 : o);
+        }
+#endif
     return n;
 }
 
@@ -3478,6 +3487,10 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_GN_LANE: return tessera.gn_lane[tr];
     case TX_GN_RANGE: return tessera.gn_range[tr];
 #endif
+#if TESS_CH_NOTES
+    case TX_CH_OFS1: case TX_CH_OFS2: case TX_CH_OFS3: case TX_CH_OFS4: return tessera.ch_ofs[tr][x - TX_CH_OFS1];
+    case TX_CH_ODEG: return tessera.ch_odeg[tr];
+#endif
     case TX_ACC_LIMIT: return tessera.acc_limit[tr] ? tessera.acc_limit[tr] : (int32_t)TESS_ACC_LIMIT_DEF;
     case TX_FC_FORM: return tessera.fc_form;            /* (form chaining's: the project's, whichever track) */
     case TX_FC_PHRASE: return tessera.fc_phrase;
@@ -3691,6 +3704,11 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
 #if TESS_GEN_FIT
     case TX_GN_LANE: tessera.gn_lane[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_GN_LANES); return;
     case TX_GN_RANGE: tessera.gn_range[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_GN_RANGE); return;
+#endif
+#if TESS_CH_NOTES
+    case TX_CH_OFS1: case TX_CH_OFS2: case TX_CH_OFS3: case TX_CH_OFS4:
+        tessera.ch_ofs[tr][x - TX_CH_OFS1] = (int8_t)tess_clampi(v, -12, 12); return;
+    case TX_CH_ODEG: tessera.ch_odeg[tr] = (uint8_t)tess_clampi(v, 0, 1); return;
 #endif
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); return;
     case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); return;
