@@ -4424,7 +4424,11 @@ static void gen_alternates(void)
 /* ------------------------------------------------------------ GENERATE: before / after --- */
 /* The project before the last press, as its own .tsp (never a list of fields: it cannot go stale), and swapping it
  * with what is there now (as a project load: tess_core.c tess_core_load) */
+#if TESSERA_MIDI_ONLY
+static uint8_t gen_before[TSP_MAX] __attribute__((section(".pool")));   /* (Tessera MIDI: static RAM is short, the arena free) */
+#else
 static uint8_t gen_before[TSP_MAX];
+#endif
 static uint32_t gen_before_len;
 static struct { uint8_t style, var, made; uint32_t seed; } gen_last;
 static uint32_t gen_pack_now(void)                  /* the project now, into proj_wire_u: its length (0 failed) */
