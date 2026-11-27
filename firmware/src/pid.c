@@ -50,6 +50,12 @@ _Static_assert(sizeof TX_N_GRBANK / sizeof TX_N_GRBANK[0] == GEN_AB_N, "ATLAS BA
 static const char *const TX_N_FLWHERE[] = {"OFF", "BAR 2", "BAR 4", "BAR 8"};
 static const char *const TX_N_FLWHAT[] = {"DOUBLE", "DROP", "ECHO", "OCTAVE"};   /* (FL_*) */
 static const char *const TX_N_FLHEAT[] = {"1", "2", "3"};
+#endif
+#if TESS_GEN_FIT
+static const char *const TX_N_GNLANE[] = {"ALL", "BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};   /* (DV_* lanes) */
+static const char *const TX_N_GNRANGE[] = {"OFF", "1 OCT", "2 OCT", "3 OCT"};
+_Static_assert(sizeof TX_N_GNLANE / sizeof TX_N_GNLANE[0] == TESS_GN_LANES + 1u, "LANE: a name a lane");
+_Static_assert(sizeof TX_N_GNRANGE / sizeof TX_N_GNRANGE[0] == TESS_GN_RANGE + 1u, "RANGE: a name a range");
 _Static_assert(sizeof TX_N_FLWHAT / sizeof TX_N_FLWHAT[0] == FL_WHATS, "FLOURISH WHAT: a name a move");
 #endif
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
@@ -279,6 +285,10 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FL_WHERE] = PE("WHERE", TX_N_FLWHERE, 0),
     [TX_FL_WHAT] = PE("WHAT", TX_N_FLWHAT, 0),
     [TX_FL_HEAT] = PE("HEAT", TX_N_FLHEAT, 0),
+#endif
+#if TESS_GEN_FIT
+    [TX_GN_LANE] = PE("LANE", TX_N_GNLANE, 0),
+    [TX_GN_RANGE] = PE("RANGE", TX_N_GNRANGE, 0),
 #endif
 };
 
@@ -929,6 +939,14 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                     "away (bass down, the rest up; drums a roll). Always in key. TIMING sheet."),
     X_(TX_FL_HEAT, "FLOURISH HEAT", "How much: 1 the bar's last step, 2 its last two, 3 the last two harder (a faster "
                                     "roll, ECHO with REPEAT lifted). TIMING sheet."),
+#endif
+#if TESS_GEN_FIT                                    /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    X_(TX_GN_LANE, "GEN LANE", "On a DRUM track, the drum every note of the generator plays: ALL lets its pitches pick "
+                               "the drums (kick, snare, hats as the notes fall), BD to CB keep every hit on that one, so "
+                               "the generator gives only the rhythm and the accents. Other tracks: no effect. GEN sheet."),
+    X_(TX_GN_RANGE, "GEN RANGE", "Keeps any generator's notes inside 1, 2 or 3 octaves from its home note (C2 for TURING "
+                                 "and MARKOV, C3 for the others), folding the rest in by octaves, so they stay in key. "
+                                 "SPAN still spreads them first. OFF: as the generator plays. GEN sheet."),
 #endif
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT

@@ -37,6 +37,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_FR_KICKS
        TSP_FKICK = 55,
 #endif
+#if TESS_GEN_FIT
+       TSP_GFIT = 56,
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -116,7 +119,10 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_CHOP (an 8-track build's only: the FM-1 skips it): each track's
                                               * CHORD HIT when a chop (gen.h GEN_CH_DOUBLE, BUBBLE), else 0, written
                                               * only when one is; the TRACKS part keeps what others play (OFFBEAT,
-                                              * STEP); none: as that part has it */
+                                              * STEP); none: as that part has it;
+                                              * TSP_GFIT (an 8-track build's only: the FM-1 skips it): every track's
+                                              * LANE, then every track's RANGE (a byte each: tessera.gn_*), written
+                                              * only when one is not 0; none: ALL, OFF */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -141,6 +147,9 @@ _Static_assert(TSP_FLOUR == 53 && 3u * TESSERA_TRACKS <= 255u, "the parts' numbe
 #endif
 #if TESS_CHOPS
 _Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_GEN_FIT
+_Static_assert(TSP_GFIT == 56 && 2u * TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
 #endif
 #if TESS_FR_KICKS
 _Static_assert(TSP_FKICK == 55, "the parts' numbers are stored: never renumbered");
@@ -686,6 +695,16 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 break;
             }
 #endif
+#if TESS_GEN_FIT
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (LANE, RANGE: only when one track has one) */
+            if (tessera.gn_lane[t] | tessera.gn_range[t]) {
+                tsp_begin(&w, TSP_GFIT, 1);
+                tsp_bytes(&w, tessera.gn_lane, TESSERA_TRACKS);
+                tsp_bytes(&w, tessera.gn_range, TESSERA_TRACKS);
+                tsp_end(&w);
+                break;
+            }
+#endif
 #if TESS_FLOURISH
         for (t = 0; t < TESSERA_TRACKS; t++)           /* (FLOURISH: only when one track has one) */
             if (tessera.fl_where[t]) {
@@ -822,6 +841,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
 #endif
 #if TESS_FR_KICKS
     {TSP_FKICK, 1u, 0, TESSERA_TRACKS, TESSERA_TRACKS},
+#endif
+#if TESS_GEN_FIT
+    {TSP_GFIT, TESS_GN_LANES, TESS_GN_RANGE, TESSERA_TRACKS, 2u * TESSERA_TRACKS},   /* (LANE 0..8; RANGE 0..3) */
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1160,6 +1182,13 @@ static void tsp_restore(const uint8_t *raw)
 #if TESS_ATLAS_BANKS
     for (t = 0; t < TESSERA_TRACKS; t++)               /* (ATLAS's BANKs; none saved: ALL) */
         tessera.grids[t].bank = tsp_seen.at[TSP_ABANK] ? raw[tsp_seen.at[TSP_ABANK] + t] : 0u;
+#endif
+#if TESS_GEN_FIT
+    for (t = 0; t < TESSERA_TRACKS; t++) {             /* (LANE, RANGE; none saved: ALL, OFF) */
+        const uint8_t *g = tsp_seen.at[TSP_GFIT] ? raw + tsp_seen.at[TSP_GFIT] : 0;
+        tessera.gn_lane[t] = g ? g[t] : 0u;
+        tessera.gn_range[t] = g ? g[TESSERA_TRACKS + t] : 0u;
+    }
 #endif
 #if TESS_FLOURISH
     for (t = 0; t < TESSERA_TRACKS; t++) {             /* (FLOURISH; none saved: OFF) */

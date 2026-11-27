@@ -323,6 +323,13 @@ static uint32_t gen_sheet_rows(void)
         sr_add("Move when", PID_TESS(TX_CH_WHEN), tr);
         sr_add("Move by", PID_TESS(TX_CH_BY), tr);
     }
+#if TESS_GEN_FIT
+    if (m != TESS_ENG_OFF && m != TESS_ENG_GRIDS && m != TESS_ENG_CHORD) {   /* (any generator whose notes go through
+                                                                              * tessera.c's tick: tess_fit_*) */
+        if (drum_track(&trk[tr])) sr_add("Drum lane", PID_TESS(TX_GN_LANE), tr);
+        sr_add("Note range", PID_TESS(TX_GN_RANGE), tr);
+    }
+#endif
     return sr.n;
 }
 

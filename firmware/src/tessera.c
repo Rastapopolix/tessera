@@ -533,6 +533,29 @@ static int32_t tess_trn(const track_t *t, uint32_t tr)   /* (P_TRANS, the CHAIN'
 #endif
     return (int32_t)t->p[P_TRANS] + fc_key(tr);
 }
+#if TESS_GEN_FIT
+/* RANGE: a generator's note (as it gives it, before the key and the snap) folded by octaves into RANGE octaves from the
+ * generator's home note (TURING's and MARKOV's C2, the others' C3), so it keeps its degree */
+static uint32_t tess_fit_range(uint32_t tr, uint32_t note)
+{
+    uint32_t r = tessera.gn_range[tr], lo, hi;
+    if (!r || r > TESS_GN_RANGE) return note;
+    lo = tessera.mode[tr] == TESS_ENG_TURING || tessera.mode[tr] == TESS_ENG_MARKOV ? 36u : 48u;
+    hi = lo + 12u * r;
+    while (note >= hi) note -= 12u;
+    while (note < lo) note += 12u;
+    return note;
+}
+/* LANE: on a DRUM track every note played on one lane (its GM note: eng_drum.c DRUM_LANE_NOTE), whatever the pitch */
+static int32_t tess_fit_lane(const track_t *t, uint32_t tr, int32_t note)
+{
+    uint32_t l = tessera.gn_lane[tr];
+    return l && l <= TESS_GN_LANES && drum_track(t) ? (int32_t)DRUM_LANE_NOTE[l - 1u] : note;
+}
+#else
+#define tess_fit_range(tr, note) (note)
+#define tess_fit_lane(t, tr, note) (note)
+#endif
 #include "land_feed.c"                               /* LANDSCAPE's notes (ui_land.c) */
 
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
@@ -1798,7 +1821,7 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         tess_chord_play(t, tr, tess_logic(tr, out.gate) && tess_cond(tr) ? out.vel : 0u);
         return;
     }
-    uint8_t note = out.note, vel = out.vel;
+    uint8_t note = (uint8_t)tess_fit_range(tr, out.note), vel = out.vel;   /* (RANGE: before the key and the snap) */
     int should_trigger = out.gate;
     tessera.cv[tr] = out.cv;
 
@@ -1845,12 +1868,15 @@ static void tess_clock_step_body(track_t *t, uint32_t tr)
         if (final_note < 0) final_note = 0;
         if (final_note > 127) final_note = 127;
         if (tessera.pl_length) final_note = tess_resolve(t, tr, final_note);   /* (PIECE: the end resolves home) */
+        final_note = tess_fit_lane(t, tr, final_note);     /* (LANE: last, the drum whatever the pitch) */
 
         uint8_t more[2];                                   /* (the step's other notes, as played: Bounce's balls, */
         uint32_t more_n = 0;                               /*  CHORD TRUE's; none the same as the first) */
         for (uint32_t i = 0; i < out.more_n && i < 2u; i++) {
-            int32_t m = tess_snap_gen(t, tr, (int32_t)out.more[i] + tess_key(t, tr) + tess_flourish(t, tr)) + tess_trn(t, tr) + tw2->shift;
+            int32_t m = tess_snap_gen(t, tr, (int32_t)tess_fit_range(tr, out.more[i]) + tess_key(t, tr) + tess_flourish(t, tr)) +
+                        tess_trn(t, tr) + tw2->shift;
             m = m < 0 ? 0 : m > 127 ? 127 : m;
+            m = tess_fit_lane(t, tr, m);
             if (m != final_note) more[more_n++] = (uint8_t)m;
         }
         uint32_t to = tess_branch(tr);
@@ -3448,6 +3474,10 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_FL_WHAT: return tessera.fl_what[tr];
     case TX_FL_HEAT: return tessera.fl_heat[tr];
 #endif
+#if TESS_GEN_FIT
+    case TX_GN_LANE: return tessera.gn_lane[tr];
+    case TX_GN_RANGE: return tessera.gn_range[tr];
+#endif
     case TX_ACC_LIMIT: return tessera.acc_limit[tr] ? tessera.acc_limit[tr] : (int32_t)TESS_ACC_LIMIT_DEF;
     case TX_FC_FORM: return tessera.fc_form;            /* (form chaining's: the project's, whichever track) */
     case TX_FC_PHRASE: return tessera.fc_phrase;
@@ -3654,6 +3684,10 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_FL_WHERE: tessera.fl_where[tr] = (uint8_t)tess_clampi(v, 0, 3); return;
     case TX_FL_WHAT: tessera.fl_what[tr] = (uint8_t)tess_clampi(v, 0, FL_WHATS - 1); return;
     case TX_FL_HEAT: tessera.fl_heat[tr] = (uint8_t)tess_clampi(v, 0, 2); return;
+#endif
+#if TESS_GEN_FIT
+    case TX_GN_LANE: tessera.gn_lane[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_GN_LANES); return;
+    case TX_GN_RANGE: tessera.gn_range[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_GN_RANGE); return;
 #endif
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); return;
     case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); return;

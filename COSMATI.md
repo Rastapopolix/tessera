@@ -321,6 +321,19 @@ quality to come round to the next, back to AUTO. The quality plays wherever the 
 the card. These are saved in the project, in a part older firmware and the FM-1 skip (they open there with every USER
 chord on AUTO). [Harmony](MANUAL.md#harmony-one-key-chord-and-qnt-chrd) explains CHORD and QNT CHRD.
 
+**A generator's lane and range.** On a generator track, hold **OCT+** on GEN (or right-click it) for the GEN sheet,
+which in Cosmati has two more rows:
+
+- **Drum lane** (a DRUM track only): **ALL** lets the generator's pitches pick the drums, as on the FM-1 (kick, snare,
+  hats as the notes fall). **BD**, **SD**, **CP**, **CH**, **OH**, **TM**, **RS** or **CB** puts every hit on that one
+  drum, so TURING, EUCLID, MARKOV and the rest give only the rhythm and the accents. Its MIDI out is that drum's note too.
+- **Note range**: **1**, **2** or **3 OCT** keeps the notes inside that many octaves from the generator's home note
+  (C2 for TURING and MARKOV, C3 for the others), folding the rest in by octaves, so they stay in key and on their beats.
+  It works on every generator but ATLAS and CHORD, on top of its own SPAN where it has one. **OFF** plays them as the
+  generator gives them.
+
+Both are saved in the project, in a part the FM-1 skips: it plays such a track with ALL and OFF.
+
 ## Modulation
 
 **MOD** holds the 16 mods, the MATRIX, the LFOs and ORGANIC; the [manual's MODS chapter](MANUAL.md#mods-the-modulation-cords)
