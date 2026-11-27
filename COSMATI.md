@@ -5,8 +5,8 @@
 and computer keyboard in charge. This is its own manual. It covers the window, the mouse, the keyboard and the DAW,
 and it points to the [FM-1 manual](MANUAL.md) for what each page and generator does, because those are the same.
 
-> **In short:** open Cosmati, press **GENERATE**, and a new piece plays. Use the nine **section buttons** (GEN, SOUND,
-> MOD, FX, SHAPE, PIECE, MIX, SCALE, SETUP) to reach every page, the mouse to turn, drag and paint, and the DAW for
+> **In short:** open Cosmati, press **GENERATE**, and a new piece plays. Use the nine **section buttons** (SCALE, GEN,
+> SHAPE, PIECE, SOUND, MOD, FX, MIX, SETUP) to reach every page, the mouse to turn, drag and paint, and the DAW for
 > tempo, automation and saving. **Right-click** anything for its help and its menu.
 
 [![Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE](assets/plugin/plugin-expanded.png)](assets/plugin/plugin-expanded.png)
@@ -124,21 +124,25 @@ Cosmati stops moving only while the DAW isn't processing audio: if the window lo
 ## Finding your way: sections, tabs and the page map
 
 The FM-1 has a few group buttons with long lists of pages behind them. Cosmati has **nine section buttons**, each named
-for what its pages do. Tessera's pages are the same ones, grouped:
+for what its pages do. Tessera's pages are the same ones, grouped. The top row is **the notes**, what plays, from the
+smallest to the largest: HOME, then SCALE (the pitches), GEN (the patterns), SHAPE (the phrase) and PIECE (the whole
+piece). The bottom row is **the sound**, how it sounds, in signal-flow order: SOUND (the voice), MOD (its modulation), FX
+(the effects), MIX (the levels) and SETUP (the settings). Keys 1 to 9 go the same way.
 
-| Section | Pages |
-|---|---|
-| **GEN** | the generator, NOTES, ARP, PATTERN, MOTION |
-| **SOUND** | PRESETS (the sound browser), the engine's own pages, then ENV |
-| **MOD** | MODS, MATRIX, the LFOs, ORGANIC |
-| **FX** | the effects |
-| **SHAPE** | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
-| **PIECE** | PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG |
-| **MIX** | MIXER, PERF |
-| **SCALE** | SCALES, SCL, KEY, CHORD |
-| **SETUP** | SETTINGS (the MENU's list), TEMPO, SYSTEM, MIDI IN, MIDI OUT |
+| Key | Section | Pages |
+|---|---|---|
+| 0 | **HOME** | the tracks |
+| 1 | **SCALE** | SCALES, SCL, KEY, CHORD |
+| 2 | **GEN** | the generator, NOTES, ARP, PATTERN, MOTION |
+| 3 | **SHAPE** | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
+| 4 | **PIECE** | PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG |
+| 5 | **SOUND** | PRESETS (the sound browser), the engine's own pages, then ENV |
+| 6 | **MOD** | MODS, MATRIX, the LFOs, ORGANIC |
+| 7 | **FX** | the effects |
+| 8 | **MIX** | MIXER, PERF |
+| 9 | **SETUP** | SETTINGS (the MENU's list), TEMPO, SYSTEM, MIDI IN, MIDI OUT |
 
-Then HOME, SAVE, PLAY and REC as before.
+Then SAVE, PLAY and REC in the slim row underneath.
 
 - **A press** opens the page you last used in that section. **Press again** to step to the next page; after the last
   it wraps to the first, as the FM-1's group buttons do. The section of the page on screen is lit.
@@ -586,7 +590,7 @@ The printable version of this table, with the mouse as well: the [Quick referenc
 | Keys | Does |
 |---|---|
 | Z to ' and Q to O | play the keys |
-| 1 to 9, 0, -, = | sections GEN to SETUP, HOME, SAVE, REC |
+| 1 to 9, 0, -, = | sections SCALE to SETUP (as on the panel), HOME, SAVE, REC |
 | [ ] or Esc Enter | BACK, OK |
 | Page Up / Down | OCT+, OCT- |
 | Shift | SHIFT, while held |

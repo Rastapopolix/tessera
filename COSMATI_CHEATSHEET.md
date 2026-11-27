@@ -7,16 +7,18 @@ version is [docs/cheatsheet/cosmati-cheatsheet.pdf](docs/cheatsheet/cosmati-chea
 
 ## Sections (keys 1 to 9)
 
+Top row, the notes: HOME, SCALE, GEN, SHAPE, PIECE. Bottom row, the sound: SOUND, MOD, FX, MIX, SETUP.
+
 | Section | Pages |
 |---|---|
-| **GEN** (1) | generator, NOTES, ARP, PATTERN, MOTION |
-| **SOUND** (2) | PRESETS (the sound browser), the engine's pages, ENV |
-| **MOD** (3) | MODS, MATRIX, LFOs, ORGANIC |
-| **FX** (4) | the effects |
-| **SHAPE** (5) | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
-| **PIECE** (6) | PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG |
-| **MIX** (7) | MIXER, PERF |
-| **SCALE** (8) | SCALES, SCL, KEY, CHORD |
+| **SCALE** (1) | SCALES, SCL, KEY, CHORD |
+| **GEN** (2) | generator, NOTES, ARP, PATTERN, MOTION |
+| **SHAPE** (3) | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
+| **PIECE** (4) | PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG |
+| **SOUND** (5) | PRESETS (the sound browser), the engine's pages, ENV |
+| **MOD** (6) | MODS, MATRIX, LFOs, ORGANIC |
+| **FX** (7) | the effects |
+| **MIX** (8) | MIXER, PERF |
 | **SETUP** (9) | SETTINGS, TEMPO, SYSTEM, MIDI IN, MIDI OUT |
 | **HOME** (0), **SAVE** (-), **REC** (=) | as on the FM-1 |
 
