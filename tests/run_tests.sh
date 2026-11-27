@@ -175,7 +175,7 @@ start=$(date +%s)
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test lfo_seek_test lfo_seek_test_8"
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
-G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
+G_STORE="storage_test storage_midi_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
@@ -558,6 +558,7 @@ sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as 
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
+    t "Tessera MIDI's project storage: twelve sectors a copy from the sound's idle storage, no clash, tails erased" storage_midi_test
     for _p in FM1 PLUGIN SIM DAISY; do   # each target's profile agrees with the core API (firmware/src/tess_profile.h)
         t "platform profile $_p: its facts as the core API's" "profile_$_p:profile_test" -DTESS_TARGET=TESS_T_$_p \
             -Iplatform/core $FW
