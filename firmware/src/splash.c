@@ -66,7 +66,7 @@ static void splash(const char *line)          /* the boot screen: the mosaic's b
     draw_text_box(0, 154, 240, &AF_L, "MIDI", T_TEXT, 1);
 #endif
     draw_text_box(0, SPL_LINE_Y, 240, &AF_S, line, T_MID, 1);
-    draw_text_box(8, 240 - 8 - AF_X.h, 224, &AF_X, MELODEE_VERSION, T_DIM, 2);   /* the version, small at the bottom
+    draw_text_box(8, 240 - 8 - AF_X.h, 224, &AF_X, TESS_VERSION_SHOWN, T_DIM, 2);   /* the version, small at the bottom
                                                  * right: below the outro's band, so it stays until the screen clears */
 }
 

@@ -97,7 +97,14 @@ static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with th
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
  * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
 #ifndef TESSERA_MIDI_ONLY
-#define TESSERA_MIDI_ONLY 0      /* (wip/midi-only-size: no sound; the sequencer, generators and MIDI only) */
+#define TESSERA_MIDI_ONLY 0      /* Tessera MIDI (tools/build.py): no sound; the sequencer, generators and MIDI only */
+#endif
+/* the version as the screen shows it (the splash, ABOUT): Tessera MIDI's marked, so a screenshot or a report says which
+ * firmware; MELODEE_VERSION itself (the editor's and the console's, the installer's) stays the plain number */
+#if TESSERA_MIDI_ONLY
+#define TESS_VERSION_SHOWN MELODEE_VERSION " MIDI"
+#else
+#define TESS_VERSION_SHOWN MELODEE_VERSION
 #endif
 #ifndef MELODEE_ORACLE
 #define MELODEE_ORACLE 1         /* ORACLE (eng_oracle.c): two oscillators, Poly-Mod, a 4-pole ladder (after the Prophet-5) */
