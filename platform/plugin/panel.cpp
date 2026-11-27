@@ -1548,8 +1548,10 @@ bool Panel::latch(int x, int y)
             return true;
         }
         if (z.kind != TESS_ZONE_KNOB && !(z.kind == TESS_ZONE_ROW && z.vrole >= 0) &&
-            !(z.kind == TESS_ZONE_MUTE && z.role == 1) && !(z.kind == TESS_ZONE_POINT && (z.row & 0x200)))
-            return false;   // (MIXER's MUTE word: its solo; BOUNCE's picture: a ball less)
+            !(z.kind == TESS_ZONE_MUTE && z.role == 1) && !(z.kind == TESS_ZONE_POINT && (z.row & 0x200)) &&
+            z.kind != TESS_ZONE_CHORD && z.kind != TESS_ZONE_SEND && z.kind != TESS_ZONE_EGRID)
+            return false;   // (MIXER's MUTE word: its solo; BOUNCE's picture: a ball less; CHORD USER's card: the
+                            // chord taken; NOTES' SEND lane: the step's send gone; ENTRIES' cell: AUTO)
         zone_act(z, TESS_ZA_HELP, 0);
         return true;
     }
