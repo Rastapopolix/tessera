@@ -1624,8 +1624,18 @@ bool Panel::wheel(int x, int y, int notches)
         return true;
     }
     int zi = zone_at(x, y);
-    if (zi >= 0 && notches && zones[zi].kind == TESS_ZONE_TAB)   // the footer's tabs: the pages, as sideways (down: on)
-        return hwheel(-notches);
+    if (notches && (zi < 0 || zones[zi].kind == TESS_ZONE_TAB) && on_screen(x, y))
+    {   // on the screen, over nothing or the footer's tabs, on a page with a list (MODS' mods, a picker, the browser):
+        // the list moves (Theo 2026-11-27: MODS' empty space paged on, he wanted its mods to scroll)
+        for (size_t i = 0; i < zones.size(); i++)
+            if (zones[i].kind == TESS_ZONE_ROW)
+            {
+                zone_act(zones[i], TESS_ZA_WHEEL, notches);
+                return true;
+            }
+    }
+    if (zi >= 0 && notches && zones[zi].kind == TESS_ZONE_TAB)   // the footer's tabs: the pages, as sideways (down: on;
+        return hwheel(-notches);                                // a page without a list)
     if (zi >= 0 && notches)   // a value: as its knob turned; a list: it moves (a row a notch)
     {
         const tess_zone_t &zw = zones[zi];
@@ -2585,6 +2595,12 @@ int Panel::zone2_at(int x, int y) const
         if (sx >= z.x && sx < z.x + z.w && sy >= z.y && sy < z.y + z.h) return (int)i;
     }
     return -1;
+}
+
+bool Panel::on_screen(int x, int y) const   // (x, y) on the FM-1's screen
+{
+    int sx = x - (SCREEN_X + SCREEN_S / 32), sy = y - (SCREEN_Y + SCREEN_S / 32);
+    return !(native() && menu_open) && sx >= 0 && sy >= 0 && sx < TESS_SCREEN && sy < TESS_SCREEN;
 }
 
 int Panel::zone_at(int x, int y) const
