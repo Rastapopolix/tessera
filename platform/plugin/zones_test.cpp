@@ -759,6 +759,29 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
         if (page_now() == f1) break;
     }
     CHECK(f1 == "FX 1" && n > 2 && n < 12, "FX: round its pages and back to FX 1 (%d)", n);
+    tap(B_HOME);   // SOUND: the browser first (Theo 2026-11-27: it was only under SAVE), then the engine's pages
+    press_section(TESS_SEC_SOUND);
+    t = tabs_now();
+    CHECK(page_now() == "PRESETS" && t.rfind("PRESETS|", 0) == 0 && (v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_SOUND)),
+          "SOUND: PRESETS first, its tab the first, SOUND lit (%s / %s)", page_now().c_str(), t.c_str());
+    press_section(TESS_SEC_SOUND);
+    CHECK(page_now() != "PRESETS" && page_now() != "USER" && !page_now().empty(), "SOUND again: the engine's page (%s)",
+          page_now().c_str());
+    tap(B_HOME);
+    tap(B_SAVE);   // (SAVE: USER first, the quick save's muscle memory; PRESETS still among its pages)
+    std::string sv = page_now();
+    bool reached = false;
+    for (int i = 0; i < 4 && !reached; i++) { tap(B_SAVE); reached = page_now() == "PRESETS"; }
+    CHECK(sv == "USER" && reached, "SAVE: USER first, PRESETS still in its round (%s)", sv.c_str());
+    tap(B_HOME);
+    {   // the page map's SOUND 0 (the panel's Ctrl+B, a TRACKS row's SOUNDS...): the browser from anywhere
+        press_section(TESS_SEC_PIECE);
+        tess_zone_t m{};
+        m.kind = TESS_ZONE_MAP, m.role = TESS_SEC_SOUND, m.row = 0;
+        tess_core_zone_do(&m, TESS_ZA_CLICK, 0);
+        run(20);
+        CHECK(page_now() == "PRESETS", "the map's SOUND 0: PRESETS (%s)", page_now().c_str());
+    }
     tap(B_HOME);
     CHECK(!(v.lit_buttons & (TESS_BTN_SECTION(TESS_SEC_N) - TESS_BTN_SECTION(0))), "HOME: no section lit");
     tess_core_key_words(2);   // (an FM-1 on USB playing Cosmati: its OCT- / OCT+, the section buttons theirs still)
