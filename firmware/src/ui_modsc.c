@@ -235,7 +235,7 @@ static void macro_mods(uint32_t k)
             i = (int32_t)j;
     if (i < 0) {
         if ((i = msc_free()) < 0) {
-            ui_message("NO FREE MOD SLOT");
+            ui_message("NO FREE SLOT");
             return;
         }
         c = *cord_get((uint32_t)i);
