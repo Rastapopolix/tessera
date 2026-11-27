@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* The boot screen: Tessera's mark, a 3 x 3 mosaic of lapis tiles with one gold tessera, over TESSERA and a line.
+/* The boot screen: Tessera's mark, a 3 x 3 mosaic of lapis tiles with one gold tessera, over TESSERA and a line
+ * (Tessera MIDI: TESSERA, MIDI under it, then the line).
  * While the firmware starts, the mosaic's bed shows (the nine places in the grout's colour); when it is ready,
  * splash_lay() sets the tiles from the middle outwards, one every SPL_STEP_MS, the gold one last with a press,
  * in the wait the boot already makes before the first frame, then holds the finished mark a moment (SPL_HOLD_MS;
@@ -14,6 +15,11 @@
 #define SPL_STEP_MS 60u
 #define SPL_HOLD_MS 800u                        /* the finished mark held (a press ends it sooner) */
 #define SPL_GOLD 2u                             /* the gold tessera: top right */
+#if TESSERA_MIDI_ONLY                           /* Tessera MIDI: MIDI on its own line under TESSERA, the line lower */
+#define SPL_LINE_Y 194
+#else
+#define SPL_LINE_Y 160
+#endif
 #ifndef SPL_FRAME_HOOK
 #define SPL_FRAME_HOOK(f) ((void)0)             /* (tests: each frame of the outro) */
 #endif
@@ -56,7 +62,10 @@ static void splash(const char *line)          /* the boot screen: the mosaic's b
     for (i = 0; i < 9u; i++)
         spl_tile(i, 0, T_LINE);
     draw_text_box(0, 120, 240, &AF_L, "TESSERA", T_TEXT, 1);
-    draw_text_box(0, 160, 240, &AF_S, line, T_MID, 1);
+#if TESSERA_MIDI_ONLY
+    draw_text_box(0, 154, 240, &AF_L, "MIDI", T_TEXT, 1);
+#endif
+    draw_text_box(0, SPL_LINE_Y, 240, &AF_S, line, T_MID, 1);
     draw_text_box(8, 240 - 8 - AF_X.h, 224, &AF_X, MELODEE_VERSION, T_DIM, 2);   /* the version, small at the bottom
                                                  * right: below the outro's band, so it stays until the screen clears */
 }
@@ -88,7 +97,8 @@ static int spl_hold(uint32_t ms)
  * drifting and dimming to a pixel. Nothing kept per grain: frame f is drawn from the mark itself (spl_ink), in the
  * band the mark covers, through the canvas (the diff sends what changed: the SPI sets the pace, ~40 ms a frame). */
 #define SPL_Y0 36                               /* the band: rows SPL_Y0 .. SPL_Y0 + 124 + SPL_H1 - 1 */
-#define SPL_H1 20u                              /* (its foot, on the small canvas) */
+#define SPL_H1 (20u + (uint32_t)(SPL_LINE_Y - 160))   /* (its foot, on the small canvas; Tessera MIDI: MIDI's line
+                                                 * and the lower line in it too, above the version) */
 #define SPL_LOOSE 2                             /* frames the grains shiver before the wind */
 #define SPL_FRONT 20                            /* the wind's front, px a frame */
 #define SPL_LIFE 8                              /* frames a grain flies */
@@ -107,10 +117,15 @@ static uint16_t spl_ink(int32_t x, int32_t y)   /* the mark's colour at x, y (0:
     t = x - 36;                                 /* TESSERA (AF_L: font pixels of 4, centred at row 120) */
     if (y >= 124 && y < 152 && t >= 0 && t < 168 && t % 24 < 20)
         return MO_FONT["TESSERA"[t / 24] - 32][(y - 124) / 4] & (16u >> (t % 24 / 4)) ? T_TEXT : 0;
-    n = str_len(spl_line);                      /* the line (AF_S: of 2, centred at row 160) */
+#if TESSERA_MIDI_ONLY
+    t = x - 72;                                 /* MIDI (AF_L, centred at row 154) */
+    if (y >= 158 && y < 186 && t >= 0 && t < 96 && t % 24 < 20)
+        return MO_FONT["MIDI"[t / 24] - 32][(y - 158) / 4] & (16u >> (t % 24 / 4)) ? T_TEXT : 0;
+#endif
+    n = str_len(spl_line);                      /* the line (AF_S: of 2, centred at row SPL_LINE_Y) */
     t = x - (240 - 12 * (int32_t)n) / 2;
-    if (y >= 160 && y < 174 && t >= 0 && t < 12 * (int32_t)n && t % 12 < 10)
-        return MO_FONT[mono_ch((uint8_t)spl_line[t / 12]) - 32u][(y - 160) / 2] & (16u >> (t % 12 / 2)) ? T_MID : 0;
+    if (y >= SPL_LINE_Y && y < SPL_LINE_Y + 14 && t >= 0 && t < 12 * (int32_t)n && t % 12 < 10)
+        return MO_FONT[mono_ch((uint8_t)spl_line[t / 12]) - 32u][(y - SPL_LINE_Y) / 2] & (16u >> (t % 12 / 2)) ? T_MID : 0;
     return 0;
 }
 static uint32_t spl_frame(int32_t f)            /* frame f of the outro, band by band; the grains still flying */
