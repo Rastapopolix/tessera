@@ -123,7 +123,7 @@ and value shown large in a box under the screen:
   track quantises); click the same step at another height for a chord (up to 4 notes). Drag a note up or down to
   change its pitch (it steps over its chord's other notes); hold SHIFT (or Shift) while dragging to move the whole
   chord. Right-click a note to remove it (a chord's tick: that note). The wheel on a note moves it too.
-- **MODS:** the wheel scrolls the 16 mods; click a mod's row to pick it, drag up or down on it to change its amount,
+- **MODS:** the wheel scrolls the 32 mods; click a mod's row to pick it, drag up or down on it to change its amount,
   double-click it for its type (+-, +, GATE, HOLD, as OK). Click a mod's source or destination for its list: it stays
   open until you click one (the wheel scrolls it), or click away.
 - **MATRIX:** click a cell to open its mod in MODS.
