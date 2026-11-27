@@ -308,6 +308,10 @@ static int sp_knob(uint32_t k, char *b, uint32_t size)
             sp_cat(v, sizeof v, "% PEAK");
             sp_cat(v, sizeof v, t);
         }
+#if MELODEE_DUAL_CORE
+        if (!audio_worker_online)
+            sp_cat(v, sizeof v, "1 CORE");             /* (SYSTEM's picture: CPU 1 CORE) */
+#endif
     }
     if (!name || !name[0] || str_eq(name, "-") || (!v[0] && !col && !e)) return 0;   /* ("-": an engine's unused knob) */
     if (!ui.home && (cur_page()->scope == SC_TRK || cur_page()->graph == GR_MIDICH)) {   /* MIXER, MIDI OUT: knob k

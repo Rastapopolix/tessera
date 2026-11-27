@@ -2322,7 +2322,12 @@ static void mo_pic_system(void)
     str_cpy(b + str_len(b), "/", 2);
     fmt_int(b + str_len(b), (int32_t)(pk > 99u ? 99u : pk));
     str_cpy(b + str_len(b), "%", 2);
+#if MELODEE_DUAL_CORE
+    mo_pic_load(audio_worker_online ? "CPU" : "CPU 1 CORE", a, pk, 100u, b, 80);   /* (CPU1 retired: a fault or
+                                                         * misreads, audio_worker.h; until power-off, half the room) */
+#else
     mo_pic_load("CPU", a, pk, 100u, b, 80);
+#endif
 #if MELODEE_VOICE_BUDGET
     {                                                   /* since power-on (ui.c ovl_tick): the audio caught up by */
         uint32_t f = ovl.tot_sheds > 999u ? 999u : ovl.tot_sheds, l = ovl.tot_late > 999u ? 999u : ovl.tot_late;
