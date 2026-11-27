@@ -374,12 +374,16 @@ int main(int argc, char **argv)
     {
         constexpr int NT = 8;
         auto *ap = (const clap_plugin_audio_ports_t *)p->get_extension(p, CLAP_EXT_AUDIO_PORTS);
-        CHECK(ap && ap->count(p, false) == 1 + NT, "9 audio outputs (main + 8 tracks)");
-        clap_audio_port_info_t pi8 = {};
-        CHECK(ap && ap->get(p, NT, false, &pi8) && !std::strcmp(pi8.name, "Track 8"), "the last output is Track 8");
+        CHECK(ap && ap->count(p, false) == 2 + NT, "10 audio outputs (main + 8 tracks + CLOCK)");
+        clap_audio_port_info_t pi8 = {}, pic = {};
+        CHECK(ap && ap->get(p, NT, false, &pi8) && !std::strcmp(pi8.name, "Track 8"), "output 9 is Track 8");
+        CHECK(ap && ap->get(p, NT + 1, false, &pic) && !std::strcmp(pic.name, "CLOCK") && pic.channel_count == 2,
+              "the last output is CLOCK, stereo");
         static float tb[NT][2][480];
         float *tch[NT][2];
-        clap_audio_buffer_t outs[1 + NT] = {out};
+        static float cb[2][480];   // CLOCK (pulses only with CLOCK OUT PULSE: the setting, off unless picked)
+        float *cch[2] = {cb[0], cb[1]};
+        clap_audio_buffer_t outs[2 + NT] = {out};
         for (int k = 0; k < NT; k++)
         {
             tch[k][0] = tb[k][0];
@@ -387,11 +391,13 @@ int main(int argc, char **argv)
             outs[k + 1].data32 = tch[k];
             outs[k + 1].channel_count = 2;
         }
+        outs[1 + NT].data32 = cch;
+        outs[1 + NT].channel_count = 2;
         proc.audio_outputs = outs;
-        proc.audio_outputs_count = 1 + NT;
+        proc.audio_outputs_count = 2 + NT;
         std::memset(midi_on, 0, sizeof midi_on);
         out_of_order = 0;
-        double e[NT] = {};
+        double e[NT] = {}, clock_e = 0;
         tr.flags = CLAP_TRANSPORT_HAS_TEMPO;
         out_last = 0;
         p->process(p, &proc);
@@ -403,7 +409,10 @@ int main(int argc, char **argv)
             p->process(p, &proc);
             for (int k = 0; k < NT; k++)
                 for (uint32_t i = 0; i < block; i++) e[k] += (double)tb[k][0][i] * tb[k][0][i];
+            for (uint32_t i = 0; i < block; i++) clock_e += cb[0][i];
         }
+        std::printf("CLOCK: %.0f frames high in 800 blocks (CLOCK OUT PULSE %s)\n", clock_e,
+                    clock_e > 0 ? "on" : "off: silent");
         int sounding = 0, chans = 0, ons = 0;
         for (int k = 0; k < 4; k++) sounding += e[k] > 1e-3;
         for (int c = 0; c < 16; c++) { chans += midi_on[c] > 0; ons += (int)midi_on[c]; }

@@ -1027,6 +1027,7 @@ static uint32_t ring_w, ring_r;
 
 #ifdef TESS_PLUGIN_IO
 static void tess_plugin_block(uint32_t frame);
+static uint8_t tess_plugin_clock;             /* tess_core_clock_out: CLOCK OUT's MIDI clock (the standalone app's) */
 #endif
 static void core_ms(void)
 {
@@ -1081,7 +1082,7 @@ static void tess_plugin_block(uint32_t frame)
 {
     uint32_t k, t;
     song.g[G_CLOCK] = 0;                          /* the DAW is the clock: CLK stays INT (no MIDI clock reaches a */
-    settings_clock_out = 0;                       /* plugin, tess_core_midi), and no CLOCK OUT into the DAW */
+    settings_clock_out = tess_plugin_clock;       /* plugin, tess_core_midi), and CLOCK OUT only if the plugin asks */
     if (!tess_plugin_stems)
         return;
     for (k = 0; k < CTL; k++)
@@ -1829,6 +1830,16 @@ void tess_core_notes_off(void)
     for (k = 0; k < NTRK; k++)
         midi_out_flush(k);
 }
+
+#ifdef TESS_PLUGIN_IO
+void tess_core_clock_out(int on)
+{
+    tess_plugin_clock = on != 0;
+    settings_clock_out = tess_plugin_clock;   /* (at once: a START in the next render already sends its clock) */
+}
+#else
+void tess_core_clock_out(int on) { (void)on; }
+#endif
 
 /* ---- parameters by central ID (pid.c) */
 uint32_t tess_core_param_count(void) { return pid_count(); }

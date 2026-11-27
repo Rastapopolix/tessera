@@ -102,6 +102,9 @@ uint32_t tess_core_smf(const tess_smf_ev *ev, uint32_t n, uint32_t bpm, const ch
                        uint32_t cap);
 /* note-offs for every note MIDI out still has on (they come out of tess_core_midi_out after the next render) */
 void tess_core_notes_off(void);
+/* CLOCK OUT for a host that is not a DAW (the standalone app): 1 sends MIDI clock (24 a beat), START and STOP out of
+ * tess_core_midi_out while the song plays, from the next START; 0 (the default) none. A plugin build only */
+void tess_core_clock_out(int on);
 
 /* ---- the screen and the panel */
 enum { TESS_NB = 14, TESS_NE = 7, TESS_KEYS = 27, TESS_SCREEN = 240 };

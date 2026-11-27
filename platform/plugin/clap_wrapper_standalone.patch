@@ -1,0 +1,230 @@
+diff --git a/src/detail/standalone/midi_ring.h b/src/detail/standalone/midi_ring.h
+index 44d0167..e8f489e 100644
+--- a/src/detail/standalone/midi_ring.h
++++ b/src/detail/standalone/midi_ring.h
+@@ -37,6 +37,24 @@ class MidiRing
+     return true;
+   }
+ 
++  // a message with a time in front of it (8 bytes, the sender's to read): what pop() then returns starts with it
++  bool tryPushStamped(int64_t stamp, const uint8_t *data, uint32_t size)
++  {
++    const uint32_t whole{size + static_cast<uint32_t>(sizeof(stamp))};
++    const uint32_t need{whole + static_cast<uint32_t>(sizeof(uint32_t))};
++    if (!data || size == 0 || whole > maxMessage) return false;
++
++    const auto head{_head.load(std::memory_order_relaxed)};
++    const auto tail{_tail.load(std::memory_order_acquire)};
++    if (Size - (head - tail) < need) return false;
++
++    copyIn(head, &whole, sizeof(whole));
++    copyIn(head + sizeof(whole), &stamp, sizeof(stamp));
++    copyIn(head + sizeof(whole) + sizeof(stamp), data, size);
++    _head.store(head + need, std::memory_order_release);
++    return true;
++  }
++
+   // the size of the next message; 0 if there is none
+   uint32_t nextSize() const
+   {
+diff --git a/src/detail/standalone/standalone_host.cpp b/src/detail/standalone/standalone_host.cpp
+index df78dfc..6a7b5ec 100644
+--- a/src/detail/standalone/standalone_host.cpp
++++ b/src/detail/standalone/standalone_host.cpp
+@@ -123,6 +123,7 @@ void StandaloneHost::setupAudioBusses(const clap_plugin_t *plugin,
+ 
+   inputChannelByBus.clear();
+   outputChannelByBus.clear();
++  outputBusOrder.clear();
+   totalInputChannels = 0;
+   totalOutputChannels = 0;
+   mainInput = 0;
+@@ -175,7 +176,10 @@ void StandaloneHost::setupAudioBusses(const clap_plugin_t *plugin,
+     outputChannelByBus.push_back(busChans);
+     totalOutputChannels += busChans;
+     if (info.flags & CLAP_AUDIO_PORT_IS_MAIN) mainOutput = i;
++    if (!strcmp(info.name, "CLOCK")) outputBusOrder.insert(outputBusOrder.begin(), i);
++    else outputBusOrder.push_back(i);
+   }
++  outputBusOrder.erase(std::remove(outputBusOrder.begin(), outputBusOrder.end(), mainOutput), outputBusOrder.end());
+ }
+ 
+ void StandaloneHost::setupMIDIBusses(const clap_plugin_t *plugin,
+@@ -276,9 +280,11 @@ void StandaloneHost::process(const float *const *inputs, uint32_t inputChannels,
+   }
+ 
+   process.audio_outputs = &(buffers[bufIdx]);
++  size_t outBusLane[utilityBufferMaxChannels]{};  // each output bus's first lane in utilityBuffer
+   for (auto oup = 0U; oup < numAudioOutputs; ++oup)
+   {
+     auto busChans = outputChannelByBus[oup];
++    outBusLane[oup] = ptrIdx;
+     buffers[bufIdx].channel_count = busChans;
+     buffers[bufIdx].data32 = &(bufferChanPtr[ptrIdx]);
+ 
+@@ -346,6 +352,11 @@ void StandaloneHost::process(const float *const *inputs, uint32_t inputChannels,
+     pushInputEvent(&(sysex.header));
+   }
+ 
++  // what this block sends goes out as it is heard: about a block from now (the device plays one while this one is
++  // made), each message at its own frame
++  blockRate = currentSampleRate > 0 ? static_cast<double>(currentSampleRate) : 48000.0;
++  blockHeard = std::chrono::steady_clock::now() +
++               std::chrono::nanoseconds(static_cast<int64_t>(frameCount * 1e9 / blockRate));
+   clapPlugin->_plugin->process(clapPlugin->_plugin, &process);
+   steadyTime += frameCount;
+ 
+@@ -362,7 +373,16 @@ void StandaloneHost::process(const float *const *inputs, uint32_t inputChannels,
+     {
+       memcpy(outputs[ch], utilityBuffer[mainOutIdx + (monoBus ? 0 : ch)], frameCount * sizeof(float));
+     }
+-    for (auto ch = fedChannels; ch < outputChannels; ++ch)
++    // the device's channels past the mix: the other busses, channel for channel (outputBusOrder); then silence
++    auto ch{fedChannels};
++    for (auto oup : outputBusOrder)
++    {
++      for (auto c = 0U; oup < numAudioOutputs && c < outputChannelByBus[oup] && ch < outputChannels; ++c, ++ch)
++      {
++        memcpy(outputs[ch], utilityBuffer[outBusLane[oup] + c], frameCount * sizeof(float));
++      }
++    }
++    for (; ch < outputChannels; ++ch)
+     {
+       memset(outputs[ch], 0, frameCount * sizeof(float));
+     }
+diff --git a/src/detail/standalone/standalone_host.h b/src/detail/standalone/standalone_host.h
+index 5bba925..e274d39 100644
+--- a/src/detail/standalone/standalone_host.h
++++ b/src/detail/standalone/standalone_host.h
+@@ -206,6 +206,9 @@ struct StandaloneHost : Clap::IHost, AudioStreamCallback
+   uint32_t numAudioInputs{0}, numAudioOutputs{0};
+   std::vector<uint32_t> inputChannelByBus;
+   std::vector<uint32_t> outputChannelByBus;
++  // the output busses other than the main one, in the order they fill the device's channels after it: a bus named
++  // CLOCK first (pulses for a modular, on the outputs next to the mix), then the rest as the plugin lists them
++  std::vector<uint32_t> outputBusOrder;
+   uint32_t mainInput{0}, mainOutput{0};
+   uint32_t totalInputChannels{0}, totalOutputChannels{0};
+   void setupAudioBusses(const clap_plugin_t *plugin,
+@@ -425,6 +428,11 @@ struct StandaloneHost : Clap::IHost, AudioStreamCallback
+   // output port: the audio thread queues it in outputEventPush() and a thread of its own
+   // sends it, since a midi send is no call to make from the audio thread
+   MidiRing<65536> midiFromAudio;
++  // when the block being processed starts to be heard, and its frames' rate: each message the plugin sends is
++  // stamped with the moment its frame is heard (outputEventPush), and the output thread sends it then, so a block's
++  // notes and MIDI clock keep their spacing instead of going out together when the thread next wakes
++  std::chrono::steady_clock::time_point blockHeard{};
++  double blockRate{48000.0};
+   // the ids of the outputs open now
+   std::vector<std::string> currentMidiOutputIds;
+   // set while midiOutputThread runs; the audio thread queues nothing while it is clear
+diff --git a/src/detail/standalone/standalone_host_midi.cpp b/src/detail/standalone/standalone_host_midi.cpp
+index 02a00f6..674e3c0 100644
+--- a/src/detail/standalone/standalone_host_midi.cpp
++++ b/src/detail/standalone/standalone_host_midi.cpp
+@@ -3,6 +3,14 @@
+ 
+ #include <algorithm>
+ #include <chrono>
++#if defined(_WIN32)
++#ifndef NOMINMAX
++#define NOMINMAX
++#endif
++#include <windows.h>
++#include <mmsystem.h>
++#pragma comment(lib, "winmm.lib")
++#endif
+ #include <cmath>
+ 
+ namespace freeaudio::clap_wrapper::standalone
+@@ -372,18 +380,53 @@ void StandaloneHost::midiOutputLoop()
+   // room for the largest message, sysex included; allocated here, off the audio thread
+   std::vector<uint8_t> message(decltype(midiFromAudio)::maxMessage);
+ 
++#if defined(_WIN32)
++  // Windows sleeps in steps of its timer, 15.6 ms unless asked for 1 ms: a MIDI clock sent on that grid swims
++  timeBeginPeriod(1);
++#endif
++  // each message has the moment it is heard in front of it (outputEventPush): sent then, in order. One later than
++  // that (the thread late, or a stamp from before a stall) goes at once; one too far ahead (a clock change) too
++  int64_t held{0};
++  size_t heldSize{0};
+   while (midiOutputOpen)
+   {
+-    while (const auto size{midiFromAudio.nextSize()})
++    for (;;)
+     {
+-      midiFromAudio.pop(message.data());
+-      if ((message[0] & 0xF0) == 0x90) sentNoteOn = true;
+-      sendToAll(message.data(), size);
++      if (!heldSize)
++      {
++        const auto size{midiFromAudio.nextSize()};
++        if (size == 0) break;
++        midiFromAudio.pop(message.data());
++        if (size <= sizeof(int64_t)) continue;  // (no bytes behind the stamp: nothing to send)
++        memcpy(&held, message.data(), sizeof(held));
++        heldSize = size - sizeof(int64_t);
++      }
++      const auto now{std::chrono::duration_cast<std::chrono::nanoseconds>(
++                         std::chrono::steady_clock::now().time_since_epoch())
++                         .count()};
++      if (held > now && held - now < 500000000) break;  // (not yet)
++      const auto *bytes{message.data() + sizeof(int64_t)};
++      if ((bytes[0] & 0xF0) == 0x90) sentNoteOn = true;
++      sendToAll(bytes, heldSize);
++      heldSize = 0;
+     }
+ 
+-    // the audio thread cannot wake this one without a call that may block, so it polls
+-    std::this_thread::sleep_for(1ms);
++    // the audio thread cannot wake this one without a call that may block, so it polls; with a message waiting,
++    // until its moment if that is sooner
++    auto wait{std::chrono::nanoseconds(1ms)};
++    if (heldSize)
++    {
++      const auto now{std::chrono::duration_cast<std::chrono::nanoseconds>(
++                         std::chrono::steady_clock::now().time_since_epoch())
++                         .count()};
++      if (held - now < wait.count()) wait = std::chrono::nanoseconds((std::max)(held - now, int64_t{0}));
++    }
++    if (wait.count() > 0) std::this_thread::sleep_for(wait);
+   }
++  if (heldSize) sendToAll(message.data() + sizeof(int64_t), heldSize);
++#if defined(_WIN32)
++  timeEndPeriod(1);
++#endif
+ 
+   if (sentNoteOn)
+   {
+@@ -400,6 +443,12 @@ bool StandaloneHost::outputEventPush(const clap_event_header_t *evt)
+   // anything else, or nowhere to send it, is taken and dropped, as it always was
+   if (!evt || evt->space_id != CLAP_CORE_EVENT_SPACE_ID || !midiOutputOpen) return true;
+ 
++  // the moment its frame is heard (process(): blockHeard)
++  const int64_t due{std::chrono::duration_cast<std::chrono::nanoseconds>(
++                        (blockHeard + std::chrono::nanoseconds(static_cast<int64_t>(evt->time * 1e9 / blockRate)))
++                            .time_since_epoch())
++                        .count()};
++
+   uint8_t message[3]{};
+   uint32_t size{0};
+   switch (evt->type)
+@@ -416,7 +465,7 @@ bool StandaloneHost::outputEventPush(const clap_event_header_t *evt)
+     case CLAP_EVENT_MIDI_SYSEX:
+     {
+       const auto *sysex = reinterpret_cast<const clap_event_midi_sysex_t *>(evt);
+-      return midiFromAudio.tryPush(sysex->buffer, sysex->size);
++      return midiFromAudio.tryPushStamped(due, sysex->buffer, sysex->size);
+     }
+     case CLAP_EVENT_NOTE_ON:
+     case CLAP_EVENT_NOTE_OFF:
+@@ -440,7 +489,7 @@ bool StandaloneHost::outputEventPush(const clap_event_header_t *evt)
+       return true;
+   }
+ 
+-  return midiFromAudio.tryPush(message, size);
++  return midiFromAudio.tryPushStamped(due, message, size);
+ }
+ 
+ void StandaloneHost::startMIDIThread()
