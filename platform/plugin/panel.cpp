@@ -211,6 +211,11 @@ const int TR_Y = 292, TR_H = 32;   // (under the sections: SAVE, PLAY, REC)
 const int OCT_W = 60, OCT_H = 46, OCT_COL = OCT_W + 16;
 // its own buttons past the FM-1's (tess_core.h TESS_BTN_*): bit numbers in PanelInput.buttons
 const int BIT_SHIFT = 16, BIT_OCT_DOWN = 17, BIT_OCT_UP = 18, BIT_HELP = 19, SEC_BIT = 21;   // (SEC_BIT + s: TESS_BTN_SECTION(s))
+// the sections in the panel's order (Theo 2026-11-27): the notes from the smallest to the largest (HOME first, then
+// SCALE GEN SHAPE PIECE), the sound in signal-flow order (SOUND MOD FX MIX SETUP); keys 1-9 and Shift+Left / Right go
+// this way too, and the page map's blocks
+static const int SEC_ORDER[TESS_SEC_N] = {TESS_SEC_SCALE, TESS_SEC_GEN, TESS_SEC_SHAPE, TESS_SEC_PIECE, TESS_SEC_SOUND,
+                                          TESS_SEC_MOD, TESS_SEC_FX, TESS_SEC_MIX, TESS_SEC_SETUP};
 static_assert(TESS_BTN_SECTION(0) == 1u << SEC_BIT, "SEC_BIT: the core's TESS_BTN_SECTION");
 enum { RW_NONE, RW_PITCH, RW_VEL, RW_PAINT, RW_LENGTH };   // (a drag on NOTES' steps: Panel::roll_way)
 }   // namespace
@@ -261,17 +266,18 @@ void Panel::layout()
         // that shared them gone (tess_core_key_words: the core's sections, TESS_BTN_SECTION); HOME, SAVE, PLAY, REC
         // the FM-1's. Five a row, HOME the tenth, SAVE / PLAY / REC in a slim row under them (EXPANDED and FM-1 size alike); the card: what is behind it and its key (panel.h key)
         // a section's right-click latches the FM-1 button it stands for (the FM-1's held gestures: GLO + a key ..)
+        // (Theo 2026-11-27: row 1 the notes, smallest to largest; row 2 the sound, in signal-flow order; SEC_ORDER)
         static const struct { int bit; const char *face, *card; int hold; } SEC[2][5] = {
-            {{SEC_BIT + TESS_SEC_GEN, "GEN", "GENERATOR, NOTES, ARP, PATTERN   KEY: 1   RIGHT-CLICK: SEQ HELD", B_SEQ},
-             {SEC_BIT + TESS_SEC_SOUND, "SOUND", "THE ENGINE'S PAGES, ENVELOPES   KEY: 2   RIGHT-CLICK: EDIT HELD", B_EDIT},
-             {SEC_BIT + TESS_SEC_MOD, "MOD", "MODS, MATRIX, LFOS, ORGANIC   KEY: 3   RIGHT-CLICK: LFO HELD", B_LFO},
-             {SEC_BIT + TESS_SEC_FX, "FX", "FX 1-3, SENDS   KEY: 4   RIGHT-CLICK: FX HELD", B_FX},
-             {SEC_BIT + TESS_SEC_SHAPE, "SHAPE", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 5   RIGHT-CLICK: ARP HELD", B_ARP}},
-            {{SEC_BIT + TESS_SEC_PIECE, "PIECE", "PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG   KEY: 6   RIGHT-CLICK: GLO HELD", B_GLO},
-             {SEC_BIT + TESS_SEC_MIX, "MIX", "MIXER, PERF   KEY: 7   RIGHT-CLICK: GLO HELD", B_GLO},
-             {SEC_BIT + TESS_SEC_SCALE, "SCALE", "SCALES, SCL, KEY, CHORD   KEY: 8   RIGHT-CLICK: SEL HELD", B_SCL},
-             {SEC_BIT + TESS_SEC_SETUP, "SETUP", "TEMPO, SYSTEM, MIDI IN, MIDI OUT   KEY: 9   RIGHT-CLICK: GLO HELD", B_GLO},
-             {B_HOME, "HOME", "KEY: 0", -1}}};
+            {{B_HOME, "HOME", "KEY: 0", -1},
+             {SEC_BIT + TESS_SEC_SCALE, "SCALE", "SCALES, SCL, KEY, CHORD   KEY: 1   RIGHT-CLICK: SEL HELD", B_SCL},
+             {SEC_BIT + TESS_SEC_GEN, "GEN", "GENERATOR, NOTES, ARP, PATTERN   KEY: 2   RIGHT-CLICK: SEQ HELD", B_SEQ},
+             {SEC_BIT + TESS_SEC_SHAPE, "SHAPE", "EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY   KEY: 3   RIGHT-CLICK: ARP HELD", B_ARP},
+             {SEC_BIT + TESS_SEC_PIECE, "PIECE", "PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG   KEY: 4   RIGHT-CLICK: GLO HELD", B_GLO}},
+            {{SEC_BIT + TESS_SEC_SOUND, "SOUND", "THE ENGINE'S PAGES, ENVELOPES   KEY: 5   RIGHT-CLICK: EDIT HELD", B_EDIT},
+             {SEC_BIT + TESS_SEC_MOD, "MOD", "MODS, MATRIX, LFOS, ORGANIC   KEY: 6   RIGHT-CLICK: LFO HELD", B_LFO},
+             {SEC_BIT + TESS_SEC_FX, "FX", "FX 1-3, SENDS   KEY: 7   RIGHT-CLICK: FX HELD", B_FX},
+             {SEC_BIT + TESS_SEC_MIX, "MIX", "MIXER, PERF   KEY: 8   RIGHT-CLICK: GLO HELD", B_GLO},
+             {SEC_BIT + TESS_SEC_SETUP, "SETUP", "TEMPO, SYSTEM, MIDI IN, MIDI OUT   KEY: 9   RIGHT-CLICK: GLO HELD", B_GLO}}};
         const int sx = x ? XS_X : 566, sstep = XS_STEP, sw = XS_W;
         for (int r = 0; r < 2; r++)
             for (int i = 0; i < 5; i++)
@@ -841,8 +847,10 @@ bool Panel::key(int code, bool down)
     for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = BTN_BIT[i];
     if (native())   // (TESSERA's shell: 1-9 the sections, 0 HOME, - SAVE, = REC)
     {
-        static const int SEC_KEY[12] = {SEC_BIT + 0, SEC_BIT + 1, SEC_BIT + 2, SEC_BIT + 3, SEC_BIT + 4, SEC_BIT + 5,
-                                        SEC_BIT + 6, SEC_BIT + 7, SEC_BIT + 8, B_HOME, B_SAVE, B_REC};
+        static const int SEC_KEY[12] = {SEC_BIT + SEC_ORDER[0], SEC_BIT + SEC_ORDER[1], SEC_BIT + SEC_ORDER[2],
+                                        SEC_BIT + SEC_ORDER[3], SEC_BIT + SEC_ORDER[4], SEC_BIT + SEC_ORDER[5],
+                                        SEC_BIT + SEC_ORDER[6], SEC_BIT + SEC_ORDER[7], SEC_BIT + SEC_ORDER[8], B_HOME,
+                                        B_SAVE, B_REC};   // (1-9 in the panel's order, SEC_ORDER)
         for (int i = 0; i < 12; i++) if (code == BTN_SC[i]) b = SEC_KEY[i];
     }
     if (code == 0x01 && map_open)    // Esc: the page map shut
@@ -904,13 +912,13 @@ bool Panel::key(int code, bool down)
             merge_held();
             return true;
         }
-        if (side && shift_held_ && native())   // Shift+Left / Right: the section before / after (from HOME: GEN, SETUP)
+        if (side && shift_held_ && native())   // Shift+Left / Right: the section before / after (from HOME: SCALE, SETUP)
         {
             if (arrow_sec >= 0) return true;   // (a repeat: once a press)
-            int cur = -1;
+            int cur = -1;   // (in the panel's order, SEC_ORDER)
             for (int s = 0; s < TESS_SEC_N; s++)
-                if (lit_seen & TESS_BTN_SECTION(s)) cur = s;
-            arrow_sec = cur < 0 ? (dir > 0 ? 0 : TESS_SEC_N - 1) : (cur + dir + TESS_SEC_N) % TESS_SEC_N;
+                if (lit_seen & TESS_BTN_SECTION(SEC_ORDER[s])) cur = s;
+            arrow_sec = SEC_ORDER[cur < 0 ? (dir > 0 ? 0 : TESS_SEC_N - 1) : (cur + dir + TESS_SEC_N) % TESS_SEC_N];
             kbd_buttons |= 1u << (SEC_BIT + arrow_sec);
             merge_held();
             return true;
@@ -2838,7 +2846,7 @@ void Panel::open_browser(int track)
 }
 
 // the page map (Cosmati audit G11): a card over the panel, a block a section (its name, then its pages, a column of 11
-// at most, more in a second), GEN .. SHAPE on the first row, PIECE .. SETUP on the second; the shown page inverted, the
+// at most, more in a second), SCALE .. PIECE on the first row, SOUND .. SETUP on the second (SEC_ORDER); the shown page inverted, the
 // one under the mouse outlined. In the shell's inks (DAY: paper, amber, dark words)
 void Panel::draw_map(uint32_t *px)
 {
@@ -2850,11 +2858,12 @@ void Panel::draw_map(uint32_t *px)
     const int ROWS = 11, LH = 20, CW = 150, HEAD = 30, PAD = 16;
     auto cols = [&](int s) { return map_n[s] > ROWS ? 2 : 1; };
     int rw[2] = {0, 0}, rn[2] = {1, 1};   // (each row of blocks as wide as its columns, as tall as its longest)
-    for (int s = 0; s < TESS_SEC_N; s++)
+    for (int i = 0; i < TESS_SEC_N; i++)   // (the panel's order: SCALE .. PIECE, then SOUND .. SETUP; SEC_ORDER)
     {
-        rw[s >= 5] += cols(s) * CW;
+        const int s = SEC_ORDER[i], r = i >= 4;
+        rw[r] += cols(s) * CW;
         int n = map_n[s] > ROWS ? ROWS : map_n[s];
-        if (n > rn[s >= 5]) rn[s >= 5] = n;
+        if (n > rn[r]) rn[r] = n;
     }
     const int rh0 = HEAD + rn[0] * LH + 12, rh1 = HEAD + rn[1] * LH;
     int w = (rw[0] > rw[1] ? rw[0] : rw[1]) + 2 * PAD, h = 44 + rh0 + rh1 + PAD, W = width();
@@ -2869,9 +2878,10 @@ void Panel::draw_map(uint32_t *px)
     c.ptext(x0 + w - PAD - Canvas::ptext_w(hint, 2), y0 + 12, hint, 2, WORD);
     map_rects.clear();
     int x = x0 + PAD, y = y0 + 44;
-    for (int s = 0; s < TESS_SEC_N; s++)
+    for (int i = 0; i < TESS_SEC_N; i++)
     {
-        if (s == 5) x = x0 + PAD, y += rh0;
+        const int s = SEC_ORDER[i];
+        if (i == 4) x = x0 + PAD, y += rh0;
         c.ptext(x + 4, y, SEC[s], 2, s == map_sec ? HOT : WORD);
         c.box(x + 4, y + 18, cols(s) * CW - 16, 1, DIM);
         for (int k = 0; k < map_n[s]; k++)
