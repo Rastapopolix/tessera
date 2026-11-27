@@ -319,6 +319,9 @@ void tessera_stop_all(void)
         tessera.hold_mem[i] = 0;                              /* (HOLD samples afresh) */
         tess_live_lead &= (uint8_t)~(1u << i);
         tessera.f_anchor[i] = tessera.f_seen[i] = tessera.f_cnt[i] = 0;   /* (FOLLOW's HOW, RHYTHM from the top) */
+#if TESS_FR_KICKS
+        tessera.k_cnt[i] = tessera.k_seen[i] = 0;
+#endif
         memset(tessera.f_hist[i], 0, sizeof tessera.f_hist[i]);
         tessera.br_in[i] = 0;
         tess_realign(i);
@@ -1258,7 +1261,8 @@ static int32_t tess_follow_note(uint32_t tr)
     return (int32_t)tessera.hold_mem[tr] - 1;
 }
 /* FOLLOW's RHYTHM and BASS: whether this step plays. SOURCE: only when the followed track has played since this track
- * last looked (a lower track's note is this step's, a higher one's the step before, as LOGIC); BOTH: its own hits too.
+ * last looked (a lower track's note is this step's, a higher one's the step before, as LOGIC); BOTH: its own hits too;
+ * KICK (8-track builds): as SOURCE, only the source's kicks counted (an ATLAS track's part 0; any other: never).
  * BASS: on the bar's strong beats only (1 and 3); CANON: a rest until the source has played that far. No random draw */
 static int tess_follow_gate(const track_t *t, uint32_t tr, int g, uint8_t *vel)
 {
@@ -1270,6 +1274,13 @@ static int tess_follow_gate(const track_t *t, uint32_t tr, int g, uint8_t *vel)
     if (rhy) {
         int fresh = tessera.f_cnt[src] != tessera.f_seen[tr];
         tessera.f_seen[tr] = tessera.f_cnt[src];
+#if TESS_FR_KICKS
+        if (rhy == TESS_FR_KICK) {                          /* (KICK: the source's kicks only, as SOURCE) */
+            fresh = tessera.k_cnt[src] != tessera.k_seen[tr];
+            tessera.k_seen[tr] = tessera.k_cnt[src];
+            rhy = TESS_FR_SOURCE;
+        }
+#endif
         g = rhy == TESS_FR_SOURCE ? fresh : g || fresh;
         if (g && !*vel) *vel = 100;
     }
@@ -1514,6 +1525,9 @@ static void tess_grids_play(track_t *t, uint32_t tr, const gen_out_t *out)
         }
         trk_note_on(t, gen_grids_note(&tessera.grids[tr], p), vel);
         seq_sub_note(t, gen_grids_note(&tessera.grids[tr], p), vel);   /* (SUB: RATCH repeats it) */
+#if TESS_FR_KICKS
+        if (p == 0u) tessera.k_cnt[tr]++;               /* (the kick, part 0: a FOLLOW RHYTHM KICK hears it) */
+#endif
         tess_cap(t, gen_grids_note(&tessera.grids[tr], p), vel, off);
         t->seq_notes[n++] = (uint8_t)gen_grids_note(&tessera.grids[tr], p);
     }

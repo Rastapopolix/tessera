@@ -7,7 +7,7 @@
 # again the same, and the 4-track build reads that record; tests/track_copy_test.c: a track copied, pasted, swapped
 # (platform/core/tess_track.c); tests/egrid_test.c: ENTRIES' arrangement grid obeyed, saved and read by the 4-track
 # build; tests/abank_test.c: ATLAS's genre banks played, saved and read by the 4-track build; tests/dub_test.c: DROP
-# and THROW (core.h TESS_DUB); tests/dubform_test.c: the dub FORMs and the grid's DROP column; tests/flourish_test.c: FLOURISH; tests/chops_test.c: CHORD HIT's chops. Needs build/gen
+# and THROW (core.h TESS_DUB); tests/dubform_test.c: the dub FORMs and the grid's DROP column; tests/flourish_test.c: FLOURISH; tests/chops_test.c: CHORD HIT's chops; tests/fkick_test.c: FOLLOW RHYTHM KICK. Needs build/gen
 # (tools/build.py).
 # usage: tests/core_tracks.sh [out-dir]
 set -u
@@ -79,6 +79,12 @@ $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_H
     { echo "core_tracks: chops_test failed to build"; exit 1; }
 "$OUT/chops_test" demos/ember-field.tsp > "$OUT/chops_test.log" || { cat "$OUT/chops_test.log"; fails=$((fails + 1)); }
 tail -1 "$OUT/chops_test.log"
+$CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
+    -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
+    '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/fkick_test.c -o "$OUT/fkick_test" -lm ||
+    { echo "core_tracks: fkick_test failed to build"; exit 1; }
+"$OUT/fkick_test" demos/ember-field.tsp > "$OUT/fkick_test.log" || { cat "$OUT/fkick_test.log"; fails=$((fails + 1)); }
+tail -1 "$OUT/fkick_test.log"
 $CC -O1 -w -ffp-contract=off -Ifirmware/src -Iplatform/core -Ibuild/gen -DTESS_HOST_CLOCK=1 -DTESS_PLUGIN_IO=1 \
     -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 \
     '-DMELODEE_VERSION="plugin"' -DCORE_TRACKS=8 tests/egrid_test.c -o "$OUT/egrid_test" -lm ||

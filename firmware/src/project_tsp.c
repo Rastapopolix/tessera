@@ -34,6 +34,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_CHOPS
        TSP_CHOP = 54,
 #endif
+#if TESS_FR_KICKS
+       TSP_FKICK = 55,
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -103,6 +106,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_ABANK (an 8-track build's only: the FM-1 skips it): each
                                               * track's ATLAS BANK, a byte (gen.h GEN_AB_*), written only when one
                                               * is not ALL; none: ALL;
+                                              * TSP_FKICK (an 8-track build's only: the FM-1 skips it): each track's
+                                              * FOLLOW RHYTHM KICK, 1 or 0, written only when one is; the FMODE part
+                                              * and XTRK keep SOURCE for it; none: as they have it;
                                               * TSP_FLOUR (an 8-track build's only: the FM-1 skips it): FLOURISH,
                                               * every track's WHERE, then every track's WHAT, then every track's HEAT
                                               * (a byte each: tessera.fl_*), written only when one WHERE is not OFF;
@@ -135,6 +141,9 @@ _Static_assert(TSP_FLOUR == 53 && 3u * TESSERA_TRACKS <= 255u, "the parts' numbe
 #endif
 #if TESS_CHOPS
 _Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_FR_KICKS
+_Static_assert(TSP_FKICK == 55, "the parts' numbers are stored: never renumbered");
 #endif
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -552,7 +561,12 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             if (tessera.follow_how[t] | tessera.follow_rhy[t]) {
                 tsp_begin(&w, TSP_FMODE, 1);
                 tsp_bytes(&w, tessera.follow_how, PROJ_NTRK);
+#if TESS_FR_KICKS
+                for (uint32_t k = 0; k < PROJ_NTRK; k++) tsp_byte(&w, TESS_FR_SAVED(tessera.follow_rhy[k]));   /* (KICK:
+                                                         * SOURCE here, TSP_FKICK keeps it) */
+#else
                 tsp_bytes(&w, tessera.follow_rhy, PROJ_NTRK);
+#endif
                 tsp_end(&w);
                 break;
             }
@@ -659,6 +673,15 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                     uint8_t h = tessera.chord[t].hit >= GEN_CH_DOUBLE ? tessera.chord[t].hit : 0u;
                     tsp_bytes(&w, &h, 1);
                 }
+                tsp_end(&w);
+                break;
+            }
+#endif
+#if TESS_FR_KICKS
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (FOLLOW RHYTHM KICK: only when a track has it; 1 a track) */
+            if (tessera.follow_rhy[t] == TESS_FR_KICK) {
+                tsp_begin(&w, TSP_FKICK, 1);
+                for (t = 0; t < TESSERA_TRACKS; t++) tsp_byte(&w, tessera.follow_rhy[t] == TESS_FR_KICK);
                 tsp_end(&w);
                 break;
             }
@@ -796,6 +819,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
 #endif
 #if TESS_CHOPS
     {TSP_CHOP, GEN_CH_BUBBLE, 0, TESSERA_TRACKS, TESSERA_TRACKS},   /* (0, or DOUBLE / BUBBLE; 1..3 read as none) */
+#endif
+#if TESS_FR_KICKS
+    {TSP_FKICK, 1u, 0, TESSERA_TRACKS, TESSERA_TRACKS},
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1166,6 +1192,12 @@ static void tsp_restore(const uint8_t *raw)
         for (t = 0; t < TESSERA_TRACKS; t++)
             if (raw[tsp_seen.at[TSP_CHOP] + t] >= GEN_CH_DOUBLE) tessera.chord[t].hit = raw[tsp_seen.at[TSP_CHOP] + t];
 #endif
+#if TESS_FR_KICKS
+    if (tsp_seen.at[TSP_FKICK])                        /* (FOLLOW RHYTHM KICK over the SOURCE the FMODE part and XTRK
+                                                        * keep: so last) */
+        for (t = 0; t < TESSERA_TRACKS; t++)
+            if (raw[tsp_seen.at[TSP_FKICK] + t]) tessera.follow_rhy[t] = TESS_FR_KICK;
+#endif
 }
 
 /* a record's length as its header gives it (0: not a TSP1 record or one longer than TSP_MAX) */
@@ -1229,6 +1261,7 @@ static const uint8_t XT_BMAX[] = {   /* (each one's largest, as the 4-track part
     1u,
 };
 #define XT_NB (sizeof XT_B / sizeof XT_B[0])
+static uint8_t xt_record;                               /* xt_trk_put for a record's XTRK (1) or a copied track (0) */
 _Static_assert(sizeof XT_BMAX == XT_NB, "XT_B and XT_BMAX side by side");
 
 /* a track's references to another as the FM-1 reads them: 1..4 kept, past 4 OFF (SOURCE: KEYS is the FM-1's 5) */
@@ -1274,7 +1307,8 @@ static void xt_trk_put(tsp_w_t *w, uint32_t t)
     tsp_bytes(w, dw, sizeof dw);
     tessera_pack_track(blk, t);
     tsp_bytes(w, blk, sizeof blk);
-    for (i = 0; i < XT_NB; i++) tsp_byte(w, XT_B[i][t]);
+    for (i = 0; i < XT_NB; i++)                         /* (in a record, FOLLOW RHYTHM KICK as SOURCE: TSP_FKICK) */
+        tsp_byte(w, xt_record && XT_B[i] == tessera.follow_rhy ? TESS_FR_SAVED(XT_B[i][t]) : XT_B[i][t]);
     tsp_byte(w, (uint32_t)(tessera.midi_tr[t] + TESS_MIDI_TR));
     tsp_byte(w, tessera.follow_hold[t]); tsp_byte(w, tessera.sd_src[t]);
     tsp_bytes(w, pattern_dir[t], NPAT);
@@ -1284,6 +1318,7 @@ static void xt_trk_put(tsp_w_t *w, uint32_t t)
 
 static void xtrk_put(tsp_w_t *w)
 {
+    xt_record = 1;                                      /* (cleared at the end: a copied track keeps its own values) */
     uint8_t c[CORD_PK_BYTES];
     uint32_t t, i, n;
     tsp_begin(w, TSP_XTRK, 1);
@@ -1307,6 +1342,7 @@ static void xtrk_put(tsp_w_t *w)
     for (i = 0; i < RECORD_MAX; i++)
         if (recording[i].vel && (recording[i].owner & REC_OWNER_MASK) >= PROJ_NTRK * NPAT)
             tsp_bytes(w, &recording[i], sizeof recording[i]);
+    xt_record = 0;
     tsp_end(w);
 }
 
