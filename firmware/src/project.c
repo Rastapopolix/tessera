@@ -320,7 +320,7 @@ static int project_save_as(uint32_t slot, const char *name)
     }
     int lost;
     uint32_t len = proj_pack(p, &lost);                 /* (the generators and cords in it too) */
-    if (!len) { ui_message("SAVE FORMAT ERR"); return 2; }
+    if (!len) { ui_message(tsp_full ? "PROJECT TOO BIG" : "SAVE FORMAT ERR"); return 2; }   /* (too many notes for a copy) */
     if (proj_write_slot(slot, proj_wire_u.raw, len)) { ui_message("SAVE ERROR"); return 2; }
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);

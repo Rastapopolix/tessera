@@ -167,11 +167,12 @@ _Static_assert(TSP_PARTS <= TSP_KEEP, "the parts this firmware reads stay under 
 /* ---- writing */
 typedef struct { uint8_t *b; uint32_t pos, part, n; int ok; } tsp_w_t;
 static uint32_t tsp_cap = TSP_MAX;              /* the room tsp_pack may fill (less while kept parts wait at the end) */
-static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < tsp_cap - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0; }
+static uint8_t tsp_full;                        /* the last tsp_pack ran out of room (not a fault in the music) */
+static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < tsp_cap - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0, tsp_full = 1; }
 static void tsp_u16(tsp_w_t *w, uint32_t v) { tsp_byte(w, v); tsp_byte(w, v >> 8); }
 static void tsp_bytes(tsp_w_t *w, const void *p, uint32_t n)
 {
-    if (w->pos + n > tsp_cap - 4u) { w->ok = 0; return; }
+    if (w->pos + n > tsp_cap - 4u) { w->ok = 0; tsp_full = 1; return; }
     memcpy(w->b + w->pos, p, n);
     w->pos += n;
 }
@@ -317,6 +318,7 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 {
     tsp_w_t w = {raw, TSP_HEAD, 0, 0, 1};
     uint32_t t, b, i, f = motion_guard(), sum, magic = TSP_MAGIC;
+    tsp_full = 0;
     for (t = 0; t < PROJ_NTRK; t++)
         if (q->pattern[t] >= NPAT || q->t[t].engine >= NENGINES || !drum_patch_valid(&q->drum[t])) { motion_unguard(f); return 0; }
     if (!chain_valid(&q->chain) || !motion_valid(&q->motion) || P_COUNT > 255u || G_COUNT > 255u) { motion_unguard(f); return 0; }
