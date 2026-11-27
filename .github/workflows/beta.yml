@@ -43,6 +43,9 @@ jobs:
           echo "$v" | grep -Eq '^[0-9]\.[0-9]{1,2}(\.[0-9])?-[A-Za-z0-9]+$' ||
             { echo "branch $GITHUB_REF_NAME: use beta/X.Y[.Z]-suffix, e.g. beta/3.3-beta1"; exit 1; }
           echo "V=$v" >> "$GITHUB_ENV"
+          case "$v" in *-tm*) echo "TESSERA_MIDI_ONLY=1" >> "$GITHUB_ENV"   # (beta/X.Y-tmN: a Tessera MIDI test build, tools/build.py)
+                              echo "NOTES=docs/BETA_NOTES_MIDI.md" >> "$GITHUB_ENV" ;;
+                       *) echo "NOTES=docs/BETA_NOTES.md" >> "$GITHUB_ENV" ;; esac
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -89,6 +92,7 @@ jobs:
           path: .nightly-deps/emsdk
           key: emsdk-6.0.12-v1
       - name: The beta's web simulator (Emscripten 6.0.12, as the maintainer's)
+        if: env.TESSERA_MIDI_ONLY != '1'                 # (Tessera MIDI makes no sound: no simulator of its own)
         env:
           EMSDK: ${{ github.workspace }}/.nightly-deps/emsdk
         run: |
@@ -106,11 +110,11 @@ jobs:
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
           python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
-            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes docs/BETA_NOTES.md --sim build/sim
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES" $([ "$TESSERA_MIDI_ONLY" = 1 ] || echo --sim build/sim)
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/webapp/installer docs/webapp/editor-beta docs/webapp/sim-beta docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it; sim-beta: the beta's simulator)
+          git add docs/webapp/installer docs/webapp/editor-beta $(ls -d docs/webapp/sim-beta 2>/dev/null) docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it; sim-beta: the beta's simulator)
           git add -f docs/firmware/*.fwsc
           git commit -q -m "Installer: beta $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
           git show --stat HEAD | tail -5
