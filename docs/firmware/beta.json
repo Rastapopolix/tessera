@@ -1,47 +1,41 @@
 {
-  "version": "3.7.7-beta1",
+  "version": "3.7.7-tm1",
   "product": "FM-1_837",
   "branch": "develop",
-  "commit": "b43f1f7057dee8b8997a5b19badeffd03f492483",
-  "builtAt": "2026-11-27T17:44:45Z",
+  "commit": "90df57835e29fa7020668a4e83f27cec8c72f7b3",
+  "builtAt": "2026-11-27T19:04:22Z",
   "pkg": {
-    "dual": "../../firmware/tessera-3.7.7-beta1.fwsc",
-    "single": "../../firmware/tessera-3.7.7-beta1-1core.fwsc"
+    "dual": "../../firmware/tessera-3.7.7-tm1.fwsc",
+    "single": "../../firmware/tessera-3.7.7-tm1-1core.fwsc"
   },
   "notes": [
     [
-      "New since 3.7.6",
+      "Tessera MIDI: the FM-1 as a sequencer for your other gear",
       [
-        "GLO > SYSTEM shows CPU 1 CORE when the FM-1's second core has stopped (it then renders on one core until power-off, with about half the room); the screen reader says it too.",
-        "FM6's STORE page now comes last, after VOICE.",
-        "Thanks in ABOUT > CREDITS to u/dreaminganimal and @jfworld."
-      ]
-    ],
-    [
-      "Fixed",
-      [
-        "Fewer clicks when the voices run out: a voice BUDGET has to take now fades over about 3 ms instead of 0.7 ms.",
-        "While the voice pool is nearly full, quiet release tails (under -20 dB) fade faster, so BUDGET frees a quiet voice before it has to take a loud one (the ADSR engines; FM6 and ORACLE keep their own envelopes).",
-        "ORACLE: a fast sub bass no longer clicks between notes (the amp envelope's floors).",
-        "Less CPU at idle: a silent moment skips the output stage (the sound is unchanged).",
-        "LIGHTS OFF: the keys on MIXER and PERF no longer blink to show what can be pressed; the mute, solo, FILL and HOLD states still light (hold GLO for the blinking map)."
+        "No sound of its own: everything goes out over MIDI (USB, or USB host).",
+        "8 tracks instead of 4: SELECT past T4 reaches tracks 5 to 8; MIXER, PATTERNS and MIDI OUT show them four at a time.",
+        "32 mods instead of 16, and no voice limit: any track can send full chords.",
+        "The 8-track features: the ATLAS genre banks, GEN LANE and RANGE, CHORD USER qualities, chord chops, FOLLOW KICK, ENTRIES across 8 tracks, DROP.",
+        "SLOPE (a rise and fall LFO) and Program Change in.",
+        "EDIT opens VOICE (how a part plays on your gear: POLY or MONO, PRIO, ALLOC, MUTE); the sound and effect pages are gone. Channels and transpose: GLO > MIDI OUT."
       ]
     ],
     [
       "Good to know",
       [
-        "Don't lower BUDGET to cure clicks: a small pool is full most of the time, and every new note then has to take a voice. Lower it for CPU."
+        "Back up with the web editor first. Tessera MIDI keeps bigger projects in the flash the user presets and FM6 voice banks used: once a big project is saved there, those presets are gone when you go back to the standard build.",
+        "A project of more than about 38 KB opens only in Tessera MIDI. A very full one may say PROJECT TOO BIG.",
+        "Back to the synths: choose the standard build in the installer."
       ]
     ],
     [
       "Please try",
       [
-        "A project from 3.7.6 loads and plays the same.",
-        "A busy project at a low BUDGET (8 to 12) with long releases: fewer clicks than on 3.7.6?",
-        "ORACLE with FM6 tracks: watch FADED and LATE on GLO > SYSTEM, and tell us if CPU 1 CORE ever shows."
+        "Tracks 5 to 8: select them, record into them, and check their notes go out on their channels.",
+        "Save and load an 8-track project, and a 3.7.6 project.",
+        "Drive your gear for a while: notes, clock, CCs from the mods."
       ]
     ]
   ],
-  "sim": "../sim-beta/",
   "editor": "../editor-beta/"
 }
