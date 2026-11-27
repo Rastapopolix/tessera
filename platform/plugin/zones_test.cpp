@@ -781,6 +781,44 @@ static void sections()   // Cosmati's section buttons (key words on): a section'
     tess_core_key_words(0);
     run(10);
 }
+static void menu_unlocked()   // the menu never locks (Theo 2026-11-27): however it opened (HOME held, or SETUP's
+{                              // SETTINGS), a section, a page button or HOME leaves it, ABOUT too; OK lit, no blink
+    tess_core_key_words(1);
+    tap(B_HOME);
+    auto open = [] { hold(B_HOME, 120); return find("GROUND", TESS_ZONE_ROW) >= 0; };
+    CHECK(open(), "HOME held: the menu");
+    bool steady = true;
+    for (int i = 0; i < 12; i++) { run(5); steady &= (v.lit_buttons >> B_OCTUP & 1u) != 0; }
+    CHECK(steady, "the menu: OK lit, steady (no press-me blink)");
+    press_section(TESS_SEC_PIECE);
+    CHECK(find("GROUND", TESS_ZONE_ROW) < 0 && (v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_PIECE)),
+          "HOME-held menu: PIECE leaves it for a PIECE page (%s)",
+          page_now().c_str());
+    CHECK(open(), "HOME held again: the menu");
+    tap(B_FX);
+    CHECK(find("GROUND", TESS_ZONE_ROW) < 0 && page_now().rfind("FX", 0) == 0, "..FX leaves it for FX (%s)",
+          page_now().c_str());
+    CHECK(open(), "..and again");
+    tap(B_HOME);
+    CHECK(find("GROUND", TESS_ZONE_ROW) < 0, "..HOME tapped leaves it");
+    CHECK(open(), "..and again, for ABOUT");
+    for (int k = 0; k < 40 && find("ABOUT", TESS_ZONE_ROW) < 0; k++) {
+        int r = 0;
+        for (uint32_t i = 0; i < v.zone_count; i++) if (v.zones[i].kind == TESS_ZONE_ROW) r = (int)i;
+        act(r, TESS_ZA_WHEEL, -1, 20);
+    }
+    int a = find("ABOUT", TESS_ZONE_ROW);
+    CHECK(a >= 0, "the list's ABOUT row");
+    act(a, TESS_ZA_CLICK, 0, 30);
+    tap(B_OCTUP);
+    CHECK(find("ABOUT", TESS_ZONE_SCROLL) >= 0, "ABOUT open");
+    press_section(TESS_SEC_MIX);
+    CHECK(find("ABOUT", TESS_ZONE_SCROLL) < 0 && page_now() == "MIXER", "ABOUT: MIX leaves it for MIXER (%s)",
+          page_now().c_str());
+    tap(B_HOME);
+    tess_core_key_words(0);
+    run(10);
+}
 static void egrid()   // ENTRIES' arrangement grid (8 tracks): a cell a track and FORM letter; a click the next kind,
 {                     // a right-click AUTO, a letter's head the whole column
     tap(B_HOME);
@@ -2270,6 +2308,7 @@ int main(int argc, char **argv)
     smap();
     chord_user();
     sections();
+    menu_unlocked();
     egrid();
     hosted_words();
 

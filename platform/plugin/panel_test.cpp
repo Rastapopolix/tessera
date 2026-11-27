@@ -1778,6 +1778,46 @@ int main(int argc, char **argv)
             frames(1);
             CHECK(screen_hash(v) == h3, "..back where it was");
         }
+        {   // MODS: the wheel over the screen where nothing is (its header) or over the footer's tabs: its mods scroll,
+            // the page stays (Theo 2026-11-27)
+            auto page = [&]() {
+                for (uint32_t i = 0; i < v.zone_count; i++)
+                    if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) return std::string(v.zones[i].value);
+                return std::string();
+            };
+            auto first_mod = [&]() {
+                for (uint32_t i = 0; i < v.zone_count; i++)
+                    if (v.zones[i].kind == TESS_ZONE_ROW) return std::string(v.zones[i].name);
+                return std::string();
+            };
+            for (int g = 0; g < 8 && page() != "MODS"; g++)
+            {
+                tess_core_buttons(TESS_BTN_SECTION(TESS_SEC_MOD));
+                run(q, 0.1);
+                tess_core_buttons(0);
+                run(q, 0.3);
+                frames(1);
+            }
+            CHECK(page() == "MODS" && first_mod() == "1", "MODS, mods 1.. shown (%s, %s)", page().c_str(), first_mod().c_str());
+            int ft = -1;
+            for (uint32_t i = 0; i < v.zone_count; i++)
+                if (v.zones[i].kind == TESS_ZONE_TAB && v.zones[i].row == 0) ft = (int)i;
+            frames(9);
+            for (int k = 0; k < 6; k++) { CHECK(q.wheel(292 + 8 + 100, 44 + 8 + 8, -1) || k, "the wheel down over MODS' header"); run(q, 0.05); frames(1); }
+            run(q, 0.3);
+            frames(1);
+            CHECK(page() == "MODS" && first_mod() != "1", "..its mods scrolled (now from %s), the page MODS still (%s)",
+                  first_mod().c_str(), page().c_str());
+            if (ft >= 0)
+            {
+                const tess_zone_t t = v.zones[ft];
+                for (int k = 0; k < 6; k++) { q.wheel(292 + 8 + t.x + t.w / 2, 44 + 8 + t.y + t.h / 2, 1); run(q, 0.05); frames(1); }
+                run(q, 0.3);
+                frames(1);
+                CHECK(page() == "MODS" && first_mod() == "1", "the wheel up over the footer: back to mod 1, still MODS (%s, %s)",
+                      first_mod().c_str(), page().c_str());
+            }
+        }
         CHECK(q.side_button(false, true) && (q.input.buttons >> 12 & 1u), "the mouse's back button holds BACK (OCT-)");
         CHECK(q.side_button(false, false) && !(q.input.buttons >> 12 & 1u), "and lets it go");
         CHECK(q.side_button(true, true) && (q.input.buttons >> 13 & 1u), "forward: OK (OCT+)");

@@ -198,7 +198,25 @@ typedef struct {
  * the seed's own four chords (ROLL a new walk, EVOLVE changes one); USER up to eight played in on the keys (OCT- held
  * on GEN: tessera_chord_user_key); the others are fixed progressions */
 enum { GEN_CH_POP, GEN_CH_50S, GEN_CH_251, GEN_CH_CIRCLE, GEN_CH_TWO, GEN_CH_DRONE, GEN_CH_WALK, GEN_CH_USER, GEN_CH_PROGS };
-enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_HITS };   /* (saved: append only) */
+/* CHORD HIT (saved: append only). DOUBLE and BUBBLE, the skank chops (Tessadub in Cosmati, step 6), an 8-track build's
+ * (TESS_CHOPS): the record's 2 bits keep what an older or 4-track firmware plays for them (GEN_CH_SAVED: OFFBEAT, STEP),
+ * the record's TSP_CHOP their own value; a section's snapshot (gen_chord_save) the same 2 bits and bit 7 set */
+enum { GEN_CH_HOLD, GEN_CH_BEAT, GEN_CH_STEP, GEN_CH_OFF, GEN_CH_DOUBLE, GEN_CH_BUBBLE };
+#ifndef TESS_CHOPS
+#if defined(CORE_TRACKS) && CORE_TRACKS > 4
+#define TESS_CHOPS 1
+#else
+#define TESS_CHOPS 0
+#endif
+#endif
+#define GEN_CH_HITS (TESS_CHOPS ? 6u : 4u)
+#if TESS_CHOPS
+#define GEN_CH_SAVED(h) ((h) == GEN_CH_DOUBLE ? GEN_CH_OFF : (h) == GEN_CH_BUBBLE ? GEN_CH_STEP : (h))   /* (the 2 bits) */
+#define GEN_CH_CHOP(h) ((uint32_t)((h) >= GEN_CH_DOUBLE))   /* (a chop: a section's bit 7) */
+#else
+#define GEN_CH_SAVED(h) (h)                                 /* (no chops: the FM-1's image as it was) */
+#define GEN_CH_CHOP(h) 0u
+#endif
 #define GEN_CH_BARS 4u     /* BARS 0..3: 1/2, 1, 2, 4 bars a chord */
 #define GEN_CH_WALK_N 4u
 #define GEN_CH_USER_N 8u   /* USER's chords at most */
