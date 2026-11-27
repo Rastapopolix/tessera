@@ -1176,6 +1176,14 @@ bool Panel::down(int x, int y)
             zone_act(z, dbl ? TESS_ZA_DOUBLE : TESS_ZA_SET, slider_at(z, x));
             return true;
         }
+        if (z.kind == TESS_ZONE_POINT && (z.row & 0x1000) && !dbl)   // a map (ATLAS's): the cross-hair where it is
+        {                                                         // pressed, then where dragged
+            drag = ZONE;
+            drag_zone = z;
+            zone_still = false;
+            zone_act(z, TESS_ZA_SET, place_at(z, x, y));
+            return true;
+        }
         if (z.kind == TESS_ZONE_ROLL)   // NOTES' steps: the note there grabbed; dragged up or down, its pitch; let go
         {                               // unmoved, a click (a note there)
             drag = ZONE;
@@ -1405,13 +1413,20 @@ bool Panel::move(int x, int y)
         zone_act(drag_zone, TESS_ZA_SET, slider_at(drag_zone, x));
         return true;
     }
+    if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT && (drag_zone.row & 0x1000))   // a map: the cross-hair follows
+    {
+        if (!dx && !dy) return false;
+        zone_act(drag_zone, TESS_ZA_SET, place_at(drag_zone, x, y));
+        return true;
+    }
     if (drag == ZONE && drag_zone.kind == TESS_ZONE_POINT)   // a picture's marker: each way its own knob, a detent
-    {                                                        // every 3 px (+ right, + up)
+    {                                                        // every 2 px (Shift: fine, every 8), never sped up (the
+        const int step = mod_fine ? 8 : 2;                   // core), so 0..127 takes ~256 px (+ right, + up)
         acc += dx;
         acc_y += dy;
-        int nx = acc / 3, ny = acc_y / 3;
-        if (nx) { acc -= nx * 3; zone_act(drag_zone, TESS_ZA_TURN, nx); }
-        if (ny) { acc_y -= ny * 3; zone_act(drag_zone, TESS_ZA_TURN_Y, ny); }
+        int nx = acc / step, ny = acc_y / step;
+        if (nx) { acc -= nx * step; zone_act(drag_zone, TESS_ZA_TURN, nx); }
+        if (ny) { acc_y -= ny * step; zone_act(drag_zone, TESS_ZA_TURN_Y, ny); }
         if (nx || ny) { zone_still = click_known = false; return true; }
         return false;
     }
@@ -2666,6 +2681,13 @@ int Panel::slider_at(const tess_zone_t &z, int x) const   // where x is across a
 {
     int at = x - (SCREEN_X + SCREEN_S / 32) - z.x - 2, w = z.w - 4;   // (inside its outline, a cell each side)
     return w <= 0 ? 0 : at <= 0 ? 0 : at >= w ? 1000 : at * 1000 / w;
+}
+
+int Panel::place_at(const tess_zone_t &z, int x, int y) const   // where (x, y) is on a map: across << 11 | down, 0..1000
+{
+    int ax = slider_at(z, x), at = y - (SCREEN_Y + SCREEN_S / 32) - z.y - 2, h = z.h - 4;
+    int ay = h <= 0 ? 0 : at <= 0 ? 0 : at >= h ? 1000 : at * 1000 / h;
+    return ax << 11 | ay;
 }
 
 tess_zone_t Panel::zone_here(int zi, int x, int y) const

@@ -1434,6 +1434,60 @@ static std::string kval(const char *name)
     int i = find(name, TESS_ZONE_KNOB);
     return i < 0 ? "?" : v.zones[i].value;
 }
+static void atlas_map()   // ATLAS: a click anywhere on the map puts the cross-hair there (X across, Y down)
+{
+    tess_core_project_new();
+    run(10);
+    tess_core_track_select(0);
+    CHECK(tess_core_param_set(0x200, 0, 5), "ATLAS: T1's MODE set to ATLAS");   // (TX_N_MODE: GRIDS)
+    run(10);
+    tap(B_HOME);
+    int m = -1;
+    for (int g = 0; g < 8 && m < 0; g++)
+    {
+        press_section(TESS_SEC_GEN);
+        m = find("X / Y", TESS_ZONE_POINT);
+        if (m >= 0 && !(v.zones[m].row & 0x1000)) m = -1;
+    }
+    CHECK(m >= 0 && v.zones[m].w >= 40 && v.zones[m].h >= 40, "ATLAS: the whole map a zone (page %s)", page_now().c_str());
+    if (m < 0) { dump("ATLAS"); return; }
+    act(m, TESS_ZA_SET, 0 << 11 | 0);
+    std::string x0 = kval("X"), y0 = kval("Y");
+    act(find("X / Y", TESS_ZONE_POINT), TESS_ZA_SET, 1000 << 11 | 1000);
+    std::string x1 = kval("X"), y1 = kval("Y");
+    CHECK(x0 != x1 && y0 != y1, "ATLAS: the map's corners clicked move X and Y (%s %s, then %s %s)", x0.c_str(), y0.c_str(),
+          x1.c_str(), y1.c_str());
+    act(find("X / Y", TESS_ZONE_POINT), TESS_ZA_SET, 1000 << 11 | 0);
+    CHECK(kval("X") == x1 && kval("Y") == y0, "ATLAS: the top right corner: X at its top, Y at its bottom (%s %s)",
+          kval("X").c_str(), kval("Y").c_str());
+    tap(B_HOME);
+}
+static void midi_rows()   // MIDI IN, MIDI OUT: a track's row a zone, a click selects it; MIDI OUT's double-click: its sheet
+{
+    tess_core_load(SIM_DEMO_A, sizeof SIM_DEMO_A);
+    run(50);
+    tap(B_HOME);
+    tess_core_track_select(0);
+    run(10);
+    int r = -1;
+    for (int k = 0; k < 16 && (r < 0 || find("MIDI", TESS_ZONE_KNOB) >= 0); k++)   // (MIDI OUT: rows, no MIDI knob)
+    {
+        tap(B_GLO);
+        r = find("T2", TESS_ZONE_TRACK);
+    }
+    CHECK(r >= 0, "MIDI OUT: a track's row a zone (page %s)", page_now().c_str());
+    if (r < 0) return;
+    act(r, TESS_ZA_CLICK);
+    CHECK(tess_core_track() == 1, "MIDI OUT: T2's row clicked selects T2 (%u)", tess_core_track());
+    uint32_t h = screen_hash();
+    act(find("T3", TESS_ZONE_TRACK), TESS_ZA_DOUBLE, 0, 60);
+    CHECK(tess_core_track() == 2 && screen_hash() != h && find("Sound T1", TESS_ZONE_ROW) >= 0,
+          "MIDI OUT: T3's row double-clicked selects it and opens the sheet (%u)", tess_core_track());
+    if (find("Sound T1", TESS_ZONE_ROW) < 0) dump("MIDI OUT, double-clicked");
+    tap(B_OCTDN);
+    tap(B_HOME);
+    run(20);
+}
 static int midi_of(const std::string &s)   // "C#4" -> 61 (C4 = 60), -1 not a note
 {
     static const int PC[7] = {9, 11, 0, 2, 4, 5, 7};
@@ -2334,6 +2388,8 @@ int main(int argc, char **argv)
     menu_unlocked();
     egrid();
     hosted_words();
+    atlas_map();
+    midi_rows();
 
     std::printf(fails ? "zones test: %d FAILED\n" : "zones test: ok\n", fails);
     return fails ? 1 : 0;

@@ -92,7 +92,7 @@ _Static_assert(TESS_ZONE_ROLL == UZ_ROLL, "tess_core.h TESS_ZONE_ROLL is ui_zone
 _Static_assert(TESS_ZONE_DROP == UZ_DROP, "tess_core.h TESS_ZONE_DROP is ui_zones.c's UZ_DROP");
 _Static_assert(TESS_ZONE_SEND == UZ_SEND, "tess_core.h TESS_ZONE_SEND is ui_zones.c's UZ_SEND");
 enum { ZQ_STEP = 1, ZQ_DETENT, ZQ_PRESS, ZQ_RELEASE, ZQ_PAGE, ZQ_HELP, ZQ_EDIT, ZQ_PICK, ZQ_PICK_DONE, ZQ_SOUNDS, ZQ_SECTION,
-       ZQ_FINE, ZQ_MAP };
+       ZQ_FINE, ZQ_MAP, ZQ_SHEET };
 #define ZQ_N 256u
 static uint32_t zq[ZQ_N], zq_r, zq_w, zq_wait, zq_rows;   /* zq_rows: a list's row moves still to run */
 static uint32_t zone_btn, host_btn;                   /* held by a zone's click, and by the front end (physical bits) */
@@ -113,6 +113,14 @@ static void zq_turn(int32_t role, int32_t n)          /* n detents of a knob (at
         return;
     for (k = 0; k < a && k < 64; k++)
         zq_put(zq_fine ? ZQ_FINE : ZQ_DETENT, (uint32_t)role, n);
+}
+static void zq_turn_even(int32_t role, int32_t n)     /* (a picture's marker: its detents never sped up, so a drag
+                                                       * moves the value by the distance alone, never to its ends) */
+{
+    uint8_t was = zq_fine;
+    zq_fine = 1;
+    zq_turn(role, n);
+    zq_fine = was;
 }
 /* the mouse's help (TESS_ZA_HELP, TESS_BTN_HELP): knob k's card (0..3: KNOB 1..4), as ARP held + that knob opens it,
  * pinned (UZ_HELP_PIN) till help_unpin: a click */
@@ -195,6 +203,16 @@ static void zq_run(void)
         if (pop.on == POP_PICK && uz_pick_pin)
             pop_close();
         break;
+    case ZQ_SHEET:                                    /* MIDI OUT's track double-clicked: the page's sheet (each
+                                                       * track's SOUND, DRUM MAP, SECTION PC), as OCT+ held */
+        if (core_track_req < NTRK) {                  /* (the track asked for first: picking it closes a sheet) */
+            zq_put(ZQ_SHEET, 0, 1);
+            break;
+        }
+        if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && !ui.home && page_sheet())
+            page_sheet_open();
+        ui.force = 1;
+        break;
     case ZQ_SOUNDS:                                   /* HOME's track double-clicked: its sounds (SAVE > PRESETS) */
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer && page_titled("PRESETS") < NPAGES) {
             ui.page = (uint8_t)page_titled("PRESETS");
@@ -267,6 +285,22 @@ static void zone_reset(int32_t role)
     d = page_desc(cur_page(), c, &vp);
     if (d && vp && d->max > d->min && *vp != d->def)
         edit_param(c, (int32_t)d->def - *vp);
+}
+/* KNOB c+1's value put at f / 1000 of its range (a map's place clicked: ATLAS's X and Y), its parameter as a SLIDER's */
+static void zone_place(int32_t role, int32_t f)
+{
+    tess_zone_t k;
+    uint32_t pid, tr;
+    tess_param_t info;
+    if (role < EN_K1 || role > EN_K4)
+        return;
+    memset(&k, 0, sizeof k);
+    k.kind = TESS_ZONE_KNOB, k.role = role, k.vrole = -1;
+    if (!tess_core_zone_param(&k, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable ||
+        info.max <= info.min)
+        return;
+    f = f < 0 ? 0 : f > 1000 ? 1000 : f;
+    tess_core_param_set(pid, tr, info.min + ((info.max - info.min) * f + 500) / 1000);
 }
 /* KNOB c+1's value one of two (FREE / NOTE, BI / UNI, ON / OFF): the turn to the other, +1 or -1; 0 when it has more */
 static int32_t zone_two(int32_t role)
@@ -605,7 +639,8 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         ui.force = 1;
         return;
     }
-    if (action == TESS_ZA_SET) {                      /* (a SLIDER: its value where the mouse is across it) */
+    if (action == TESS_ZA_SET && !(z && z->kind == TESS_ZONE_POINT && (z->row & 0x1000))) {   /* (a SLIDER: its value
+                                                       * where the mouse is across it; a map: below) */
         uint32_t pid, tr;
         tess_param_t info;
         if (!tess_core_zone_param(z, &pid, &tr) || !tess_core_param_info(pid, tr, &info) || !info.settable ||
@@ -745,8 +780,17 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             tess_core_track_select((uint32_t)z->row);
         if (action == TESS_ZA_DOUBLE && ui.home)
             zq_put(ZQ_SOUNDS, 0, 1);                  /* (HOME: a double-click, and its sounds) */
+        else if (action == TESS_ZA_DOUBLE && cur_page()->graph == GR_MIDICH)
+            zq_put(ZQ_SHEET, 0, 1);                   /* (MIDI OUT: and its sheet) */
         break;
     case TESS_ZONE_POINT:                             /* a picture's marker: left-right one knob, up-down another */
+        if ((z->row & 0x1000) && action == TESS_ZA_SET) {   /* (a map: the place clicked, n = across << 11 | down,
+                                                       * each 0..1000 of its knob's range) */
+            zone_place(z->role, n >> 11);
+            zone_place(z->vrole, (z->row & 2) ? n & 2047 : 1000 - (n & 2047));
+            ui.force = 1;
+            break;
+        }
         if ((z->row & 0x400) && action == TESS_ZA_TURN)   /* (up-down only: CONSTELLATION's ship, its brackets) */
             break;
         if (z->row & 0x800) {                         /* (vrole the selected track's TX_* itself, on no knob's layer:
@@ -763,9 +807,9 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         }
         if (z->row & 0x200) {                         /* (a picture of one knob, BOUNCE's BALLS: a click one more,
                                                        * a right-click one less, the wheel or a drag up and down) */
-            if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn(z->vrole, 1);
-            else if (action == TESS_ZA_HELP) zq_turn(z->vrole, -1);
-            else if (action == TESS_ZA_TURN_Y) zq_turn(z->vrole, n);
+            if (action == TESS_ZA_CLICK || action == TESS_ZA_DOUBLE) zq_turn_even(z->vrole, 1);
+            else if (action == TESS_ZA_HELP) zq_turn_even(z->vrole, -1);
+            else if (action == TESS_ZA_TURN_Y) zq_turn_even(z->vrole, n);
             break;
         }
         if (z->row & 0x100) {                         /* (PIECE's SHAPE USER: point row & 7's level, up and down) */
@@ -778,11 +822,11 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
             zone_reset(z->role);
             zone_reset(z->vrole);
         } else if (action == TESS_ZA_TURN && z->role >= 0) {
-            zq_turn(z->role, (z->row & 1) ? -n : n);
+            zq_turn_even(z->role, (z->row & 1) ? -n : n);
         } else if (action == TESS_ZA_TURN_Y || action == TESS_ZA_TURN) {
-            if (z->vrole >= 0) zq_turn(z->vrole, (z->row & 2) ? -n : n);   /* (row bit 1: up turns it down, a
+            if (z->vrole >= 0) zq_turn_even(z->vrole, (z->row & 2) ? -n : n);   /* (row bit 1: up turns it down, a
                                                                              * picture drawn with its values downward) */
-            else if (z->role >= 0) zq_turn(z->role, (z->row & 1) ? -n : n);
+            else if (z->role >= 0) zq_turn_even(z->role, (z->row & 1) ? -n : n);
         }
         break;
     case TESS_ZONE_OP:                                /* FM6's chart: an operator picked, or its pages opened */
