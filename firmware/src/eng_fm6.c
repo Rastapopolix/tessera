@@ -1163,10 +1163,14 @@ static const engine_t ENG_FM6 = {
     },
     .presets = FM6_PRESETS,
     .npresets = NELEM(FM6_PRESETS),
-    .note_on = fm6_note_on,
-    .render = fm6_render,
     .knob = {P_E2, P_E3, P_E4, P_E6},
     .poly = NVOICE,                                      /* Dexed's 16: a voice takes one budget unit */
+#if TESSERA_MIDI_ONLY
+    .note_on = midi_only_note_on,
+    .render = midi_only_render,
+#else
+    .note_on = fm6_note_on,
+    .render = fm6_render,
     .block = fm6_block,
     .ownenv = 1,
     .done = fm6_done,
@@ -1174,4 +1178,5 @@ static const engine_t ENG_FM6 = {
     .legato = fm6_legato,
     .mono_key = fm6_key,
     .post = fm6_post,
+#endif
 };

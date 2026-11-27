@@ -385,6 +385,12 @@ static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_
 }
 static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 {
+#if TESSERA_MIDI_ONLY
+    memset(out,0,n*2u*sizeof *out);                     /* (no sound: the block keeps the sequencer's clock) */
+    events_block(n);
+    cord_tick();
+    return;
+#endif
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     fx_profile_poll();
 #endif

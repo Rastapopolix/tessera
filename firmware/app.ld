@@ -62,7 +62,7 @@ SECTIONS
     /* Complete resident interrupt/input graph trades arena capacity for code.
      * Four largest engine states must fit 48 KiB (ram_audio_test); effect
      * delay memory has its own admission/allocation limits. */
-    _resource_minimum = DEFINED(AUDIO_RESIDENT) ? 48K : 139K;
+    _resource_minimum = DEFINED(MIDI_ONLY) ? 8K : DEFINED(AUDIO_RESIDENT) ? 48K : 139K;   /* (Tessera MIDI: no voices, no FX) */
     ASSERT(_resource_end - _resource_start >= _resource_minimum, "audio working arena below worst-case budget")
     .noinit (NOLOAD) : { *(.noinit*) . = ALIGN(4); _noinit_end = .; } > NOINIT
     /* These transfer/job buffers are always filled before use, never retained

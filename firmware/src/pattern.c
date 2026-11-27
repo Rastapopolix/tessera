@@ -8,7 +8,12 @@ typedef struct { step_t step[NSTEP]; int16_t timing[4]; } pattern_t;
 static pattern_t pattern_pool[2][NPAT] __attribute__((section(".pool")));
 static pattern_t pattern_bss[NPAT];
 #if CORE_TRACKS > 4
+#if TESSERA_MIDI_ONLY
+static pattern_t pattern_noinit[NTRK - 3u][NPAT] __attribute__((section(".pool")));   /* (tracks 4..8: Tessera MIDI's
+                                                                    * arena is free, no voices or FX; NOINIT too small) */
+#else
 static pattern_t pattern_noinit[NTRK - 3u][NPAT] __attribute__((section(".noinit")));   /* (tracks 4..CORE_TRACKS) */
+#endif
 #else
 static pattern_t pattern_noinit[NPAT] __attribute__((section(".noinit")));
 #endif
