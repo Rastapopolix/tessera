@@ -104,17 +104,18 @@ jobs:
           web/sim/build.sh --release "$V" | tee -a "$GITHUB_STEP_SUMMARY"
           node web/sim/test_sim.mjs build/sim/melodee.wasm
       - name: The installer's Beta, pushed to site-beta-${{ env.V }}
+        if: env.TESSERA_MIDI_ONLY != '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
           python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
-            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES" $([ "$TESSERA_MIDI_ONLY" = 1 ] || echo --sim build/sim)
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES" --sim build/sim
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/webapp/installer docs/webapp/editor-beta $(ls -d docs/webapp/sim-beta 2>/dev/null) docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it; sim-beta: the beta's simulator)
+          git add docs/webapp/installer docs/webapp/editor-beta docs/webapp/sim-beta docs/firmware docs/words   # (words: the screen reader's, make_site.py; editor-beta: the Beta choice links to it; sim-beta: the beta's simulator)
           git add -f docs/firmware/*.fwsc
           git commit -q -m "Installer: beta $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
           git show --stat HEAD | tail -5
@@ -122,3 +123,23 @@ jobs:
           gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "site-beta-$V" --title "Installer: Tessera $V beta" \
             --body "The public installer's **Beta** choice: Tessera $V (both cores) from $GITHUB_REF_NAME at ${commit:0:7}. Merging makes it live. Built by .github/workflows/beta.yml (run $GITHUB_RUN_ID)." ||
             echo "::notice::No pull request opened (the token may not be allowed to): open one from site-beta-$V into main"
+      - name: The installer's Tessera MIDI choice, pushed to site-midi-${{ env.V }}
+        if: env.TESSERA_MIDI_ONLY == '1'                 # (beta/X.Y-tmN: its own choice beside the beta, publish_midi.py)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          commit=$(git rev-parse HEAD)
+          git worktree add -B "site-midi-$V" ../page origin/main
+          python web/publish_midi.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES"
+          cd ../page
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/webapp/installer docs/firmware docs/words
+          git add -f docs/firmware/*.fwsc
+          git commit -q -m "Installer: Tessera MIDI $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
+          git show --stat HEAD | tail -5
+          git push -f origin "site-midi-$V"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "site-midi-$V" --title "Installer: Tessera MIDI $V test build" \
+            --body "The public installer's **Tessera MIDI** choice (its own, beside the Beta, which stays): $V (both cores) from $GITHUB_REF_NAME at ${commit:0:7}. Merging makes it live. Built by .github/workflows/beta.yml (run $GITHUB_RUN_ID)." ||
+            echo "::notice::No pull request opened (the token may not be allowed to): open one from site-midi-$V into main"

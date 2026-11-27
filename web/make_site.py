@@ -172,12 +172,15 @@ def version_key(version):
     return tuple(int(n or 0) for n in m.groups())
 
 
-def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None, beta=None, beta_sim=None):
+def main(pkg, single, version, out, nightly=None, installer_only=False, synth=None, sim=None, beta=None, beta_sim=None,
+         midi=None):
     """beta: the beta ({pkg: {dual, single}, version X.Y[.Z]-betaN, commit, builtAt}); None keeps what the site has,
     False drops it. A beta whose release is out (X.Y[.Z] at or before this release's) is dropped too. synth: the synth-only firmware ({pkg: {dual, single}, version, commit, builtAt, web}: web, the synth-only
     branch's web/ for its editor); None keeps what the site has. sim: web/sim/build.sh's output (build/sim); None
     keeps what the site has. beta_sim: the beta's simulator (web/sim/build.sh --release, its version), to
-    webapp/sim-beta/ with a beta published now; a beta published without one, or none, drops the old one"""
+    webapp/sim-beta/ with a beta published now; a beta published without one, or none, drops the old one. midi: Tessera
+    MIDI's test build (as beta, version X.Y[.Z]-tmN: publish_midi.py), a channel of its own beside the beta; None keeps
+    what the site has, False drops it (a release does not end it)"""
     pkg, single, out = Path(pkg), Path(single), Path(out)
     raw, product = check_package(pkg)
     raw1, product1 = check_package(single)
@@ -195,6 +198,11 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     beta_files, beta_meta = channel(beta, "beta", "tessera-" + beta["version"], "develop") if beta else ({}, None)
     if beta_meta:
         beta_meta["editor"] = "../editor-beta/"
+    if midi is None:
+        midi = published(out, "midi")
+    if midi and not re.fullmatch(r"\d+\.\d+(\.\d+)?-tm[0-9]+", midi["version"]):
+        raise SystemExit(f"Tessera MIDI version {midi['version']!r}: use X.Y[.Z]-tmN, e.g. 3.7.7-tm1")
+    midi_files, midi_meta = channel(midi, "midi", "tessera-midi", "feat/tessera-midi") if midi else ({}, None)
     if nightly is None:
         nightly = published(out, "nightly")
     nightly_files, nightly_meta = channel(nightly, "nightly", "melodee-nightly", "next") if nightly else ({}, None)
@@ -211,7 +219,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     name, name1 = f"tessera-{v}.fwsc", f"tessera-{v}-1core.fwsc"
     release_meta = {"version": version, "product": product,
                     "pkg": {"dual": "../../firmware/" + name, "single": "../../firmware/" + name1}}
-    meta = json.dumps({**release_meta, "beta": beta_meta, "nightly": nightly_meta, "synth": synth_meta})
+    meta = json.dumps({**release_meta, "beta": beta_meta, "midi": midi_meta, "nightly": nightly_meta, "synth": synth_meta})
     for mark in ("/*LIB*/", "/*META*/"):
         if html.count(mark) != 1:
             raise SystemExit(f"index_pkg.html must contain {mark} once; update make_site.py")
@@ -220,7 +228,7 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     for d in (inst, ed, fw):
         d.mkdir(parents=True, exist_ok=True)
     keep = {name, name1, "melodee-nightly.fwsc", "melodee-nightly-1core.fwsc", "melodee-synth.fwsc",
-            "melodee-synth-1core.fwsc", *(f[3] for f in beta_files.values())}
+            "melodee-synth-1core.fwsc", *(f[3] for f in beta_files.values()), *(f[3] for f in midi_files.values())}
     for old in [*fw.glob("melodee-*.fwsc"), *fw.glob("tessera-*.fwsc")]:   # (melodee-tess-*: the releases before 2.0)
         if old.name not in keep:
             old.unlink()
@@ -231,7 +239,10 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
     (fw / "release.json").write_text(json.dumps(release_meta, indent=2) + "\n")
     if not beta_meta and (fw / "beta.json").exists():
         (fw / "beta.json").unlink()
-    for files, chan, label in ((beta_files, beta_meta, "beta"), (nightly_files, nightly_meta, "nightly"),
+    if not midi_meta and (fw / "midi.json").exists():
+        (fw / "midi.json").unlink()
+    for files, chan, label in ((beta_files, beta_meta, "beta"), (midi_files, midi_meta, "midi"),
+                               (nightly_files, nightly_meta, "nightly"),
                                (synth_files, synth_meta, "synth")):
         if chan:
             for path, data, identity, filename in files.values():
@@ -301,7 +312,8 @@ def main(pkg, single, version, out, nightly=None, installer_only=False, synth=No
         copy_sim(sim, out / "webapp" / "sim")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B) and "
           f"{name1} ({len(raw1)} B), {product}" + (f"; beta {beta_meta['version']}" if beta_meta else "") +
-          (f"; synth {synth_meta['version']}" if synth_meta else ""))
+          (f"; synth {synth_meta['version']}" if synth_meta else "") +
+          (f"; Tessera MIDI {midi_meta['version']}" if midi_meta else ""))
 
 
 if __name__ == "__main__":
