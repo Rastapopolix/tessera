@@ -349,7 +349,7 @@ void cord_cc_set(uint32_t i, uint32_t n)
 static uint32_t cord_mask[NTRK], cord_smask[NTRK];
 /* velm bit i: cords[i] goes onto a VELO (CK_VEL); qall, a CK_SEQ cord (cord_seq_begin; also in mask: the render's
  * GLIDE); omask bit t, a cord moves track t's TIDE SPEED or SWARM RATE (organic.c, each block) */
-static uint16_t cord_velm, cord_qall;
+static cord_mask_t cord_velm, cord_qall;
 static uint8_t cord_omask;
 static uint8_t cord_envsrc;
 /* the mods of mods (CK_CORD): cmask bit i, cords[i] is an M AMT cord; amask bit i, one turns cords[i]; now[i], cords[i]'s
@@ -359,13 +359,13 @@ static int8_t cord_now[CORD_MAX];
  * fmask: the cords onto FILL (cord_tmask .. above, at cord_tick) */
 /* cord_adopt: bit i, cords[i] came with track t's sound (a route of it, unedited since) and goes with it; sig the
  * sound it came with; fresh: the cords just loaded (a project's routes are the project's: kept) */
-static uint16_t cord_adopted[NTRK];
+static cord_mask_t cord_adopted[NTRK];
 /* HOLD (cord.h CU_HOLD): hmask bit i, cords[i] is one; hval[i], its source as its destination track's bar began */
-static uint16_t cord_hmask;
+static cord_mask_t cord_hmask;
 static int16_t cord_hval[CORD_LIVE];
 static uint8_t cord_hclk[CORD_LIVE];                    /* (its clock: 0 the bar, 1..4 a track's notes; cord.h) */
 /* SCALE (cord.h cord_vca_mask): vmask bit i, cords[i] (a mod of mods) multiplies its target's move */
-static uint16_t cord_vmask;
+static cord_mask_t cord_vmask;
 static uint32_t cord_adopt_sig[NTRK];
 static uint8_t cord_fresh = 1;
 
@@ -435,19 +435,22 @@ void cord_hold_clk_set(uint32_t i, uint32_t v)
 {
     if (i < CORD_LIVE && ((cord_hmask >> i) & 1u)) cord_hclk[i] = (uint8_t)(v > 4u ? 0u : v);
 }
-int cord_hold_clk_pack(uint8_t *out)
+int cord_hold_clk_pack_at(uint8_t *out, uint32_t first)   /* (CORD_HCLK_BYTES: 16 mods, a nibble each) */
 {
     uint32_t i, any = 0;
-    for (i = 0; i < CORD_LIVE; i += 2u) {
-        out[i / 2u] = (uint8_t)(cord_hclk[i] | cord_hclk[i + 1u] << 4);
+    for (i = 0; i < 16u; i += 2u) {
+        uint32_t k = first + i;
+        out[i / 2u] = k + 1u < CORD_LIVE ? (uint8_t)(cord_hclk[k] | cord_hclk[k + 1u] << 4) : 0u;
         any |= out[i / 2u];
     }
     return any != 0u;
 }
-void cord_hold_clk_load(const uint8_t *in)
+void cord_hold_clk_load_at(const uint8_t *in, uint32_t first)
 {
-    for (uint32_t i = 0; i < CORD_LIVE; i++) cord_hold_clk_set(i, (in[i / 2u] >> (4u * (i & 1u))) & 15u);
+    for (uint32_t i = 0; i < 16u; i++) cord_hold_clk_set(first + i, (in[i / 2u] >> (4u * (i & 1u))) & 15u);
 }
+int cord_hold_clk_pack(uint8_t *out) { return cord_hold_clk_pack_at(out, 0); }
+void cord_hold_clk_load(const uint8_t *in) { cord_hold_clk_load_at(in, 0); }
 uint32_t cord_hold_mask(void) { return cord_hmask; }
 void cord_hold_load(uint32_t m)
 {
@@ -462,7 +465,7 @@ uint32_t cord_vca_mask(void) { return cord_vmask; }
 void cord_vca_load(uint32_t m)
 {
     TESS_IRQ_OFF();
-    cord_vmask = (uint16_t)m;
+    cord_vmask = (cord_mask_t)m;
     cord_masks();
     TESS_IRQ_ON();
 }
@@ -496,13 +499,13 @@ static void cord_masks(void)
             t |= 1u << i;
         } else
             cord_hclk[i] = 0;                           /* (not HOLD: by the bar again, when it is) */
-    cord_hmask = (uint16_t)t;
+    cord_hmask = (cord_mask_t)t;
     for (i = 0; i < CORD_LIVE; i++) {                   /* (the mods of mods first: the cords they turn are live) */
         const cord_t *c = &cords[i];
         uint32_t j = (uint32_t)c->dst - CD_M1_AMT;
         cord_now[i] = (int8_t)(c->src ? c->amount : c->offset);
-        if (j >= CORD_LIVE) cord_vmask &= (uint16_t)~(1u << i);   /* (SCALE: only onto an M AMT) */
-        if (j < CORD_LIVE && (c->amount || c->offset) && j != i &&
+        if (j >= CORD_MAMT) cord_vmask &= (cord_mask_t)~(1u << i);   /* (SCALE: only onto an M AMT) */
+        if (j < CORD_MAMT && (c->amount || c->offset) && j != i &&
             !(cords[j].dst >= CD_M1_AMT && cords[j].dst <= CD_M16_AMT)) {   /* (one level: not onto an M AMT cord) */
             cord_cmask |= 1u << i;
             cord_amask |= 1u << j;
@@ -553,10 +556,10 @@ static void cord_masks(void)
         }
 #endif
         if (kind == CK_VEL) {                           /* (cord_vel) */
-            cord_velm |= (uint16_t)(1u << i);
+            cord_velm |= (cord_mask_t)(1u << i);
             continue;
         }
-        if (kind == CK_SEQ) cord_qall |= (uint16_t)(1u << i);   /* (cord_seq_begin; and the render's, below) */
+        if (kind == CK_SEQ) cord_qall |= (cord_mask_t)(1u << i);   /* (cord_seq_begin; and the render's, below) */
         if (c->dst == CD_ORG_SPEED || c->dst == CD_ORG_RATE) cord_omask |= (uint8_t)(1u << c->dst_trk);
         if (kind == CK_STEP) cord_smask[c->dst_trk] |= 1u << i;
         else if (kind == CK_GLOBAL) cord_gmask |= 1u << i;
@@ -579,7 +582,7 @@ int cord_set(uint32_t i, const cord_t *c)
     cord_masks();
     TESS_IRQ_ON();
     for (t = 0; t < NTRK; t++)                          /* (edited: the project's now) */
-        cord_adopted[t] &= (uint16_t)~(1u << i);
+        cord_adopted[t] &= (cord_mask_t)~(1u << i);
     return 1;
 }
 const cord_t *cord_get(uint32_t i) { return i < CORD_MAX ? &cords[i] : 0; }
@@ -1086,7 +1089,7 @@ uint32_t cord_adopt(void)
             p[0] = p[1] = p[2] = 0;
             TESS_IRQ_ON();
             if (i < CORD_LIVE && !fresh) {
-                cord_adopted[tr] |= (uint16_t)(1u << i);
+                cord_adopted[tr] |= (cord_mask_t)(1u << i);
                 cord_adopt_sig[tr] = sig;
             }
         }
