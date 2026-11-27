@@ -31,8 +31,8 @@ static uint32_t msc_dest(uint32_t k)
     if (!ui.home && cur_page()->graph == GR_CORDS) {   /* MODS: KNOB 4, the picked mod's move (a mod of mods: M AMT; */
         const cord_t *c = cord_get(cord_ui_sel);       /* not onto one, one level) */
         help.pid = PID_NONE;
-        return k == 3u && c->dst != CD_OFF && !(c->dst >= CD_M1_AMT && c->dst <= CD_M16_AMT) ? CD_M1_AMT + cord_ui_sel
-                                                                                                : CD_OFF;
+        return k == 3u && c->dst != CD_OFF && !(c->dst >= CD_M1_AMT && c->dst <= CD_M16_AMT) && cord_ui_sel < CORD_MAMT ?
+               CD_M1_AMT + cord_ui_sel : CD_OFF;                /* (mods 17..32: no M AMT reaches them) */
     }
     help_find(k);
     if (help.pid == PID_NONE)

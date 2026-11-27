@@ -265,7 +265,7 @@ static void tt_paste_track(const tt_parts_t *q, uint32_t t)
         if (at == CORD_LIVE) break;
         cords[at] = (cord_t){c[0], c[1], c[2], (uint8_t)t, (int8_t)c[3], (int8_t)c[4], c[5]};
         cord_hclk[at] = c[6];
-        cord_vmask = (uint16_t)((cord_vmask & ~(1u << at)) | (uint32_t)c[7] << at);
+        cord_vmask = (cord_mask_t)((cord_vmask & ~(1u << at)) | (uint32_t)c[7] << at);
         cord_ccn[at] = c[8];
     }
     cord_masks();
