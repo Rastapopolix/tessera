@@ -37,6 +37,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_FR_KICKS
        TSP_FKICK = 55,
 #endif
+#if CORE_TRACKS > 4
+       TSP_MX32 = 57,                                 /* (56: TSP_GFIT, ROADMAP's claim) */
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -116,7 +119,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_CHOP (an 8-track build's only: the FM-1 skips it): each track's
                                               * CHORD HIT when a chop (gen.h GEN_CH_DOUBLE, BUBBLE), else 0, written
                                               * only when one is; the TRACKS part keeps what others play (OFFBEAT,
-                                              * STEP); none: as that part has it */
+                                              * STEP); none: as that part has it;
+                                              * TSP_MX32 (an 8-track build's only: the FM-1 skips it, and its mods 17..32
+                                              * with it): mods 17..32's HOLD mask (u16, bit i: mod 17 + i), their SCALE
+                                              * mask (u16), their HOLD clocks (CORD_HCLK_BYTES nibbles, as TSP_MHCLK),
+                                              * written only when one of them is HOLD or SCALE; none: neither */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -144,6 +151,9 @@ _Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stor
 #endif
 #if TESS_FR_KICKS
 _Static_assert(TSP_FKICK == 55, "the parts' numbers are stored: never renumbered");
+#endif
+#if CORE_TRACKS > 4
+_Static_assert(TSP_MX32 == 57 && CORD_LIVE == 32u, "the parts' numbers are stored: never renumbered");
 #endif
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -425,16 +435,27 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_bytes(&w, c, sizeof c);
         }
         tsp_end(&w);
-        if (cord_hold_mask()) {                        /* (HOLD mods: only when one is) */
+        if (cord_hold_mask() & 0xFFFFu) {              /* (HOLD mods 1..16: only when one is) */
             tsp_begin(&w, TSP_MHOLD, 1);
-            tsp_u16(&w, cord_hold_mask());
+            tsp_u16(&w, cord_hold_mask() & 0xFFFFu);
             tsp_end(&w);
         }
-        if (cord_vca_mask()) {                         /* (SCALE mods of mods: only when one is) */
+        if (cord_vca_mask() & 0xFFFFu) {               /* (SCALE mods of mods 1..16: only when one is) */
             tsp_begin(&w, TSP_MVCA, 1);
-            tsp_u16(&w, cord_vca_mask());
+            tsp_u16(&w, cord_vca_mask() & 0xFFFFu);
             tsp_end(&w);
         }
+#if CORE_TRACKS > 4
+        if ((cord_hold_mask() | cord_vca_mask()) >> 16) {   /* (mods 17..32's HOLD, SCALE, HOLD clocks) */
+            uint8_t hc[CORD_HCLK_BYTES];
+            (void)cord_hold_clk_pack_at(hc, 16u);
+            tsp_begin(&w, TSP_MX32, 1);
+            tsp_u16(&w, cord_hold_mask() >> 16);
+            tsp_u16(&w, cord_vca_mask() >> 16);
+            tsp_bytes(&w, hc, sizeof hc);
+            tsp_end(&w);
+        }
+#endif
         {
             uint8_t hc[CORD_HCLK_BYTES];
             if (cord_hold_clk_pack(hc)) {              /* (HOLD's clocks: only when one is a track's notes) */
@@ -796,6 +817,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
     {TSP_DMAP, TESS_DM_COUNT - 1u, 0, PROJ_NTRK, PROJ_NTRK},
     {TSP_MHOLD, 255u, 0, 2u, 2u},
     {TSP_MVCA, 255u, 0, 2u, 2u},
+#if CORE_TRACKS > 4
+    {TSP_MX32, 255u, 0, 4u + CORD_HCLK_BYTES, 4u + CORD_HCLK_BYTES},
+#endif
     {TSP_MHCLK, 255u, 0, CORD_HCLK_BYTES, CORD_HCLK_BYTES},
     {TSP_MDEPTH, 100u, 0, 1u, 1u},
     {TSP_SDIR, SEQ_DIRS - 1u, 0, PROJ_NTRK * NPAT, PROJ_NTRK * NPAT},
@@ -1043,6 +1067,24 @@ static const struct { uint8_t id, zero; uint16_t n; uint8_t *a, *b; } TSP_COPY[]
 };
 /* after tsp_valid of raw and project_restore_runtime of its project: the other patterns, the song's and motion's
  * pattern tags, the generators and the cords (none in the record: OFF, none) */
+/* the mods' HOLD and SCALE masks and HOLD's clocks (TSP_MHOLD, TSP_MVCA, TSP_MHCLK; an 8-track build's TSP_MX32 for mods
+ * 17..32), onto the mods as loaded: after TSP_CORDS, and in an 8-track build again after XTRK (a mod reaching tracks
+ * 5..8 is only there by then: its HOLD or SCALE would be lost) */
+static void tsp_mod_masks(const uint8_t *raw)
+{
+    uint32_t hm = tsp_seen.at[TSP_MHOLD] ? tsp_u16_at(raw + tsp_seen.at[TSP_MHOLD]) : 0u,
+             vm = tsp_seen.at[TSP_MVCA] ? tsp_u16_at(raw + tsp_seen.at[TSP_MVCA]) : 0u;
+#if CORE_TRACKS > 4
+    const uint8_t *x = tsp_seen.at[TSP_MX32] ? raw + tsp_seen.at[TSP_MX32] : 0;   /* (mods 17..32's) */
+    if (x) hm |= tsp_u16_at(x) << 16, vm |= tsp_u16_at(x + 2u) << 16;
+#endif
+    if (hm) cord_hold_load(hm);
+    if (tsp_seen.at[TSP_MHCLK]) cord_hold_clk_load(raw + tsp_seen.at[TSP_MHCLK]);   /* (after HOLD's mask) */
+#if CORE_TRACKS > 4
+    if (x) cord_hold_clk_load_at(x + 4u, 16u);
+#endif
+    if (tsp_seen.at[TSP_MVCA] || vm) cord_vca_load(vm);
+}
 static void tsp_restore(const uint8_t *raw)
 {
     uint32_t t, b, i, f = motion_guard();
@@ -1073,9 +1115,7 @@ static void tsp_restore(const uint8_t *raw)
     tessera_reset();                                   /* (generators OFF, no cords: a record without them) */
     if (tsp_seen.at[TSP_TESSERA]) tessera_unpack_ver(raw[tsp_seen.at[TSP_TESSERA]], raw + tsp_seen.at[TSP_TESSERA] + 1u);
     if (tsp_seen.at[TSP_CORDS]) (void)cord_unpack(raw + tsp_seen.at[TSP_CORDS]);
-    if (tsp_seen.at[TSP_MHOLD]) cord_hold_load(tsp_u16_at(raw + tsp_seen.at[TSP_MHOLD]));
-    if (tsp_seen.at[TSP_MHCLK]) cord_hold_clk_load(raw + tsp_seen.at[TSP_MHCLK]);   /* (after HOLD's mask) */
-    if (tsp_seen.at[TSP_MVCA]) cord_vca_load(tsp_u16_at(raw + tsp_seen.at[TSP_MVCA]));
+    tsp_mod_masks(raw);
     if (tsp_seen.at[TSP_MDEPTH]) cord_mdepth_set(raw[tsp_seen.at[TSP_MDEPTH]]);   /* (none: cord_reset's 100) */
     if (tsp_seen.at[TSP_BUS])                          /* (none: tessera_reset's SUM, OFF) */
         for (uint32_t k = 0; k < 4u; k++) cord_bus_set(k, raw[tsp_seen.at[TSP_BUS] + k]);
@@ -1182,6 +1222,7 @@ static void tsp_restore(const uint8_t *raw)
             fm1_irq_off();
             xtrk_read(raw + at, len, 1);
             fm1_irq_on();
+            tsp_mod_masks(raw);                        /* (the mods XTRK brought: their HOLD, SCALE, clocks) */
         } else
             xtrk_none();
     }

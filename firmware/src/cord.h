@@ -14,7 +14,16 @@
 #endif
 #define CORD_NBUS (TESS_BUS_CD ? 4u : 2u)
 #define CORD_MAX 32u              /* the fixed maximum: the saved format and the worst-case cost are sized for it */
-#define CORD_LIVE 16u             /* how many are in use now (Theo 2026-10-16); raising it changes no format */
+/* how many are in use now: the FM-1's 16 (Theo 2026-10-16), an 8-track build's 32 (Cosmati, Theo 2026-11-27). The cords
+ * are saved CORD_MAX wide either way, so raising it changes no format; on the FM-1 mods 17..32 load silent (dropped).
+ * cord_mask_t: a bit a live cord */
+#if CORE_TRACKS > 4
+#define CORD_LIVE 32u
+typedef uint32_t cord_mask_t;
+#else
+#define CORD_LIVE 16u
+typedef uint16_t cord_mask_t;
+#endif
 
 /* How a destination is moved, and when (each one checked against where the firmware reads it):
  *   CK_VOICE  per voice, in mod.c mod_voice: the voice's pitch, cutoff, shape, gain (mod.c's MD_PITCH .. MD_AMP)
@@ -92,7 +101,7 @@ enum {
     CD_SF3_MIX, CD_SF3_RATE, CD_SF3_CHAR,
     CD_FX_RETURN,
     CD_M1_AMT,                                                      /* the cords' moves (CK_CORD): M1 AMT .. M16 AMT */
-    CD_M16_AMT = CD_M1_AMT + 15,
+    CD_M16_AMT = CD_M1_AMT + 15,                                    /* (CORD_MAMT of them: mods 17..32 have none) */
     CD_FILL,                                                        /* the project's FILL (CK_FILL) */
     CD_TEMPO,                                                       /* the project's tempo (CK_TEMPO), issue #359 */
     CD_CC,                                                          /* a MIDI CC out (CK_CC), issue #374 */
@@ -235,11 +244,14 @@ void cord_hold_load(uint32_t m);                    /* .. and back, after cord_u
 /* a HOLD mod's clock (G2): 0 its destination track's bar (cord_hold_bar), 1..4 each note of track 1..4 (cord_hold_note,
  * from tessera.c tessera_hold_hit); kept only while the mod is HOLD. Saved: the project's part TSP_MHCLK, CORD_LIVE
  * nibbles (older firmware: by the bar) */
-#define CORD_HCLK_BYTES (CORD_LIVE / 2u)
+#define CORD_MAMT 16u              /* the mods a mod of mods can reach (M1 AMT .. M16 AMT): mods 1..16, whatever CORD_LIVE */
+#define CORD_HCLK_BYTES 8u         /* (mods 1..16's, the part's fixed length; 17..32's: TSP_MX32) */
 uint32_t cord_hold_clk(uint32_t i);
 void cord_hold_clk_set(uint32_t i, uint32_t v);
 int cord_hold_clk_pack(uint8_t *out);               /* 0: every one by the bar (nothing to save) */
 void cord_hold_clk_load(const uint8_t *in);         /* after cord_hold_load; a nibble past 4: by the bar */
+int cord_hold_clk_pack_at(uint8_t *out, uint32_t first);   /* .. the 16 mods from first (0, or 16 in an 8-track build) */
+void cord_hold_clk_load_at(const uint8_t *in, uint32_t first);
 /* SCALE (G7): a mod onto M1 AMT .. M16 AMT that multiplies that mod's move by its own, 0..1 (AMOUNT +: the source
  * opens it; -: closes it) in place of adding to it. Bit i: cord i (only one onto an M AMT; the project's part
  * TSP_MVCA: older firmware adds) */
