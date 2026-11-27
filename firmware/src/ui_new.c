@@ -267,6 +267,11 @@ static void mo_new(void)
         str_cpy(b, nw.on == 1 ? "ROLES" : "CREATE", 8);
         mo_fill(117 - mo_tw(b) - 8, 107, mo_tw(b) + 8, 11, MO_INK);
         mo_text(b, 117 - mo_tw(b) - 4, 109, MO_BG);
+        if (s) {                                        /* (the mouse's zones: BACK as OCT-, ROLES / CREATE as OCT+) */
+            UZ(uz_begin(UZ_G_KEYS));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 2, 107, 32, 11, -1, -1, B_OCTDN, "BACK", ""));
+            UZ(uz_add(UZ_G_KEYS, UZ_KEY, 117 - (int32_t)mo_tw(b) - 8, 107, (int32_t)mo_tw(b) + 8, 11, -1, -1, B_OCTUP, b, ""));
+        }
         cv_oy = 0;
         cv_blit(0, s ? 120u : 18u);
     }

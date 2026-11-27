@@ -420,5 +420,6 @@ class Panel
     int zone_like(const tess_zone_t &z) const;   // the view's zone that is z, -1 none
     tess_zone_t zone_here(int zi, int x, int y) const;
     int slider_at(const tess_zone_t &z, int x) const;   // (a SLIDER: where x is across it, 0..1000)   // zone zi as the core takes it from (x, y): a ROLL with the place
+    int place_at(const tess_zone_t &z, int x, int y) const;   // (a map's place: across << 11 | down, each 0..1000)
     void zone_act(const tess_zone_t &z, uint32_t action, int n);
 };
