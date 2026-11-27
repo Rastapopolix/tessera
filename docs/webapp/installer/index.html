@@ -63,8 +63,8 @@
   .needs li::before, .panel::before, .next::before { content: ""; position: absolute; left: -2px; top: -2px; bottom: -2px;
     width: 6px; background: var(--c, var(--p1)); }
   .small { color: var(--mid); font-size: 14px; line-height: 1.5; }
-  #beta-notes ul { margin: 0 0 8px; padding-left: 20px; }
-  #beta-notes li { margin: 2px 0; }
+  #beta-notes ul, #midi-notes ul { margin: 0 0 8px; padding-left: 20px; }
+  #beta-notes li, #midi-notes li { margin: 2px 0; }
   .beta-notes-head { color: var(--text); margin: 8px 0 2px; }
   .panel { position: relative; border: 2px solid var(--line); padding: 18px 20px 6px 24px; margin: 0 0 var(--gap); }
   .warn { color: var(--text); font-weight: 600; }
@@ -179,6 +179,15 @@ try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentEle
     <p class="small" id="beta-info"></p>
     <details id="beta-notes" class="small" hidden><summary data-t="betaNotes"></summary><div id="beta-notes-body"></div></details>
     <p class="small"><a id="beta-editor" href="../editor-beta/" data-t="betaEditor" hidden></a></p>
+    <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
+  </section>
+  <section id="midi-options" class="panel choice" style="--c:var(--p4)" hidden>
+    <p><strong data-t="midiTitle"></strong> <span id="midi-version"></span></p>
+    <p><label><input type="radio" name="build" id="build-midi-dual"> <span data-t="midi-dual"></span></label>
+      <label><input type="radio" name="build" id="build-midi-single"> <span data-t="midi-single"></span></label></p>
+    <p class="small" data-t="midiWhy"></p>
+    <p class="small" id="midi-info"></p>
+    <details id="midi-notes" class="small" hidden><summary data-t="midiNotes"></summary><div id="midi-notes-body"></div></details>
     <p class="small"><a href="https://github.com/Rastapopolix/tessera/issues" data-t="betaReport"></a></p>
   </section>
   <section id="nightly-options" class="panel choice" style="--c:var(--p3)" hidden>
@@ -1112,6 +1121,10 @@ const TEXT = {
     synthTitle: "シンセ専用（オプション）", "synth-dual": "シンセ専用（デュアルコア）", "synth-single": "シンセ専用（シングルコア）",
     "synth-dualTag": "シンセ専用・デュアルコア", "synth-singleTag": "シンセ専用・シングルコア",
     synthWhy: "パソコンで演奏・録音するための 1 トラックの音源版です。すべてのシンセと音色エディット、ARP・CHORD・SCALES、エフェクト（ドライブ、コーラス、ディレイ、リバーブ）、USB オーディオのステレオ録音を備えます。シーケンサー、ソング、プロジェクトの保存はありません。PLAY は ARP のホールドです。本体に保存したプロジェクトとプリセットはそのまま残り、標準を選んでインストールすると戻ります。インストール前にエディタで全体バックアップを保存してください。",
+    midiTitle: "Tessera MIDI（テスト版）", "midi-dual": "Tessera MIDI（デュアルコア）", "midi-single": "Tessera MIDI（シングルコア）",
+    "midi-dualTag": "Tessera MIDI・デュアルコア", "midi-singleTag": "Tessera MIDI・シングルコア",
+    midiWhy: "ほかの機材を鳴らすためのシーケンサー専用版のテストビルドです。8 トラック、32 のモッドを備え、ボイス数の制限もありません。FM-1 自体の音源とエフェクトはありません。すべて MIDI で出力されます。インストール前にエディタで全体バックアップを保存してください。大きなプロジェクトはユーザープリセットと FM6 ボイスバンクの領域にも保存されるため、標準版に戻すとそれらのプリセットは失われることがあります。戻すには、標準を選んでインストールしてください。",
+    midiNotes: "このテスト版の内容（英語）",
     betaEditor: "ベータ版のエディタ（新しい機能入り）",
     synthEditor: "シンセ専用版のエディタ（音色・エフェクト・設定をパソコンから編集）",
     dual: "標準（デュアルコア）", single: "シングルコア", dualTag: "標準", singleTag: "シングルコア",
@@ -1179,6 +1192,10 @@ const TEXT = {
     synthTitle: "Synth only (optional)", "synth-dual": "Synth only — dual core", "synth-single": "Synth only — single core",
     "synth-dualTag": "synth only, dual core", "synth-singleTag": "synth only, single core",
     synthWhy: "A one-track sound module for playing and recording into a computer: every synth and its sound editing, ARP, CHORD and SCALES, the effects (drive, chorus, delay, reverb) and stereo recording over USB audio. There is no sequencer, song or project saving; PLAY holds the ARP. Projects and presets saved on the FM-1 stay where they are and come back when you choose Standard and install again. Save a complete backup in the editor before installing.",
+    midiTitle: "Tessera MIDI (test build)", "midi-dual": "Tessera MIDI — dual core", "midi-single": "Tessera MIDI — single core",
+    "midi-dualTag": "Tessera MIDI, dual core", "midi-singleTag": "Tessera MIDI, single core",
+    midiWhy: "A sequencer-only Tessera for driving your other gear, as a test build: 8 tracks, 32 mods and no voice limit. It has no sound or effects of its own: everything goes out over MIDI. Save a complete backup in the editor before installing. Big projects are also kept where the user presets and FM6 voice banks were, so those presets may be gone when you go back. To go back, choose Standard and install again.",
+    midiNotes: "What's in this test build",
     betaEditor: "The beta's editor (with its new features)",
     synthEditor: "Synth-only editor (sounds, effects and settings from the computer)",
     dual: "Standard (dual core)", single: "Single core", dualTag: "standard", singleTag: "single core",
@@ -1256,6 +1273,10 @@ const TEXT = {
     "synth-dualTag": "solo sintetizador, doble núcleo",
     "synth-singleTag": "solo sintetizador, un núcleo",
     synthWhy: "Un módulo de sonido de una pista para tocar y grabar en un ordenador: todos los sintetizadores con su edición de sonido, ARP, CHORD y SCALES, los efectos (drive, chorus, delay, reverb) y la grabación estéreo por audio USB. No hay secuenciador, canciones ni guardado de proyectos; PLAY mantiene el ARP. Los proyectos y presets guardados en el FM-1 se quedan donde están y vuelven al elegir Estándar e instalar de nuevo. Guarda una copia de seguridad completa en el editor antes de instalar.",
+    midiTitle: "Tessera MIDI (versión de prueba)", "midi-dual": "Tessera MIDI — doble núcleo", "midi-single": "Tessera MIDI — un núcleo",
+    "midi-dualTag": "Tessera MIDI, doble núcleo", "midi-singleTag": "Tessera MIDI, un núcleo",
+    midiWhy: "Un Tessera solo secuenciador para controlar tus otros equipos, en versión de prueba: 8 pistas, 32 mods y sin límite de voces. No tiene sonido ni efectos propios: todo sale por MIDI. Guarda una copia de seguridad completa en el editor antes de instalar. Los proyectos grandes también se guardan donde estaban los presets de usuario y los bancos de voces FM6, así que esos presets pueden perderse al volver. Para volver, elige Estándar e instala de nuevo.",
+    midiNotes: "Qué trae esta versión de prueba",
     betaEditor: "El editor de la beta (con sus novedades)",
     synthEditor: "Editor de solo sintetizador (sonidos, efectos y ajustes desde el ordenador)",
     dual: "Estándar (doble núcleo)",
@@ -1357,6 +1378,10 @@ const TEXT = {
     "synth-dualTag": "solo synth, doppio core",
     "synth-singleTag": "solo synth, core singolo",
     synthWhy: "Un modulo sonoro a una traccia per suonare e registrare su un computer: tutti i synth con la loro modifica del suono, ARP, CHORD e SCALES, gli effetti (drive, chorus, delay, reverb) e la registrazione stereo tramite audio USB. Non ci sono sequencer, brani né salvataggio dei progetti; PLAY tiene l'ARP. I progetti e i preset salvati sull'FM-1 restano dove sono e tornano quando scegli Standard e installi di nuovo. Salva un backup completo nell'editor prima di installare.",
+    midiTitle: "Tessera MIDI (build di prova)", "midi-dual": "Tessera MIDI — dual core", "midi-single": "Tessera MIDI — single core",
+    "midi-dualTag": "Tessera MIDI, dual core", "midi-singleTag": "Tessera MIDI, single core",
+    midiWhy: "Un Tessera solo sequencer per pilotare i tuoi altri strumenti, in build di prova: 8 tracce, 32 mod e nessun limite di voci. Non ha suoni né effetti propri: tutto esce via MIDI. Salva un backup completo nell'editor prima di installare. I progetti grandi vengono salvati anche dove stavano i preset utente e i banchi di voci FM6, quindi tornando indietro quei preset potrebbero andare persi. Per tornare indietro, scegli Standard e installa di nuovo.",
+    midiNotes: "Cosa contiene questa build di prova",
     betaEditor: "L'editor della beta (con le sue novità)",
     synthEditor: "Editor solo synth (suoni, effetti e impostazioni dal computer)",
     dual: "Standard (doppio core)",
@@ -1458,6 +1483,10 @@ const TEXT = {
     "synth-dualTag": "nur Synth, zwei Kerne",
     "synth-singleTag": "nur Synth, ein Kern",
     synthWhy: "Ein Klangmodul mit einer Spur zum Spielen und Aufnehmen am Computer: alle Synths mit ihrer Klangbearbeitung, ARP, CHORD und SCALES, die Effekte (Drive, Chorus, Delay, Reverb) und Stereo-Aufnahme über USB-Audio. Es gibt keinen Sequencer, keine Songs und kein Speichern von Projekten; PLAY hält den ARP. Auf dem FM-1 gespeicherte Projekte und Presets bleiben, wo sie sind, und sind wieder da, wenn du Standard wählst und erneut installierst. Sichere vor der Installation ein vollständiges Backup im Editor.",
+    midiTitle: "Tessera MIDI (Testversion)", "midi-dual": "Tessera MIDI — Dual-Core", "midi-single": "Tessera MIDI — Single-Core",
+    "midi-dualTag": "Tessera MIDI, Dual-Core", "midi-singleTag": "Tessera MIDI, Single-Core",
+    midiWhy: "Ein Tessera nur als Sequencer, um deine andere Hardware zu steuern, als Testversion: 8 Spuren, 32 Mods und keine Stimmenbegrenzung. Es hat keine eigenen Sounds oder Effekte: alles geht über MIDI hinaus. Sichere vor der Installation ein vollständiges Backup im Editor. Große Projekte werden auch dort gespeichert, wo die User-Presets und FM6-Voice-Bänke lagen; diese Presets können beim Zurückwechseln verloren sein. Zum Zurückwechseln wähle Standard und installiere erneut.",
+    midiNotes: "Was diese Testversion enthält",
     betaEditor: "Der Editor der Beta (mit ihren neuen Funktionen)",
     synthEditor: "Editor für Nur Synth (Sounds, Effekte und Einstellungen vom Computer)",
     dual: "Standard (zwei Kerne)",
@@ -1559,6 +1588,10 @@ const TEXT = {
     "synth-dualTag": "synthé seul, double cœur",
     "synth-singleTag": "synthé seul, simple cœur",
     synthWhy: "Un module de sons à une piste pour jouer et enregistrer sur un ordinateur : tous les synthés et leur édition de son, ARP, CHORD et SCALES, les effets (drive, chorus, delay, reverb) et l'enregistrement stéréo par l'audio USB. Il n'y a ni séquenceur, ni morceaux, ni sauvegarde de projets ; PLAY maintient l'ARP. Les projets et presets enregistrés sur le FM-1 restent en place et reviennent quand vous choisissez Standard et réinstallez. Enregistrez une sauvegarde complète dans l'éditeur avant d'installer.",
+    midiTitle: "Tessera MIDI (version de test)", "midi-dual": "Tessera MIDI — double cœur", "midi-single": "Tessera MIDI — simple cœur",
+    "midi-dualTag": "Tessera MIDI, double cœur", "midi-singleTag": "Tessera MIDI, simple cœur",
+    midiWhy: "Un Tessera séquenceur seul pour piloter vos autres machines, en version de test : 8 pistes, 32 mods et aucune limite de voix. Il n'a ni sons ni effets propres : tout sort en MIDI. Enregistrez une sauvegarde complète dans l'éditeur avant d'installer. Les gros projets sont aussi enregistrés là où se trouvaient les presets utilisateur et les banques de voix FM6 : ces presets peuvent être perdus au retour. Pour revenir, choisissez Standard et réinstallez.",
+    midiNotes: "Ce que contient cette version de test",
     betaEditor: "L'éditeur de la bêta (avec ses nouveautés)",
     synthEditor: "Éditeur synthé seul (sons, effets et réglages depuis l'ordinateur)",
     dual: "Standard (double cœur)",
@@ -1660,6 +1693,10 @@ const TEXT = {
     "synth-dualTag": "só sintetizador, dois núcleos",
     "synth-singleTag": "só sintetizador, um núcleo",
     synthWhy: "Um módulo de som de uma faixa para tocar e gravar no computador: todos os sintetizadores com sua edição de som, ARP, CHORD e SCALES, os efeitos (drive, chorus, delay, reverb) e a gravação estéreo por áudio USB. Não há sequenciador, músicas nem salvamento de projetos; PLAY segura o ARP. Os projetos e presets salvos no FM-1 continuam onde estão e voltam quando você escolhe Padrão e instala de novo. Salve um backup completo no editor antes de instalar.",
+    midiTitle: "Tessera MIDI (versão de teste)", "midi-dual": "Tessera MIDI — dois núcleos", "midi-single": "Tessera MIDI — um núcleo",
+    "midi-dualTag": "Tessera MIDI, dois núcleos", "midi-singleTag": "Tessera MIDI, um núcleo",
+    midiWhy: "Um Tessera só sequenciador para controlar seus outros equipamentos, em versão de teste: 8 faixas, 32 mods e sem limite de vozes. Não tem sons nem efeitos próprios: tudo sai por MIDI. Salve um backup completo no editor antes de instalar. Projetos grandes também são guardados onde ficavam os presets de usuário e os bancos de vozes FM6, então esses presets podem se perder ao voltar. Para voltar, escolha Padrão e instale de novo.",
+    midiNotes: "O que vem nesta versão de teste",
     betaEditor: "O editor da beta (com suas novidades)",
     synthEditor: "Editor só sintetizador (sons, efeitos e ajustes pelo computador)",
     dual: "Padrão (dois núcleos)",
@@ -1761,6 +1798,10 @@ const TEXT = {
     "synth-dualTag": "신스 전용, 듀얼 코어",
     "synth-singleTag": "신스 전용, 싱글 코어",
     synthWhy: "컴퓨터로 연주하고 녹음하기 위한 1트랙 사운드 모듈입니다. 모든 신스와 사운드 편집, ARP, CHORD, SCALES, 이펙트(드라이브, 코러스, 딜레이, 리버브), USB 오디오 스테레오 녹음이 들어 있습니다. 시퀀서, 송, 프로젝트 저장은 없으며 PLAY는 ARP를 유지합니다. FM-1에 저장된 프로젝트와 프리셋은 그대로 남아 있다가 표준을 고르고 다시 설치하면 돌아옵니다. 설치하기 전에 에디터에서 전체 백업을 저장하세요.",
+    midiTitle: "Tessera MIDI (테스트 빌드)", "midi-dual": "Tessera MIDI — 듀얼 코어", "midi-single": "Tessera MIDI — 싱글 코어",
+    "midi-dualTag": "Tessera MIDI, 듀얼 코어", "midi-singleTag": "Tessera MIDI, 싱글 코어",
+    midiWhy: "다른 장비를 연주하기 위한 시퀀서 전용 Tessera의 테스트 빌드입니다. 8트랙, 32개의 모드, 보이스 수 제한 없음. 자체 사운드와 이펙트는 없으며 모든 것이 MIDI로 나갑니다. 설치하기 전에 에디터에서 전체 백업을 저장하세요. 큰 프로젝트는 사용자 프리셋과 FM6 보이스 뱅크가 있던 자리에도 저장되므로, 표준으로 돌아가면 그 프리셋이 사라질 수 있습니다. 돌아가려면 표준을 선택하고 다시 설치하세요.",
+    midiNotes: "이 테스트 빌드의 내용",
     betaEditor: "베타용 에디터 (새 기능 포함)",
     synthEditor: "신스 전용 에디터 (컴퓨터에서 사운드, 이펙트, 설정 편집)",
     dual: "표준 (듀얼 코어)",
@@ -1869,7 +1910,7 @@ applyLang();
 $("stock-skip-backup").addEventListener("change", applyLang);
 const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = $("run-status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
-const buildIds = ["dual", "single", "beta-dual", "beta-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
+const buildIds = ["dual", "single", "beta-dual", "beta-single", "midi-dual", "midi-single", "nightly-dual", "nightly-single", "synth-dual", "synth-single"];
 const build = () => buildIds.find(k => $("build-" + k).checked) || "dual";
 const selection = () => {     /* the release, or a channel ("nightly-dual": meta.nightly's dual-core package) */
   const kind = build(), dash = kind.indexOf("-");
@@ -1878,23 +1919,32 @@ const selection = () => {     /* the release, or a channel ("nightly-dual": meta
 const ready = () => { lastKey = "ready"; $("status").textContent = `Tessera ${selection().channel.version} (${t(build() + "Tag")})`; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "3.7.6", "product": "FM-1_837", "pkg": {"dual": "../../firmware/tessera-3.7.6.fwsc", "single": "../../firmware/tessera-3.7.6-1core.fwsc"}, "beta": {"version": "3.7.7-beta1", "product": "FM-1_837", "branch": "develop", "commit": "b43f1f7057dee8b8997a5b19badeffd03f492483", "builtAt": "2026-11-27T17:44:45Z", "pkg": {"dual": "../../firmware/tessera-3.7.7-beta1.fwsc", "single": "../../firmware/tessera-3.7.7-beta1-1core.fwsc"}, "notes": [["New since 3.7.6", ["GLO > SYSTEM shows CPU 1 CORE when the FM-1's second core has stopped (it then renders on one core until power-off, with about half the room); the screen reader says it too.", "FM6's STORE page now comes last, after VOICE.", "Thanks in ABOUT > CREDITS to u/dreaminganimal and @jfworld."]], ["Fixed", ["Fewer clicks when the voices run out: a voice BUDGET has to take now fades over about 3 ms instead of 0.7 ms.", "While the voice pool is nearly full, quiet release tails (under -20 dB) fade faster, so BUDGET frees a quiet voice before it has to take a loud one (the ADSR engines; FM6 and ORACLE keep their own envelopes).", "ORACLE: a fast sub bass no longer clicks between notes (the amp envelope's floors).", "Less CPU at idle: a silent moment skips the output stage (the sound is unchanged).", "LIGHTS OFF: the keys on MIXER and PERF no longer blink to show what can be pressed; the mute, solo, FILL and HOLD states still light (hold GLO for the blinking map)."]], ["Good to know", ["Don't lower BUDGET to cure clicks: a small pool is full most of the time, and every new note then has to take a voice. Lower it for CPU."]], ["Please try", ["A project from 3.7.6 loads and plays the same.", "A busy project at a low BUDGET (8 to 12) with long releases: fewer clicks than on 3.7.6?", "ORACLE with FM6 tracks: watch FADED and LATE on GLO > SYSTEM, and tell us if CPU 1 CORE ever shows."]]], "sim": "../sim-beta/", "editor": "../editor-beta/"}, "nightly": null, "synth": null};
+const meta = {"version": "3.7.6", "product": "FM-1_837", "pkg": {"dual": "../../firmware/tessera-3.7.6.fwsc", "single": "../../firmware/tessera-3.7.6-1core.fwsc"}, "beta": {"version": "3.7.7-beta1", "product": "FM-1_837", "branch": "develop", "commit": "b43f1f7057dee8b8997a5b19badeffd03f492483", "builtAt": "2026-11-27T17:44:45Z", "pkg": {"dual": "../../firmware/tessera-3.7.7-beta1.fwsc", "single": "../../firmware/tessera-3.7.7-beta1-1core.fwsc"}, "notes": [["New since 3.7.6", ["GLO > SYSTEM shows CPU 1 CORE when the FM-1's second core has stopped (it then renders on one core until power-off, with about half the room); the screen reader says it too.", "FM6's STORE page now comes last, after VOICE.", "Thanks in ABOUT > CREDITS to u/dreaminganimal and @jfworld."]], ["Fixed", ["Fewer clicks when the voices run out: a voice BUDGET has to take now fades over about 3 ms instead of 0.7 ms.", "While the voice pool is nearly full, quiet release tails (under -20 dB) fade faster, so BUDGET frees a quiet voice before it has to take a loud one (the ADSR engines; FM6 and ORACLE keep their own envelopes).", "ORACLE: a fast sub bass no longer clicks between notes (the amp envelope's floors).", "Less CPU at idle: a silent moment skips the output stage (the sound is unchanged).", "LIGHTS OFF: the keys on MIXER and PERF no longer blink to show what can be pressed; the mute, solo, FILL and HOLD states still light (hold GLO for the blinking map)."]], ["Good to know", ["Don't lower BUDGET to cure clicks: a small pool is full most of the time, and every new note then has to take a voice. Lower it for CPU."]], ["Please try", ["A project from 3.7.6 loads and plays the same.", "A busy project at a low BUDGET (8 to 12) with long releases: fewer clicks than on 3.7.6?", "ORACLE with FM6 tracks: watch FADED and LATE on GLO > SYSTEM, and tell us if CPU 1 CORE ever shows."]]], "sim": "../sim-beta/", "editor": "../editor-beta/"}, "midi": {"version": "3.7.7-tm1", "product": "FM-1_837", "branch": "feat/tessera-midi", "commit": "771b6c058fae8ccdddb79f8448a97ec1fb156967", "builtAt": "2026-11-27T19:28:30Z", "pkg": {"dual": "../../firmware/tessera-midi.fwsc", "single": "../../firmware/tessera-midi-1core.fwsc"}, "notes": [["Tessera MIDI: the FM-1 as a sequencer for your other gear", ["No sound of its own: everything goes out over MIDI (USB, or USB host).", "8 tracks instead of 4: SELECT past T4 reaches tracks 5 to 8; MIXER, PATTERNS and MIDI OUT show them four at a time.", "32 mods instead of 16, and no voice limit: any track can send full chords.", "The 8-track features: the ATLAS genre banks, GEN LANE and RANGE, CHORD USER qualities, chord chops, FOLLOW KICK, ENTRIES across 8 tracks, DROP.", "SLOPE (a rise and fall LFO) and Program Change in.", "EDIT opens VOICE (how a part plays on your gear: POLY or MONO, PRIO, ALLOC, MUTE); the sound and effect pages are gone. Channels and transpose: GLO > MIDI OUT."]], ["Good to know", ["Back up with the web editor first. Tessera MIDI keeps bigger projects in the flash the user presets and FM6 voice banks used: once a big project is saved there, those presets are gone when you go back to the standard build.", "A project of more than about 38 KB opens only in Tessera MIDI. A very full one may say PROJECT TOO BIG.", "Back to the synths: choose the standard build in the installer."]], ["Please try", ["Tracks 5 to 8: select them, record into them, and check their notes go out on their channels.", "Save and load an 8-track project, and a 3.7.6 project.", "Drive your gear for a while: notes, clock, CCs from the mods."]]]}, "nightly": null, "synth": null};
 $("ver").textContent = `FM-1 · ${meta.version}`;
+/* a channel's notes (docs/BETA_NOTES*.md: headings and their lines, as text) under its Details */
+function showNotes(id, notes) {
+  if (!Array.isArray(notes) || !notes.length) return;
+  const body = $(id + "-notes-body");
+  for (const [head, lines] of notes) {
+    const h = document.createElement("p"); h.className = "beta-notes-head"; h.textContent = String(head);
+    const ul = document.createElement("ul");
+    for (const line of lines) { const li = document.createElement("li"); li.textContent = String(line); ul.append(li); }
+    body.append(h, ul);
+  }
+  $(id + "-notes").hidden = false;
+}
 $("beta-options").hidden = !meta.beta;
 if (meta.beta) {
   $("beta-version").textContent = meta.beta.version;
   $("beta-info").textContent = `${meta.beta.branch} · ${meta.beta.commit.slice(0, 7)} · ${meta.beta.builtAt}`;
   if (meta.beta.editor) { $("beta-editor").href = meta.beta.editor; $("beta-editor").hidden = false; }
-  if (Array.isArray(meta.beta.notes) && meta.beta.notes.length) {   // (docs/BETA_NOTES.md: headings and their lines, as text)
-    const body = $("beta-notes-body");
-    for (const [head, lines] of meta.beta.notes) {
-      const h = document.createElement("p"); h.className = "beta-notes-head"; h.textContent = String(head);
-      const ul = document.createElement("ul");
-      for (const line of lines) { const li = document.createElement("li"); li.textContent = String(line); ul.append(li); }
-      body.append(h, ul);
-    }
-    $("beta-notes").hidden = false;
-  }
+  showNotes("beta", meta.beta.notes);
+}
+$("midi-options").hidden = !meta.midi;     // (Tessera MIDI's test builds: publish_midi.py, docs/BETA_NOTES_MIDI.md)
+if (meta.midi) {
+  $("midi-version").textContent = meta.midi.version;
+  $("midi-info").textContent = `${meta.midi.branch} · ${meta.midi.commit.slice(0, 7)} · ${meta.midi.builtAt}`;
+  showNotes("midi", meta.midi.notes);
 }
 $("nightly-options").hidden = !meta.nightly;
 if (meta.nightly) $("nightly-info").textContent = `next · ${meta.nightly.commit.slice(0, 7)} · ${meta.nightly.builtAt}`;
@@ -1954,7 +2004,7 @@ async function choose() {
   image = null; $("go").disabled = true;
   try {
     if (!images[kind]) {
-      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : kind.startsWith("beta-") ? "No beta at the moment" : "Nightly is not available yet");
+      if (!channel) throw new Error(kind.startsWith("synth-") ? "Synth only is not available yet" : kind.startsWith("beta-") ? "No beta at the moment" : kind.startsWith("midi-") ? "No Tessera MIDI test build at the moment" : "Nightly is not available yet");
       const url = channel.pkg[key] + (channel.commit ? "?commit=" + channel.commit : ""), r = await fetch(url);
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
