@@ -933,12 +933,15 @@ void tess_core_zone_do(const tess_zone_t *z, uint32_t action, int32_t n)
         }
         {
             int32_t turn[2] = {(int8_t)(uint8_t)((uint16_t)z->row & 0xFFu), (int8_t)(uint8_t)((uint16_t)z->row >> 8)};
-            int32_t role[2] = {z->role, z->vrole}, j;
+            int32_t role[2] = {z->role, z->vrole}, j, any = 0;
             for (j = 0; j < 2; j++)
                 for (k = 0, d = turn[j]; role[j] >= 0 && k < (d < 0 ? -d : d) && k < 64; k++)
-                    zq_put(ZQ_STEP, (uint32_t)role[j], d);
-            uz_begin(z->group);                       /* (its grid's cells go until it is drawn again: a second click
-                                                       * counts from there, not from the turns already on their way) */
+                    zq_put(ZQ_STEP, (uint32_t)role[j], d), any = 1;
+            if (any)                                  /* (its grid's cells go until it is drawn again: a second click
+                                                       * counts from there, not from the turns already on their way;
+                                                       * a cell already there turns nothing, and its grid stays, or
+                                                       * the next click would fall through to the knob's card) */
+                uz_begin(z->group);
             if (z->group == UZ_G_PIC && !ui.home && cur_page()->graph == GR_MATRIX)
                 zq_key(B_OCTUP);                      /* (MATRIX: and OPEN, the cell's mod in MODS) */
 

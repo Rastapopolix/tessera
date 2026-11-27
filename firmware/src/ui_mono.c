@@ -4352,10 +4352,10 @@ static void mo_browser(uint32_t cur, uint32_t total)
                                                          * sound's double-click also OK, tess_core.c) */
             uz_cell(UZ_G_PIC, 60, 0, 60, 9, -1, 0, -1, 0, "FIND", br_find);   /* (the count: a click types FIND, a
                                                                          * box of the panel's, tess_core_zone_type) */
-            for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)
-                if (first + (uint32_t)r != m)
-                    uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
-                            "LIST", browser_list_name(first + (uint32_t)r));
+            for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)   /* (the list shown too: a click there turns
+                                                                     * nothing, rather than open LIST's card) */
+                uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
+                        "LIST", browser_list_name(first + (uint32_t)r));
             for (r = -2; total && r <= 3; r++) {
                 int32_t n = (int32_t)at + r;
                 if (n < 0 || n >= (int32_t)total)
