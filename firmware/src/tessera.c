@@ -3499,6 +3499,9 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
     case TX_PL_USER5: case TX_PL_USER6: case TX_PL_USER7: case TX_PL_USER8: return tessera.pl_user[x - TX_PL_USER1];
     case TX_MACRO1: case TX_MACRO2: case TX_MACRO3: case TX_MACRO4: return tessera.macro[x - TX_MACRO1];   /* (the project's) */
     case TX_BUSA_MODE: case TX_BUSA_LAG: case TX_BUSB_MODE: case TX_BUSB_LAG: return (int32_t)cord_bus_get(x - TX_BUSA_MODE);
+#if TESS_BUS_CD
+    case TX_BUSC_MODE: case TX_BUSC_LAG: case TX_BUSD_MODE: case TX_BUSD_LAG: return (int32_t)cord_bus_get(4u + x - TX_BUSC_MODE);
+#endif
     case TX_MOD_DEPTH: return (int32_t)cord_mdepth_get();   /* (the project's) */
     case TX_FC_KEYB: case TX_FC_KEYC: return tessera.fc_key[x - TX_FC_KEYB];   /* (the project's) */
     case TX_KEY_LINK: return tessera.key_link;          /* (the project's, whichever track) */
@@ -3737,6 +3740,9 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
         tessera.macro[x - TX_MACRO1] = (uint8_t)tess_clampi(v, 0, 100);
         return;
     case TX_BUSA_MODE: case TX_BUSA_LAG: case TX_BUSB_MODE: case TX_BUSB_LAG: cord_bus_set(x - TX_BUSA_MODE, v); return;
+#if TESS_BUS_CD
+    case TX_BUSC_MODE: case TX_BUSC_LAG: case TX_BUSD_MODE: case TX_BUSD_LAG: cord_bus_set(4u + x - TX_BUSC_MODE, v); return;
+#endif
     case TX_MOD_DEPTH: cord_mdepth_set(v); return;
     case TX_FC_KEYB: case TX_FC_KEYC: tessera.fc_key[x - TX_FC_KEYB] = (int8_t)tess_clampi(v, -12, 12); return;
     case TX_KEY_LINK: tessera.key_link = (uint8_t)tess_clampi(v, 0, 1); return;

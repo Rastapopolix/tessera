@@ -220,17 +220,30 @@ static const sheet_row_t SHEET_MIXER[] = {{"Mutes", mq_v, mq_t, 0, 0}};
 
 /* MODS' (OCT+ held; OCT+ tapped stays the mod's BI / UNI): the project's MIX buses, each one's MODE and LAG (cord.c,
  * TX_BUSA_MODE ..: KNOB 2 turns it, OCT+ steps it; a MODE goes round, a LAG stops at its ends) */
-static void bus_v(char *b, uint32_t k) { str_cpy(b, pid_desc(PID_TESS(TX_BUSA_MODE + k), 0)->names[cord_bus_get(k)], 8); }
+#if TESS_BUS_CD
+#define BUS_PID(k) ((k) < 4u ? TX_BUSA_MODE + (k) : TX_BUSC_MODE + (k) - 4u)   /* (C, D: 0x2AB..: not after B's) */
+#else
+#define BUS_PID(k) (TX_BUSA_MODE + (k))
+#endif
+static void bus_v(char *b, uint32_t k) { str_cpy(b, pid_desc(PID_TESS(BUS_PID(k)), 0)->names[cord_bus_get(k)], 8); }
 static void bus_turn(uint32_t k, int32_t s)
 {
     int32_t v = (int32_t)cord_bus_get(k) + (s > 0 ? 1 : -1);
-    tessera_param_set(0, TX_BUSA_MODE + k, k & 1u ? v : (v + CB_MODES) % CB_MODES);
+    tessera_param_set(0, BUS_PID(k), k & 1u ? v : (v + CB_MODES) % CB_MODES);
 }
 #define BUS_ROW_(k) static void bus_v##k(char *b) { bus_v(b, k); } static void bus_t##k(int32_t s) { bus_turn(k, s); }
 BUS_ROW_(0) BUS_ROW_(1) BUS_ROW_(2) BUS_ROW_(3)
+#if TESS_BUS_CD
+BUS_ROW_(4) BUS_ROW_(5) BUS_ROW_(6) BUS_ROW_(7)
+#endif
 #undef BUS_ROW_
 static const sheet_row_t SHEET_MODS[] = {{"Clear mod", 0, 0, cu_clear, SR_RED}, {"Bus A mode", bus_v0, bus_t0, 0, 0}, {"Bus A lag", bus_v1, bus_t1, 0, 0},
-    {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}};
+    {"Bus B mode", bus_v2, bus_t2, 0, 0}, {"Bus B lag", bus_v3, bus_t3, 0, 0}
+#if TESS_BUS_CD
+    , {"Bus C mode", bus_v4, bus_t4, 0, 0}, {"Bus C lag", bus_v5, bus_t5, 0, 0}, {"Bus D mode", bus_v6, bus_t6, 0, 0},
+    {"Bus D lag", bus_v7, bus_t7, 0, 0}
+#endif
+    };
 
 /* a page's settings past its eight knobs (the key grammar's rule 3, M3) as a sheet's rows: row k is setting sr.pid[k] of
  * track sr.tr[k], its value as its card says it (params.c param_format), KNOB 2 a step a detent (a percent: as turned),

@@ -270,6 +270,12 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSA_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+#if TESS_BUS_CD
+    [TX_BUSC_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSC_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+    [TX_BUSD_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSD_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+#endif
     [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
     [TX_AN_CHORD] = PE("CHORD", TX_N_ANCHORD, 0),
     [TX_AN_MODE] = PE("MODE", TX_N_ANMODE, 0),
@@ -925,6 +931,18 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves: the whole shape by semitones (ST), up the scale in key "
                                   "(DEG), turned over (INV), an octave, the top note a degree (TOP), or the next "
                                   "chord a semitone below (LEAD). GEN sheet."),
+#if TESS_BUS_CD                                     /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    XP_(TX_BUSC_MODE, "BUS C MODE", "How the mods into BUS C combine, as BUS A's: SUM, MAX (either, OR), MIN (both, "
+                                     "AND), DIFF (the first two apart, XOR). The source BUS C reads the result a block "
+                                     "later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSC_LAG, "BUS C LAG", "A slew on BUS C, as BUS A's: the time a whole move from 0 to 1 takes. OFF: none. "
+                                   "MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSD_MODE, "BUS D MODE", "How the mods into BUS D combine, as BUS A's: SUM, MAX (either, OR), MIN (both, "
+                                     "AND), DIFF (the first two apart, XOR). The source BUS D reads the result a block "
+                                     "later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSD_LAG, "BUS D LAG", "A slew on BUS D, as BUS A's: the time a whole move from 0 to 1 takes. OFF: none. "
+                                   "MODS' sheet (OCT+ held)."),
+#endif
 #if TESS_ATLAS_BANKS                                /* (an 8-track build's: tools/gen_help.py leaves it out) */
     X_(TX_GRD_BANK, "ATLAS BANK", "The map X and Y scan: ALL is the original one, the others a genre's own. In "
                                   "each, Y picks one of five feels of the genre and X goes from its bare skeleton to "

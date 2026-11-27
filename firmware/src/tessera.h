@@ -563,8 +563,8 @@ enum {
     TX_SECTION_PC,                                  /* (0x2A8: MIDI OUT's SECTION PC, any track's: form_chain.c) */
     TX_CH_WHEN, TX_CH_BY,                           /* (0x2A9, 0x2AA: CHORD's MOVE WHEN and BY, a CHORD track's) */
 #if TESS_ATLAS_BANKS
-    TX_RSV_2AB, TX_RSV_2AC, TX_RSV_2AD, TX_RSV_2AE, /* (0x2AB..0x2AE: claimed in ROADMAP for the BUS C / D settings; no
-                                                     * parameter yet) */
+    TX_BUSC_MODE, TX_BUSC_LAG, TX_BUSD_MODE, TX_BUSD_LAG,   /* (0x2AB..0x2AE: the MIX buses C, D's, the project's, an
+                                                     * 8-track build's: cord.c, TESS_BUS_CD) */
     TX_GRD_BANK,                                    /* (0x2AF: ATLAS's BANK, an 8-track build's: gen.h GEN_AB_*) */
 #endif
 #if TESS_FLOURISH
@@ -583,7 +583,8 @@ _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0
                TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8 && TX_CH_BY == 0xAA,
                "parameter ids are stored: never renumbered");
 #if TESS_ATLAS_BANKS
-_Static_assert(TX_GRD_BANK == 0xAF, "parameter ids are stored: never renumbered");
+_Static_assert(TX_GRD_BANK == 0xAF && TX_BUSC_MODE == 0xAB && TX_BUSD_LAG == 0xAE, "parameter ids are stored: never renumbered");
+_Static_assert(!TESS_BUS_CD || TESS_ATLAS_BANKS, "BUS C, D: their ids in the 8-track builds' range");
 #endif
 #if TESS_FLOURISH
 _Static_assert(TESS_ATLAS_BANKS && TX_FL_WHERE == 0xB2 && TX_FL_HEAT == 0xB4, "parameter ids are stored: never renumbered");

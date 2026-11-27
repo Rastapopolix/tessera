@@ -78,7 +78,7 @@ def texts():
     end = src.index("\n};", begin)
     body = src[begin:end].replace("\\\n", " ")
     # the 8-track builds' own entries: the pack is the FM-1's (tools/build.py), which leaves them out
-    body = re.sub(r"^#if (TESS_ATLAS_BANKS|TESS_FLOURISH|TESS_GEN_FIT)\b.*?^#endif[^\n]*$", "", body, flags=re.S | re.M)
+    body = re.sub(r"^#if (TESS_ATLAS_BANKS|TESS_FLOURISH|TESS_GEN_FIT|TESS_BUS_CD)\b.*?^#endif[^\n]*$", "", body, flags=re.S | re.M)
     # (TESS_LFO_SLOPE, the plugin's: the device packs the #else branch, the FM-1's texts)
     body = re.sub(r"^#if TESS_LFO_SLOPE\b.*?^#else[^\n]*$(.*?)^#endif[^\n]*$", r"\1", body, flags=re.S | re.M)
     macros, out, i = {}, [], body.index("{") + 1
