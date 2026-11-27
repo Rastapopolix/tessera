@@ -796,6 +796,20 @@ static void menu_close(void)
     ui.force = 1;
     go_home();
 }
+#if TESS_HAS_POINTER
+/* the menu closed for somewhere else (a section, a tab, the page map, a page button): the page stays to go from, not
+ * HOME; however it opened (HOME held or SETUP's SETTINGS), from the list or ABOUT (a mouse's front end: nothing locks) */
+static void menu_leave(void)
+{
+    if (!ui.menu)
+        return;
+    settings_save();
+    mlearn_ask = 0;
+    ui.menu = 0;
+    menu_cols = 0;
+    ui.force = 1;
+}
+#endif
 
 /* menu: PRESETS moves, OCT+ confirms, OCT- cancels (ABOUT -> list -> close) */
 static void menu_input(uint32_t oct)                  /* oct: ui_input.c oct_taps */

@@ -135,6 +135,11 @@ static uint32_t oct_leds(void)
         return 1u | (blink ? 2u : 0u);
     if (layer_set_open())                               /* a SET layer: OCT- puts back (UNDO), OCT+ nothing */
         return 1u;
+#if TESS_HAS_POINTER
+    if (ui.menu && !ui.confirm)                         /* (a mouse's front end: the rows are clicked; OK lit, no
+                                                         * press-me blink) */
+        return 1u | (ui.menu == 1u ? 2u : 0u);
+#endif
     if (ui.confirm || ui.menu || act_cols())
         return 1u | (blink && (ui.confirm || (ui.menu ? ui.menu == 1u : act_ready())) ? 2u : 0u);
     if (oct_nav())                                      /* a page: OCT- lit where it has a layer (the key grammar's
@@ -2219,6 +2224,17 @@ static void ui_input(void)
     if(momentary.active && (pressed&(1u<<panel.btn[B_OCTUP]))){
         momentary.active=momentary.count=momentary.native=0;pressed&=~(1u<<panel.btn[B_OCTUP]);ui_message("KEPT");
     }
+#if TESS_HAS_POINTER
+    if (ui.menu && !ui.confirm) {                       /* a page button over the menu: the menu goes, the press opens
+                                                         * its page as anywhere else (the FM-1: swallowed, as before) */
+        static const uint8_t PG[] = {B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_SAVE, B_ARP, B_SEQ};
+        uint32_t m = 0;
+        for (k = 0; k < NELEM(PG); k++)
+            m |= 1u << panel.btn[PG[k]];
+        if (pressed & m)
+            menu_leave();
+    }
+#endif
     uint32_t bank_notes = notes;
     uint32_t home = btn_hold(&ui.home_t0, B_HOME, now, 1);
     uint32_t rec = btn_hold(&ui.rec_t0, B_REC, now, !ui.menu && !ui.confirm && !name_on());   /* held: MIXER */
@@ -2389,6 +2405,13 @@ static void ui_input(void)
         else
             capture_take(0);
     }
+#if TESS_HAS_POINTER
+    if (ui.menu && home == BT_TAP) {                    /* (a mouse's front end: HOME tapped leaves the menu for HOME,
+                                                         * however it opened) */
+        momentary_restore();
+        menu_close();
+    }
+#endif
     if (ui.menu) {
         momentary_restore();                                      /* HOME / SAVE / REC taps do nothing here */
         if (ui.save_t0)

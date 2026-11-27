@@ -99,13 +99,6 @@ static uint32_t zone_btn, host_btn;                   /* held by a zone's click,
 #if TESS_HAS_POINTER
 /* SETUP's SETTINGS page (ui.c cs_pages): the menu's list shown as a page while the sections are on */
 static int cs_settings_on(void) { return ui_csec && !ui.home && cur_page()->graph == GR_SETTINGS; }
-static void cs_settings_leave(void)                   /* the list closed, the page stays to step from (not HOME) */
-{
-    settings_save();
-    ui.menu = 0;
-    menu_cols = 0;
-    ui.force = 1;
-}
 #endif
 static void zq_put(uint32_t op, uint32_t arg, int32_t sign)
 {
@@ -171,24 +164,18 @@ static void zq_run(void)
         break;
     case ZQ_SECTION:                                  /* a section's button (ui.c cs_open): not over a menu, a dialog, a
                                                        * picker (as the FM-1's buttons, which those take) */
-        if (ui.menu == 1 && cs_settings_on())        /* (on SETUP's SETTINGS: the list closes, the section opens) */
-            cs_settings_leave();
+        menu_leave();                                 /* (the menu closes, however it opened, ABOUT too: the section opens) */
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_open(arg);
         ui.force = 1;
         break;
     case ZQ_MAP:                                      /* the page map: a section's page (arg: section * 16 + place); the
                                                        * menu's list closed first (not HOME), not over a dialog, a picker */
-        if (ui.menu == 1) {
-            settings_save();
-            ui.menu = 0;
-            menu_cols = 0;
-        }
+        menu_leave();
         if (!ui.menu && !ui.confirm && !pop.on && !ui.layer) cs_go(arg >> 4, arg & 15u);
         ui.force = 1;
         break;
     case ZQ_PAGE:                                     /* a footer tab: the family's next page that way (SELECT's) */
-        if (ui.menu == 1 && cs_settings_on())
-            cs_settings_leave();
+        menu_leave();
         page_scroll(sg);
         ui.force = 1;
         break;
@@ -1193,7 +1180,7 @@ void tess_core_buttons(uint32_t labels)
         _Static_assert(TESS_SEC_N == UI_SEC_N && TESS_SEC_SETUP == UI_SEC_SETUP && TESS_BTN_SECTION(TESS_SEC_N - 1) < (1ull << 32) &&
                        TESS_BTN_SECTION(0) > TESS_BTN_POINTER, "the sections: ui.c's, bits above POINTER");
         if ((labels >> B_HOME & 1u) && ui.menu == 1 && cs_settings_on())
-            cs_settings_leave();                      /* (HOME on SETUP's SETTINGS: the list closes too, as HOME leaves) */
+            menu_leave();                             /* (HOME on SETUP's SETTINGS: the list closes too, as HOME leaves) */
         for (b = 0; b < TESS_SEC_N; b++)              /* a section's button: its pages (ui.c cs_open; a pinned card */
             if (go & TESS_BTN_SECTION(b)) {           /* closes first) */
                 help_unpin();
