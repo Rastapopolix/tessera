@@ -144,26 +144,33 @@ static inline __attribute__((always_inline)) uint32_t or_fast_noise32(int32_t *s
 }
 static int32_t or_value(const uint8_t *p,uint32_t k) { return p[k]>127u?127:p[k]; }
 #define OR_ENV_END (1.0f / 1024.0f)   /* about -60 dB */
+/* The amp's floors (a 1/16 sub clicked, Theo 2026-11-27): the free-running oscillators meet a note anywhere in their
+ * cycle, so an attack under ~1.5 ms or a release that drops half the level within one control block (0.73 ms) is a
+ * step on a low wave. The attack takes 2 ms at least, the decay and release a time constant of ~3 ms (RELEASE off's
+ * own, OR_ENV_EXP[16]) at least. The filter's envelope keeps its snap */
+#define OR_AMP_ATK_MAX 0.3628118f      /* (CTL / (2 ms * FS)) */
+#define OR_AMP_EXP_MAX 0.2033912f      /* (OR_ENV_EXP[16]: 1 - e^(-CTL / (3.1 ms * FS))) */
 /* Linear attack, exponential decay/release; EARLY's filter envelope uses
  * its measured linear decay. Float avoids an integer floor in quiet tails. */
 static float or_env_tick(or_env_t *e, int gate, const uint8_t *p,
-                         uint32_t a, uint32_t d, uint32_t s, uint32_t r, int32_t variation, const uint8_t *value, int ssm)
+                         uint32_t a, uint32_t d, uint32_t s, uint32_t r, int32_t variation, const uint8_t *value, int ssm,
+                         int amp)
 {
     if (!gate && e->stage != 0u) e->stage = 3;
     float target = (float)value[s] * (1.0f / 127.0f);
     float scale = 1.0f + (float)variation * (1.0f / 32768.0f);
     uint32_t rel = p[OR_RELEASE_ON] ? value[r] : 16u;
     if (e->stage == 1u) {
-        e->value += OR_ENV_ATK[value[a]] * scale;
+        e->value += (amp ? fm_minf(OR_ENV_ATK[value[a]] * scale, OR_AMP_ATK_MAX) : OR_ENV_ATK[value[a]] * scale);
         if (e->value >= 1.0f) { e->value = 1.0f; e->stage = 2; }
     } else if (ssm && e->stage >= 2u) {
         float step = OR_ENV_SSM[e->stage == 2u ? value[d] : rel] * scale;
         if (e->stage == 3u) target = 0.0f;
         e->value += fm_clampf(target - e->value, -step, step);
     } else if (e->stage == 2u) {
-        e->value += (target - e->value) * fm_minf(OR_ENV_EXP[value[d]] * scale, 1.0f);
+        e->value += (target - e->value) * fm_minf(OR_ENV_EXP[value[d]] * scale, amp ? OR_AMP_EXP_MAX : 1.0f);
     } else if (e->stage == 3u) {
-        e->value -= e->value * fm_minf(OR_ENV_EXP[rel] * scale, 1.0f);
+        e->value -= e->value * fm_minf(OR_ENV_EXP[rel] * scale, amp ? OR_AMP_EXP_MAX : 1.0f);
     }
     if (e->stage == 3u && e->value < OR_ENV_END) { e->value = 0.0f; e->stage = 0; }
     return e->value;
@@ -446,8 +453,8 @@ static void or_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vm
     or_job_t c;
     int curtis=!!p[OR_FILTER_REV];
     c.f0=s->filter_prev; c.a0=s->amp_prev;
-    c.f1=or_env_tick(&s->filter,v->gate,p,OR_ATTACK_FILTER,OR_DECAY_FILTER,OR_SUSTAIN_FILTER,OR_RELEASE_FILTER,s->env_drift,q,!curtis);
-    c.a1=or_env_tick(&s->amp,v->gate,p,OR_ATTACK_AMP,OR_DECAY_AMP,OR_SUSTAIN_AMP,OR_RELEASE_AMP,s->env_drift,q,0);
+    c.f1=or_env_tick(&s->filter,v->gate,p,OR_ATTACK_FILTER,OR_DECAY_FILTER,OR_SUSTAIN_FILTER,OR_RELEASE_FILTER,s->env_drift,q,!curtis,0);
+    c.a1=or_env_tick(&s->amp,v->gate,p,OR_ATTACK_AMP,OR_DECAY_AMP,OR_SUSTAIN_AMP,OR_RELEASE_AMP,s->env_drift,q,0,1);
     s->filter_prev=c.f1; s->amp_prev=c.a1;
     int32_t glide=0;
     if(p[OR_GLIDE]){

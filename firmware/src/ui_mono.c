@@ -870,7 +870,9 @@ static void mo_pic_grids(const gen_grids_t *g, const track_t *t)
 #if TESS_HAS_POINTER
     if (!cv_under && (mo_knob_named("X") >= 0 || mo_knob_named("Y") >= 0)) {   /* (zones: the cross-hair: X, Y) */
         uz_begin(UZ_G_PIC);
-        uz_add(UZ_G_PIC, UZ_POINT, px - 3, py - 3, 7, 7, mo_knob_named("X"), mo_knob_named("Y"), 2, "X / Y", "");   /* (row bit 1: Y grows downward here) */
+        uz_add(UZ_G_PIC, UZ_POINT, 2, 54, 40, 40, mo_knob_named("X"), mo_knob_named("Y"), 2 | 0x1000, "X / Y", "");   /* (row bit 1:
+                                                       * Y grows downward here; 0x1000: the whole map, a click puts the
+                                                       * cross-hair there, tess_core.c) */
     }
 #endif
     mo_disc(px, py, 2, MO_INK);
@@ -2222,10 +2224,26 @@ static void mo_pic_entries(void)
         if (on && song.playing) mo_fill(98, y + 2, 20 * entry_gain[k] / 32768, 3, MO_TRK(k));
     }
 }
+/* MIDI IN, MIDI OUT: a row a track (the mouse's zones: a click selects it, as on HOME; MIDI OUT's double-click its
+ * sheet, tess_core.c) */
+static void mo_pic_track_rows(void)
+{
+#if TESS_HAS_POINTER
+    uint32_t k;
+    if (cv_under)
+        return;
+    uz_begin(UZ_G_PIC);
+    for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
+        char n[3] = {'T', (char)('1' + k), 0};
+        uz_add(UZ_G_PIC, UZ_TRACK, 0, 53 + (int32_t)(k - UI_BASE) * 11, 120, 10, -1, -1, (int32_t)k, n, "");
+    }
+#endif
+}
 /* MIDI OUT: a row a track: its number, the channel its notes go out on (AUTO: ROUT's or DRUM's), its TRANSPOSE when not
  * 0, and the menu's NOTES OUT when it keeps the steps in (KEYS) or sends nothing (OFF) */
 static void mo_pic_midich(void)
 {
+    mo_pic_track_rows();
     for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
         int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
@@ -2345,6 +2363,7 @@ static void mo_pic_system(void)
 static void mo_pic_midiin(void)
 {
     uint32_t route = (uint32_t)song.g[G_ROUTE], first = route > 1u ? (route - 1u) * 4u : 0u, d = settings_drumch, dk, k;
+    mo_pic_track_rows();
     for (dk = 0; dk < NTRK && !drum_track(&trk[dk]); dk++) {}
 #if CORE_TRACKS > 4
     if (!d || dk >= NTRK || (route != 1u && (d - 1u < first || d - 1u - first >= NPART)))
@@ -4333,10 +4352,10 @@ static void mo_browser(uint32_t cur, uint32_t total)
                                                          * sound's double-click also OK, tess_core.c) */
             uz_cell(UZ_G_PIC, 60, 0, 60, 9, -1, 0, -1, 0, "FIND", br_find);   /* (the count: a click types FIND, a
                                                                          * box of the panel's, tess_core_zone_type) */
-            for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)
-                if (first + (uint32_t)r != m)
-                    uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
-                            "LIST", browser_list_name(first + (uint32_t)r));
+            for (r = 0; r < 9 && first + (uint32_t)r < LM_N; r++)   /* (the list shown too: a click there turns
+                                                                     * nothing, rather than open LIST's card) */
+                uz_cell(UZ_G_PIC, 0, 11 + r * 9, 45, 9, EN_K1, (int32_t)(first + (uint32_t)r) - (int32_t)m, -1, 0,
+                        "LIST", browser_list_name(first + (uint32_t)r));
             for (r = -2; total && r <= 3; r++) {
                 int32_t n = (int32_t)at + r;
                 if (n < 0 || n >= (int32_t)total)
