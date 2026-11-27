@@ -748,7 +748,7 @@ static uint32_t fam_pages(uint32_t fam, uint8_t *pg);
 #if TESS_HAS_POINTER
 /* A front end's own section buttons (Cosmati's shell, tess_core_key_words on; tess_core.h TESS_SEC_*): the pages
  * grouped by what they do, not by the FM-1 button they share. GEN: the generator, NOTES, ARP, PATTERN, MOTION; SOUND:
- * the engine's pages, then ENV's; MOD: LFO's family (MODS, MATRIX, LFOs, ORGANIC); FX; SHAPE: EVOLVE .. ENERGY; PIECE:
+ * PRESETS (the sound browser, SAVE's too: Theo 2026-11-27), the engine's pages, then ENV's; MOD: LFO's family (MODS, MATRIX, LFOs, ORGANIC); FX; SHAPE: EVOLVE .. ENERGY; PIECE:
  * PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG; MIX: MIXER, PERF; SCALE: SCL's family; SETUP: TEMPO, SYSTEM, MIDI
  * IN / OUT. HOME and SAVE stay the FM-1's. While on, a section's pages are the footer's tabs and what SELECT turns
  * (fam_pages of FAM_CS + the section); the page list, its families and the FM-1's buttons are unchanged */
@@ -766,6 +766,7 @@ static uint32_t cs_of(uint32_t i)                       /* page i's section, UI_
     case FAM_LFO: return UI_SEC_MOD;
     case FAM_EDIT: case FAM_ENV: return UI_SEC_SOUND;
     case FAM_SCL: return UI_SEC_SCALE;
+    case FAM_SAVE: return g == GR_BROWSE ? UI_SEC_SOUND : UI_SEC_N;   /* (USER, PROJECT: SAVE's alone) */
     case FAM_GLO:
         return g == GR_TRK || g == GR_PERF ? UI_SEC_MIX :
                g == GR_PIECE || g == GR_CHAIN || g == GR_ENTRIES || g == GR_LAND ? UI_SEC_PIECE : UI_SEC_SETUP;
@@ -776,13 +777,13 @@ static uint32_t cs_of(uint32_t i)                       /* page i's section, UI_
     }
     return UI_SEC_N;
 }
-/* section s's pages, in order (SOUND: the engine's, then ENV's; SETUP: SETTINGS, then TEMPO, then GLO's) */
+/* section s's pages, in order (SOUND: PRESETS, the engine's, then ENV's; SETUP: SETTINGS, then TEMPO, then GLO's) */
 static uint32_t cs_pages(uint32_t s, uint8_t *pg)
 {
     uint32_t pass, i, n = 0;
     for (pass = 0; pass < 3u; pass++)
         for (i = 0; i < NPAGES; i++) {
-            uint32_t f = PAGES[i].fam, at = s == UI_SEC_SOUND ? f == FAM_ENV :
+            uint32_t f = PAGES[i].fam, at = s == UI_SEC_SOUND ? (PAGES[i].graph == GR_BROWSE ? 0u : f == FAM_ENV ? 2u : 1u) :
                                             s == UI_SEC_SETUP ? (PAGES[i].graph == GR_SETTINGS ? 0u : f == FAM_GLO ? 2u : 1u) : 0u;
             if (cs_of(i) == s && at == pass && page_visible(i)) pg[n++] = (uint8_t)i;
         }

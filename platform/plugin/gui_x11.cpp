@@ -295,6 +295,7 @@ class GuiX11 : public Gui
                     char c = ctrl && !alt && ks == XK_r   ? (shift ? 'r' : 'R')   // (DICE, MUTATE)
                              : ctrl && !alt && ks == XK_c ? 'C'
                              : ctrl && !alt && ks == XK_m ? 'M'   // (the page map)
+                             : ctrl && !alt && ks == XK_b ? 'B'   // (the sound browser)
                              : ctrl && !alt && ks == XK_v ? (shift ? 'v' : 'V')
                              : alt && !ctrl && ks == XK_Up   ? '^'
                              : alt && !ctrl && ks == XK_Down ? '_'

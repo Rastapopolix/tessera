@@ -10,7 +10,7 @@ version is [docs/cheatsheet/cosmati-cheatsheet.pdf](docs/cheatsheet/cosmati-chea
 | Section | Pages |
 |---|---|
 | **GEN** (1) | generator, NOTES, ARP, PATTERN, MOTION |
-| **SOUND** (2) | the engine's pages, ENV |
+| **SOUND** (2) | PRESETS (the sound browser), the engine's pages, ENV |
 | **MOD** (3) | MODS, MATRIX, LFOs, ORGANIC |
 | **FX** (4) | the effects |
 | **SHAPE** (5) | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
@@ -29,6 +29,7 @@ version is [docs/cheatsheet/cosmati-cheatsheet.pdf](docs/cheatsheet/cosmati-chea
 | Footer tab, wheel over the tabs | That page; the wheel turns the pages |
 | Sideways scroll | Previous / next page, stopping at the ends |
 | **Ctrl+M** | The page map: click any page |
+| **Ctrl+B** | The sound browser (the selected track); a track's right-click: SOUNDS... |
 | **Shift+Left / Right** | Previous / next section |
 | **Up / Down** | Rows of a list (else SELECT) |
 | **Shift+Up / Down** | Previous / next track |
