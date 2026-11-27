@@ -12,15 +12,16 @@
  *   SCALE (0/1), CC number; the timed notes: a u16 count, then each one (its owner's track left out); the motion: a
  *   count, each event's place (its step), parameter, value (u16) and pattern, then MOTION on (0/1); its CHORD USER
  *   qualities (GEN_CH_USER_N bytes, gen.h uq), its cells of ENTRIES' grid (a byte: letter A's 2 bits low), its
- *   ATLAS BANK (a byte, 0 in a build without the banks) and its FLOURISH WHERE, WHAT, HEAT (a byte each, 0 without).
+ *   ATLAS BANK (a byte, 0 in a build without the banks) its FLOURISH WHERE, WHAT, HEAT (a byte each, 0 without) and its CHORD HIT when a chop (DOUBLE 4, BUBBLE 5;
+ *   else 0: the record has the rest).
  * A paste of the TRACK keeps the target's MIDI OUT channel and the mods' and references' track numbers (Theo
  * 2026-11-26: a pasted track's mods that point at other tracks keep their numbers); one of the SOUND alone changes
  * what a user preset load does (the engine and the parameters param_kept leaves, the FM6, ORACLE and DRUM patches).
  * A swap moves two tracks whole and renumbers every reference to them, so the piece plays on as before. */
 
 #if CORE_TRACKS > 4
-#define TT_VER 4u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK;
-                                                         * 4: FLOURISH's WHERE, WHAT, HEAT) */
+#define TT_VER 5u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK;
+                                                         * 4: FLOURISH's WHERE, WHAT, HEAT; 5: CHORD HIT's chop) */
 #define TT_HEAD 9u                                       /* "TTK1", version, NTRK, the track, u16 body length */
 #define TT_CORD 9u                                       /* a mod's bytes */
 #define TT_MOT 5u                                        /* a motion event's bytes */
@@ -134,7 +135,7 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
         }
     out[pos++] = (uint8_t)(track < 4u && ((motion.on >> track) & 1u));
     motion_unguard(f);
-    TT_ROOM(GEN_CH_USER_N + 5u);
+    TT_ROOM(GEN_CH_USER_N + 6u);
     memcpy(out + pos, tessera.chord[track].uq, GEN_CH_USER_N);
     pos += GEN_CH_USER_N;
     out[pos++] = (uint8_t)tt_cells(track);
@@ -142,6 +143,8 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
     out[pos++] = TT_FL(fl_where, track);
     out[pos++] = TT_FL(fl_what, track);
     out[pos++] = TT_FL(fl_heat, track);
+    out[pos++] = tessera.chord[track].hit >= GEN_CH_DOUBLE ? tessera.chord[track].hit : 0u;   /* (a chop: the record has
+                                                         * its stand-in) */
 #undef TT_ROOM
     return pos;
 }
@@ -190,13 +193,14 @@ static int tt_parse(const uint8_t *in, uint32_t len, tt_parts_t *q)
         if (p[0] >= NSTEP || p[1] >= P_COUNT || p[4] >= NPAT) return 0;
     if (p[0] > 1u) return 0;
     p++;
-    TT_NEED(GEN_CH_USER_N + 5u);
+    TT_NEED(GEN_CH_USER_N + 6u);
     q->more = p;
     for (i = 0; i < GEN_CH_USER_N; i++)
         if (p[i] >= CH_N) return 0;
     if (p[GEN_CH_USER_N] >> 6 || p[GEN_CH_USER_N + 1u] >= GEN_AB_N || p[GEN_CH_USER_N + 2u] > 3u ||
-        p[GEN_CH_USER_N + 3u] > 3u || p[GEN_CH_USER_N + 4u] > 2u) return 0;
-    p += GEN_CH_USER_N + 5u;
+        p[GEN_CH_USER_N + 3u] > 3u || p[GEN_CH_USER_N + 4u] > 2u ||
+        (p[GEN_CH_USER_N + 5u] && (p[GEN_CH_USER_N + 5u] < 4u || p[GEN_CH_USER_N + 5u] > 5u))) return 0;
+    p += GEN_CH_USER_N + 6u;
 #undef TT_NEED
     return p == e;
 }
@@ -232,6 +236,9 @@ static void tt_paste_track(const tt_parts_t *q, uint32_t t)
     tt_cells_set(t, q->more[GEN_CH_USER_N]);
 #if TESS_ATLAS_BANKS
     tessera.grids[t].bank = q->more[GEN_CH_USER_N + 1u];
+#endif
+#if TESS_CHOPS
+    if (q->more[GEN_CH_USER_N + 5u]) tessera.chord[t].hit = q->more[GEN_CH_USER_N + 5u];
 #endif
 #if TESS_FLOURISH
     tessera.fl_where[t] = q->more[GEN_CH_USER_N + 2u];
@@ -332,6 +339,9 @@ uint32_t tess_core_track_swap(uint32_t a, uint32_t b)
     uint32_t la, lb, i, t, f;
     if (a >= NTRK || b >= NTRK) return 1;
     if (a == b) return 0;
+#if TESS_CHOPS
+    uint8_t ha = tessera.chord[a].hit, hb = tessera.chord[b].hit;   /* (the bodies hold a chop's stand-in) */
+#endif
     la = tt_body(tt_tmp[0], sizeof tt_tmp[0], a);
     lb = tt_body(tt_tmp[1], sizeof tt_tmp[1], b);
     if (!la || !lb || !tt_body_load(tt_tmp[1], lb, a) || !tt_body_load(tt_tmp[0], la, b)) return 1;
@@ -357,6 +367,10 @@ uint32_t tess_core_track_swap(uint32_t a, uint32_t b)
             uint8_t k = tessera.grids[a].bank;
             tessera.grids[a].bank = tessera.grids[b].bank; tessera.grids[b].bank = k;
         }
+#endif
+#if TESS_CHOPS
+        if (ha >= GEN_CH_DOUBLE) tessera.chord[b].hit = ha;   /* (the chops: the bodies held their stand-ins) */
+        if (hb >= GEN_CH_DOUBLE) tessera.chord[a].hit = hb;
 #endif
 #if TESS_FLOURISH
         {

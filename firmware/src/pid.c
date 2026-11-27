@@ -34,7 +34,12 @@ static const char *const TX_N_QMOVE[] = {"STOP", "DOWN", "UP", "RAND"};
 static const char *const TX_N_CSFILL[] = {"OFF", "ARP"};
 static const char *const TX_N_CHPROG[] = {"POP", "50S", "2-5-1", "CIRCLE", "TWO", "DRONE", "WALK", "USER"};   /* (GEN_CH_*) */
 static const char *const TX_N_CHBARS[] = {"1/2", "1", "2", "4"};
-static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"};   /* (GEN_CH_*) */
+static const char *const TX_N_CHHIT[] = {"HOLD", "BEAT", "STEP", "OFFBEAT"
+#if TESS_CHOPS
+                                         , "DOUBLE", "BUBBLE"   /* (the chops: an 8-track build's) */
+#endif
+                                        };   /* (GEN_CH_*) */
+_Static_assert(sizeof TX_N_CHHIT / sizeof TX_N_CHHIT[0] == GEN_CH_HITS, "CHORD HIT: a name a value");
 static const char *const TX_N_GRP4[] = {"TOM", "CLAP", "HATOP", "RIM", "BELL"};
 #if TESS_ATLAS_BANKS
 static const char *const TX_N_GRBANK[] = {"ALL", "DUB", "REGGAE", "TECHNO", "HIP-HOP", "DNB", "HOUSE", "AMBIENT", "BREAKS",
