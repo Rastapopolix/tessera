@@ -765,8 +765,12 @@ if sound && [ $TABLES = 1 ]; then
     fi
 fi
 if sound; then
+    if [ "${TESSERA_MIDI_ONLY:-0}" = 1 ]; then          # (a Tessera MIDI device build: no render loops to cost)
+        note "== skip the target cost (TESSERA_MIDI_ONLY: no sound)"
+    else
     run "regression: target cost of the render loops (pi32v2 disassembly)" python3 tests/target_budget.py \
         build/melodee.dis tests/target_budget.txt
+    fi
 fi
 [ $TABLES = 1 ] || note "== skip hostsim (run ./build.sh once)"
 

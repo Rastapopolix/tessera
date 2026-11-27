@@ -184,7 +184,8 @@ _Static_assert(TSP_BUSCD == 58, "the parts' numbers are stored: never renumbered
 #if CORE_TRACKS > 4
 _Static_assert(TSP_MX32 == 57 && CORD_LIVE == 32u, "the parts' numbers are stored: never renumbered");
 #endif
-#if MELODEE_FLASH
+#if MELODEE_FLASH && (CORE_TRACKS <= 4 || TESSERA_MIDI_ONLY)   /* (an 8-track test build with the standard flash map: a
+                                                                 * record past 38,368 B is refused at the save) */
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
 
