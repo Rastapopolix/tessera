@@ -28,6 +28,9 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_ATLAS_BANKS
        TSP_ABANK = 52,
 #endif
+#if TESS_FLOURISH
+       TSP_FLOUR = 53,
+#endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
                                               * TSP_SEED: each track's SOURCE, then each one's KEEP; none: OFF, FREE;
@@ -96,7 +99,11 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * none: every cell AUTO;
                                               * TSP_ABANK (an 8-track build's only: the FM-1 skips it): each
                                               * track's ATLAS BANK, a byte (gen.h GEN_AB_*), written only when one
-                                              * is not ALL; none: ALL */
+                                              * is not ALL; none: ALL;
+                                              * TSP_FLOUR (an 8-track build's only: the FM-1 skips it): FLOURISH,
+                                              * every track's WHERE, then every track's WHAT, then every track's HEAT
+                                              * (a byte each: tessera.fl_*), written only when one WHERE is not OFF;
+                                              * none: OFF */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -115,6 +122,9 @@ _Static_assert(TSP_EGRID == 51 && sizeof tessera.et_grid == 6u, "the parts' numb
 #endif
 #if TESS_ATLAS_BANKS
 _Static_assert(TSP_ABANK == 52 && TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_FLOURISH
+_Static_assert(TSP_FLOUR == 53 && 3u * TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
 #endif
 #if MELODEE_FLASH
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
@@ -631,6 +641,17 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             tsp_end(&w);
         }
 #endif
+#if TESS_FLOURISH
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (FLOURISH: only when one track has one) */
+            if (tessera.fl_where[t]) {
+                tsp_begin(&w, TSP_FLOUR, 1);
+                tsp_bytes(&w, tessera.fl_where, TESSERA_TRACKS);
+                tsp_bytes(&w, tessera.fl_what, TESSERA_TRACKS);
+                tsp_bytes(&w, tessera.fl_heat, TESSERA_TRACKS);
+                tsp_end(&w);
+                break;
+            }
+#endif
 #if TESS_ATLAS_BANKS
         for (t = 0; t < TESSERA_TRACKS; t++)           /* (ATLAS's BANKs: only when one is not ALL) */
             if (tessera.grids[t].bank) {
@@ -747,6 +768,9 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
 #endif
 #if TESS_ATLAS_BANKS
     {TSP_ABANK, GEN_AB_N - 1u, 0, TESSERA_TRACKS, TESSERA_TRACKS},
+#endif
+#if TESS_FLOURISH
+    {TSP_FLOUR, 3u, 2u, 2u * TESSERA_TRACKS, 3u * TESSERA_TRACKS},   /* (WHERE, WHAT 0..3; HEAT 0..2) */
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1085,6 +1109,14 @@ static void tsp_restore(const uint8_t *raw)
 #if TESS_ATLAS_BANKS
     for (t = 0; t < TESSERA_TRACKS; t++)               /* (ATLAS's BANKs; none saved: ALL) */
         tessera.grids[t].bank = tsp_seen.at[TSP_ABANK] ? raw[tsp_seen.at[TSP_ABANK] + t] : 0u;
+#endif
+#if TESS_FLOURISH
+    for (t = 0; t < TESSERA_TRACKS; t++) {             /* (FLOURISH; none saved: OFF) */
+        const uint8_t *f = tsp_seen.at[TSP_FLOUR] ? raw + tsp_seen.at[TSP_FLOUR] : 0;
+        tessera.fl_where[t] = f ? f[t] : 0u;
+        tessera.fl_what[t] = f ? f[TESSERA_TRACKS + t] : 0u;
+        tessera.fl_heat[t] = f && f[2u * TESSERA_TRACKS + t] < 3u ? f[2u * TESSERA_TRACKS + t] : 0u;
+    }
 #endif
     {   /* tracks 5..8, and 1..4's references past 4 (the part found again: a tsp_valid since, of another record,
          * may have run between) */

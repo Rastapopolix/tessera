@@ -11,15 +11,16 @@
  *   SECTION PC (0/1); the mods onto it: a count, then each one's SRC, SRC TRACK, DST, AMOUNT, OFFSET, UNI, HOLD clock,
  *   SCALE (0/1), CC number; the timed notes: a u16 count, then each one (its owner's track left out); the motion: a
  *   count, each event's place (its step), parameter, value (u16) and pattern, then MOTION on (0/1); its CHORD USER
- *   qualities (GEN_CH_USER_N bytes, gen.h uq), its cells of ENTRIES' grid (a byte: letter A's 2 bits low) and its
- *   ATLAS BANK (a byte, 0 in a build without the banks).
+ *   qualities (GEN_CH_USER_N bytes, gen.h uq), its cells of ENTRIES' grid (a byte: letter A's 2 bits low), its
+ *   ATLAS BANK (a byte, 0 in a build without the banks) and its FLOURISH WHERE, WHAT, HEAT (a byte each, 0 without).
  * A paste of the TRACK keeps the target's MIDI OUT channel and the mods' and references' track numbers (Theo
  * 2026-11-26: a pasted track's mods that point at other tracks keep their numbers); one of the SOUND alone changes
  * what a user preset load does (the engine and the parameters param_kept leaves, the FM6, ORACLE and DRUM patches).
  * A swap moves two tracks whole and renumbers every reference to them, so the piece plays on as before. */
 
 #if CORE_TRACKS > 4
-#define TT_VER 3u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK) */
+#define TT_VER 4u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK;
+                                                         * 4: FLOURISH's WHERE, WHAT, HEAT) */
 #define TT_HEAD 9u                                       /* "TTK1", version, NTRK, the track, u16 body length */
 #define TT_CORD 9u                                       /* a mod's bytes */
 #define TT_MOT 5u                                        /* a motion event's bytes */
@@ -29,6 +30,11 @@ static uint8_t tt_tmp[2][TSP_MAX] CORE_BIG;
 #define TT_BANK(t) tessera.grids[t].bank
 #else
 #define TT_BANK(t) 0u
+#endif
+#if TESS_FLOURISH
+#define TT_FL(f, t) tessera.f[t]
+#else
+#define TT_FL(f, t) 0u
 #endif              /* (two tracks' bodies: a swap, a SOUND paste's own) */
 
 /* track t's body into b (cap bytes): its length, 0 too big */
@@ -128,11 +134,14 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
         }
     out[pos++] = (uint8_t)(track < 4u && ((motion.on >> track) & 1u));
     motion_unguard(f);
-    TT_ROOM(GEN_CH_USER_N + 2u);
+    TT_ROOM(GEN_CH_USER_N + 5u);
     memcpy(out + pos, tessera.chord[track].uq, GEN_CH_USER_N);
     pos += GEN_CH_USER_N;
     out[pos++] = (uint8_t)tt_cells(track);
     out[pos++] = TT_BANK(track);
+    out[pos++] = TT_FL(fl_where, track);
+    out[pos++] = TT_FL(fl_what, track);
+    out[pos++] = TT_FL(fl_heat, track);
 #undef TT_ROOM
     return pos;
 }
@@ -181,12 +190,13 @@ static int tt_parse(const uint8_t *in, uint32_t len, tt_parts_t *q)
         if (p[0] >= NSTEP || p[1] >= P_COUNT || p[4] >= NPAT) return 0;
     if (p[0] > 1u) return 0;
     p++;
-    TT_NEED(GEN_CH_USER_N + 2u);
+    TT_NEED(GEN_CH_USER_N + 5u);
     q->more = p;
     for (i = 0; i < GEN_CH_USER_N; i++)
         if (p[i] >= CH_N) return 0;
-    if (p[GEN_CH_USER_N] >> 6 || p[GEN_CH_USER_N + 1u] >= GEN_AB_N) return 0;
-    p += GEN_CH_USER_N + 2u;
+    if (p[GEN_CH_USER_N] >> 6 || p[GEN_CH_USER_N + 1u] >= GEN_AB_N || p[GEN_CH_USER_N + 2u] > 3u ||
+        p[GEN_CH_USER_N + 3u] > 3u || p[GEN_CH_USER_N + 4u] > 2u) return 0;
+    p += GEN_CH_USER_N + 5u;
 #undef TT_NEED
     return p == e;
 }
@@ -222,6 +232,11 @@ static void tt_paste_track(const tt_parts_t *q, uint32_t t)
     tt_cells_set(t, q->more[GEN_CH_USER_N]);
 #if TESS_ATLAS_BANKS
     tessera.grids[t].bank = q->more[GEN_CH_USER_N + 1u];
+#endif
+#if TESS_FLOURISH
+    tessera.fl_where[t] = q->more[GEN_CH_USER_N + 2u];
+    tessera.fl_what[t] = q->more[GEN_CH_USER_N + 3u];
+    tessera.fl_heat[t] = q->more[GEN_CH_USER_N + 4u];
 #endif
     tt_cords_off(t);
     for (i = at = 0; i < q->ncord; i++) {                /* (no free cord left: the rest left out) */
@@ -341,6 +356,14 @@ uint32_t tess_core_track_swap(uint32_t a, uint32_t b)
         {
             uint8_t k = tessera.grids[a].bank;
             tessera.grids[a].bank = tessera.grids[b].bank; tessera.grids[b].bank = k;
+        }
+#endif
+#if TESS_FLOURISH
+        {
+            uint8_t k;
+            k = tessera.fl_where[a], tessera.fl_where[a] = tessera.fl_where[b], tessera.fl_where[b] = k;
+            k = tessera.fl_what[a], tessera.fl_what[a] = tessera.fl_what[b], tessera.fl_what[b] = k;
+            k = tessera.fl_heat[a], tessera.fl_heat[a] = tessera.fl_heat[b], tessera.fl_heat[b] = k;
         }
 #endif
         TESS_IRQ_ON();

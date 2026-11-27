@@ -514,6 +514,10 @@ static uint32_t page_sheet(void)
         return 9;                                       /* (the project's MOD DEPTH) */
     if (cur_page()->graph == GR_TRK)
         return 10;                                      /* (MIXER: MUTES, the device's) */
+#if TESS_FLOURISH
+    if (cur_page()->graph == GR_TIMING && song.sel < TESSERA_TRACKS)
+        return 11;                                      /* (TIMING: the track's FLOURISH, an 8-track build's) */
+#endif
     if (cur_page()->graph == GR_PATGRID)
         return 4;
     if (cur_page()->graph == GR_ROLL || (cur_page()->graph == GR_STEPS && (cur_page()->fam != FAM_GEN || gen_pattern_page(cur_page()))))
@@ -583,6 +587,17 @@ static void page_sheet_open(void)
     case 10:
         sheet_open("Mixer", "mutes", SHEET_MIXER, NELEM(SHEET_MIXER));
         break;
+#if TESS_FLOURISH
+    case 11:                                            /* (WHERE, WHAT, HEAT: seq_sub.c fl_step) */
+        sr.n = 0;
+        sr_add("Where", PID_TESS(TX_FL_WHERE), song.sel);
+        sr_add("What", PID_TESS(TX_FL_WHAT), song.sel);
+        sr_add("Heat", PID_TESS(TX_FL_HEAT), song.sel);
+        str_cpy(nm, "T1", sizeof nm);
+        nm[1] = (char)('1' + song.sel % NTRK);
+        sheet_open("Flourish", nm, SHEET_SR, sr.n);
+        break;
+#endif
     default:
         break;
     }

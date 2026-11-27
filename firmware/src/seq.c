@@ -1338,6 +1338,7 @@ static void seq_grid_tick(track_t *t, uint32_t n)
         cap_step[trk_index(t)]++;
         seq_run_step[trk_index(t)]++;
         if (!(seq_run_step[trk_index(t)] % tess_steps_per_bar(t))) cord_hold_bar(trk_index(t));   /* (HOLD mods) */
+        fl_step(t, trk_index(t));                      /* (FLOURISH: this step's move, if it has one; seq_sub.c) */
         if (!SEQ_D(t).slot && t == &trk[0] && !chain.running)
             jam_loop();
         motion_step(t, t->seq_idx, &motion);
@@ -1371,6 +1372,9 @@ static void seq_grid_tick(track_t *t, uint32_t n)
                     s = step_acc(t, s, &sv, t->seq_pass);   /* (Accumulate: its notes this pass) */
                 }
                 int32_t key = tessera_key_now(tr_idx);    /* (the CHAIN's KEY B / C, form_chain.c: 0 mostly) */
+#if TESS_FLOURISH
+                if (tr_idx < NTRK) key += fl_semi[tr_idx];   /* (FLOURISH's OCTAVE: seq_sub.c fl_step) */
+#endif
                 if (key && s->n) {
                     if (s != &sv) sv = *s, s = &sv;
                     for (uint32_t q = 0; q < sv.n && q < 4u; q++) sv.note[q] = (uint8_t)clamp((int32_t)sv.note[q] + key, 0, 127);

@@ -41,6 +41,12 @@ static const char *const TX_N_GRBANK[] = {"ALL", "DUB", "REGGAE", "TECHNO", "HIP
                                           "ELECTRO", "GARAGE", "HALFTIME", "DOWNTEMPO", "AFRO"};   /* (GEN_AB_*) */
 _Static_assert(sizeof TX_N_GRBANK / sizeof TX_N_GRBANK[0] == GEN_AB_N, "ATLAS BANK: a name a bank");
 #endif
+#if TESS_FLOURISH
+static const char *const TX_N_FLWHERE[] = {"OFF", "BAR 2", "BAR 4", "BAR 8"};
+static const char *const TX_N_FLWHAT[] = {"DOUBLE", "DROP", "ECHO", "OCTAVE"};   /* (FL_*) */
+static const char *const TX_N_FLHEAT[] = {"1", "2", "3"};
+_Static_assert(sizeof TX_N_FLWHAT / sizeof TX_N_FLWHAT[0] == FL_WHATS, "FLOURISH WHAT: a name a move");
+#endif
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
 static const char *const TX_N_FHOW[] = {"SAME", "CHORD", "CONTRA", "BASS", "CANON1", "CANON2", "CANON3", "CANON4",
                                         "CANON5", "CANON6", "CANON7", "CANON8", "HARM"};   /* (TESS_FH_*) */
@@ -258,6 +264,11 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_CH_BY] = PE("BY", TX_N_CBY, TESS_CB_UP2),
 #if TESS_ATLAS_BANKS
     [TX_GRD_BANK] = PE("BANK", TX_N_GRBANK, 0),
+#endif
+#if TESS_FLOURISH
+    [TX_FL_WHERE] = PE("WHERE", TX_N_FLWHERE, 0),
+    [TX_FL_WHAT] = PE("WHAT", TX_N_FLWHAT, 0),
+    [TX_FL_HEAT] = PE("HEAT", TX_N_FLHEAT, 0),
 #endif
 };
 
@@ -899,6 +910,15 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                   "each, Y picks one of five feels of the genre and X goes from its bare skeleton to "
                                   "its fullest, so the grid never leaves the genre. DUB, REGGAE and AFRO play the "
                                   "snare part on the rim, TECHNO, HOUSE and ELECTRO on the clap. GEN sheet."),
+#endif
+#if TESS_FLOURISH                                   /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    X_(TX_FL_WHERE, "FLOURISH WHERE", "When the track plays its FLOURISH: on the last bar of every 2, 4 or 8 bars since "
+                                      "PLAY, every time, so the piece stays a composition. OFF: never. TIMING sheet."),
+    X_(TX_FL_WHAT, "FLOURISH WHAT", "The move, after whatever the generator or the steps play: DOUBLE each note twice "
+                                    "(drums a roll), DROP silent, ECHO the track thrown to the echo, OCTAVE an octave "
+                                    "away (bass down, the rest up; drums a roll). Always in key. TIMING sheet."),
+    X_(TX_FL_HEAT, "FLOURISH HEAT", "How much: 1 the bar's last step, 2 its last two, 3 the last two harder (a faster "
+                                    "roll, ECHO with REPEAT lifted). TIMING sheet."),
 #endif
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT

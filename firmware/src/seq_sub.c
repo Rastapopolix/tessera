@@ -53,10 +53,68 @@ static uint32_t seq_split_n[NTRK];                      /* SPLIT's draws since P
 static uint32_t seq_split_step(const track_t *t, const step_t *s, uint32_t tr);
 static void seq_split_done(track_t *t, uint32_t tr);
 
+#if TESS_FLOURISH
+/* FLOURISH (Tessadub in Cosmati, step 5; an 8-track build's): a track's move on the last bar of every 2, 4 or 8 bars
+ * since PLAY (WHERE), on its last step (HEAT 1) or last two (HEAT 2, 3), every time: a composition, not dice. Applied
+ * to what the step plays anyway, generator or STEP, through the hooks core.h lists: DOUBLE each note twice (drums a
+ * roll, x2..x4), DROP silent, ECHO thrown to the echo (HEAT 3: its REPEAT lifted), OCTAVE an octave away (BASS down, the
+ * rest up; drums a roll as DOUBLE). Octaves only, so nothing leaves the key. The kind by the track's ENTRIES ROLE
+ * (AUTO's guess counted) and DRUM / ATLAS */
+uint32_t tessera_role(uint32_t tr);                    /* (entries.c) */
+static uint32_t tess_steps_per_bar(const track_t *t);   /* (tessera.c) */
+enum { FL_ROLE_BASS = 1, FL_ROLE_RHYTHM = 2 };          /* (entries.c ET_BASS, ET_RHYTHM: checked there) */
+static void fl_step(const track_t *t, uint32_t tr)
+{
+    uint32_t b = 1u << tr, spb, cur, w, n, heat, last, drums, role;
+    fl_shut &= (uint8_t)~b;
+    fl_throw &= (uint8_t)~b;
+    fl_throw_fb &= (uint8_t)~b;
+    fl_hits[tr] = 0;
+    fl_semi[tr] = 0;
+    if (tr >= TESSERA_TRACKS || !tessera.fl_where[tr] || !(spb = tess_steps_per_bar(t))) return;
+    cur = seq_run_step[tr];                            /* (this step, from 0 at PLAY) */
+    w = 1u << tessera.fl_where[tr];                    /* (2, 4, 8 bars) */
+    heat = tessera.fl_heat[tr];
+    n = heat ? 2u : 1u;
+    if (n > spb) n = spb;
+    if ((cur / spb) % w != w - 1u || cur % spb < spb - n) return;
+    last = cur % spb == spb - 1u;
+    role = tessera_role(tr);
+    drums = drum_track(t) || tessera.mode[tr] == TESS_ENG_GRIDS || role == FL_ROLE_RHYTHM;
+    switch (tessera.fl_what[tr]) {
+    case FL_DROP:
+        fl_shut |= (uint8_t)b;
+        break;
+    case FL_ECHO:
+        fl_throw |= (uint8_t)b;
+        if (heat == 2u) fl_throw_fb |= (uint8_t)b;
+        break;
+    case FL_OCTAVE:
+        if (!drums) {
+            fl_semi[tr] = (int8_t)(role == FL_ROLE_BASS ? -12 : 12);
+            break;
+        }                                              /* (drums: a roll, as DOUBLE) */
+        /* fall through */
+    default:                                           /* (DOUBLE) */
+        fl_hits[tr] = (uint8_t)(!drums ? 2u : heat == 2u ? (last ? 4u : 3u) : last && heat ? 3u : 2u);
+        break;
+    }
+}
+/* the hits a step plays: FLOURISH's roll in place of its own, when there is one */
+static uint32_t fl_hits_or(uint32_t tr, uint32_t hits) { return tr < NTRK && fl_hits[tr] ? fl_hits[tr] : hits; }
+#else
+#define fl_step(t, tr) ((void)0)
+#define fl_hits_or(tr, hits) (hits)
+#endif
+
 /* PLAY, STOP: nothing recorded, armed or held on any track (STRUM: nothing queued, ALT from UP) */
 static void seq_sub_clear(void)
 {
     seq_sub_rec = seq_sub_armed = seq_nudge_due = seq_nudge_early = seq_hum_due = seq_st_alt = 0;
+#if TESS_FLOURISH
+    fl_shut = fl_throw = fl_throw_fb = 0;
+    for (uint32_t k = 0; k < NTRK; k++) fl_hits[k] = 0, fl_semi[k] = 0;
+#endif
     for (uint32_t k = 0; k < NTRK; k++)
         seq_hum_n[k] = seq_humv_n[k] = seq_split_n[k] = seq_split[k] = arp_draws[k] = seq_st[k].n = 0;
 }
@@ -163,7 +221,8 @@ static void seq_step(track_t *t, const step_t *s, uint32_t period, uint32_t skip
 /* a STEP track's step s plays now, at samples into its span (0: on its line), its RATCH armed */
 static void seq_sub_play(track_t *t, const step_t *s, uint32_t period, uint32_t span, uint32_t skip, uint32_t at)
 {
-    uint32_t tr = trk_index(t), hits = seq_split[tr] == SPLIT_DOUBLE ? 2u : step_ratch(s);
+    uint32_t tr = trk_index(t), hits = fl_hits_or(tr, seq_split[tr] == SPLIT_DOUBLE ? 2u : step_ratch(s));   /* (FLOURISH's
+                                                         * roll first) */
     if (hits > 1u) seq_sub_begin(t);
     seq_step(t, s, period, skip);
     if (hits > 1u) seq_sub_arm(t, seq_sub_can(t) ? hits : 1u, span - at, (int32_t)at);
@@ -331,7 +390,7 @@ static void seq_gen_play(track_t *t, uint32_t tr, uint32_t span, uint32_t at)   
 {
     seq_sub_begin(t);                                   /* (SUB: the notes it plays recorded, its RATCH armed) */
     tessera_clock_step(t);
-    seq_sub_arm(t, !seq_sub_can(t) ? 1u : seq_split[tr] == SPLIT_DOUBLE ? 2u : tessera_ratchet(tr),
+    seq_sub_arm(t, !seq_sub_can(t) ? 1u : fl_hits_or(tr, seq_split[tr] == SPLIT_DOUBLE ? 2u : tessera_ratchet(tr)),
                 span > at ? span - at : 1u, (int32_t)at);
     seq_split_done(t, tr);
 }

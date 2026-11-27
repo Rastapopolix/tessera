@@ -272,6 +272,13 @@ typedef struct {
     uint16_t         et_grid[3];                 /* the arrangement grid (an 8-track build's): FORM letter A, B, C's
                                                   * cells, 2 bits a track (ET_G_*, entries.c); 0 every one AUTO */
 #endif
+#if TESS_FLOURISH
+    /* FLOURISH (an 8-track build's; seq_sub.c fl_step; the record's TSP_FLOUR): each track's move at the end of a run of
+     * bars. 0 WHERE: none */
+    uint8_t          fl_where[TESSERA_TRACKS];   /* 0 OFF, 1 BAR 2, 2 BAR 4, 3 BAR 8: the last bar of every 2, 4, 8 */
+    uint8_t          fl_what[TESSERA_TRACKS];    /* FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE */
+    uint8_t          fl_heat[TESSERA_TRACKS];    /* 0..2 (HEAT 1..3): the last step, the last two, the last two harder */
+#endif
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
     uint8_t          pl_length;                  /* 0 FREE, 1..21 minutes (planner.c PL_MIN: 1 .. 240) */
@@ -543,6 +550,10 @@ enum {
                                                      * parameter yet) */
     TX_GRD_BANK,                                    /* (0x2AF: ATLAS's BANK, an 8-track build's: gen.h GEN_AB_*) */
 #endif
+#if TESS_FLOURISH
+    TX_RSV_2B0, TX_RSV_2B1,                         /* (0x2B0, 0x2B1: claimed in ROADMAP for user samples; no parameter yet) */
+    TX_FL_WHERE, TX_FL_WHAT, TX_FL_HEAT,            /* (0x2B2..0x2B4: FLOURISH, an 8-track build's: seq_sub.c fl_step) */
+#endif
     TX_COUNT
 };
 _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0x95 && TX_TW_FRHY == 0x97 &&
@@ -552,6 +563,10 @@ _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0
                "parameter ids are stored: never renumbered");
 #if TESS_ATLAS_BANKS
 _Static_assert(TX_GRD_BANK == 0xAF, "parameter ids are stored: never renumbered");
+#endif
+#if TESS_FLOURISH
+_Static_assert(TESS_ATLAS_BANKS && TX_FL_WHERE == 0xB2 && TX_FL_HEAT == 0xB4, "parameter ids are stored: never renumbered");
+enum { FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE, FL_WHATS };   /* TX_FL_WHAT (saved: append only) */
 #endif
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };

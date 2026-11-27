@@ -57,6 +57,24 @@ _Static_assert(CORE_TRACKS == 4 || CORE_TRACKS == 8, "CORE_TRACKS: 4 or 8");
 #define TESS_DUB 0
 #endif
 #endif
+/* FLOURISH (Tessadub in Cosmati, step 5; an 8-track build's, as the dub moves): each track's phrase-end move, its settings
+ * the record's TSP_FLOUR (tessera.fl_*), played by seq_sub.c fl_step on a flourish bar's last steps. What the step now
+ * does, set there and read where the notes go: fl_shut (voice.c trk_note_on: no sound, the generator moves on),
+ * fl_hits (seq_sub.c: its hits, a roll), fl_semi (an octave: tessera.c tess_trn, seq.c's KEY), fl_throw / fl_throw_fb
+ * (fx.c: as THROW) */
+#ifndef TESS_FLOURISH
+#define TESS_FLOURISH TESS_DUB
+#endif
+#if TESS_FLOURISH
+static uint8_t fl_shut, fl_throw, fl_throw_fb;  /* (bit per track) */
+static uint8_t fl_hits[NTRK];                   /* 0: as the step would */
+static int8_t fl_semi[NTRK];
+#define DUB_FL_THROW fl_throw
+#define DUB_FL_FB fl_throw_fb
+#else
+#define DUB_FL_THROW 0u
+#define DUB_FL_FB 0u
+#endif
 #if TESS_DUB
 static uint8_t dub_throw;                /* the tracks thrown now (bit per track) */
 static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with them */

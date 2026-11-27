@@ -797,7 +797,8 @@ static uint8_t dub_slots=1u;    /* the sends a THROW opens (fx_bus_settings): SP
 static inline __attribute__((always_inline)) uint32_t fx_send_gain(const track_t *t)
 {
 #if TESS_DUB
-    if((dub_throw>>(uint32_t)(t-trk)&1u) && (dub_slots&1u))return 65536u;   /* (THROW: in full, 127) */
+    if(((dub_throw|DUB_FL_THROW)>>(uint32_t)(t-trk)&1u) && (dub_slots&1u))return 65536u;   /* (THROW, FLOURISH's ECHO: in
+                                                                                 * full, 127) */
 #endif
 #if defined(MELODEE_FX_PROFILE) && MELODEE_FX_PROFILE && defined(FM1_IRQ_TARGET)
     if(fx_profile_control>>30u && fx_profile_track((uint32_t)(t-trk)))return 65536u;
@@ -824,7 +825,8 @@ static void fx_bus_settings(void)
         int16_t *g=fx_bus_g+slot*FX_PARAMS;
         if(!FX_IS_ECHO(g[0]))continue;
         m|=1u<<slot;
-        if(dub_throw && dub_throw_fb && g[3]<DUB_THROW_FB)g[3]=DUB_THROW_FB;   /* (THROW + REPEAT: the echo's REPEAT up) */
+        if(((dub_throw && dub_throw_fb) || DUB_FL_FB) && g[3]<DUB_THROW_FB)g[3]=DUB_THROW_FB;   /* (THROW + REPEAT, ECHO
+                                                                     * at HEAT 3: the echo's REPEAT up) */
     }
     dub_slots=(uint8_t)(song.g[G_FXMODE] && m?m:1u);
 #endif

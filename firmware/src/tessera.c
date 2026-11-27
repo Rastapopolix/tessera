@@ -523,7 +523,13 @@ static int tess_has_form(uint32_t tr) { return tessera.evolve[tr].form || fc_fol
 #include "planner.c"                                 /* the piece planner: LENGTH, SHAPE, END */
 #include "entries.c"                                 /* Entries: tracks out and back in on the phrase lines */
 /* a generator's note's move after its snap: TRN, and the CHAIN section's KEY (form_chain.c fc_key) */
-static int32_t tess_trn(const track_t *t, uint32_t tr) { return (int32_t)t->p[P_TRANS] + fc_key(tr); }
+static int32_t tess_trn(const track_t *t, uint32_t tr)   /* (P_TRANS, the CHAIN's KEY, FLOURISH's OCTAVE: seq_sub.c) */
+{
+#if TESS_FLOURISH
+    if (tr < NTRK && fl_semi[tr]) return (int32_t)t->p[P_TRANS] + fc_key(tr) + fl_semi[tr];
+#endif
+    return (int32_t)t->p[P_TRANS] + fc_key(tr);
+}
 #include "land_feed.c"                               /* LANDSCAPE's notes (ui_land.c) */
 
 uint32_t tessera_form_get(uint32_t tr, uint8_t seq[4], uint32_t *pos)
@@ -3423,6 +3429,11 @@ int32_t tessera_param_get(uint32_t tr, uint32_t x)
 #if TESS_ATLAS_BANKS
     case TX_GRD_BANK: return tessera.grids[tr].bank;
 #endif
+#if TESS_FLOURISH
+    case TX_FL_WHERE: return tessera.fl_where[tr];
+    case TX_FL_WHAT: return tessera.fl_what[tr];
+    case TX_FL_HEAT: return tessera.fl_heat[tr];
+#endif
     case TX_ACC_LIMIT: return tessera.acc_limit[tr] ? tessera.acc_limit[tr] : (int32_t)TESS_ACC_LIMIT_DEF;
     case TX_FC_FORM: return tessera.fc_form;            /* (form chaining's: the project's, whichever track) */
     case TX_FC_PHRASE: return tessera.fc_phrase;
@@ -3624,6 +3635,11 @@ static void tess_param_set_body(uint32_t tr, uint32_t x, int32_t v)
     case TX_GRD_PART4: tessera.grids[tr].part4 = (uint8_t)tess_clampi(v, 0, GEN_GRIDS_P4_N - 1); return;
 #if TESS_ATLAS_BANKS
     case TX_GRD_BANK: tessera.grids[tr].bank = (uint8_t)tess_clampi(v, 0, GEN_AB_N - 1); return;
+#endif
+#if TESS_FLOURISH
+    case TX_FL_WHERE: tessera.fl_where[tr] = (uint8_t)tess_clampi(v, 0, 3); return;
+    case TX_FL_WHAT: tessera.fl_what[tr] = (uint8_t)tess_clampi(v, 0, FL_WHATS - 1); return;
+    case TX_FL_HEAT: tessera.fl_heat[tr] = (uint8_t)tess_clampi(v, 0, 2); return;
 #endif
     case TX_SUB_HUMAN: tessera.sub_human[tr] = (uint8_t)tess_clampi(v, 0, (int32_t)TESS_HUMAN_MS); return;
     case TX_ACC_LIMIT: tessera.acc_limit[tr] = (uint8_t)tess_clampi(v, 1, (int32_t)TESS_ACC_LIMIT); return;
