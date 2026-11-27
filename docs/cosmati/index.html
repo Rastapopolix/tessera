@@ -1,0 +1,1150 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Made by web/make_manual.py from COSMATI.md: edit that file, not this one. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Cosmati manual</title>
+<link rel="icon" href="../media/brand/logo.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem("tessera-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<style>
+@font-face { font-family: "Tessera Mono"; font-display: block; src: url("data:font/woff;base64,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") format("woff"); }
+:root {
+  /* the Mono look: one ink on near-black (Settings COLOR, YELLOW the default; tools/gen_ui_palettes.py) for headings,
+     labels and buttons, the body text a soft off-white (easier on the eyes in long text), the rest the ink at lower strengths; the four tracks as the device's fills: solid, hatched, dotted, striped */
+  --bg: #111; --ink: #ffd020; --surf: #19170f; --raise: #252113; --line: #3b3007; --text: #e6e0d0; --mid: #b9b2a0;
+  --dim: #8e877a;
+  --p1: var(--ink);
+  --p2: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px);
+  --p3: radial-gradient(circle, var(--ink) 1.2px, transparent 1.6px) 0 0 / 5px 5px;
+  --p4: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+  --pixel: "Tessera Mono", ui-monospace, monospace;
+  --gap: 6px; --max: 1120px;
+}
+:root[data-theme="light"] { --bg: #f6f2e7; --ink: #1c1a14; --surf: #eee8d6; --raise: #e2d9bf; --line: #c8bd9b; --text: #1c1a14; --mid: #4b4535; --dim: #786e57; color-scheme: light; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 64px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { background: var(--ink); color: var(--bg); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.skip { position: absolute; left: 8px; top: -60px; z-index: 5; padding: 6px 10px; background: var(--ink); color: var(--bg); font: 16px/1 var(--pixel); }
+.skip:focus { top: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+header { position: sticky; top: 0; z-index: 3; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); font: 16px/1 var(--pixel); }
+header .home { color: var(--ink); text-decoration: none; margin-right: auto; font-size: 20px; display: inline-flex;
+  align-items: center; gap: 10px; }
+header .home svg { width: 22px; height: 22px; flex: none; }
+header a { color: var(--mid); text-decoration: none; padding: 3px 4px 2px; }
+header a[aria-current] { color: var(--bg); background: var(--ink); }
+.theme, .contents { font: 16px/1 var(--pixel); color: var(--mid); background: none; border: 0; padding: 3px 4px 2px; cursor: pointer; }
+.theme:hover, .contents:hover { color: var(--bg); background: var(--ink); }
+.theme { display: inline-flex; align-items: center; gap: 6px; }
+.theme svg { width: 15px; height: 15px; flex: none; }
+@media (max-width: 600px) { .theme-word { display: none; } }
+.contents { display: none; }
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+nav.side { position: sticky; top: 49px; align-self: start; max-height: calc(100vh - 49px); overflow: auto; padding: 16px 12px 40px 16px;
+  border-right: 1px solid var(--line); font-size: 14px; line-height: 1.4; }
+nav.side input { width: 100%; font: inherit; color: var(--text); background: var(--surf); border: 1px solid var(--line); padding: 6px 8px; margin-bottom: 12px; }
+.toc, .toc ol { list-style: none; margin: 0; padding: 0; }
+.toc > li { margin: 0 0 4px; }
+.toc ol { display: none; margin: 2px 0 6px 12px; }
+.toc li.open > ol { display: block; }
+.toc a { display: block; color: var(--mid); text-decoration: none; padding: 2px 4px; }
+.toc a:hover { color: var(--bg); }
+.toc li.open > a, .toc a.here { color: var(--ink); }
+.toc li.group { margin: 16px 0 4px; padding: 0 4px; color: var(--dim); font: 14px/1.2 var(--pixel); }
+.toc li.group:first-child { margin-top: 0; }
+.results { list-style: none; margin: 0; padding: 0; }
+.results li { margin: 0 0 10px; }
+.results small { display: block; color: var(--dim); }
+.results mark { background: var(--ink); color: var(--bg); }
+main { padding: 8px 32px 80px; min-width: 0; max-width: 900px; }
+main li { margin: 0 0 10px; }
+main li > p { margin: 6px 0; }
+main li > strong:first-child { color: var(--ink); }
+main h1, main h2, main h3, main h4 { color: var(--ink); font-family: var(--pixel); font-weight: 400; line-height: 1.2; }
+main h1 { font-size: clamp(28px, 4vw, 44px); margin: 24px 0 12px; }
+main h2 { font-size: clamp(22px, 3vw, 32px); margin: 56px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+main h3 { font-size: 20px; margin: 36px 0 8px; }
+main h4 { font-size: 16px; margin: 24px 0 6px; }
+main img { max-width: 100%; height: auto; image-rendering: pixelated; }
+main p[align="center"] { text-align: center; }
+main p[align="center"] img { display: inline-block; margin: 4px; }
+main sub { color: var(--dim); font-size: 13px; }
+main .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 12px 0 20px; }
+main .videos figure { margin: 0; }
+main .videos figure.on { grid-column: 1 / -1; }
+main .videos figcaption { color: var(--dim); font-size: 13px; margin-top: 4px; }
+main .videos .play { position: relative; display: block; line-height: 0; border: 1px solid var(--line); }
+main .videos .play:hover, main .videos .play:focus-visible { border-color: var(--ink); }
+main .videos .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+main .videos .play img { width: 100%; image-rendering: auto; }
+main .videos .play::before { content: ""; position: absolute; right: 4px; bottom: 4px; width: 36px; height: 24px; background: var(--bg); border: 1px solid var(--ink); }
+main .videos .play::after { content: ""; position: absolute; right: 16px; bottom: 10px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--ink); }
+main .videos iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--ink); }
+main table { border-collapse: collapse; display: block; overflow-x: auto; margin: 12px 0; font-size: 14px; }
+main th, main td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+main th { background: var(--surf); color: var(--ink); font-weight: 400; }
+main code { background: var(--surf); padding: 1px 4px; }
+main pre { background: var(--surf); padding: 12px; overflow-x: auto; }
+main pre code { padding: 0; }
+main blockquote { margin: 12px 0; padding: 8px 14px; border-left: 4px solid var(--ink); background: var(--surf); }
+main blockquote p { margin: 0; }
+main details { margin: 12px 0; padding: 6px 14px; border: 1px solid var(--line); }
+main details[open] { background: var(--surf); }
+main summary { cursor: pointer; color: var(--ink); }
+main hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+main .downloads ul { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 10px; }
+main .downloads li { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 6px 16px; align-items: center;
+  margin: 0; padding: 12px 16px; border: 2px solid var(--line); }
+main .downloads li b { color: var(--ink); font: 18px/1.2 var(--pixel); font-weight: 400; }
+main .downloads li > span { color: var(--mid); font-size: 14px; }
+main .downloads .get { font: 16px/1 var(--pixel); padding: 8px 12px 6px; border: 2px solid var(--ink); text-decoration: none; white-space: nowrap; }
+main .downloads a.get { background: var(--ink); color: var(--bg); }
+main .downloads a.get:hover { background: var(--bg); color: var(--ink); }
+main .downloads .soon { color: var(--dim); border-color: var(--line); }
+main .downloads p { color: var(--mid); }
+.next { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .layout { display: block; }
+  .contents { display: inline-block; }
+  nav.side { display: none; position: fixed; top: 49px; left: 0; right: 0; bottom: 0; max-height: none; z-index: 2; background: var(--bg); border: 0; }
+  body.toc-open nav.side { display: block; }
+  main { padding: 8px 16px 60px; }
+}
+@media (max-width: 560px) {
+  main .downloads li { grid-template-columns: minmax(0, 1fr) auto; }
+  main .downloads li > span:not(.get) { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 600px) {
+  header { gap: 6px; }
+  header .home { font-size: 18px; }
+  header .wide { display: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the text</a>
+<header>
+  <a class="home" href="../" aria-label="Tessera"><svg viewBox="0 0 78 78" aria-hidden="true"><rect x="4" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="53" y="2" width="22" height="22" fill="currentColor"/><rect x="5" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="30" y="30" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="31" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="4" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="31" y="57" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/><rect x="55" y="55" width="18" height="18" fill="none" stroke="currentColor" stroke-width="4"/></svg>TESSERA</a>
+  <a href="../start/" class="wide">START</a>
+  <a href="../manual/">MANUAL</a>
+  <a href="../plugin/" class="wide">PLUGIN</a>
+  <a href="../cosmati/" aria-current="page">COSMATI</a>
+  <a class="wide" href="../manual/tessera-manual.pdf" download title="The whole manual as a PDF, to print or read offline">PDF</a>
+  <a class="wide" href="../cosmati/cosmati-cheatsheet.pdf" download title="Cosmati's mouse, keys and sections on two printable pages">COSMATI SHEET</a>
+  <a class="wide" href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">RECIPES</a>
+  <a class="wide" href="../webapp/sim/">SIMULATOR</a>
+  <button class="contents" id="contents" type="button" aria-expanded="false" aria-controls="side">CONTENTS</button>
+  <button class="theme" id="theme" type="button" aria-label="Light or dark page"></button>
+</header>
+<div class="layout">
+<nav class="side" id="side" aria-label="Contents">
+  <input id="search-q" type="search" placeholder="Search the Cosmati manual" aria-label="Search the Cosmati manual" autocomplete="off">
+  <p class="sr" id="found" aria-live="polite"></p>
+  <ol class="results" id="results" hidden></ol>
+  <ol class="toc"><li><a href="#getting-started">Getting started</a></li><li><a href="#the-window">The window</a></li><li><a href="#finding-your-way-sections-tabs-and-the-page-map">Finding your way: sections, tabs and the page map</a></li><li><a href="#using-the-mouse">Using the mouse</a><ol><li><a href="#values">Values</a></li><li><a href="#lists-sheets-and-pictures">Lists, sheets and pictures</a></li><li><a href="#drag-and-drop">Drag and drop</a></li><li><a href="#the-sound-browser">The sound browser</a></li><li><a href="#notes-and-the-drum-grid">Notes and the drum grid</a></li></ol></li><li><a href="#the-computer-keyboard">The computer keyboard</a></li><li><a href="#making-a-piece">Making a piece</a></li><li><a href="#the-sounds">The sounds</a></li><li><a href="#notes-steps-and-chords">Notes, steps and chords</a></li><li><a href="#modulation">Modulation</a></li><li><a href="#the-long-form-piece-entries-and-the-song">The long form: PIECE, ENTRIES and the song</a></li><li><a href="#mixing-and-performing">Mixing and performing</a></li><li><a href="#working-with-tracks">Working with tracks</a></li><li><a href="#trying-things-dice-locks-a--b-and-morph">Trying things: dice, locks, A / B and MORPH</a></li><li><a href="#in-the-daw">In the DAW</a><ol><li><a href="#transport-and-tempo">Transport and tempo</a></li><li><a href="#program-change-steers-the-piece">Program Change steers the piece</a></li><li><a href="#automation">Automation</a></li><li><a href="#track-outputs-and-midi-out">Track outputs and MIDI out</a></li><li><a href="#several-cosmati">Several Cosmati</a></li><li><a href="#a-midi-keyboard-that-steers-the-piece-listen">A MIDI keyboard that steers the piece (LISTEN)</a></li><li><a href="#echoes-on-the-beat">Echoes on the beat</a></li></ol></li><li><a href="#saving-and-project-files">Saving, and project files</a></li><li><a href="#playing-it-from-an-fm-1-and-a-midi-keyboard">Playing it from an FM-1, and a MIDI keyboard</a></li><li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li><li><a href="#cpu-and-when-something-goes-wrong">CPU, and when something goes wrong</a></li><li><a href="#shortcut-reference">Shortcut reference</a></li><li><a href="#where-each-page-is-explained">Where each page is explained</a></li></ol>
+</nav>
+<main id="main" tabindex="-1">
+<h1 id="the-cosmati-manual">The Cosmati manual</h1>
+<p><strong>Cosmati</strong> is Tessera in your DAW: the same generative sequencer and sound engines the FM-1 plays, as a <strong>CLAP</strong>,
+<strong>VST3</strong> or <strong>Audio Unit</strong> instrument and a standalone app, with eight tracks, a window you can resize, and the mouse
+and computer keyboard in charge. This is its own manual. It covers the window, the mouse, the keyboard and the DAW,
+and it points to the <a href="../manual/">FM-1 manual</a> for what each page and generator does, because those are the same.</p>
+<blockquote>
+<p><strong>In short:</strong> open Cosmati, press <strong>GENERATE</strong>, and a new piece plays. Use the nine <strong>section buttons</strong> (GEN, SOUND,
+MOD, FX, SHAPE, PIECE, MIX, SCALE, SETUP) to reach every page, the mouse to turn, drag and paint, and the DAW for
+tempo, automation and saving. <strong>Right-click</strong> anything for its help and its menu.</p>
+</blockquote>
+<p><a href="../media/plugin/plugin-expanded.png"><img src="../media/plugin/plugin-expanded.png" alt="Cosmati in EXPANDED: the FM-1's screen with TRACKS beside it, all eight tracks playing STILL TIDE" /></a></p>
+<p><em>EXPANDED: the FM-1's screen and, beside it, TRACKS with all eight tracks (the latest beta, playing STILL TIDE).</em></p>
+<p><strong>To get started,</strong> read <a href="#getting-started">Getting started</a>. To have something at your side while you work, print the
+<strong><a href="../cosmati/cosmati-cheatsheet.pdf">Quick reference</a></strong>: the mouse, keys and sections on two pages
+(<a href="#shortcut-reference">the same as a table</a>).</p>
+<p><strong>Basics:</strong> the window and how to move around it.</p>
+<ul>
+<li><a href="#getting-started">Getting started</a></li>
+<li><a href="#the-window">The window</a></li>
+<li><a href="#finding-your-way-sections-tabs-and-the-page-map">Finding your way: sections, tabs and the page map</a></li>
+<li><a href="#using-the-mouse">Using the mouse</a></li>
+<li><a href="#the-computer-keyboard">The computer keyboard</a></li>
+</ul>
+<p><strong>Making music:</strong> a piece, its sounds, notes and modulation.</p>
+<ul>
+<li><a href="#making-a-piece">Making a piece</a></li>
+<li><a href="#the-sounds">The sounds</a></li>
+<li><a href="#notes-steps-and-chords">Notes, steps and chords</a></li>
+<li><a href="#modulation">Modulation</a></li>
+</ul>
+<p><strong>The whole song:</strong> the long form, the mix, tracks, and trying things out.</p>
+<ul>
+<li><a href="#the-long-form-piece-entries-and-the-song">The long form: PIECE, ENTRIES and the song</a></li>
+<li><a href="#mixing-and-performing">Mixing and performing</a></li>
+<li><a href="#working-with-tracks">Working with tracks</a></li>
+<li><a href="#trying-things-dice-locks-a--b-and-morph">Trying things: dice, locks, A / B and MORPH</a></li>
+</ul>
+<p><strong>Files and the DAW:</strong> transport, automation, outputs, saving and the FM-1.</p>
+<ul>
+<li><a href="#in-the-daw">In the DAW</a></li>
+<li><a href="#saving-and-project-files">Saving, and project files</a></li>
+<li><a href="#playing-it-from-an-fm-1-and-a-midi-keyboard">Playing it from an FM-1, and a MIDI keyboard</a></li>
+<li><a href="#sounds-only-the-plugin-has">Sounds only the plugin has</a></li>
+</ul>
+<p><strong>Reference and troubleshooting:</strong></p>
+<ul>
+<li><a href="#cpu-and-when-something-goes-wrong">CPU, and when something goes wrong</a></li>
+<li><a href="#shortcut-reference">Shortcut reference</a></li>
+<li><a href="#where-each-page-is-explained">Where each page is explained</a></li>
+</ul>
+<h2 id="getting-started">Getting started</h2>
+<p><strong>Install.</strong> Copy the plugin where your DAW looks for plugins and rescan. The steps for each system, the macOS
+quarantine command and the downloads are on the <a href="../plugin/#install">plugin's page</a>. In the DAW's list Cosmati is an
+instrument from <strong>Rastapopolix</strong>. The standalone app needs no DAW: start it, pick an audio output, and it plays at once.</p>
+<p><strong>First sound.</strong> A new Cosmati opens on a new project: each track has its power-on sound, the patterns are empty and
+no generator runs. Three ways to hear something:</p>
+<ol>
+<li><strong>Press GENERATE</strong> (the strip at the top of the window). It makes a whole new piece in the style shown beside it:
+sounds, notes, form and mix, from a new seed. Press it again for another. The style (click its name, or use the
+arrows) and <strong>VAR</strong> (how wide each choice may roam, 0 to 100) steer it; the seed is the piece's number, and the
+mouse wheel over it brings back pieces made before. Hold GENERATE half a second to swap the current piece with the
+one before it (BEFORE / AFTER).</li>
+<li><strong>Open a demo</strong>: <strong>OPEN</strong> under the keys loads a <code>.tsp</code> project, for instance one from the <code>demos/</code> folder.</li>
+<li><strong>Play it</strong>: press a key on a keyboard routed to Cosmati, or click the on-screen keys. Notes go to the selected
+track, on any MIDI channel.</li>
+</ol>
+<p>Then press <strong>PLAY</strong> in the DAW (or in the standalone app). New to Tessera's ideas? Read
+<a href="../start/">Getting started with Tessera</a>: its first half hour applies here, the buttons simply have other names.</p>
+<h2 id="the-window">The window</h2>
+<p>Cosmati's window is the FM-1's panel redrawn for the mouse: the same screen, knobs and keys, with the screen
+reaching everything the mouse can touch. It comes in two layouts:</p>
+<ul>
+<li><strong>FM-1</strong> is the panel alone, 1000 px wide at 100%.</li>
+<li><strong>EXPANDED</strong> is wider: a second screen, <strong>TRACKS</strong>, sits beside the FM-1's, showing all eight tracks at once
+(their role, engine, pattern, the bar's 16 steps, level, <strong>M</strong> and <strong>S</strong>), and the header has room for GENERATE,
+<strong>A / B</strong> and <strong>MORPH</strong>. A new Cosmati opens in EXPANDED when your screen is wide enough (about 1600 px) and in FM-1
+otherwise. Once you pick a MODE, every new window follows it.</li>
+</ul>
+<p><strong>Click the Tessera mark</strong> at the top left for the menu:</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SKIN</strong></td>
+<td><strong>NIGHT</strong> (dark) or <strong>DAY</strong> (light). The sun and moon switch in the header does the same. DAY also sets the screen's GROUND to LIGHT, and leaving DAY sets it back (MENU &gt; GROUND can change it again).</td>
+</tr>
+<tr>
+<td><strong>INK</strong></td>
+<td>The screen's ink: nine single colours, then MOSAIC, SUNSET, OCEAN and NEON, which colour each track. Hover a swatch for its name.</td>
+</tr>
+<tr>
+<td><strong>MODE</strong></td>
+<td>FM-1 or EXPANDED.</td>
+</tr>
+<tr>
+<td><strong>SIZE</strong></td>
+<td>The window at 75, 100, 150 or 200% (EXPANDED: 75, 100, 125 or 150%).</td>
+</tr>
+<tr>
+<td><strong>FM-1 USB</strong></td>
+<td>Lets an FM-1 on USB play this Cosmati: <a href="#playing-it-from-an-fm-1-and-a-midi-keyboard">see below</a>.</td>
+</tr>
+<tr>
+<td><strong>KEYS</strong></td>
+<td>Whether the computer keyboard plays Cosmati when its window has focus. OFF leaves every key to the DAW.</td>
+</tr>
+<tr>
+<td><strong>HOVER HELP</strong></td>
+<td>ON shows a value's help text under the screen when the mouse rests on it.</td>
+</tr>
+<tr>
+<td><strong>LISTEN</strong> and <strong>SPLIT</strong></td>
+<td>A MIDI channel whose notes steer Cosmati (<a href="#a-midi-keyboard-that-steers-the-piece-listen">below</a>).</td>
+</tr>
+<tr>
+<td><strong>TRACK</strong></td>
+<td>The selected track's COPY, PASTE ONTO, PASTE SOUND ONTO, MOVE UP and MOVE DOWN.</td>
+</tr>
+<tr>
+<td><strong>OUTPUTS</strong></td>
+<td>Track outputs as STEREO or MONO pairs (<a href="#track-outputs-and-midi-out">below</a>).</td>
+</tr>
+<tr>
+<td><strong>ABOUT</strong></td>
+<td>The plugin's version.</td>
+</tr>
+</tbody>
+</table>
+<p>Esc or a click outside closes it. These are your settings, not the project's: Cosmati remembers the skin, ink, mode and
+size for every new window, in any DAW, and a project opens in <em>your</em> skin and ink.</p>
+<p><strong>Size.</strong> Pick a SIZE, or <strong>drag the window's corner</strong> for any size from 75% up: a size you dragged to shows lit at the
+left of the SIZE row. A HiDPI host's scale (say 125% or 175%) is used as it is. Until you pick one, the window opens no
+wider than your screen less room for the DAW's frame, so a small laptop gets a window that fits.</p>
+<p><strong>The strip at the top</strong> (EXPANDED, and GENERATE in both): GENERATE with its style, VAR and seed, then <strong>A</strong>, <strong>MORPH</strong>
+and <strong>B</strong>, then the DAY / NIGHT switch. The <strong>MIDI</strong> lamp beside the mark lights when notes arrive from the DAW.</p>
+<p><strong>The line under the screen</strong> shows the page you are on and, for a few seconds, <strong>toasts</strong>: short notes about things
+that happened, such as <code>LOADED STILL TIDE</code>, <code>PASTED T2 ONTO T6</code>, <code>CLIP SAVED: &lt;name&gt;</code>, <code>DICE: 3 VALUES</code>,
+<code>SONG PUT BACK BY THE DAW</code>, <code>LISTEN: &lt;style&gt;</code> or <code>COPIED &lt;value&gt;</code>.</p>
+<p><strong>Under the keys:</strong> <strong>OPEN</strong>, <strong>SAVE</strong>, <strong>MIDI</strong> (the clip button), PLAY, REC and the 1-4 / 5-8 switch (FM-1 mode only;
+EXPANDED shows all eight tracks). <strong>OCT+</strong> over <strong>OCT-</strong> at the left of the keys moves them up or down by an octave, up to
+three each way, and both together put them back. They light while the keys are shifted. <strong>SHIFT</strong>, <strong>BACK</strong>, <strong>OK</strong>
+and <strong>?</strong> sit under the left knobs and stand for the FM-1's OCT- and OCT+ roles (see <a href="#the-computer-keyboard">the keyboard</a>).</p>
+<p>Cosmati stops moving only while the DAW isn't processing audio: if the window looks frozen, check the audio engine is on.</p>
+<h2 id="finding-your-way-sections-tabs-and-the-page-map">Finding your way: sections, tabs and the page map</h2>
+<p>The FM-1 has a few group buttons with long lists of pages behind them. Cosmati has <strong>nine section buttons</strong>, each named
+for what its pages do. Tessera's pages are the same ones, grouped:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Pages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GEN</strong></td>
+<td>the generator, NOTES, ARP, PATTERN, MOTION</td>
+</tr>
+<tr>
+<td><strong>SOUND</strong></td>
+<td>PRESETS (the sound browser), the engine's own pages, then ENV</td>
+</tr>
+<tr>
+<td><strong>MOD</strong></td>
+<td>MODS, MATRIX, the LFOs, ORGANIC</td>
+</tr>
+<tr>
+<td><strong>FX</strong></td>
+<td>the effects</td>
+</tr>
+<tr>
+<td><strong>SHAPE</strong></td>
+<td>EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY</td>
+</tr>
+<tr>
+<td><strong>PIECE</strong></td>
+<td>PIECE, CHAIN, ENTRIES, LANDSCAPE, PATTERNS, SONG</td>
+</tr>
+<tr>
+<td><strong>MIX</strong></td>
+<td>MIXER, PERF</td>
+</tr>
+<tr>
+<td><strong>SCALE</strong></td>
+<td>SCALES, SCL, KEY, CHORD</td>
+</tr>
+<tr>
+<td><strong>SETUP</strong></td>
+<td>SETTINGS (the MENU's list), TEMPO, SYSTEM, MIDI IN, MIDI OUT</td>
+</tr>
+</tbody>
+</table>
+<p>Then HOME, SAVE, PLAY and REC as before.</p>
+<ul>
+<li><strong>A press</strong> opens the page you last used in that section. <strong>Press again</strong> to step to the next page; after the last
+it wraps to the first, as the FM-1's group buttons do. The section of the page on screen is lit.</li>
+<li><strong>The footer's tabs</strong> list the section's own pages, so PIECE shows PIECE, CHAIN and ENTRIES, not a mixed list. Click
+a tab for that page, an arrow for the page just past it, or turn the <strong>mouse wheel over the tabs</strong>. The page's place
+(for instance <code>2/3</code>) is shown at the header's left.</li>
+<li><strong>Sideways scroll</strong> (a trackpad swipe, a tilt wheel) steps the page too. It stops at the first and last page.</li>
+<li><strong>Right-click a section button</strong> to latch the FM-1 button it stands for, so the FM-1's held gestures stay reachable:
+GLO + a key to mute, ARP + a knob for help, and so on.</li>
+<li><strong>SETUP</strong> opens on SETTINGS, the old MENU: a list with SETUP's tabs under it. Press SETUP again or click a tab and
+the list closes and moves on to TEMPO. BACK goes HOME.</li>
+<li>Keys <strong>1</strong> to <strong>9</strong> are the sections, <strong>0</strong> is HOME, <strong>-</strong> is SAVE and <strong>=</strong> is REC.</li>
+</ul>
+<p><strong>The page map.</strong> Press <strong>Ctrl+M</strong> (Cmd+M on a Mac) for a card with every section's pages by name: GEN to SHAPE on the
+first row, PIECE to SETUP on the second, the page you're on lit and the one under the mouse outlined. Click a page to
+go there. Esc or a click outside closes it. It works while the section buttons are on, which is Cosmati's own look.</p>
+<p><strong>The arrow keys</strong> move without the mouse (click the window first):</p>
+<ul>
+<li><strong>Shift+Left / Right</strong>: the previous or next section.</li>
+<li><strong>Up / Down</strong>: the rows of a list, or SELECT when the page has none.</li>
+<li><strong>Shift+Up / Down</strong>: the previous or next track.</li>
+<li><strong>Alt+Up / Down</strong>: move the track (<a href="#working-with-tracks">working with tracks</a>).</li>
+<li><strong>Left / Right</strong>: ALGORITHM.</li>
+</ul>
+<p><strong>Mouse back and forward</strong> buttons are BACK and OK. <strong>HOLD: MORE</strong> under OK appears where the page has a sheet: hold
+OK to open it. The buttons beside the knobs are named for what they open, with the FM-1's name small under it.</p>
+<p><strong>Your first knobs.</strong> The four columns of a page are KNOB 1 to 4. <strong>SHIFT</strong> (a click latches it) reaches the second set
+on pages that have one. The knob labels on the panel follow the page and the SHIFT layer.</p>
+<h2 id="using-the-mouse">Using the mouse</h2>
+<p>Hover over something you can use and it gets a thin outline, with its name and value in a box under the screen.</p>
+<h3 id="values">Values</h3>
+<ul>
+<li>
+<p><strong>Drag</strong> a value up and down, or <strong>turn the wheel</strong>, as you would turn its knob. <strong>Double-click</strong> puts it back to its default.</p>
+</li>
+<li>
+<p><strong>Shift</strong> with a drag or the wheel turns it in <strong>fine steps</strong>: one detent every 32 px, one per wheel notch, and never sped up.</p>
+</li>
+<li>
+<p><strong>Ctrl-click</strong> (Cmd-click on a Mac) a value to <strong>type it</strong>: a box opens under the screen. Names and numbers both work
+(&quot;-6dB&quot;, &quot;1/8&quot;, &quot;saw&quot;, &quot;440&quot;); Enter sets, Esc closes.</p>
+</li>
+<li>
+<p><strong>Right-click</strong> a value for its menu:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HELP</strong></td>
+<td>its help card (stays until you click)</td>
+</tr>
+<tr>
+<td><strong>DEFAULT</strong></td>
+<td>the default value</td>
+</tr>
+<tr>
+<td><strong>COPY VALUE</strong> and <strong>PASTE VALUE</strong></td>
+<td>paste works across parameters where the copied value fits</td>
+</tr>
+<tr>
+<td><strong>RANDOM</strong></td>
+<td>a random value in its range</td>
+</tr>
+<tr>
+<td><strong>TYPE A VALUE</strong></td>
+<td>the box above</td>
+</tr>
+<tr>
+<td><strong>LOCK</strong> / <strong>UNLOCK</strong></td>
+<td>keeps DICE and MUTATE away from it (a padlock shows)</td>
+</tr>
+<tr>
+<td><strong>DICE THE PAGE</strong>, <strong>PUT BACK</strong></td>
+<td>see <a href="#trying-things-dice-locks-a--b-and-morph">Trying things</a></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Around each <strong>knob ring</strong> a short tick shows where the page's setting sits in its range. When a mod reaches that
+setting, a thin white arc runs from the tick to where the mods have it right now, and moves as they do.</p>
+</li>
+</ul>
+<h3 id="lists-sheets-and-pictures">Lists, sheets and pictures</h3>
+<ul>
+<li><strong>A list</strong> (SCL, the MENU, a list that opens over a page): the wheel scrolls a row a notch, a click moves there,
+dragging up or down changes the row's value, a double-click moves there and presses OK.</li>
+<li><strong>Click away</strong> with a list, sheet or help card open and it closes, as BACK would. A YES / NO question waits for you.</li>
+<li><strong>ABOUT and long help cards:</strong> the wheel scrolls the text.</li>
+<li><strong>The tempo</strong> in a header: drag it or turn the wheel, a BPM a step; double-click for 120. While a DAW plays Cosmati,
+the DAW sets the tempo.</li>
+<li><strong>Pictures are handles.</strong> The envelopes, filter curves and chart pages are drawn so you can grab them: FM6's envelope
+corners (rates across, levels up and down), a filter's resonant peak (across for CUT, up and down for RES), the
+algorithm chart (click an operator, double-click for its pages), ATLAS's cross-hair, CONSTELLATION's ship and its
+top and bottom brackets (SIZE), MORPH's POS bar (click or drag it), and BOUNCE's ball.</li>
+<li><strong>Boxed values</strong> (a choice, not a dial): a click steps to the next choice and round again.</li>
+<li><strong>Home:</strong> click a track's column to select it, double-click to open its sounds. <strong>PATTERNS</strong> and <strong>SONG</strong>:
+click a cell, a letter or a block. <strong>PERF</strong>: click a MACRO's row and, when it drives nothing, a new mod from that macro is
+made in the first free slot (SOURCE MCRn, amount 25%, destination OFF) and MODS opens on it; if it already has one,
+MODS opens on that.</li>
+</ul>
+<h3 id="drag-and-drop">Drag and drop</h3>
+<ul>
+<li><strong>A sound onto a track</strong> (EXPANDED): in the browser, press a sound and drag. Its name follows the mouse, the
+TRACKS row under it is framed (<code>INIT ORACLE &gt; T6</code>), and letting go loads it onto that track. The selected track and the
+browser stay as they were.</li>
+<li><strong>A mod in MATRIX:</strong> press a cell and drag it onto another. Letting go makes a mod from the first cell's track to the
+second's, in a free MODS slot, with that track's shortcut source (its LFO, unless FX + SELECT picked another) onto
+CUTOFF at 25%, and MODS opens on it so you set the real source and destination. BACK returns to MATRIX.</li>
+<li><strong>The MIDI clip out into the DAW:</strong> press and drag the <strong>MIDI</strong> button under the keys 8 px or more and the clip
+goes as a <code>.mid</code> file onto a DAW track or a folder (Windows and macOS; on Linux a drag saves it as a click does). A
+plain click saves it in Documents/Tessera/MIDI. The clip is the notes played since PLAY while playing, or the first bars
+rendered when stopped.</li>
+</ul>
+<h3 id="the-sound-browser">The sound browser</h3>
+<p>The sound browser (PRESETS) has a <strong>list</strong> on the left (ALL, FAVES, a category, an engine) and the <strong>sounds</strong> on
+the right. Click a name to go there; double-click a sound to keep it (OK); BACK puts the track's old sound back.
+To open it: <strong>SOUND</strong> (its first page), <strong>Ctrl+B</strong> (Cmd+B) for the selected track, <strong>SOUNDS...</strong> in a track's right-click
+menu (HOME's column or a TRACKS row) for that track, or double-click a track's column on HOME. It is also in SAVE's
+round, after USER and PROJECT.</p>
+<ul>
+<li><strong>Audition:</strong> with the transport stopped, a sound you pick (a click, the wheel, or turning LIST or SOUND) plays a
+short phrase on its track so you hear it: root, fifth, octave, root (a drum track plays kick, hat, snare, hat).
+Pressing PLAY, playing a key or loading another sound ends it. While playing, the pattern is what you hear.</li>
+<li><strong>FIND:</strong> click the count at the top right (&quot;177 SOUNDS&quot;) and type. Each key narrows the list to names containing the
+text; the header shows the text and the number of matches. Enter keeps the filter, Esc clears it.</li>
+<li><strong>Drag a sound</strong> onto a TRACKS row, as above.</li>
+</ul>
+<h3 id="notes-and-the-drum-grid">Notes and the drum grid</h3>
+<p>See <a href="#notes-steps-and-chords">Notes, steps and chords</a>.</p>
+<h2 id="the-computer-keyboard">The computer keyboard</h2>
+<p>Click the window first; keys reach Cosmati only while it has focus. Keys go by where they sit, so any layout works.</p>
+<ul>
+<li><strong>Z</strong> to <strong>'</strong> and <strong>Q</strong> to <strong>O</strong>: the keys. <strong>1</strong> to <strong>9</strong>, <strong>0</strong>, <strong>-</strong>, <strong>=</strong>: the sections and HOME, SAVE, REC.</li>
+<li><strong>[</strong> and <strong>]</strong>, or <strong>Esc</strong> and <strong>Enter</strong>: BACK and OK. <strong>Page Up / Page Down</strong>: OCT+ and OCT-. <strong>Shift</strong>: SHIFT, held
+while you hold it (a click on the SHIFT button latches it instead).</li>
+<li><strong>F1</strong>: the help card of the value under the mouse. <strong>Tab</strong>: the 1-4 / 5-8 switch.</li>
+<li><strong>Space</strong> (standalone): PLAY / STOP. <strong>Ctrl+O</strong> and <strong>Ctrl+S</strong> (Cmd on a Mac): OPEN and SAVE. In a DAW these stay the DAW's.</li>
+<li><strong>Ctrl+R</strong>: DICE THE PAGE. <strong>Ctrl+Shift+R</strong>: MUTATE the selected track. <strong>Ctrl+M</strong>: the page map. <strong>Ctrl+B</strong>: the sound browser.</li>
+<li><strong>Ctrl+C</strong>, <strong>Ctrl+V</strong>, <strong>Ctrl+Shift+V</strong>, <strong>Alt+Up</strong>, <strong>Alt+Down</strong>: copy, paste, paste the sound, move the track.</li>
+<li>Arrow keys: see <a href="#finding-your-way-sections-tabs-and-the-page-map">Finding your way</a>.</li>
+<li><strong>Naming</strong> a project or preset: just type. Letters, digits, space and <code>- . _ / # +</code> go in; Backspace and Delete
+remove, Left / Right move the cursor, Enter is OK, Esc cancels. While NAME is open the keyboard types instead of playing.</li>
+</ul>
+<p>With <strong>Ctrl</strong> or <strong>Alt</strong> held, other keys go to the DAW, and to leave every key to the DAW, set <strong>KEYS</strong> to OFF in the menu.</p>
+<p><strong>Key labels.</strong> Where a page gives the keys a job of their own, each key shows it in a tiny label, and hovering says it
+in full: MIXER, PERF, LANDSCAPE and GLO held (M1..M8 mute, S1..S8 solo, then ALL, HOLD, FILL, TAP), SEL held (the key
+sets the ROOT), SEQ held (PATTERN 1..8), the DRUM grid, AWAKE's steps, CHORD USER and ATLAS's PART 4 with SHIFT held,
+a USER scale (each note IN or out) and NAME.</p>
+<p><strong>The scale on the keys.</strong> Where the keys play the selected track's notes, keys that give no new note in the track's
+scale fade (silent keys, keys out of the scale, keys that snap to the note below), keys on the <strong>root</strong> carry a dot, and
+a CHORD track's current chord is named above OCT+ (&quot;Am7&quot;). It follows QUANTIZE, TRANSPOSE and the octave.</p>
+<p><strong>Button combos with the mouse.</strong> Right-click a button or key (Ctrl-click on a Mac) to latch it: it stays held while
+you click the second one, so GLO + a key works with one mouse. Click it again or press Esc to let go.</p>
+<h2 id="making-a-piece">Making a piece</h2>
+<p>Everything that decides what a track plays is in <strong>GEN</strong>: pick a generator, set its knobs, and a pattern appears. The
+<a href="../manual/#the-generators">generators</a> are the same as on the FM-1, and so are <a href="../manual/#the-gen-layer">the GEN layer</a>,
+<a href="../manual/#evolve">EVOLVE</a>, <a href="../manual/#form">FORM</a> and <a href="../manual/#tweak">TWEAK</a>. Cosmati adds three things:</p>
+<ul>
+<li><strong>GENERATE</strong> makes a whole piece in one press (<a href="#getting-started">Getting started</a>). Its styles include <strong>WILD</strong>.</li>
+<li><strong>Seeds replay</strong>: the same seed and style make the same piece, so a piece you like can be made again.</li>
+<li><strong>LISTEN</strong> lets a MIDI keyboard steer it (<a href="#a-midi-keyboard-that-steers-the-piece-listen">below</a>).</li>
+</ul>
+<p><strong>SHAPE</strong> holds what turns a pattern into music over time: EVOLVE, FORM, TWEAK, LENGTH, TIMING (swing, humanise) and
+ENERGY (how busy the piece is, and the tracks coming in and out). See their chapters in the <a href="../manual/">manual</a>.</p>
+<h2 id="the-sounds">The sounds</h2>
+<p><strong>SOUND</strong> shows the selected track's engine pages and then ENV. The engines, FM6 (the six-operator FM synth),
+the subtractive and sampled ones, drums and ORACLE, are the manual's <a href="../manual/#sounds">Sounds</a>. Cosmati also has
+<a href="#sounds-only-the-plugin-has">engines the FM-1 can't fit</a>.</p>
+<ul>
+<li><strong>Pick a sound</strong> in the browser (SOUND's first page, <strong>Ctrl+B</strong>, or SOUNDS... in a track's right-click menu), with audition, FIND and drag onto a track (<a href="#the-sound-browser">above</a>).</li>
+<li><strong>Right-click a track</strong> for MUTATE, which nudges its sound a little (<a href="#trying-things-dice-locks-a--b-and-morph">Trying things</a>).</li>
+<li><strong>FM6's</strong> STORE page is the last of its EDIT pages, after VOICE.</li>
+<li>The <strong>ENV</strong> and filter pages are drawn so the picture is the control (<a href="#lists-sheets-and-pictures">Pictures are handles</a>).</li>
+</ul>
+<h2 id="notes-steps-and-chords">Notes, steps and chords</h2>
+<p><strong>NOTES</strong> (a STEP track) is a piano roll. All of it is mouse-first:</p>
+<ul>
+<li><strong>Click a step</strong> to put a note there, at the pitch under the mouse (in key when the track quantises). Click the same
+step at another height for a <strong>chord</strong> (up to 4 notes); chord notes are drawn at their own pitch, so each can be picked.</li>
+<li><strong>Drag up or down</strong> on a note to re-pitch it (it steps over the chord's other notes); <strong>Shift-drag</strong> moves the whole chord.</li>
+<li><strong>Paint:</strong> drag across empty steps to draw a run of notes at the mouse's pitch. Start the drag on a note and it
+<strong>erases</strong> the notes it crosses, ties included. One stroke is one undo step.</li>
+<li><strong>Alt-drag</strong> across a note sets its <strong>length</strong> (it grows over empty steps only); <strong>Alt-drag</strong> up or down sets its
+<strong>velocity</strong>, four to a detent.</li>
+<li><strong>Right-click</strong> a note removes it (a chord's tick: that note). The wheel on a note moves it too.</li>
+<li><strong>The drum grid</strong> (a DRUM track's NOTES): click toggles a hit, right-click clears it, a drag across a lane paints or
+erases hits (by where the drag starts), and dragging up or down on a hit, or the wheel, accents it. An accent is a
+hit's only dynamics in the grid.</li>
+</ul>
+<p><strong>CHORD tracks.</strong> With PROG set to USER, each chord card on GEN is yours to edit with the mouse: drag a card, or use the
+wheel, to move that chord's root a scale degree; click the <strong>+</strong> card after the last to add one (up to 8); right-click a
+card to remove it (one always stays). Each card has a <strong>quality</strong> (AUTO, maj, min, 7, sus and so on): click the card's
+quality to come round to the next, back to AUTO. The quality plays wherever the chord is built, and its name shows on
+the card. These are saved in the project, in a part older firmware and the FM-1 skip (they open there with every USER
+chord on AUTO). <a href="../manual/#harmony-one-key-chord-and-qnt-chrd">Harmony</a> explains CHORD and QNT CHRD.</p>
+<h2 id="modulation">Modulation</h2>
+<p><strong>MOD</strong> holds the 16 mods, the MATRIX, the LFOs and ORGANIC; the <a href="../manual/#mods-the-modulation-cords">manual's MODS chapter</a>
+explains sources and destinations. In Cosmati:</p>
+<ul>
+<li>
+<p><strong>MODS:</strong> the wheel scrolls the 16 mods; click one to pick it, drag up or down to change its amount, double-click for
+its type (+-, +, GATE, HOLD). Click a mod's source or destination for its list; it stays open until you click one.</p>
+</li>
+<li>
+<p><strong>MATRIX:</strong> click a cell to open its mod, or <strong>drag one cell onto another</strong> to make a mod (<a href="#drag-and-drop">above</a>).</p>
+</li>
+<li>
+<p><strong>Live motion:</strong> knob rings show the modulated value moving (<a href="#values">above</a>); MATRIX cells move with their mods.</p>
+</li>
+<li>
+<p><strong>MPE:</strong> each note keeps its own pressure and slide. On MODS, <strong>AT</strong> is each note's pressure and <strong>SLIDE</strong> (the
+plugin only) its slide, e.g. AT onto CUTOFF and SLIDE onto SHAPE. Use ROUT SEL, the plugin's default, so every channel
+plays the selected track. Each note also bends by its own channel's bend (48 semitones, as MPE controllers expect);
+FM6 is the exception: it bends a whole track by its own range.</p>
+</li>
+<li>
+<p><strong>SLOPE</strong> (the plugin and Andamento): each track's LFO can be a function generator, in the spirit of Mutable
+Instruments' Tides and Mannequins' Just Friends. On the LFO page:</p>
+<ul>
+<li><strong>WAVE SLOPE, EXP or LOG</strong> is a rise and a fall, straight or curved. <strong>PHS</strong> becomes <strong>SKEW</strong>, where the top is:
+0 shoots straight up and falls slowly (a decay), 64 is a triangle, 127 rises slowly and drops.</li>
+<li><strong>TRIG ONCE</strong> starts the LFO with each phrase, as NOTE does, runs one cycle and holds at its end: an envelope you
+can shape and sync. <strong>EOC</strong> fires once, at its end.</li>
+<li>On MODS, <strong>LFO RST</strong> starts a track's LFO again when a mod rises past half. A gate (EOC, IN, GATE, a STEP track)
+fires a slope; a track's EOC onto another's LFO RST starts one slope as another ends.</li>
+<li>Two more sources follow a track's LFO: <strong>LFO 90</strong>, its wave a quarter cycle on, and <strong>LFO X2</strong>, at twice its rate
+and locked to it.</li>
+</ul>
+<p>On the FM-1 a SLOPE wave plays as TRI and ONCE as NOTE; mods with LFO RST, LFO 90 or LFO X2 are left out. See the
+recipe <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md#a-swell-while-the-drums-are-out-slope-cosmati">A swell while the drums are out</a>.</p>
+</li>
+</ul>
+<h2 id="the-long-form-piece-entries-and-the-song">The long form: PIECE, ENTRIES and the song</h2>
+<p><strong>PIECE</strong> holds the shape over minutes: PIECE (a length and a shape), CHAIN (one form for the project), ENTRIES
+(which tracks play where), LANDSCAPE, PATTERNS and SONG. The ideas are in the manual's
+<a href="../manual/#piece-a-length-and-a-shape">PIECE</a> chapters; here is what the mouse adds.</p>
+<ul>
+<li>
+<p><strong>PATTERNS:</strong> click a cell to queue that pattern on its track; click a track's number to select it.</p>
+</li>
+<li>
+<p><strong>SONG:</strong> click a section's letter to pick it, or a block to pick its section and track.</p>
+</li>
+<li>
+<p><strong>ENTRIES grid.</strong> The ENTRIES page shows all 8 tracks (1-4 left, 5-8 right), each with a cell for the FORM's letters
+A, B and C, heads under them, and the letter playing bright. A cell is:</p>
+<table>
+<thead>
+<tr>
+<th>Cell</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the letter (<strong>AUTO</strong>)</td>
+<td>ENTRIES decides, as before</td>
+</tr>
+<tr>
+<td>filled (<strong>IN</strong>)</td>
+<td>always plays there</td>
+</tr>
+<tr>
+<td>empty box (<strong>OUT</strong>)</td>
+<td>never plays there</td>
+</tr>
+<tr>
+<td>half filled (<strong>FADE</strong>)</td>
+<td>plays there, fading in over the section's first phrase (when it was out) and out over the last</td>
+</tr>
+</tbody>
+</table>
+<p>A click cycles AUTO, IN, OUT, FADE (quick clicks each step on); a right-click sets AUTO. Click a letter's head to set
+the whole column, right-click it to clear the column. OUT beats ANCHOR; hand mutes still win; one track always
+plays. The grid also works with ENTRIES at 0, so you can arrange by hand. With FORM OFF, A's column holds for the whole
+piece. A track's number is dim while it is out and blinks before a change. With every cell AUTO the piece plays exactly
+as it did before. The grid is saved in the project (in a part the FM-1 skips: it opens there with plain ENTRIES).</p>
+</li>
+<li>
+<p><strong>PERF:</strong> four MACROs; click a MACRO's row to open or make its mod (<a href="#lists-sheets-and-pictures">above</a>).</p>
+</li>
+</ul>
+<h2 id="mixing-and-performing">Mixing and performing</h2>
+<p><strong>MIX</strong> is MIXER and PERF.</p>
+<ul>
+<li>
+<p><strong>MIXER</strong> (FM-1 mode): drag or turn the wheel on a strip's level or pan (double-click: default, centre); click the word
+under a strip to mute it, right-click it (or double-click) to solo.</p>
+</li>
+<li>
+<p><strong>MIXER in EXPANDED</strong> turns the TRACKS screen into an <strong>8-strip mixer</strong>, and the FM-1's screen into the selected
+track's <strong>inspector</strong>. Each strip has the track's number and role, a fader with a meter, the level in dB, PAN, its
+FX send or sends (one bar in CHAIN mode, three in SPLIT), <strong>M</strong> and <strong>S</strong>. Faders, sends and PAN take a drag or the wheel;
+double-click for the default; click a strip's head to select the track; M mutes, S latches a solo. The knobs turn the
+selected track's level, pan and first two sends.</p>
+</li>
+<li>
+<p><strong>Keys mute and solo all eight</strong> while MIXER, PERF, LANDSCAPE or GLO is held:</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Job</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F#3 G#3 A#3 C#4 (black)</td>
+<td>mute T1 to T4</td>
+</tr>
+<tr>
+<td>F3 G3 A3 B3 (white, held)</td>
+<td>solo T1 to T4</td>
+</tr>
+<tr>
+<td>C4 D4 E4 F4</td>
+<td>ALL, HOLD, FILL, TAP</td>
+</tr>
+<tr>
+<td>F#4 G#4 A#4 C#5 (black)</td>
+<td>mute T5 to T8</td>
+</tr>
+<tr>
+<td>G4 A4 B4 C5 (white, held)</td>
+<td>solo T5 to T8</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><strong>TRACKS rows</strong> (EXPANDED): each has a level meter at its left edge, and its role name flashes when a note starts.
+Click a row to select; double-click to open its EDIT page. <strong>M</strong> mutes (with MENU &gt; MUTES on BAR or PHRASE it blinks
+until the mute happens); <strong>S</strong> solos and stays soloed until clicked again; the wheel on a level turns it. A solo isn't saved.</p>
+</li>
+<li>
+<p><strong>The tempo:</strong> a DAW sets it while playing, and a TEMPO mod has no effect then.</p>
+</li>
+<li>
+<p><strong>LIGHTS OFF:</strong> with MENU &gt; LIGHTS at OFF, the keys' can-be-pressed blink on MIXER and PERF stays off.</p>
+</li>
+</ul>
+<h2 id="working-with-tracks">Working with tracks</h2>
+<p>Cosmati has <strong>eight tracks</strong>; the FM-1-size window works on four at a time (the 1-4 / 5-8 switch, or Tab), EXPANDED shows all.
+TWEAK's FOLLOW and HOLD and TWEAK 2's TO and WITH can name any of the eight.</p>
+<p><strong>Copy, paste and move.</strong> From MENU &gt; TRACK, a track's right-click menu (on HOME's column or a TRACKS row), or the keys:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Key</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>COPY TRACK</strong></td>
+<td>Ctrl+C</td>
+<td>the track whole: sound, patterns, settings, mods onto it, timed notes and motion, chord qualities and ENTRIES cells</td>
+</tr>
+<tr>
+<td><strong>PASTE TRACK</strong></td>
+<td>Ctrl+V</td>
+<td>replaces the track with the copy. It keeps its own MIDI OUT channel, and <strong>pasted mods and references keep their track numbers</strong></td>
+</tr>
+<tr>
+<td><strong>PASTE SOUND</strong></td>
+<td>Ctrl+Shift+V</td>
+<td>only the engine, sound settings and the FM6, ORACLE and DRUM patches</td>
+</tr>
+<tr>
+<td><strong>MOVE UP / DOWN</strong></td>
+<td>Alt+Up / Down</td>
+<td>swaps with the neighbour and renumbers every reference to them: mods, FOLLOW, BRANCH, LOGIC, HOLD, SOURCE, QUAD LINK, SECTION PC, timed notes, motion</td>
+</tr>
+</tbody>
+</table>
+<p>The copy is shared by every Cosmati in the DAW, so a track copied in one pastes into another. Each paste or move is one
+DAW undo step (&quot;PASTE TRACK&quot;, &quot;PASTE SOUND&quot;, &quot;MOVE TRACK&quot;), and a toast says what happened.</p>
+<h2 id="trying-things-dice-locks-a--b-and-morph">Trying things: dice, locks, A / B and MORPH</h2>
+<ul>
+<li><strong>LOCK</strong> a value (right-click it): a padlock shows, and DICE and MUTATE leave it alone.</li>
+<li><strong>DICE THE PAGE</strong> (value menu or <strong>Ctrl+R</strong>): rolls the page's four columns around their defaults, up to 40% of each
+range either way. It never rolls MUTE, LEVEL, LENGTH or global settings. A toast says how many changed.</li>
+<li><strong>MUTATE</strong> (a track's menu, or <strong>Ctrl+Shift+R</strong>): nudges that track's sound by up to 8% of each range: envelope,
+filter, pitch and shape depths, LFO rate and depths, detune, spread, ENGINE 1-8, FX 1's mix, rate and character, and FM6's
+operators.</li>
+<li><strong>PUT BACK</strong> undoes the last DICE or MUTATE.</li>
+<li><strong>A / B</strong> (EXPANDED's header): two whole-project snapshots. Click <strong>A</strong> or <strong>B</strong> to switch; you always edit the lit one,
+and it keeps your edits when you switch away. Clicking an empty slot copies the project into it (so A then B gives two
+equal copies to edit apart). <strong>Right-click</strong> (or Shift-click) stores the current project there. A recall is one DAW undo step.</li>
+<li><strong>MORPH</strong> (once both are stored): drag the handle from A's end to B's end to blend <strong>every setting</strong> on every track and
+globally. Settings shown as words (waveforms, engines, modes) switch to B's at the halfway point; the notes and structure
+stay. While MORPH is in use neither A nor B is lit. A / B shows only in EXPANDED, but the snapshots are kept either way.</li>
+</ul>
+<p><strong>Saved with the DAW song:</strong> locks (state tail <code>TLCK</code>) and A / B (<code>TSNP</code>), each only once used. A song saved with locks or
+A / B stored <strong>won't load in an older plugin build</strong>. Neither is in a <code>.tsp</code>.</p>
+<h2 id="in-the-daw">In the DAW</h2>
+<h3 id="transport-and-tempo">Transport and tempo</h3>
+<ul>
+<li><strong>PLAY</strong> starts every track where it would be if the song had played from the DAW's zero: starting at bar 9 sounds like
+eight bars have passed.</li>
+<li><strong>The DAW's tempo</strong> drives the clock, changes included; the BPM shown is the DAW's, rounded. The MIDI page reads <strong>DAW</strong>
+where the FM-1 reads INT, <strong>CLK</strong> stays INT and CLOCK OUT off.</li>
+<li><strong>A loop or a jump</strong> moves Cosmati to that point. <strong>STOP</strong> stops it.</li>
+</ul>
+<h3 id="program-change-steers-the-piece">Program Change steers the piece</h3>
+<p>A Program Change from a MIDI clip, on any channel:</p>
+<table>
+<thead>
+<tr>
+<th>Program</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0, 1, 2</strong></td>
+<td>the CHAIN goes to section <strong>A, B or C</strong> at the next phrase line. Sent while stopped, the next PLAY starts on it</td>
+</tr>
+<tr>
+<td><strong>8 to 15</strong></td>
+<td>every track goes to pattern bank <strong>1 to 8</strong>, each when its pattern comes round (at once while stopped, not while a SONG runs)</td>
+</tr>
+</tbody>
+</table>
+<p>Other numbers do nothing, and nothing is saved: put the changes in a clip. To land on a phrase line, send the change
+during the phrase before it.</p>
+<h3 id="automation">Automation</h3>
+<p>Almost every project setting is a DAW parameter, about 1,700 in all: <strong>MASTER</strong> and PERF's <strong>MACRO 1 to 4</strong> first, then each
+track's settings (<code>T1 LEVEL</code>, <code>T3 TURING LENGTH</code>, grouped under <em>Track 1/Sound and sequence</em> and <em>Track 1/Generator</em>) and the
+song's, under <em>Song</em>. Values read as the FM-1 shows them (&quot;SAW&quot;, &quot;1/16&quot;, &quot;-6dB&quot;) and you can type them that way. When a
+setting changes on the panel, by loading a project or by Cosmati itself, the DAW hears: MASTER and the MACROs at once, the
+rest within a fraction of a second. Not parameters: the device's own settings (A4, MIDI routing) and the MOD cords; the DAW
+project saves them.</p>
+<h3 id="track-outputs-and-midi-out">Track outputs and MIDI out</h3>
+<ul>
+<li><strong>Track outputs:</strong> besides the stereo mix, eight more outputs, TRACK 1 to TRACK 8, after each track's level and before pan
+and the bus effects. <strong>MENU &gt; OUTPUTS</strong> picks <strong>STEREO</strong> or <strong>MONO</strong> pairs. In CLAP, hosts that switch layouts themselves
+see &quot;Tracks stereo&quot; and &quot;Tracks mono&quot;; VST3 and AU read the setting when loaded.</li>
+<li><strong>MIDI out:</strong> every track's notes, each on its own channel (GLO &gt; MIDI OUT; by default 1 to 8), so Tessera's generators
+can play other instruments. NOTES OUT starts at ALL in the plugin; MENU can set it to KEYS or OFF. Only notes go out. When
+the DAW stops or bypasses Cosmati, every note it left on gets its note-off. Not every DAW takes MIDI from an instrument.</li>
+<li><strong>MIDI clip:</strong> the <strong>MIDI</strong> button under the keys saves, or drags out (<a href="#drag-and-drop">above</a>), the clip.</li>
+</ul>
+<h3 id="several-cosmati">Several Cosmati</h3>
+<p>Up to <strong>8 Cosmati</strong> in one song, each wholly its own: project, transport, window and parameters. A ninth won't open.</p>
+<h3 id="a-midi-keyboard-that-steers-the-piece-listen">A MIDI keyboard that steers the piece (LISTEN)</h3>
+<p><strong>LISTEN</strong> (menu) sets a MIDI channel (1 to 16, or OFF) whose notes steer Tessera instead of playing it. <strong>SPLIT</strong> (the row
+under it) is the first note that sets the key (a C, 12 to 108, given as a note number since DAWs name octaves differently;
+48 by default).</p>
+<ul>
+<li>From SPLIT up: what is held sets the key. One note sets the ROOT and keeps the scale; a chord sets its root, and a
+major or minor third above it turns the scale to its major or minor twin.</li>
+<li>Under SPLIT: a note <strong>GENERATES</strong>, with its velocity and pitch as the seed, so a clip that plays the same note makes the
+same piece each time. A white key picks the style (the octave under SPLIT gives styles 1 to 7, the one below 8 to 14, and
+so on); a black key uses the style the strip shows. A toast says <code>LISTEN: &lt;style&gt;</code>.</li>
+</ul>
+<h3 id="echoes-on-the-beat">Echoes on the beat</h3>
+<p>FX's <strong>SYNC ECHO</strong> repeats on a note value (1/32 to 1/1, triplets and dotted) at the DAW's tempo. The plugin's echo holds
+about 3 s, so a 1/2 or a 1/1 rings as set; the FM-1's holds 371 ms.</p>
+<h2 id="saving-and-project-files">Saving, and project files</h2>
+<p><strong>The DAW saves Cosmati with your song.</strong> The saved state is the Tessera project (the same bytes SAVE &gt; PROJECT writes on
+the FM-1) plus MASTER, locks and A / B. Open the song again and everything comes back, each Cosmati with its own project. When
+the DAW loads a preset, a toast names it, and when the DAW puts the song back (undo / redo) it says so.</p>
+<p><strong>OPEN</strong> and <strong>SAVE</strong>, under the keys:</p>
+<ul>
+<li><strong>OPEN</strong> loads a <code>.tsp</code> project (from the editor, <code>demos/</code>, or another Cosmati) or an <strong>FM-1 backup</strong> (the <code>.json</code> from the
+backup page or the Hub): slots A to D go into the plugin's slots, then the music it was playing loads. On Windows and
+macOS you can also drop a file on the window.</li>
+<li><strong>SAVE</strong> writes a <code>.tsp</code> under its name, ready for the FM-1's editor or another Cosmati. It offers
+<strong>Documents/Tessera/Presets</strong>: what you save there shows in the DAW's list of presets beside the demos (the VST3 and AU read
+the folder once, when the DAW first loads Cosmati, so a new file shows after the DAW restarts).</li>
+<li><strong>A <code>.tsp</code> from Cosmati opens on the FM-1.</strong> Tracks 5 to 8, the ENTRIES grid and CHORD USER qualities are in parts the FM-1
+skips, so it plays the first four tracks with plain ENTRIES; tracks on the plugin-only sounds play a stand-in.</li>
+<li>On Linux the file dialogs need <code>zenity</code> or <code>kdialog</code>.</li>
+</ul>
+<p><strong>MENU (HOME held)</strong> is the FM-1's, less the rows for the device itself: KNOBS, LARGE VALUE, SCREEN OFF, PANEL GAMMA, CLOCK OUT,
+the USB rows, SIM CONTROL and CALIBRATION.</p>
+<h2 id="playing-it-from-an-fm-1-and-a-midi-keyboard">Playing it from an FM-1, and a MIDI keyboard</h2>
+<p>An FM-1 running Tessera 3.5.1 or later can play Cosmati from its own knobs, buttons and keys. Connect it by USB and turn on <strong>FM-1
+USB</strong> (menu). When it answers, the menu says <strong>FM-1 CONNECTED</strong>.</p>
+<ul>
+<li><strong>Turn on SIM CONTROL</strong> on the FM-1 so it plays only the plugin. FX and GLO together turn it off again.</li>
+<li><strong>Windows:</strong> only one program can use the FM-1's MIDI port. Turn the FM-1 off in the DAW's MIDI settings and close the
+editor if it's open. Otherwise the menu says <strong>PORT IN USE</strong>.</li>
+<li><strong>macOS:</strong> the DAW can keep the FM-1 on, but then its keys reach whatever track the DAW sends them to. Turning it off in the DAW is simplest.</li>
+<li><strong>Several Cosmati:</strong> the FM-1 plays one at a time; the others say <strong>IN ANOTHER TESSERA</strong>.</li>
+<li><strong>NO FM-1 FOUND</strong> means none is plugged in or its port has another name. <strong>UPDATE THE FM-1</strong> means it doesn't answer (3.5 or older).</li>
+<li>While an FM-1 plays the instance, its own buttons and groups stay, and the section buttons give way to them.</li>
+</ul>
+<h2 id="sounds-only-the-plugin-has">Sounds only the plugin has</h2>
+<ul>
+<li><strong>SID</strong>: a whole MOS 6581 or 8580 chip per note, with 32 presets. <strong>SID KIT</strong> and <strong>SID DIGI</strong> are drums from one chip.</li>
+<li><strong>MACRO</strong>: a macro-oscillator with many synthesis models.</li>
+<li><strong>PHASE</strong>: phase distortion, two lines of bent-phase waves (saw, square, pulse, double sine, saw-pulse and three resonant
+ones), mixed or ring-modulated, with 33 presets of its own. EDIT 2's EG at SPLIT gives DCW 1, DCW 2, DCA 2 and pitch their
+own envelopes.</li>
+</ul>
+<p>The Daisy build (Andamento) has them too. On the FM-1 a SID, MACRO or PHASE track plays FM6's INIT sound instead and a SID kit
+plays the 909, so a project still opens and plays there.</p>
+<h2 id="cpu-and-when-something-goes-wrong">CPU, and when something goes wrong</h2>
+<p>On average one Cosmati takes about 2% of one core of a 2.1 GHz desktop processor at 48 kHz; eight take about 20%, less where
+the DAW spreads them over cores. There's no shared voice budget as on the FM-1: every track plays as many voices as its engine
+has (FM6 16, most 8). If you hear clicks with several Cosmati, raise the audio buffer to 256.</p>
+<table>
+<thead>
+<tr>
+<th>If</th>
+<th>Then</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The window looks frozen</td>
+<td>The DAW's audio engine is off: the window moves only while audio is processed</td>
+</tr>
+<tr>
+<td>The DAW's list shows Cosmati twice</td>
+<td>Delete the old Tessera.clap, .vst3, .component and app from before beta 4</td>
+</tr>
+<tr>
+<td>macOS says &quot;damaged&quot;</td>
+<td>The beta isn't signed yet: clear the download's quarantine (<a href="../plugin/#install">install steps</a>)</td>
+</tr>
+<tr>
+<td>No sound on PLAY</td>
+<td>A new project has empty patterns: press GENERATE or open a demo</td>
+</tr>
+<tr>
+<td>An FM-1 doesn't connect</td>
+<td>See <a href="#playing-it-from-an-fm-1-and-a-midi-keyboard">Playing it from an FM-1</a></td>
+</tr>
+<tr>
+<td>A song won't open in an older Cosmati</td>
+<td>It was saved with locks or A / B stored: update the plugin</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not there yet:</strong> no standalone app on Linux; no Linux drag-out of the MIDI clip; not signed on macOS or Windows; EXPANDED
+has no tall layout for square screens.</p>
+<h2 id="shortcut-reference">Shortcut reference</h2>
+<p>The printable version of this table, with the mouse as well: the <a href="../cosmati/cosmati-cheatsheet.pdf">Quick reference</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Z to ' and Q to O</td>
+<td>play the keys</td>
+</tr>
+<tr>
+<td>1 to 9, 0, -, =</td>
+<td>sections GEN to SETUP, HOME, SAVE, REC</td>
+</tr>
+<tr>
+<td>[ ] or Esc Enter</td>
+<td>BACK, OK</td>
+</tr>
+<tr>
+<td>Page Up / Down</td>
+<td>OCT+, OCT-</td>
+</tr>
+<tr>
+<td>Shift</td>
+<td>SHIFT, while held</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>help for the value under the mouse</td>
+</tr>
+<tr>
+<td>Tab</td>
+<td>1-4 / 5-8</td>
+</tr>
+<tr>
+<td>Space</td>
+<td>PLAY / STOP (standalone)</td>
+</tr>
+<tr>
+<td>Ctrl+O, Ctrl+S</td>
+<td>OPEN, SAVE (standalone; the DAW's in a DAW)</td>
+</tr>
+<tr>
+<td>Ctrl+M</td>
+<td>the page map</td>
+</tr>
+<tr>
+<td>Ctrl+B</td>
+<td>the sound browser, on the selected track</td>
+</tr>
+<tr>
+<td>Ctrl+R, Ctrl+Shift+R</td>
+<td>DICE THE PAGE, MUTATE the track</td>
+</tr>
+<tr>
+<td>Ctrl+C, Ctrl+V, Ctrl+Shift+V</td>
+<td>copy, paste, paste sound</td>
+</tr>
+<tr>
+<td>Alt+Up / Down</td>
+<td>move the track</td>
+</tr>
+<tr>
+<td>Shift+Left / Right</td>
+<td>previous or next section</td>
+</tr>
+<tr>
+<td>Up / Down</td>
+<td>rows of a list, or SELECT</td>
+</tr>
+<tr>
+<td>Shift+Up / Down</td>
+<td>previous or next track</td>
+</tr>
+<tr>
+<td>Left / Right</td>
+<td>ALGORITHM</td>
+</tr>
+<tr>
+<td>Ctrl-click a value</td>
+<td>type it</td>
+</tr>
+<tr>
+<td>Shift-drag a value</td>
+<td>fine steps</td>
+</tr>
+<tr>
+<td>Right-click</td>
+<td>help and menus</td>
+</tr>
+<tr>
+<td>Right-click a button or key</td>
+<td>latch it</td>
+</tr>
+</tbody>
+</table>
+<p>On a Mac Ctrl is <strong>Cmd</strong> for the shortcuts above, except Ctrl-click, which stays the right-click.</p>
+<h2 id="where-each-page-is-explained">Where each page is explained</h2>
+<p>Cosmati's pages are the FM-1's. For what a page's knobs do, the manual's chapter:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Chapters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GEN</strong></td>
+<td><a href="../manual/#the-generators">The generators</a>, <a href="../manual/#the-gen-layer">the GEN layer</a>, <a href="../manual/#seq-the-mode-and-its-pages">SEQ</a></td>
+</tr>
+<tr>
+<td><strong>SOUND</strong></td>
+<td><a href="../manual/#sounds">Sounds</a></td>
+</tr>
+<tr>
+<td><strong>MOD</strong></td>
+<td><a href="../manual/#mods-the-modulation-cords">MODS</a>, <a href="../manual/#matrix">MATRIX</a>, <a href="../manual/#organic-tide-and-swarm">ORGANIC</a></td>
+</tr>
+<tr>
+<td><strong>SHAPE</strong></td>
+<td><a href="../manual/#evolve">EVOLVE</a>, <a href="../manual/#form">FORM</a>, <a href="../manual/#tweak">TWEAK</a>, <a href="../manual/#length">LENGTH</a>, <a href="../manual/#timing">TIMING</a>, <a href="../manual/#energy">ENERGY</a></td>
+</tr>
+<tr>
+<td><strong>PIECE, MIX</strong></td>
+<td><a href="../manual/#form">FORM, PIECE, CHAIN, ENTRIES, PERF, LANDSCAPE</a></td>
+</tr>
+<tr>
+<td><strong>SCALE</strong></td>
+<td><a href="../manual/#harmony-one-key-chord-and-qnt-chrd">Harmony</a></td>
+</tr>
+<tr>
+<td><strong>SETUP</strong></td>
+<td><a href="../manual/#menu-and-settings">Menu and settings</a></td>
+</tr>
+<tr>
+<td>Saving</td>
+<td><a href="../manual/#saving-and-older-projects">Saving and older projects</a></td>
+</tr>
+<tr>
+<td>Words</td>
+<td><a href="../manual/#glossary">Glossary</a>, <a href="../manual/#what-a-knob-does">what a knob does</a></td>
+</tr>
+</tbody>
+</table>
+<p>Also: <a href="https://github.com/Rastapopolix/tessera/blob/HEAD/RECIPES.md">Recipes</a>, <a href="../plugin/">the plugin's install and download page</a>, and the
+<a href="https://rastapopolix.github.io/tessera/webapp/sim/">simulator</a>.</p>
+<p><em>Cosmati is free software (GPL-3.0). Credits are in the <a href="../manual/#credits">manual</a>.</em></p>
+
+<p class="next">To print it or read it offline: <a href="cosmati-manual.pdf" download>the Cosmati manual as a PDF</a>, or the two-page <a href="cosmati-cheatsheet.pdf" download>quick reference</a>. Installing and downloading Cosmati: the <a href="../plugin/">plugin's page</a>. What each page and generator does: the <a href="../manual/">Tessera manual</a>. New to Tessera? Start with <a href="../start/">Getting started</a>.</p>
+</main>
+</div>
+<script>/* the contents: the chapter on screen opened and marked; on a narrow screen, CONTENTS shows them */
+(function () {
+  var links = [].slice.call(document.querySelectorAll(".toc a")), byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  var heads = [].slice.call(document.querySelectorAll("main h2[id], main h3[id]")).filter(function (h) { return byId[h.id]; });
+  function mark() {
+    var cur = null;
+    for (var i = 0; i < heads.length; i++) { if (heads[i].getBoundingClientRect().top < 90) cur = heads[i]; else break; }
+    links.forEach(function (a) { a.classList.remove("here"); a.parentNode.classList.remove("open"); });
+    if (!cur) return;
+    var a = byId[cur.id]; a.classList.add("here");
+    var li = a.parentNode; while (li && li.tagName === "LI") { li.classList.add("open"); li = li.parentNode.parentNode; }
+  }
+  var busy = false;
+  window.addEventListener("scroll", function () { if (!busy) { busy = true; requestAnimationFrame(function () { busy = false; mark(); }); } });
+  mark();
+  var b = document.getElementById("contents");
+  b.addEventListener("click", function () { var o = document.body.classList.toggle("toc-open"); b.setAttribute("aria-expanded", o); });
+  document.getElementById("side").addEventListener("click", function (e) {
+    if (e.target.tagName === "A") { document.body.classList.remove("toc-open"); b.setAttribute("aria-expanded", "false"); }
+  });
+})();
+/* a table or code block wider than the page scrolls sideways: it then takes the keyboard focus, so the arrow keys
+   scroll it */
+(function () {
+  var boxes = [].slice.call(document.querySelectorAll("main table, main pre"));
+  function fit() {
+    boxes.forEach(function (b) { if (b.scrollWidth > b.clientWidth + 1) b.tabIndex = 0; else b.removeAttribute("tabindex"); });
+  }
+  fit(); window.addEventListener("resize", fit);
+})();
+/* the search: every section's text (from its heading to the next), the matching ones listed with a line of each */
+(function () {
+  var q = document.getElementById("search-q"), out = document.getElementById("results"), found = document.getElementById("found"), toc = document.querySelector(".toc"), secs = [], cur = null;
+  [].forEach.call(document.getElementById("main").children, function (el) {
+    if (/^H[1-4]$/.test(el.tagName) && el.id) { cur = { id: el.id, title: el.textContent, text: "" }; secs.push(cur); }
+    else if (cur) cur.text += " " + el.textContent;
+  });
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  q.addEventListener("input", function () {
+    var w = q.value.trim().toLowerCase();
+    if (w.length < 2) { out.hidden = true; toc.hidden = false; found.textContent = ""; return; }
+    var html = "", n = 0;
+    secs.forEach(function (s) {
+      if (n >= 40) return;
+      var t = s.text.replace(/\s+/g, " "), i = t.toLowerCase().indexOf(w), inTitle = s.title.toLowerCase().indexOf(w) >= 0;
+      if (i < 0 && !inTitle) return;
+      n++;
+      var line = i < 0 ? "" : esc(t.slice(Math.max(0, i - 40), i)) + "<mark>" + esc(t.substr(i, w.length)) + "</mark>" + esc(t.substr(i + w.length, 60));
+      html += '<li><a href="#' + s.id + '">' + esc(s.title) + "</a>" + (line ? "<small>&hellip;" + line + "&hellip;</small>" : "") + "</li>";
+    });
+    out.innerHTML = html || "<li><small>Nothing found.</small></li>";
+    found.textContent = n ? n + (n >= 40 ? "+" : "") + (n === 1 ? " section found" : " sections found") : "Nothing found";
+    out.hidden = false; toc.hidden = true;
+  });
+  q.addEventListener("keydown", function (e) { if (e.key === "Escape") { q.value = ""; q.dispatchEvent(new Event("input")); } });
+})();
+/* the guided clips: a thumbnail (a link to YouTube without script) becomes the player when played; nothing is
+   fetched from YouTube before that, and the player takes the focus */
+(function () {
+  [].forEach.call(document.querySelectorAll("main .videos .play"), function (a) {
+    a.addEventListener("click", function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      var f = document.createElement("iframe"), fig = a.parentNode;
+      f.src = "https://www.youtube-nocookie.com/embed/" + a.dataset.video + "?autoplay=1&rel=0";
+      f.title = a.getAttribute("aria-label").replace("Play the video: ", "Video: ");
+      f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      f.allowFullscreen = true;
+      fig.className = "on";
+      fig.replaceChild(f, a);
+      f.focus();
+    });
+  });
+})();
+/* LIGHT / DARK: names the other look; the choice is stored (tessera-theme), as on the project page */
+(function () {
+  var b = document.getElementById("theme"), r = document.documentElement;
+  function light() { return r.dataset.theme === "light"; }
+  /* the LIGHT / DARK button: the sun or moon of the LANDSCAPE screen (firmware ui_land.c), then the word (hidden on
+   * phones, kept as the name) */
+  function themeFace(b, word, toLight) {
+    b.innerHTML = '<svg viewBox="0 0 15 15" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="'
+      + (toLight ? "M7 0h1v2h-1zM3 3h1v1h-1zM5 3h5v1h-5zM11 3h1v1h-1zM4 4h2v1h-2zM9 4h2v1h-2zM3 5h2v1h-2zM10 5h2v1h-2zM3 6h1v3h-1zM11 6h1v3h-1zM0 7h2v1h-2zM13 7h2v1h-2zM3 9h2v1h-2zM10 9h2v1h-2zM4 10h2v1h-2zM9 10h2v1h-2zM3 11h1v1h-1zM5 11h5v1h-5zM11 11h1v1h-1zM7 13h1v2h-1z" : "M5 2h2v1h-2zM4 3h2v1h-2zM3 4h3v1h-3zM2 5h4v3h-4zM2 8h5v1h-5zM2 9h6v1h-6zM3 10h9v1h-9zM4 11h7v1h-7zM5 12h5v1h-5z") + '"/></svg>';
+    var s = document.createElement("span"); s.className = "theme-word"; s.textContent = word; b.appendChild(s);
+    b.setAttribute("aria-label", word); b.title = word;
+  }
+  function show() { themeFace(b, light() ? "DARK" : "LIGHT", !light()); }
+  b.addEventListener("click", function () {
+    r.dataset.theme = light() ? "dark" : "light";
+    try { localStorage.setItem("tessera-theme", r.dataset.theme); } catch (e) {}
+    show();
+  });
+  show();
+})();
+</script>
+</body>
+</html>
