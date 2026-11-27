@@ -321,6 +321,13 @@ quality to come round to the next, back to AUTO. The quality plays wherever the 
 the card. These are saved in the project, in a part older firmware and the FM-1 skip (they open there with every USER
 chord on AUTO). [Harmony](MANUAL.md#harmony-one-key-chord-and-qnt-chrd) explains CHORD and QNT CHRD.
 
+**CHORD MOVE BY NOTES.** On a CHORD track's GEN sheet, **Move by** has one more choice in Cosmati, **NOTES**: on the
+strikes **Move when** picks, each of the chord's notes moves by its own amount. Four more rows appear: **Note 1** (the
+lowest) to **Note 4** (and any note above it), each -12 to 12, and **Notes in**: **ST** (semitones) or **DEG** (steps of
+the track's scale, so the moved notes stay in key). 0 0 +2 -1 in DEG, with Move when LAST, lifts the third note two
+degrees and drops the top one a degree on the bar's last strike. Pick NOTES, then open the sheet again for the four rows.
+On the FM-1 such a chord moves +1 ST.
+
 **A generator's lane and range.** On a generator track, hold **OCT+** on GEN (or right-click it) for the GEN sheet,
 which in Cosmati has two more rows:
 
