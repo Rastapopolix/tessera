@@ -12,8 +12,9 @@
  * a voice while the budget is full takes one from any part (voice_victim): the oldest
  * released voice, else the oldest extra UNISON voice, else the oldest held voice of a
  * POLY part that is not its lowest note. A voice taken from another part fades out
- * over one block (stage 4: the envelope goes to 0, the block's amplitude ramp
- * declicks it); one of the part's own is restarted in place, as before. Extra UNISON
+ * (stage 4: the envelope goes to 0, the block's amplitude ramp declicks it): over
+ * KILL_FADE blocks (~3 ms) when BUDGET takes it, over one block when overload sheds it
+ * (the CPU is short then); one of the part's own is restarted in place, as before. Extra UNISON
  * voices only start when there is room. */
 static uint32_t vage;                                   /* voice ages: one clock for every part */
 #if TESS_LFO_SLOPE
@@ -245,6 +246,12 @@ static uint32_t voice_budget(void)
     return b;
 }
 
+/* Quiet tails hurry while the pool is nearly full (after JIANT FM's, 2026-11-28): a released voice under -20 dB
+ * decays twice as fast and ends at -60 dB (not -72), so BUDGET finds a quiet voice to free before it has to take a
+ * loud one. ADSR engines (FM6 and ORACLE end their voices by their own envelopes). mix_block sets it a block */
+#define VHURRY_FROM ((1 << 24) / 10)                    /* -20 dB */
+#define VHURRY_END ((1 << 24) / 1000)                   /* -60 dB */
+static uint8_t voice_hurry;
 static uint32_t voices_busy(void)                       /* budget units of all parts' sounding voices (not fading) */
 {
     uint32_t p, i, n, u = 0;
@@ -391,10 +398,14 @@ static void voice_kill(voice_t *v)                      /* fade out over the nex
     if (part < NPART) voice_kills_part[part]++;
 }
 
+/* BUDGET's fade: a one-block (0.7 ms) ramp of a loud voice clicked (Reddit, 2026-11-27: clicks on the beat at a
+ * low BUDGET); four blocks, ~2.9 ms, are a declick and cost three blocks of the voice's render */
+#define KILL_FADE 4u
 static void voice_capacity_kill(voice_t *v)
 {
     capacity_steals++;
     voice_kill(v); /* preserve the legacy explicit-fade counter */
+    v->kfade = KILL_FADE;
 }
 
 /* the budget is full: free room for a voice of part t. 0 = nothing to take (soft) */
@@ -557,6 +568,7 @@ static void voice_start(track_t *t, voice_t *v, uint32_t note, uint32_t vel, int
     v->gate = 1;
     v->active = 1;
     v->stage = 1;
+    v->kfade = 0;
     v->age = ++vage;
     voice_scale_pitch(t, v, note);
     v->mvel = t->m_vel;                                 /* mod.c: the note's VEL and RAND */
@@ -887,13 +899,20 @@ static int32_t env_tick(track_t *t, voice_t *v)
         break;
     case 3:
         v->env -= mulq16(v->env, ENV_EXP[p[P_REL] & 127]);
-        if (v->env < (1 << 12)) {
+        if (voice_hurry && v->env < VHURRY_FROM)        /* the pool nearly full: a quiet tail goes twice as fast */
+            v->env -= mulq16(v->env, ENV_EXP[p[P_REL] & 127]);
+        if (v->env < (voice_hurry ? VHURRY_END : 1 << 12)) {
             v->env = 0;
             v->stage = 0;
             v->active = 0;
         }
         break;
     case 4:                                             /* given up for another part: this block fades it */
+        if (v->kfade > 1u) {                            /* (BUDGET's: held, scaled down in track_render_audio) */
+            v->kfade--;
+            break;
+        }
+        v->kfade = 0;
         v->env = 0;
         v->stage = 0;
         v->active = 0;
@@ -1041,6 +1060,8 @@ static __attribute__((noinline)) uint32_t track_render_audio(track_t *t, int32_t
             }
             if (e->amp)                                 /* the engine's own amplitude curve */
                 env = e->amp(t, v, env);
+            if (v->kfade && v->stage == 4u)             /* BUDGET's fade: 3/4, 2/4, 1/4, then env_tick's 0 */
+                env = env * (int32_t)v->kfade / (int32_t)KILL_FADE;
             m.envq15 = e->ownenv ? 0 : env;
 #if MELODEE_SID
             if (e == &ENG_SID)                          /* the chip's envelope counter (ENV3): ENV DEST, the matrix */
