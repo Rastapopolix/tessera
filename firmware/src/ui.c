@@ -472,8 +472,26 @@ static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
 #if TESS_HAS_POINTER
 static uint8_t ui_csec;                                 /* (below: the sections on) */
 #endif
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects, ENV DEST and LFO DEST, the sound's EDIT pages
+ * (VOICE stays: how a part plays its notes on the gear), PRESETS and USER (SAVE opens PROJECT). ENV and LFO stay: mod
+ * sources, for CCs */
+static int midi_page_gone(uint32_t i)
+{
+    const page_t *pg = &PAGES[i];
+    if (pg->fam == FAM_FX || pg->graph == GR_BROWSE || pg->graph == GR_USER || pg->graph == GR_FMSTORE)
+        return 1;
+    if (str_eq(pg->title, "ENV DEST") || str_eq(pg->title, "LFO DEST"))
+        return 1;
+    return pg->fam == FAM_EDIT && !str_prefix(pg->title, "VOICE");
+}
+#endif
 static int page_visible(uint32_t i)
 {
+#if TESSERA_MIDI_ONLY
+    if (midi_page_gone(i))
+        return 0;
+#endif
 #if TESS_HAS_POINTER
     if (PAGES[i].graph == GR_SETTINGS)                  /* SETTINGS: SETUP's page while the sections are on */
         return ui_csec;

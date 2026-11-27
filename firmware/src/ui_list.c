@@ -16,11 +16,16 @@ static const list_t LISTS[] = {
                             {"SCL", 1}, {"KEY", 1}, {"KEY", 2}}},
                                                         /* (KEY: KEY LINK, QNT LINK after QNT, the CHAIN's KEY B / C;
                                                          * MPC: QNT MPC's pad degree) */
+#if TESSERA_MIDI_ONLY
+    {"VOICE", LP_NONE, 4, {{"VOICE", 0}, {"VOICE", 3}, {"VOICE 2", 0}, {"VOICE 2", 3}}},   /* (Tessera MIDI: how a part
+                                                         * plays on the gear: VOICE, PRIO, ALLOC, MUTE; no sound) */
+#else
     {"VOICE", LP_NONE, 10, {{"PRESETS", 1}, {"VOICE", 0}, {"VOICE", 1}, {"VOICE", 2}, {"VOICE", 3}, {"VOICE 2", 0},
                             {"VOICE 2", 1}, {"VOICE 2", 2}, {"VOICE 2", 3}, {"VOICE 3", 0}}},
                                                         /* (PRESETS: the track's sound, KNOB 2 the PRESETS knob, OCT+
                                                          * the browser; VOICE is the one list every engine has, and
                                                          * the one about how the track's sound plays: 2026-11-17) */
+#endif
     {"FM LFO", LP_NONE, 7, {{"FM LFO", 0}, {"FM LFO", 1}, {"FM LFO", 2}, {"FM LFO", 3}, {"FM LFO 2", 0}, {"FM LFO 2", 1},
                             {"FM LFO 2", 2}}},
     {"FM BEND", LP_NONE, 16, {{"FM BEND", 0}, {"FM BEND", 1}, {"FM BEND", 2}, {"FM BEND", 3}, {"FM PORTA", 0},
