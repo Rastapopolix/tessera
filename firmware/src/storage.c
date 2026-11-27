@@ -106,10 +106,15 @@ static int st_proj(uint32_t obj) { return obj >= OBJ_PROJ0 && obj < OBJ_PROJ0 + 
 /* sector i (0..ST_PROJ_SECTORS - 1) of a project copy */
 static uint32_t st_proj_sector(uint32_t obj, uint32_t copy, uint32_t i)
 {
+#if TESSERA_MIDI_ONLY
     uint32_t c = (obj - OBJ_PROJ0) * 2u + copy, r;
     for (r = 0; r + 1u < ST_PROJ_RUNS && i >= ST_PROJ_RUN[c][r].n; r++)
         i -= ST_PROJ_RUN[c][r].n;
     return ST_PROJ_RUN[c][r].at + i * ST_SECTOR;
+#else
+    uint32_t c = (obj - OBJ_PROJ0) * 2u + copy;
+    return i < ST_PROJ_RUN[c][0].n ? ST_PROJ_RUN[c][0].at + i * ST_SECTOR : ST_PROJ_RUN[c][1].at + (i - ST_PROJ_RUN[c][0].n) * ST_SECTOR;
+#endif
 }
 static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy A (0) / B (1): its first sector */
 {
