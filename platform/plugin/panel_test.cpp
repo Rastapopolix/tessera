@@ -732,6 +732,26 @@ int main(int argc, char **argv)
         CHECK(q.latch(c4x, c4y) && q.input.keys, "a right-click latches a key");
         CHECK(q.key(0x01, true) && !q.input.keys && !q.input.buttons, "Esc lets every latch go");
         CHECK(!q.latch(5, 5), "a right-click on nothing: no change");
+        {   // a right-click reaches the core on CHORD USER's card (the chord taken), NOTES' SEND lane (the step's send
+            // gone) and ENTRIES' cell (AUTO): Theo 2026-11-27, a chord couldn't be taken
+            tess_view_t fv = v;
+            const struct { uint32_t kind; const char *what; } ks[] = {
+                {TESS_ZONE_CHORD, "CHORD USER's card"}, {TESS_ZONE_SEND, "NOTES' SEND lane"}, {TESS_ZONE_EGRID, "ENTRIES' cell"}};
+            for (const auto &k : ks)
+            {
+                tess_zone_t z{};
+                z.kind = k.kind, z.x = 40, z.y = 40, z.w = 20, z.h = 12, z.row = 1;
+                fv.zones[0] = z, fv.zone_count = 1;
+                q.draw(px.data(), fv);
+                q.input.zones.clear();
+                const int zx = 292 + 8 + z.x + z.w / 2, zy = 44 + 8 + z.y + z.h / 2;
+                CHECK(q.latch(zx, zy) && q.input.zones.size() == 1 && q.input.zones[0].z.kind == k.kind &&
+                          q.input.zones[0].action == TESS_ZA_HELP,
+                      "a right-click on %s reaches the core", k.what);
+                q.input.zones.clear();
+            }
+            q.draw(px.data(), v);
+        }
         Panel f;
         f.set_tracks(8);
         f.set_shell(1);
