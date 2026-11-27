@@ -1121,15 +1121,32 @@ int main(int argc, char **argv)
                 const tess_zone_t &t3 = v.zones[tz];
                 int tx = 292 + 8 + t3.x + t3.w / 2, ty = 44 + 8 + t3.y + t3.h / 2;
                 z.take_track_request();
-                CHECK(z.latch(tx, ty) && z.ctx_rows().size() == 8 && z.ctx_rows()[0] == "T3" && z.ctx_rows()[4] == "MOVE UP",
-                      "a right-click on T3: its menu (T3, COPY .. MOVE DOWN)");
+                CHECK(z.latch(tx, ty) && z.ctx_rows().size() == 9 && z.ctx_rows()[0] == "T3" &&
+                          z.ctx_rows()[1] == "SOUNDS..." && z.ctx_rows()[5] == "MOVE UP",
+                      "a right-click on T3: its menu (T3, SOUNDS..., COPY .. MOVE DOWN)");
                 z.draw(px.data(), v);
                 if (!out.empty()) ppm(out + "/09c_track_menu.ppm", px);
-                int ry = ty + 4 + 4 * 28 + 10;
-                if (ty + 8 * 28 + 8 > Panel::H - 8) ry = Panel::H - 8 - 8 * 28 - 8 + 4 + 4 * 28 + 10;
-                z.down(tx + 20, ry), z.up(tx + 20, ry);
+                auto ry = [&](int r) {   // (row r's middle; the menu moved up when it would run off the window)
+                    return ty + 9 * 28 + 8 > Panel::H - 8 ? Panel::H - 8 - 9 * 28 - 8 + 4 + r * 28 + 10 : ty + 4 + r * 28 + 10;
+                };
+                z.down(tx + 20, ry(5)), z.up(tx + 20, ry(5));
                 Panel::TrackRequest rq = z.take_track_request();
                 CHECK(rq.what == Panel::TR_UP && rq.track == 2, "..MOVE UP: T3 asked up (%d, T%d)", rq.what, rq.track + 1);
+                z.input.zones.clear();
+                z.latch(tx, ty), z.down(tx + 20, ry(1)), z.up(tx + 20, ry(1));   // SOUNDS...: T3 selected, the browser
+                CHECK(z.input.track == 2 && !z.input.zones.empty() && z.input.zones.back().z.kind == TESS_ZONE_MAP &&
+                          z.input.zones.back().z.role == TESS_SEC_SOUND && z.input.zones.back().z.row == 0,
+                      "..SOUNDS...: T3 selected, SOUND's first page asked (track %d)", z.input.track + 1);
+                run(z, 0.3);
+                tess_core_view(&v);
+                CHECK(v.map_sec == TESS_SEC_SOUND && !std::strcmp(v.map_name[TESS_SEC_SOUND][v.map_at], "PRESETS"),
+                      "..the browser shown (%d %d)", v.map_sec, v.map_at);
+                CHECK(z.shortcut('B') && z.input.zones.back().z.kind == TESS_ZONE_MAP, "Ctrl+B: the browser too");
+                tess_core_buttons(1u << 6);   // (HOME again, T1 selected, for what follows)
+                run(z, 0.05);
+                tess_core_buttons(0);
+                tess_core_track_select(0);
+                run(z, 0.3);
             }
         }
     }

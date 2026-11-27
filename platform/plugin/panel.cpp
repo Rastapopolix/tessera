@@ -958,6 +958,12 @@ bool Panel::shortcut(char c)
         note(said);
         return true;
     }
+    if (c == 'B')   // Ctrl+B: the sound browser on the selected track (Theo 2026-11-27: since the sections, only in
+    {               // SAVE's round; now SOUND's first page too)
+        if (typing() || !native()) return false;
+        open_browser(track_now);
+        return true;
+    }
     if (c == 'M')   // Ctrl+M: the page map (Cosmati audit G11)
     {
         if (typing()) return false;
@@ -2658,8 +2664,8 @@ void Panel::ctx_open(int kind, int x, int y)
 {
     static const char *const VAL[] = {"HELP", "DEFAULT", "COPY VALUE", "PASTE VALUE", "RANDOM", "TYPE A VALUE", "LOCK",
                                       "DICE THE PAGE", "PUT BACK"};
-    static const char *const TRK[] = {"COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN", "MUTATE",
-                                      "PUT BACK"};
+    static const char *const TRK[] = {"SOUNDS...", "COPY TRACK", "PASTE TRACK", "PASTE SOUND", "MOVE UP", "MOVE DOWN",
+                                      "MUTATE", "PUT BACK"};
     static const char *const GRID[] = {"AUTO", "DROP THIS SECTION", "PIECE: VERSION", "PIECE: SHOWCASE", "PIECE: ROCKERS",
                                        "PIECE: ROOTS", "PIECE: STEPPERS"};   // (entries.c DUB_FORMS' order: zones_test)
     ctx_row.clear();
@@ -2733,15 +2739,17 @@ void Panel::ctx_do(int r)
         zone_act(ctx_zone, TESS_ZA_HELP, 0);   // (AUTO: the column, as a right-click on the head did)
     else if (ctx_kind == CTX_GRID && r >= 2)
         zone_act(ctx_zone, TESS_ZA_DUB, r - 2);   // (0 DROP THIS SECTION, 1.. a dub FORM for the piece)
-    else if (ctx_kind == CTX_TRACK && r >= 1 && r <= 5)
-        track_req = {TR_COPY + (r - 1), ctx_track};
-    else if (ctx_kind == CTX_TRACK && r >= 6)   // MUTATE that track, or PUT BACK
+    else if (ctx_kind == CTX_TRACK && r == 1)   // SOUNDS...: that track's sounds in the browser
+        open_browser(ctx_track);
+    else if (ctx_kind == CTX_TRACK && r >= 2 && r <= 6)
+        track_req = {TR_COPY + (r - 2), ctx_track};
+    else if (ctx_kind == CTX_TRACK && r >= 7)   // MUTATE that track, or PUT BACK
     {
         tess_zone_t z{};
         z.kind = TESS_ZONE_TRACK, z.row = (int16_t)ctx_track;
-        zone_act(z, TESS_ZA_DICE, r == 6 ? MUTATE_PCT : -1);
+        zone_act(z, TESS_ZA_DICE, r == 7 ? MUTATE_PCT : -1);
         char said[24];
-        std::snprintf(said, sizeof said, r == 6 ? "MUTATED T%d" : "PUT BACK T%d", ctx_track + 1);
+        std::snprintf(said, sizeof said, r == 7 ? "MUTATED T%d" : "PUT BACK T%d", ctx_track + 1);
         note(said);
     }
     input.changed = true;
@@ -2767,6 +2775,14 @@ void Panel::zone_act(const tess_zone_t &z, uint32_t action, int n)
 {
     input.zones.push_back({z, action, n});
     input.changed = true;
+}
+void Panel::open_browser(int track)
+{
+    if (track >= 0 && track < tracks_ && track != track_now)   // (the track first: the browser shows the selected one's)
+        input.track = track, track_now = track;
+    tess_zone_t z{};
+    z.kind = TESS_ZONE_MAP, z.role = TESS_SEC_SOUND, z.row = 0;   // (SOUND's first page: PRESETS, ui.c cs_pages)
+    zone_act(z, TESS_ZA_CLICK, 0);
 }
 
 // the page map (Cosmati audit G11): a card over the panel, a block a section (its name, then its pages, a column of 11

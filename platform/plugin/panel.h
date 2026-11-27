@@ -123,7 +123,7 @@ class Panel
     /* TRACK (TESSERA's menu, and keys): the selected track copied, a copy pasted onto it (the track whole, or its sound
      * alone), or the track moved a place up or down (swapped with its neighbour). Ctrl+C, Ctrl+V, Ctrl+Shift+V,
      * Alt+Up, Alt+Down (Cmd and Option on a Mac): shortcut 'C', 'V', 'v', '^', '_'. A pick asks (take_track_request);
-     * the instance answers with a note under the keys */
+     * the instance answers with a note under the keys. Ctrl+B (Cmd+B): the sound browser on the selected track ('B') */
     enum { TR_NONE, TR_COPY, TR_PASTE, TR_PASTE_SOUND, TR_UP, TR_DOWN };
     struct TrackRequest { int what = TR_NONE, track = 0; };
     TrackRequest take_track_request() { TrackRequest r = track_req; track_req = TrackRequest{}; return r; }
@@ -272,6 +272,7 @@ class Panel
   public:
     bool map_shown() const { return map_open; }
     void map_toggle() { map_open = !map_open && map_has(); map_hover = -1; }
+    void open_browser(int track);   // the sound browser (SOUND's PRESETS) on that track: Ctrl+B, a track's SOUNDS...
     bool map_has() const { for (int s = 0; s < TESS_SEC_N; s++) if (map_n[s]) return true; return false; }
     // (tests) where the map last drew section sec's page named name: its middle, false if not there
     bool map_place(int sec, const char *name, int &x, int &y) const
