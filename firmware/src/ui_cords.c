@@ -36,7 +36,9 @@ static void cu_adopt(void)
 #else
 #define CU_SPT CU_SPT0
 #endif
-#define CU_NSRC (1u + NTRK * CU_SPT + (CS_EOC - CS_ENERGY))   /* KNOB 1's list: --, track by track from the selected
+#define CU_NPRJ0 (CS_EOC - CS_ENERGY)                  /* the project's sources: ENERGY .. BUS B, */
+#define CU_NPRJ (CU_NPRJ0 + (TESS_BUS_CD ? 2u : 0u))    /* .. then BUS C, BUS D */
+#define CU_NSRC (1u + NTRK * CU_SPT + CU_NPRJ)          /* KNOB 1's list: --, track by track from the selected
                                                          * one on (T3: T3, T4, T1, T2), then the project's
                                                          * (ENERGY, the MACROs) once */
 static int cu_src_trk(uint32_t s) { return s && !CS_PROJECT(s); }   /* a track's source, not the project's */
@@ -76,7 +78,11 @@ static const uint8_t CU_ORDER[] = {
     CU_PROJECT, CD_FILL, CD_TEMPO,
     CU_PMODS, CD_M1_AMT, CD_M1_AMT + 1, CD_M1_AMT + 2, CD_M1_AMT + 3, CD_M1_AMT + 4, CD_M1_AMT + 5, CD_M1_AMT + 6,
     CD_M1_AMT + 7, CD_M1_AMT + 8, CD_M1_AMT + 9, CD_M1_AMT + 10, CD_M1_AMT + 11, CD_M1_AMT + 12, CD_M1_AMT + 13,
-    CD_M1_AMT + 14, CD_M16_AMT, CD_BUS_A, CD_BUS_B, CD_MOD_DEPTH,
+    CD_M1_AMT + 14, CD_M16_AMT, CD_BUS_A, CD_BUS_B,
+#if TESS_BUS_CD
+    CD_BUS_C, CD_BUS_D,
+#endif
+    CD_MOD_DEPTH,
 };
 /* whether destination code acts on track tr as its MODE is: a generator's own on its tracks, the general generator
  * ones (TWEAK, EVOLVE, FORM, TIMING's RATCH ..) on any generator's, PATTERN DIR and ACCUM on STEP tracks; the rest
@@ -141,6 +147,9 @@ static uint32_t cu_src_of(const cord_t *c)
                                      c->src == CS_LFOQ ? CU_SPT0 : c->src == CS_LFO2X ? CU_SPT0 + 1u :
 #endif
                                      cu_tide(c->src) - 1u)
+#if TESS_BUS_CD
+                              : c->src >= CS_BUSC && c->src <= CS_BUSD ? 1u + NTRK * CU_SPT + CU_NPRJ0 + (c->src - CS_BUSC)
+#endif
                               : 1u + NTRK * CU_SPT + c->src - CS_ENERGY;
 }
 static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's list: its source, *tr its track */
@@ -148,6 +157,9 @@ static uint32_t cu_src_at(uint32_t v, uint8_t *tr)     /* entry v of KNOB 1's li
     *tr = 0;
     if (!v) return CS_OFF;
     v--;
+#if TESS_BUS_CD
+    if (v >= NTRK * CU_SPT + CU_NPRJ0) return CS_BUSC + v - NTRK * CU_SPT - CU_NPRJ0;
+#endif
     if (v >= NTRK * CU_SPT) return CS_ENERGY + v - NTRK * CU_SPT;
     *tr = (uint8_t)((v / CU_SPT + song.sel) % NTRK);  /* (the tracks from the selected one on, as KNOB 3's) */
 #if TESS_MPE

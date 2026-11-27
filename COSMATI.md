@@ -343,11 +343,16 @@ Both are saved in the project, in a part the FM-1 skips: it plays such a track w
 
 ## Modulation
 
-**MOD** holds the 16 mods, the MATRIX, the LFOs and ORGANIC; the [manual's MODS chapter](MANUAL.md#mods-the-modulation-cords)
+**MOD** holds the 32 mods (the FM-1 has 16), the MATRIX, the LFOs and ORGANIC; the [manual's MODS chapter](MANUAL.md#mods-the-modulation-cords)
 explains sources and destinations. In Cosmati:
 
-- **MODS:** the wheel scrolls the 16 mods; click one to pick it, drag up or down to change its amount, double-click for
+- **MODS:** the wheel scrolls the 32 mods; click one to pick it, drag up or down to change its amount, double-click for
   its type (+-, +, GATE, HOLD). Click a mod's source or destination for its list; it stays open until you click one.
+- **32 mods.** M1 AMT to M16 AMT still reach mods 1 to 16 only. Mods 17 to 32 are saved with the project; the FM-1 opens
+  it and plays the first 16.
+- **Four MIX buses.** Besides BUS A and B, Cosmati has **BUS C** and **BUS D**, as destinations and as sources, each with
+  its own MODE (SUM, MAX, MIN, DIFF) and LAG on MODS' sheet (hold OCT+ on MODS). The FM-1 opens a project that uses them
+  and leaves the mods into and out of BUS C and D out.
 - **MATRIX:** click a cell to open its mod, or **drag one cell onto another** to make a mod ([above](#drag-and-drop)).
 - **Live motion:** knob rings show the modulated value moving ([above](#values)); MATRIX cells move with their mods.
 - **MPE:** each note keeps its own pressure and slide. On MODS, **AT** is each note's pressure and **SLIDE** (the

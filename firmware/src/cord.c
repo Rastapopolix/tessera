@@ -112,6 +112,10 @@ static const cord_dest_t CORD_DESTS[CD_N] = {
     [CD_BUS_A] = {CD_BUS_A, CK_BUS, 0, PID_NONE, "BUS A" CD_FULL("the project's MIX bus A: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS A")},
     [CD_CLOCK] = {CD_CLOCK, CK_CLOCK, 0, PID_NONE, "CLOCK" CD_FULL("steps the track's generator on each edge of the source, in place of its DIV (a GATE cord: OFFSET the threshold, a GATE source counts hits); AMOUNT is the division, 100 % every edge, 50 % every second, 33 % every third; negative: the gate closing")},
     [CD_BUS_B] = {CD_BUS_B, CK_BUS, 0, PID_NONE, "BUS B" CD_FULL("the project's MIX bus B: its mods combined by its MODE (SUM MAX MIN DIFF), slewed by its LAG, read back by the source BUS B")},
+#if TESS_BUS_CD
+    [CD_BUS_C] = {CD_BUS_C, CK_BUS, 0, PID_NONE, "BUS C" CD_FULL("the project's MIX bus C (Cosmati): as BUS A, read back by the source BUS C")},
+    [CD_BUS_D] = {CD_BUS_D, CK_BUS, 0, PID_NONE, "BUS D" CD_FULL("the project's MIX bus D (Cosmati): as BUS A, read back by the source BUS D")},
+#endif
     [CD_CH_STRUM] = S_(CD_CH_STRUM, TX_CH_STRUM, "STRUM", "CHORD's STRUM: how many ms apart a chord's notes start, at each strike"),
     [CD_CH_SDIR] = S_(CD_CH_SDIR, TX_CH_SDIR, "STR DIR", "CHORD's strum DIR, stepped: UP DOWN ALT from the track's own"),
     [CD_SUB_RATCH] = S_(CD_SUB_RATCH, TX_SUB_RATCH, "RATCH", "TIMING's RATCH: how many times a generator step's notes play, x1 .. x8"),
@@ -160,6 +164,9 @@ static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY"
 #if TESS_MPE
                                                 "SLIDE",
 #endif
+#if TESS_BUS_CD
+                                                [CS_BUSC] = "BUS C", [CS_BUSD] = "BUS D",
+#endif
 #if TESS_LFO_SLOPE
                                                 [CS_LFOQ] = "LFO 90", [CS_LFO2X] = "LFO X2",   /* (36-37 unbuilt: 0) */
 #endif
@@ -177,9 +184,19 @@ static uint32_t cord_clmask;                            /* CLOCK: bit i, cords[i
 static uint8_t cord_clcnt[CORD_LIVE];                   /* ... its edges counted towards its division */
 /* MIX buses (below, at cord_bus_tick): busm[b] bit i, cords[i] goes into bus b; out[b], its value now (Q15, the source
  * BUS A / B); y[b] the same, lagged, in Q23 (its fraction kept); set: A MODE, A LAG, B MODE, B LAG */
-static uint32_t cord_busm[2];
-static int32_t cord_bus_out[2], cord_bus_y[2];
-static uint8_t cord_bus_cfg[4];
+static uint32_t cord_busm[CORD_NBUS];
+static int32_t cord_bus_out[CORD_NBUS], cord_bus_y[CORD_NBUS];
+static uint8_t cord_bus_cfg[2u * CORD_NBUS];
+#if TESS_BUS_CD
+#define CORD_BUS_OF(d) ((d) >= CD_BUS_C ? 2u + (uint32_t)((d) - CD_BUS_C) : (uint32_t)((d) - CD_BUS_A))   /* (a bus's index) */
+#define CORD_BUS_ANY (cord_busm[0] | cord_busm[1] | cord_busm[2] | cord_busm[3] | cord_bus_out[0] | cord_bus_out[1] | \
+                      cord_bus_out[2] | cord_bus_out[3])
+#define CORD_BUS_M (cord_busm[0] | cord_busm[1] | cord_busm[2] | cord_busm[3])
+#else
+#define CORD_BUS_OF(d) ((uint32_t)((d) - CD_BUS_A))
+#define CORD_BUS_ANY (cord_busm[0] | cord_busm[1] | cord_bus_out[0] | cord_bus_out[1])
+#define CORD_BUS_M (cord_busm[0] | cord_busm[1])
+#endif
 static uint32_t cord_ccmask;                            /* (CC OUT: bit i, cords[i] goes out as a CC; at cord_cc_tick) */
 /* MOD DEPTH (cord.h cord_mdepth_get): mdmask bit i, cords[i] goes onto it; nsmask, the cords it leaves alone (onto it,
  * a mod of mods, into a bus: what they move is scaled where it lands); set, the setting (0..100); md, it now with
@@ -207,7 +224,7 @@ void cord_tick(void)
     if (cord_tmask) cord_gates_tick();
     if (cord_clmask) cord_clock_tick(was);
     if (cord_cmask) cord_amounts();
-    if (cord_busm[0] | cord_busm[1] | cord_bus_out[0] | cord_bus_out[1]) cord_bus_tick();   /* (no cord in: to 0, */
+    if (CORD_BUS_ANY) cord_bus_tick();                                                       /* (no cord in: to 0, */
     if (cord_fmask) cord_fill_tick();                                                        /* then nothing) */
     else seq_fill_mod = 0;
     if (cord_pmask) cord_tempo_tick();
@@ -271,6 +288,10 @@ static int32_t cord_src(uint32_t s, uint32_t tr)
                                                          * bipolar whatever its POL, with its FADE, as CS_LFO) */
         return mulq15(lfo_wave(t, s == CS_LFOQ ? t->lfo_ph + 0x40000000u : t->lfo_ph << 1), t->lfo_fade);
 #endif
+#if TESS_BUS_CD
+    if (s == CS_BUSC || s == CS_BUSD)                   /* (BUS C, D: as A, B) */
+        return cord_bus_out[2u + (s - CS_BUSC)];
+#endif
     if (s >= CS_BUSA)                                   /* (the MIX buses, the project's: one block late) */
         return cord_bus_out[(s - CS_BUSA) & 1u];
     if (s >= CS_MACRO1)                                 /* (PERF's, the project's: 0..1) */
@@ -287,6 +308,9 @@ static int cord_bipolar(uint32_t s, uint32_t tr)
     (void)tr;
 #if TESS_LFO_SLOPE
     if (s == CS_LFOQ || s == CS_LFO2X) return 1;
+#endif
+#if TESS_BUS_CD
+    if (s == CS_BUSC || s == CS_BUSD) return 1;
 #endif
     return s == CS_NOTE || s == CS_DRIFT || (s >= CS_TORPOR && s < CS_MACRO1) || s == CS_LFO || (s >= CS_BUSA && s < CS_EOC) ||
            (s < CS_GATE && MS_BIPOLAR(s));             /* (CV: 0..1) */
@@ -328,9 +352,14 @@ _Static_assert(CD_FILL == 100 && CD_TEMPO == 101 && CD_CC == 102 && CD_SUB_SPLIT
 #if TESS_MPE
 _Static_assert(CS_SLIDE == 35, "cord codes are saved: never renumbered");
 #endif
+#if TESS_BUS_CD
+_Static_assert(CS_BUSC == 36 && CS_BUSD == 37 && CD_BUS_C == 132 && CD_BUS_D == 133, "cord codes are saved: never renumbered");
+#endif
+#if TESS_LFO_SLOPE || TESS_BUS_CD
 #if TESS_LFO_SLOPE
 _Static_assert(CS_LFOQ == 38 && CS_LFO2X == 39 && CD_LFO_RST == 134, "cord codes are saved: never renumbered");
-#define CORD_SRC_OK(s) ((s) < CS_N && CORD_SRC_NAME[s])   /* (a gap: a code another build has, BUS C, BUS D) */
+#endif
+#define CORD_SRC_OK(s) ((s) < CS_N && CORD_SRC_NAME[s])   /* (a gap: a code another build has: SLIDE, BUS C, D, LFO 90 ..) */
 #else
 #define CORD_SRC_OK(s) ((s) < CS_N)
 #endif
@@ -485,6 +514,9 @@ static void cord_masks(void)
     cord_cmask = cord_amask = 0;
     cord_tmask = cord_fmask = cord_pmask = cord_ccmask = 0;
     cord_busm[0] = cord_busm[1] = 0;
+#if TESS_BUS_CD
+    cord_busm[2] = cord_busm[3] = 0;
+#endif
     cord_mdmask = 0;
     cord_clmask = 0;
     cord_clk_trk = 0;
@@ -538,7 +570,7 @@ static void cord_masks(void)
             continue;
         }
         if (kind == CK_BUS) {                           /* (cord_bus_tick) */
-            cord_busm[c->dst - CD_BUS_A] |= 1u << i;
+            cord_busm[CORD_BUS_OF(c->dst)] |= 1u << i;
             continue;
         }
         if (kind == CK_MDEPTH) {                        /* (cord_mdepth_tick) */
@@ -566,7 +598,7 @@ static void cord_masks(void)
         else cord_mask[c->dst_trk] |= 1u << i;
     }
     cord_clk_pend &= cord_clk_trk;
-    cord_nsmask = cord_mdmask | cord_cmask | cord_busm[0] | cord_busm[1] | cord_clmask;   /* (CLOCK: AMOUNT a division,
+    cord_nsmask = cord_mdmask | cord_cmask | CORD_BUS_M | cord_clmask;   /* (CLOCK: AMOUNT a division,
                                                          * not a move) */
 }
 
@@ -612,6 +644,10 @@ static void cord_reset(void)
     cord_md = 32768;
     cord_busm[0] = cord_busm[1] = 0;                    /* (the buses: SUM, no LAG, at rest) */
     cord_bus_out[0] = cord_bus_out[1] = cord_bus_y[0] = cord_bus_y[1] = 0;
+#if TESS_BUS_CD
+    cord_busm[2] = cord_busm[3] = 0;
+    cord_bus_out[2] = cord_bus_out[3] = cord_bus_y[2] = cord_bus_y[3] = 0;
+#endif
     memset(cord_bus_cfg, 0, sizeof cord_bus_cfg);
     cord_fresh = 1;
     memset(cords, 0, sizeof cords);
@@ -920,9 +956,9 @@ static const int32_t CORD_LAG_STEP[CB_LAGS] = {0, CORD_LAG_(10), CORD_LAG_(20), 
 #undef CORD_LAG_
 static __attribute__((noinline)) void cord_bus_tick(void)
 {
-    int32_t now[2];
+    int32_t now[CORD_NBUS];
     uint32_t b;
-    for (b = 0; b < 2u; b++) {
+    for (b = 0; b < CORD_NBUS; b++) {
         uint32_t m = cord_busm[b], mode = cord_bus_cfg[2u * b], i, n = 0;
         int32_t v = 0;
         for (i = 0; m; i++, m >>= 1) {
@@ -937,7 +973,7 @@ static __attribute__((noinline)) void cord_bus_tick(void)
         if (mode == CB_DIFF && v < 0) v = -v;
         now[b] = clamp(v, -32767, 32767);
     }
-    for (b = 0; b < 2u; b++) {
+    for (b = 0; b < CORD_NBUS; b++) {
         int32_t st = CORD_LAG_STEP[cord_bus_cfg[2u * b + 1u] % CB_LAGS], y = cord_bus_y[b], t = now[b] * 256;
         if (!st || (t > y ? t - y : y - t) <= st) y = t;
         else y += t > y ? st : -st;
@@ -945,12 +981,12 @@ static __attribute__((noinline)) void cord_bus_tick(void)
         cord_bus_out[b] = y / 256;
     }
 }
-uint32_t cord_bus_get(uint32_t k) { return k < 4u ? cord_bus_cfg[k] : 0u; }
+uint32_t cord_bus_get(uint32_t k) { return k < 2u * CORD_NBUS ? cord_bus_cfg[k] : 0u; }
 void cord_bus_set(uint32_t k, int32_t v)
 {
-    if (k < 4u) cord_bus_cfg[k] = (uint8_t)clamp(v, 0, (k & 1u) ? (int32_t)CB_LAGS - 1 : CB_MODES - 1);
+    if (k < 2u * CORD_NBUS) cord_bus_cfg[k] = (uint8_t)clamp(v, 0, (k & 1u) ? (int32_t)CB_LAGS - 1 : CB_MODES - 1);
 }
-int32_t cord_bus_now(uint32_t b) { return cord_bus_out[b & 1u]; }
+int32_t cord_bus_now(uint32_t b) { return cord_bus_out[b % CORD_NBUS]; }
 
 /* each block with MOD DEPTH under 100 % or a mod onto it (cord_tick): the setting plus its mods' shares (theirs
  * unscaled: cord_nsmask), 0..100 % */
