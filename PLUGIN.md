@@ -348,9 +348,32 @@ DAW project saves them: the cords in the Tessera project, and ROUT, DRUM's chann
   own mixer channels in the DAW to process each track apart.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; by default channels 1 to 8, whatever
   ROUT is set to, so the DAW's routing holds), so Tessera's generators can play other instruments. NOTES OUT starts
-  at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. Only notes go out (no clock).
-  When the DAW stops, bypasses or restarts Cosmati, every note it left on gets its note-off. Not every DAW takes MIDI
-  from an instrument: Bitwig and Reaper do, Ableton Live does not.
+  at ALL in the plugin (the generators' notes too). MENU can set it to KEYS or OFF. In a DAW only notes go out (the
+  DAW sends the clock). When the DAW stops, bypasses or restarts Cosmati, every note it left on gets its note-off. Not
+  every DAW takes MIDI from an instrument: Bitwig and Reaper do, Ableton Live does not.
+
+### Clocking outboard gear: CLOCK in the menu
+
+CLOCK in Cosmati's menu has two switches, each on or off; OFF turns both off.
+
+- **PULSE:** the CLOCK output (after TRACK 8) carries a clock for a modular: on the left a short pulse every sixteenth
+  (4 a beat, 5 ms high), on the right a reset pulse with the first clock after the song starts, loops or jumps back. A
+  start between two sixteenths waits for the next one. It is audio, so it lands on the sample and the DAW lines it up
+  with the music. Send it to an output of an interface whose outputs are DC-coupled (MOTU's UltraLite, ES-8/ES-9 and
+  others) and patch it to a clock input and a reset input. Full scale is about +3 to +5 V on most DC-coupled
+  interfaces; turn the interface's output up if a module misses pulses. In Ableton Live: an audio track with Audio
+  From "Cosmati" and "CLOCK", Monitor In, out to that output. Off, the output is silent.
+- **MIDI:** in the standalone app, MIDI clock (24 a beat), START and STOP go out of the MIDI port picked in the app's
+  settings, with the notes, for an Elektron box or anything else that follows MIDI clock. It starts with the next
+  PLAY. In a DAW the DAW sends the clock (its own MIDI clock output), so this does nothing there.
+
+**The standalone app** sends each note and clock at the moment its audio is heard (before this it sent a whole
+audio block's MIDI at once, up to 16 ms apart on Windows), and puts Cosmati's other outputs on your interface's
+outputs after 1 and 2: CLOCK on 3 and 4, then TRACK 1, 2 and so on (a pair each; one each with OUTPUTS MONO).
+
+**In a DAW,** the DAW sends MIDI clock to outboard gear itself. It doesn't line up hardware MIDI with the audio, so
+if your Elektron sits late, give its clock a negative delay (Ableton: the MIDI Clock Sync Delay under Link, Tempo &
+MIDI). Lag that stays the same is fixed this way; lag that wobbles is the interface's MIDI or USB power saving.
 
 ## Several Cosmati in one song
 

@@ -1697,12 +1697,12 @@ void skin(const Skin &k)
 {
     T_YEL = k.yel, T_DIM = k.dim, T_HELD = k.held, T_WORD = k.word, T_OFF = k.off, T_BLACK = k.black, T_BODY = k.body;
 }
-const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 13, ROW_H = 36, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
+const int MENU_X = 36, MENU_Y = 46, MENU_W = 300, MENU_ROWS = 14, ROW_H = 34, SUB_X = MENU_X + MENU_W + 8, SUB_ROW = 30,
           INK_COLS = 5, INK_S = 32, INK_GAP = 12, FM1_LINE = 22;
-// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT, TRACK, OUTPUTS; MANUAL, ABOUT (a dotted line between each
-// group)
+// SHELL, INK; MODE, SIZE; FM-1 USB and its state, KEYS, LISTEN, SPLIT, TRACK, OUTPUTS, CLOCK; MANUAL, ABOUT (a dotted
+// line between each group). ROW_H 34 (36 until CLOCK): fourteen rows end at 618, inside the window's 624
 enum { ROW_SHELL, ROW_INK, ROW_MODE, ROW_SIZE, ROW_FM1, ROW_KEYS, ROW_HOVER, ROW_LISTEN, ROW_SPLIT, ROW_TRACK, ROW_OUTS,
-       ROW_MANUAL, ROW_ABOUT };
+       ROW_CLOCK, ROW_MANUAL, ROW_ABOUT };
 int row_y(int i)
 {
     return MENU_Y + 10 + i * ROW_H + (i >= ROW_MODE ? 18 : 0) + (i >= ROW_FM1 ? 18 : 0) + (i >= ROW_KEYS ? FM1_LINE : 0) +
@@ -1712,6 +1712,12 @@ const int MENU_H = 2 + 8 + MENU_ROWS * ROW_H + 3 * 18 + FM1_LINE + 8 + 2;
 // FM-1 USB's two words, right to left from the row's right edge: ON, then OFF
 const int SEG_RIGHT = MENU_X + MENU_W - 16;
 int seg_w(const char *t) { return Canvas::ptext_w(t, 2) + 12; }
+// CLOCK's words, right to left: PULSE, MIDI, OFF; which one x is on (0 OFF, 1 MIDI, 2 PULSE, -1 none)
+int clock_seg_at(int x)
+{
+    int p_l = SEG_RIGHT - seg_w("PULSE"), m_r = p_l - 4, m_l = m_r - seg_w("MIDI"), o_r = m_l - 4, o_l = o_r - seg_w("OFF");
+    return x >= p_l && x < SEG_RIGHT ? 2 : x >= m_l && x < m_r ? 1 : x >= o_l && x < o_r ? 0 : -1;
+}
 // SIZE's choices, right to left: FM-1 mode's presets 200 150 100 75, EXPANDED's 150 125 100 75, and last (leftmost)
 // the size now when it is none of those (a frame dragged to it); into out, how many
 int size_choices(bool expanded, int now, int *out)
@@ -2018,7 +2024,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     // the menu: SHELL, INK; MODE, SIZE; ABOUT
     nbox(c, MENU_X, MENU_Y, MENU_W, MENU_H, T_DIM, T_BLACK);
     static const char *NAMES[MENU_ROWS] = {"SKIN", "INK", "MODE", "SIZE", "FM-1 USB", "KEYS", "HOVER HELP",
-                                                "LISTEN", "SPLIT", "TRACK", "OUTPUTS", "MANUAL", "ABOUT"};
+                                                "LISTEN", "SPLIT", "TRACK", "OUTPUTS", "CLOCK", "MANUAL", "ABOUT"};
     for (int r = 0; r < MENU_ROWS; r++)
     {
         int y = row_y(r);
@@ -2095,6 +2101,12 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
             seg("STEREO", !outs_mono_, true);
             seg("MONO", outs_mono_, true);
         }
+        else if (r == ROW_CLOCK)   // MIDI clock (the standalone app's; greyed in a DAW) and PULSE on CLOCK: each on/off
+        {
+            seg("PULSE", (clock_bits_ & 2) != 0, true);
+            seg("MIDI", (clock_bits_ & 1) != 0, clock_standalone_);
+            seg("OFF", !clock_bits_, true);
+        }
         else if (r == ROW_MANUAL)   // a click opens the Cosmati manual's web page
             c.ptext(right - Canvas::ptext_w("OPENS A WEB PAGE", 2), y + 11, "OPENS A WEB PAGE", 2, T_DIM);
         else if (r == ROW_LISTEN || r == ROW_SPLIT)   // < OFF > / < CH 16 >, < 48 >: fixed widths (LISTEN_SEG)
@@ -2123,7 +2135,7 @@ void Panel::draw_native(uint32_t *px, const tess_view_t &v, double breath, const
     }
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_INK) + ROW_H + 8, T_DIM);
     dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_SIZE) + ROW_H + 8, T_DIM);
-    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_OUTS) + ROW_H + 8, T_DIM);
+    dotted(c, MENU_X + 16, MENU_X + MENU_W - 16, row_y(ROW_CLOCK) + ROW_H + 8, T_DIM);
 
     if (menu_sub == 1)   // the skins, NIGHT and DAY, the one shown marked (the FM-1's shells are no longer offered)
     {
@@ -2461,6 +2473,22 @@ bool Panel::menu_click(int x, int y)
             if (outs_mono_ != outs_live_)
                 note(outs_mono_ ? "TRACK OUTPUTS MONO WHEN THE DAW LOADS COSMATI AGAIN"
                                 : "TRACK OUTPUTS STEREO WHEN THE DAW LOADS COSMATI AGAIN");
+        }
+        menu_sub = 0;
+        return false;
+    }
+    if (r == ROW_CLOCK)   // OFF: both off; MIDI, PULSE: that one on or off again
+    {
+        int sg = clock_seg_at(x), bits = sg == 0 ? 0 : sg > 0 ? clock_bits_ ^ sg : clock_bits_;
+        if (bits != clock_bits_)
+        {
+            clock_bits_ = bits;
+            clock_req = bits;
+            if (sg == 1 && (bits & 1))   // (MIDI on: where it goes out; PULSE on: what the port carries)
+                note(clock_standalone_ ? "MIDI CLOCK AND START FROM THE NEXT PLAY"
+                                       : "MIDI CLOCK: THE STANDALONE APP ONLY (IN A DAW, THE DAW'S)");
+            else if (sg == 2 && (bits & 2))
+                note("CLOCK OUTPUT: 4 PULSES A BEAT LEFT, RESET RIGHT");
         }
         menu_sub = 0;
         return false;

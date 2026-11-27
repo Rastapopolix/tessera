@@ -3,8 +3,10 @@
 /* Tessera as a CLAP instrument (phase 0 spike). clap-wrapper turns the same code into VST3 and a standalone app
  * (CMakeLists.txt). What it does:
  *   - 8 tracks (core_defs.txt CORE_TRACKS=8: the FM-1's 4, then 5..8 on the panel's second bank);
- *   - outputs: the main mix, then TRACK 1..8 alone (the FM-1's USB stems); a MIDI out with every track's notes on its
- *     own channel (Settings > NOTES OUT ALL by default here; GLO > MIDI OUT per track);
+ *   - outputs: the main mix, then TRACK 1..8 alone (the FM-1's USB stems), then CLOCK (pulses for a modular: 4 a beat
+ *     on the left, a reset on the right as the song starts or jumps back; CLOCK OUT PULSE in TESSERA's menu); a MIDI
+ *     out with every track's notes on its own channel (Settings > NOTES OUT ALL by default here; GLO > MIDI OUT per
+ *     track), and in the standalone app MIDI clock, START and STOP too (CLOCK OUT MIDI);
  *   - the core runs at 44.1 kHz (tess_core.h) and is resampled (linear) to the host's rate;
  *   - notes and MIDI in (CLAP or MIDI dialect) go to the core as USB MIDI does on the FM-1, at their sample; ROUT
  *     starts at SEL here (a DAW's channel 1 plays the selected track), a wildcard note-off or a choke is All Notes Off
@@ -53,6 +55,7 @@
 #include "listen.h"
 #include "presets.h"
 #include "projfile.h"
+#include "pulse.h"
 #include "resample.h"
 
 namespace
@@ -85,6 +88,9 @@ struct Param
 
 constexpr uint32_t NSTEMS = NTRACKS;
 constexpr uint32_t NCH = 2 + NSTEMS;   // main L, R, then tracks 1..8 (the core's stems)
+constexpr uint32_t CLOCK_PORT = 1 + NSTEMS;   // the port after TRACK 8: CLOCK (L the clock, R the reset)
+// CLOCK OUT (TESSERA's menu; setting "clock_out", the bits): MIDI clock in the standalone app, pulses on CLOCK
+enum : int { CLOCK_MIDI = 1, CLOCK_PULSE = 2 };
 
 struct Tessera : GuiLink
 {
@@ -171,9 +177,12 @@ struct Tessera : GuiLink
                 midi_wait[keep++] = m;   // (not yet: the next block)
                 continue;
             }
-            if ((m.first >> 8 & 0xF0u) == 0xF0u)
-                continue;   // (system messages, a clock: the DAW keeps time; only the tracks' notes go out)
-            if (playing)
+            uint32_t st = m.first >> 8 & 0xFFu;
+            bool clock = st == 0xF8u || st == 0xFAu || st == 0xFBu || st == 0xFCu;
+            if ((st & 0xF0u) == 0xF0u && !(clock && (clock_bits.load() & CLOCK_MIDI) && standalone()))
+                continue;   // (system messages: the DAW keeps time; only the tracks' notes go out, and in the
+                            // standalone app the clock if CLOCK OUT MIDI)
+            if (playing && !clock)
                 clip.add(pos - (now - m.second) / crate * bpm / 60.0, (uint8_t)(m.first >> 8),
                          (uint8_t)(m.first >> 16 & 127), (uint8_t)(m.first >> 24 & 127));
             int64_t t = (int64_t)n - 1 + (int64_t)std::lround(ahead);
@@ -184,8 +193,8 @@ struct Tessera : GuiLink
                 e.header = {sizeof e, (uint32_t)(t < 0 ? 0 : t), CLAP_CORE_EVENT_SPACE_ID, CLAP_EVENT_MIDI, 0};
                 e.port_index = 0;
                 e.data[0] = (uint8_t)(m.first >> 8);
-                e.data[1] = (uint8_t)(m.first >> 16 & 127);
-                e.data[2] = (uint8_t)(m.first >> 24 & 127);
+                e.data[1] = clock ? 0 : (uint8_t)(m.first >> 16 & 127);
+                e.data[2] = clock ? 0 : (uint8_t)(m.first >> 24 & 127);
                 out->try_push(out, &e.header);
             }
         }
@@ -200,6 +209,16 @@ struct Tessera : GuiLink
     // OUTPUTS (MENU): the eight track ports mono (one channel each: the track before its pan) or stereo pairs (the same,
     // twice); fixed while the instance lives, from the setting when it was made, or the host's pick (audio-ports-config)
     bool mono_outs = projfile::setting_get("outputs") == "mono";
+    // CLOCK OUT (MENU): CLOCK_MIDI | CLOCK_PULSE, this instance's (the setting: a new instance's)
+    std::atomic<int> clock_bits{std::atoi(projfile::setting_get("clock_out").c_str()) & 3};
+    int clock_out() override { return clock_bits.load(); }
+    void clock_set(int bits) override
+    {
+        clock_bits = bits & 3;
+        projfile::setting_put("clock_out", std::to_string(bits & 3));
+    }
+    PulseClock pulse;                     // the pulses on CLOCK (pulse.h)
+    void pulses(float *l, float *r, uint32_t n, const clap_event_transport_t *tr);
     bool outs_mono() override { return projfile::setting_get("outputs") == "mono"; }
     bool outs_live_mono() override { return mono_outs; }
     void outs_set(bool mono) override { projfile::setting_put("outputs", mono ? "mono" : "stereo"); }
@@ -921,6 +940,35 @@ void Tessera::changed_by_file(const char *what)
 }
 
 // LISTEN picked in the menu (0 off, 1..16): this instance's, saved in the DAW's state
+// CLOCK's pulses for n host frames (pulse.h; l the clock, r the reset, r may be null), while CLOCK OUT PULSE. The beat
+// of each frame: in a DAW from its transport (the frame its audio is heard at: latency frames behind, as the DAW lines
+// the tracks up), in the standalone app from the core's position (the frames its audio plays: the resampler's delay
+// behind the newest)
+void Tessera::pulses(float *l, float *r, uint32_t n, const clap_event_transport_t *tr)
+{
+    bool playing = false;
+    double b0 = 0, step = 0;   // the beat at frame 0, beats a frame
+    if (!(clock_bits.load() & CLOCK_PULSE))
+        ;
+    else if (tr)
+    {
+        playing = (tr->flags & CLAP_TRANSPORT_IS_PLAYING) && (tr->flags & CLAP_TRANSPORT_HAS_BEATS_TIMELINE) &&
+                  (tr->flags & CLAP_TRANSPORT_HAS_TEMPO);
+        step = tr->tempo / 60.0 / rate;
+        b0 = (double)tr->song_pos_beats / CLAP_BEATTIME_FACTOR - rs.delay_host() * step;
+    }
+    else
+    {
+        playing = core->playing() != 0;
+        double crate = core->rate(), bps = core->bpm() / 60.0;
+        step = bps / rate;
+        // host frame n - 1 plays core frame cur_frame - delay_core (midi_out); the position is the beat at frames()
+        double f_last = (double)(int32_t)(cur_frame - rs.delay_core() - core->frames());
+        b0 = core->position() + f_last / crate * bps - (n - 1) * step;
+    }
+    pulse.run(l, r, n, playing, b0, step, rate);
+}
+
 void Tessera::listen_pick(int ch)
 {
     if (ch < 0 || ch > 16 || ch == listen_ch.load())
@@ -1565,6 +1613,7 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         t->core->transport(1);
         t->free_started = true;
     }
+    t->core->clock_out(!proc->transport && (t->clock_bits.load() & CLOCK_MIDI));   // (CLOCK OUT MIDI: the standalone)
 
     {   // the window's input, if the window is not handing some in right now
         std::unique_lock<std::mutex> in(t->input_lock, std::try_to_lock);
@@ -1666,6 +1715,12 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
         if (b.data32 && b.channel_count > 1 && (port || !out[1]))
             std::memcpy(b.data32[1], b.data32[0], n * sizeof(float));
     }
+    if (proc->audio_outputs_count > CLOCK_PORT)   // CLOCK: the pulses (silent unless CLOCK OUT PULSE)
+    {
+        const clap_audio_buffer_t &b = proc->audio_outputs[CLOCK_PORT];
+        if (b.data32 && b.channel_count)
+            t->pulses(b.data32[0], b.channel_count > 1 ? b.data32[1] : nullptr, n, proc->transport);
+    }
 
     t->midi_out(proc->out_events, n);   // (the tracks' notes, each on its channel: GLO > MIDI OUT)
 
@@ -1690,17 +1745,21 @@ clap_process_status p_process(const clap_plugin_t *p, const clap_process_t *proc
     return CLAP_PROCESS_CONTINUE;
 }
 
-// ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..8 (each alone: the FM-1's USB stems)
+// ---- audio ports: main (the mix, as the FM-1's output), then TRACK 1..8 (each alone: the FM-1's USB stems), then
+// CLOCK (stereo however OUTPUTS is: the clock, the reset). The standalone app (clap_wrapper_standalone.patch) puts
+// CLOCK on the interface's outputs 3 and 4, by its name
 
-uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 1 + NSTEMS; }
+uint32_t ap_count(const clap_plugin_t *, bool is_input) { return is_input ? 0 : 2 + NSTEMS; }
 bool ap_get(const clap_plugin_t *p, uint32_t index, bool is_input, clap_audio_port_info_t *info)
 {
-    const bool mono = index > 0 && self(p)->mono_outs;   // (OUTPUTS MONO: a track's port one channel)
-    if (is_input || index > NSTEMS)
+    const bool mono = index > 0 && index < CLOCK_PORT && self(p)->mono_outs;   // (OUTPUTS MONO: a track's port one
+    if (is_input || index > CLOCK_PORT)                                          // channel)
         return false;
     info->id = index;
     if (index == 0)
         std::strncpy(info->name, "Main", sizeof(info->name));
+    else if (index == CLOCK_PORT)
+        std::strncpy(info->name, "CLOCK", sizeof(info->name));
     else
         std::snprintf(info->name, sizeof(info->name), "Track %u", index);
     info->flags = index == 0 ? CLAP_AUDIO_PORT_IS_MAIN : 0;
@@ -1720,7 +1779,7 @@ bool apc_get(const clap_plugin_t *, uint32_t index, clap_audio_ports_config_t *c
     config->id = index;
     std::strncpy(config->name, index ? "Tracks mono" : "Tracks stereo", sizeof(config->name));
     config->input_port_count = 0;
-    config->output_port_count = 1 + NSTEMS;
+    config->output_port_count = 2 + NSTEMS;
     config->has_main_input = false;
     config->has_main_output = true;
     config->main_output_channel_count = 2;

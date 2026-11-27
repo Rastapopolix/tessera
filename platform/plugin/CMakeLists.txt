@@ -54,9 +54,13 @@ FetchContent_Declare(clap GIT_REPOSITORY https://github.com/free-audio/clap GIT_
 FetchContent_MakeAvailable(clap)
 set(CLAP_WRAPPER_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "" FORCE)
 # v0.18.0: its Windows standalone snaps the window to the plugin's sizes while it is dragged (WM_SIZING through
-# adjust_size), as our patch did for v0.17.0 (now gone)
+# adjust_size), as our patch did for v0.17.0 (now gone). clap_wrapper_standalone.patch, for the standalone app:
+# MIDI out sent at the moment its frame is heard (it went out a block at a time when a 1 ms poll woke; 15.6 ms on
+# Windows), and the ports past the mix on the interface's next outputs (CLOCK first, then the tracks)
 FetchContent_Declare(clap-wrapper GIT_REPOSITORY https://github.com/free-audio/clap-wrapper GIT_TAG v0.18.0
-                     GIT_SHALLOW TRUE)
+                     GIT_SHALLOW TRUE
+                     PATCH_COMMAND ${CMAKE_COMMAND} -DPATCH=${CMAKE_CURRENT_SOURCE_DIR}/clap_wrapper_standalone.patch
+                                   -P ${CMAKE_CURRENT_SOURCE_DIR}/apply_patch.cmake)
 FetchContent_MakeAvailable(clap-wrapper)
 
 # ---- the core: the firmware, as web/sim/build.sh builds it for the browser, with the plugin's options (core_defs.txt,
@@ -204,6 +208,9 @@ if (TESS_PLUGIN_TESTS AND NOT WIN32)
     add_executable(tessera-session-test session_test.cpp)   # (a DAW's session saved and opened again)
     target_link_libraries(tessera-session-test PRIVATE clap ${CMAKE_DL_LIBS})
     add_dependencies(tessera-session-test tessera_clap)
+    add_executable(tessera-clock-test clock_test.cpp)   # (CLOCK OUT: the CLOCK port's pulses and MIDI clock)
+    target_link_libraries(tessera-clock-test PRIVATE clap ${CMAKE_DL_LIBS})
+    add_dependencies(tessera-clock-test tessera_clap)
     add_executable(tessera-presets-test presets_test.cpp)   # (the DAW's preset browser: discovery and loading)
     target_link_libraries(tessera-presets-test PRIVATE clap ${CMAKE_DL_LIBS})
     add_dependencies(tessera-presets-test tessera_clap)
@@ -227,6 +234,7 @@ if (TESS_PLUGIN_TESTS)
     target_link_libraries(tessera-copies-test PRIVATE tessera-copies Threads::Threads)
     target_include_directories(tessera-copies-test PRIVATE ${TESS_ROOT}/build/gen)   # (sim_demos.h: STILL TIDE)
     add_executable(tessera-resample-test resample_test.cpp)   # (the resampler alone: resample.h)
+    add_executable(tessera-pulse-test pulse_test.cpp)   # (CLOCK's pulses alone: pulse.h)
     add_executable(tessera-midifile-test midifile_test.cpp midifile.cpp)   # (the MIDI clip: midifile.h)
     add_executable(tessera-listen-test listen_test.cpp)   # (LISTEN alone: listen.h)
     add_executable(tessera-projfile-test projfile_test.cpp projfile.cpp)

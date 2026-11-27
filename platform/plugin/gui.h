@@ -91,6 +91,10 @@ struct GuiLink
     virtual bool outs_mono() { return false; }
     virtual bool outs_live_mono() { return false; }
     virtual void outs_set(bool mono) { (void)mono; }
+    /* CLOCK OUT (TESSERA's menu): bit 1 MIDI clock (the standalone app's MIDI out), bit 2 pulses on the CLOCK port;
+     * this instance's, and the setting for a new one */
+    virtual int clock_out() { return 0; }
+    virtual void clock_set(int bits) { (void)bits; }
 };
 
 /* each window's tick: a click on FM-1 USB handed on, and its state shown */
@@ -131,6 +135,10 @@ inline void gui_listen_tick(Panel &panel, GuiLink *link)
     if (o >= 0)
         link->outs_set(o == 1);
     panel.set_outs(link->outs_mono(), link->outs_live_mono());
+    int k = panel.take_clock_request();   // (CLOCK OUT: MIDI and PULSE, each on or off)
+    if (k >= 0)
+        link->clock_set(k);
+    panel.set_clock(link->clock_out(), link->standalone());
 }
 
 /* each window's tick: GENERATE's strip (its styles once; a press handed on, its answer shown; the state shown); TRACK's

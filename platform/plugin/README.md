@@ -126,6 +126,14 @@ tracks, in TESSERA's own window or the FM-1's.
   by the core, a value is sent back to the DAW (MASTER and the MACROs at once, the rest within ~20 blocks). Ids are
   stable: 0..4 as before, then 0x10000 + slot * 0x1000 + pid (slot 0..3 tracks 1..4, 4 the song, 5..8 tracks 5..8).
 
+- **CLOCK OUT** (TESSERA's menu, CLOCK: setting `clock_out`, bits 1 MIDI, 2 PULSE): the CLOCK port after TRACK 8
+  (`CLOCK_PORT`, stereo however OUTPUTS is) carries pulses for a modular, `pulse.h` (4 a beat, 5 ms, the reset on the
+  right with the first after a start or a jump back), from the DAW's transport (latency frames behind) or the core's
+  position (the standalone app); in the standalone app MIDI clock, START and STOP go out with the notes
+  (`tess_core_clock_out`: the core's CLOCK OUT). `clap_wrapper_standalone.patch` (applied by FetchContent through
+  `apply_patch.cmake`): the standalone app sends MIDI out at the moment its frame is heard (a stamp in front of each
+  message; 1 ms timer on Windows) and puts the ports after the mix on the interface's next outputs, CLOCK first.
+  Tests: `tessera-pulse-test` (pulse.h), `tessera-clock-test Cosmati.clap` (both, end to end).
 - **Track outputs:** besides the main mix, TRACK 1..8 each alone (`NSTEMS = NTRACKS`: the FM-1's USB stems, the
   track after its level, before pan and the bus FX, mono on both sides). The core makes them once the DAW connects one.
 - **MIDI out:** every track's notes, each on its own channel (GLO > MIDI OUT; AUTO is the track's own 1..8 here,

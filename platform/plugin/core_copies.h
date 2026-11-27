@@ -17,7 +17,7 @@ extern "C" {
     X(transport) X(playing) X(midi_out) X(screen) X(view) X(save) X(load) X(tsp_max) X(slot_get) X(slot_put)         \
     X(slot_load) X(param_count) X(param_at) X(param_info) X(param_get) X(param_set) X(param_text) X(host) X(macro)   \
     X(macro_set) X(position) X(bpm) X(ink) X(ground) X(ink_at) X(tracks) X(track) X(track_select)  \
-    X(setup_save) X(setup_load) X(notes_off) X(zone_do) X(text) X(gen_styles) X(gen_style) X(generate) X(gen_swap)           \
+    X(setup_save) X(setup_load) X(notes_off) X(clock_out) X(zone_do) X(text) X(gen_styles) X(gen_style) X(generate) X(gen_swap)           \
     X(gen_last) X(note_expr) X(note_tune) X(project_new) X(key) X(tracks_view) X(tracks_do) X(key_words) X(away) X(hover)           \
     X(track_copy) X(track_paste) X(track_swap) X(zone_param) X(zone_type) X(locks) X(locks_load) X(page_knobs) X(dub_form)
 

@@ -153,6 +153,11 @@ class Panel
      * take_outs_request 1 mono, 0 stereo, -1 none); live: this instance's ports */
     void set_outs(bool mono, bool live) { outs_mono_ = mono, outs_live_ = live; }
     int take_outs_request() { int r = outs_req; outs_req = -1; return r; }
+    /* CLOCK OUT (the menu): bits 1 MIDI clock, 2 PULSE (CLOCK port); standalone: MIDI can go out (not in a DAW,
+     * which keeps the time). take_clock_request: the bits asked for, -1 none */
+    void set_clock(int bits, bool standalone) { clock_bits_ = bits & 3, clock_standalone_ = standalone; }
+    int clock_bits() const { return clock_bits_; }
+    int take_clock_request() { int r = clock_req; clock_req = -1; return r; }
     PanelInput input;
     /* the build's tracks (tess_core_tracks): with 8, a 1-4 / 5-8 switch beside OPEN / SAVE selects T1 or T5 (Tab too),
      * the bank of the track selected lit */
@@ -364,6 +369,8 @@ class Panel
     int listen_ch = 0, listen_last = 16, listen_req = -1, split_note = 48, split_req = -1;
     bool outs_mono_ = false, outs_live_ = false;
     int outs_req = -1;
+    int clock_bits_ = 0, clock_req = -1;
+    bool clock_standalone_ = false;
     int listen_seg_at(int x) const;
     void merge_held();
     // a drag

@@ -459,9 +459,9 @@ int main(int argc, char **argv)
         // INK: the swatches; one picked asks once and shuts the menu
         q.down(100, 25);
         q.up(100, 25);
-        q.down(80, 46 + 10 + 36 + 18);   // INK
-        q.up(80, 46 + 10 + 36 + 18);
-        const int ix = 344 + 18 + 3 * 44 + 16, iy = 46 + 10 + 36 - 10 + 18 + 44 + 16;   // (ink 8: LILAC)
+        q.down(80, 46 + 10 + 34 + 17);   // INK
+        q.up(80, 46 + 10 + 34 + 17);
+        const int ix = 344 + 18 + 3 * 44 + 16, iy = 46 + 10 + 34 - 10 + 18 + 44 + 16;   // (ink 8: LILAC)
         q.move(ix, iy);
         q.draw(px.data(), v);
         if (!out.empty()) ppm(out + "/12_tessera_inks.ppm", px);
@@ -487,8 +487,8 @@ int main(int argc, char **argv)
             if (mos >= 0)
             {
                 q.down(100, 25), q.up(100, 25);
-                q.down(80, 46 + 10 + 36 + 18), q.up(80, 46 + 10 + 36 + 18);   // INK
-                const int mx2 = 344 + 18 + mos % 5 * 44 + 16, my2 = 46 + 10 + 36 - 10 + 18 + mos / 5 * 44 + 16;
+                q.down(80, 46 + 10 + 34 + 17), q.up(80, 46 + 10 + 34 + 17);   // INK
+                const int mx2 = 344 + 18 + mos % 5 * 44 + 16, my2 = 46 + 10 + 34 - 10 + 18 + mos / 5 * 44 + 16;
                 q.down(mx2, my2), q.up(mx2, my2);
                 q.take_ink_request();
                 q.down(100, 25), q.up(100, 25);   // (the menu again: INK's row)
@@ -497,7 +497,7 @@ int main(int argc, char **argv)
                 for (int i = 0; i < 4; i++)
                 {
                     bool here = false;
-                    for (int y = 92; y < 92 + 36 && !here; y++)
+                    for (int y = 90; y < 90 + 34 && !here; y++)
                         for (int x = 20; x < 340 && !here; x++) here = px[y * Panel::W + x] == (0xFF000000u | inks[mos].rgb[i]);
                     seen += here;
                 }
@@ -596,7 +596,7 @@ int main(int argc, char **argv)
         CHECK(q.take_fm1_request() == -1, "FM-1 USB: nothing asked yet");
         q.down(100, 20);   // (the mark: the menu)
         q.up(100, 20);
-        int y = 46 + 10 + 4 * 36 + 2 * 18 + 18;   // (panel.cpp row_y(ROW_FM1): the row's middle)
+        int y = 46 + 10 + 4 * 34 + 2 * 18 + 17;   // (panel.cpp row_y(ROW_FM1): the row's middle)
         q.down(310, y);   // ON (the right one)
         q.up(310, y);
         CHECK(q.take_fm1_request() == 1 && q.take_fm1_request() == -1, "the menu's ON asks once");
@@ -613,7 +613,7 @@ int main(int argc, char **argv)
         CHECK(q.take_fm1_request() == 1, "another Tessera has it: a click asks to take it");
         CHECK(q.menu_shown(), "the menu stays open");
         // KEYS: the computer keyboard Tessera's (ON, the default) or the DAW's (OFF)
-        int ky = 46 + 10 + 5 * 36 + 2 * 18 + 22 + 18;   // (panel.cpp row_y(ROW_KEYS): the row's middle)
+        int ky = 46 + 10 + 5 * 34 + 2 * 18 + 22 + 17;   // (panel.cpp row_y(ROW_KEYS): the row's middle)
         CHECK(q.keys_on() && q.take_keys_request() == -1, "KEYS on to start, nothing asked");
         q.down(254, ky);   // OFF
         q.up(254, ky);
@@ -624,7 +624,7 @@ int main(int argc, char **argv)
         CHECK(q.keys_on() && q.take_keys_request() == 1, "KEYS ON asks for on");
         CHECK(q.key(0x2C, true) && (q.input.keys & 1u) && q.key(0x2C, false), "KEYS ON: Z plays again");
         // HOVER HELP: OFF to start; ON asks once
-        int hy = ky + 36;   // (row_y(ROW_HOVER)'s middle)
+        int hy = ky + 34;   // (row_y(ROW_HOVER)'s middle)
         CHECK(!q.hover_help() && q.take_hover_request() == -1, "HOVER HELP off to start, nothing asked");
         q.down(310, hy);   // ON
         q.up(310, hy);
@@ -635,7 +635,7 @@ int main(int argc, char **argv)
         // OUTPUTS: STEREO to start; MONO asks once (the ports change from the DAW's next load)
         // TRACK: its list (copy, paste, paste the sound, move up, down), each a request for the selected track; the
         // keys (Ctrl+C ..) the same; T1 can't move up
-        int ty = 46 + 10 + 9 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_TRACK)'s middle)
+        int ty = 46 + 10 + 9 * 34 + 2 * 18 + 22 + 17;   // (row_y(ROW_TRACK)'s middle)
         CHECK(q.take_track_request().what == Panel::TR_NONE, "TRACK: nothing asked to start");
         q.down(100, ty), q.up(100, ty);   // (the row: its list)
         int ly0 = ty - 18 - 10 + 10;      // (the list's first row's top)
@@ -656,7 +656,7 @@ int main(int argc, char **argv)
               "Ctrl+V, Alt+Down, Ctrl+C: their requests");
         CHECK(!q.shortcut('X'), "Ctrl+X: not Cosmati's");
         q.down(100, 25), q.up(100, 25);
-        int oy = 46 + 10 + 10 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_OUTS)'s middle)
+        int oy = 46 + 10 + 10 * 34 + 2 * 18 + 22 + 17;   // (row_y(ROW_OUTS)'s middle)
         CHECK(q.take_outs_request() == -1, "OUTPUTS: nothing asked to start");
         q.down(200, oy);   // MONO
         q.up(200, oy);
@@ -664,14 +664,32 @@ int main(int argc, char **argv)
         q.down(300, oy);   // STEREO
         q.up(300, oy);
         CHECK(q.take_outs_request() == 0, "OUTPUTS STEREO asks for stereo");
+        // CLOCK: OFF to start; PULSE and MIDI each on and off, OFF both off (MIDI greyed, still picked, in a DAW)
+        int cy = oy + 34;   // (row_y(ROW_CLOCK)'s middle)
+        CHECK(q.take_clock_request() == -1 && q.clock_bits() == 0, "CLOCK: OFF, nothing asked to start");
+        q.down(300, cy);   // PULSE
+        q.up(300, cy);
+        CHECK(q.take_clock_request() == 2 && q.take_clock_request() == -1, "CLOCK PULSE asks once");
+        q.set_clock(2, true);
+        q.down(225, cy);   // MIDI
+        q.up(225, cy);
+        CHECK(q.take_clock_request() == 3, "CLOCK MIDI with PULSE: both");
+        q.set_clock(3, true);
+        q.down(300, cy);   // PULSE again: off
+        q.up(300, cy);
+        CHECK(q.take_clock_request() == 1, "CLOCK PULSE again: MIDI alone");
+        q.set_clock(1, true);
+        q.down(170, cy);   // OFF
+        q.up(170, cy);
+        CHECK(q.take_clock_request() == 0 && q.clock_bits() == 0, "CLOCK OFF: both off");
         // MANUAL: a click asks the window to open the Cosmati manual's page, and shuts the menu
-        int my = 46 + 10 + 11 * 36 + 3 * 18 + 22 + 18;   // (row_y(ROW_MANUAL)'s middle)
+        int my = 46 + 10 + 12 * 34 + 3 * 18 + 22 + 17;   // (row_y(ROW_MANUAL)'s middle)
         q.down(100, my), q.up(100, my);
         CHECK(q.take_file_request() == Panel::FILE_MANUAL && !q.menu_shown(), "MANUAL asks FILE_MANUAL, the menu shut");
         CHECK(std::string(Panel::manual_url()).find("/cosmati/") != std::string::npos, "the manual's page is /cosmati/");
         q.down(100, 25), q.up(100, 25);   // (the menu again, for LISTEN)
         // LISTEN: < OFF >, the channel whose notes steer (listen.h)
-        int ly = 46 + 10 + 7 * 36 + 2 * 18 + 22 + 18;   // (row_y(ROW_LISTEN)'s middle)
+        int ly = 46 + 10 + 7 * 34 + 2 * 18 + 22 + 17;   // (row_y(ROW_LISTEN)'s middle)
         auto lclick = [&](int x) { q.down(x, ly), q.up(x, ly); return q.take_listen_request(); };
         CHECK(q.listen() == 0 && q.take_listen_request() == -1, "LISTEN OFF to start, nothing asked");
         CHECK(lclick(198) == -1, "< at OFF: nothing");
@@ -682,7 +700,7 @@ int main(int argc, char **argv)
         q.set_listen(16);
         CHECK(lclick(306) == -1 && q.listen() == 16, "> at 16: nothing");
         // SPLIT, the row under: 48 to start, < and > an octave, 12..108
-        int sy = ly + 36;   // (row_y(ROW_SPLIT)'s middle)
+        int sy = ly + 34;   // (row_y(ROW_SPLIT)'s middle)
         auto sclick = [&](int x) { q.down(x, sy), q.up(x, sy); return q.take_split_request(); };
         CHECK(q.split() == 48 && q.take_split_request() == -1, "SPLIT 48 to start, nothing asked");
         CHECK(sclick(198) == 36 && sclick(306) == 48 && sclick(306) == 60, "< 36, > 48, > 60");
