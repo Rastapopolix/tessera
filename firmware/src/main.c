@@ -295,7 +295,8 @@ static void fm1_main(void)
 #if TESSERA_MIDI_ONLY && TESS_GENERATE
         {   /* (measuring only, feat/tessera-midi: keeps GENERATE in the link until its FM-1 page calls it) */
             static volatile uint8_t gen_probe;
-            if (gen_probe) { gen_probe = 0; generate(0u, m, 0u, 0u); }
+            static volatile uint32_t gen_arg[3];   /* (all runtime values: no style folded away) */
+            if (gen_probe) { gen_probe = 0; generate(gen_arg[0], m, gen_arg[1], gen_arg[2]); }
         }
 #endif
 #if MELODEE_USB_HOST
