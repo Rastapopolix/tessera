@@ -44,7 +44,7 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_MX32 = 57,
 #endif
 #if TESS_BUS_CD
-       TSP_BUSCD = 58,                              
+       TSP_BUSCD = 58,
 #endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
