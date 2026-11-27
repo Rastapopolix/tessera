@@ -175,13 +175,26 @@ enum { RND_ROLE_FREE, RND_ROLE_DRONE, RND_ROLE_CHORDS, RND_ROLE_MELODY, RND_ROLE
 static uint8_t rnd_role_of[RND_NT];                  /* the last roll's roles (rnd_cpu, rnd_drift, the tests) */
 static uint8_t rnd_wozza;                          /* 1: this roll is WOZZA's */
 static uint8_t rnd_halo;                           /* 1: this roll is HALO's */
+#if TESSERA_MIDI_ONLY                               /* Tessera MIDI: STATIC, CHAOS, FRACTURED and MIRROR left out (their
+                                                     * character is the FM-1's sounds; MIRROR's tunings no MIDI note
+                                                     * carries): 0 here, so their code compiles away */
+#define rnd_mirror 0u
+#define rnd_static 0u
+#define rnd_chaos 0u
+#define rnd_frac 0u
+#else
 static uint8_t rnd_mirror;                         /* 1: this roll is MIRROR's */
+#endif
 static uint8_t rnd_tide;                           /* 1: this roll is TIDE's */
 static uint8_t rnd_crate;                          /* 1: this roll is CRATE's */
 static uint8_t rnd_phase;                          /* 1: this roll is PHASE's */
+#if TESSERA_MIDI_ONLY
+static uint8_t rnd_forge, rnd_cosmic;
+#else
 static uint8_t rnd_static;                         /* 1: this roll is STATIC's */
 static uint8_t rnd_forge, rnd_chaos, rnd_cosmic, rnd_frac;               /* 1: this roll is FORGE's or CHAOS's (rnd_forge both, rnd_chaos
                                                      * CHAOS's) */
+#endif
 static uint8_t rnd_wz_lead = RND_NT;                 /* WOZZA: the first melody's track (a second one sparser, higher) */
 static uint8_t rnd_want_e = 0xFFu, rnd_want_pi = 0xFFu;   /* PULSE: the engine and preset its role wants (0xFF: rolled) */
 static int rnd_perc(uint32_t tr)                   /* GLITCH's glitch tracks, PULSE's percussion: each hit its attack */
@@ -4148,6 +4161,16 @@ static void gen_new_engines(void)
     undo_depth--;
 }
 
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: no sound to pick, only how a part plays its notes on the gear: chords and held parts POLY, lines,
+ * basses and hits MONO (one note at a time on a mono synth), no glide, no chord keys, in */
+static void rnd_midi_voice(uint32_t tr, uint32_t role)
+{
+    uint32_t poly = role == RND_ROLE_DRONE || role == RND_ROLE_CHORDS || role == RND_ROLE_FREE;
+    rnd_tp(tr, P_VOICE, poly ? V_POLY : V_MONO);
+    rnd_tp(tr, P_GLIDE, 0); rnd_tp(tr, P_CHRD, 0); rnd_tp(tr, P_MUTE, 0); rnd_tp(tr, P_AMODE, 0);
+}
+#endif
 static void rnd_roll(void)                           /* (rnd.c's, from a new project and the seed) */
 {
     uint32_t tr, fm6s = 0, phys = 0, oracles = 0, chords = 0;
@@ -4162,13 +4185,17 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
     rnd_orbit = (uint8_t)(rnd_setting() == RND_ORBIT);
     rnd_wozza = (uint8_t)(rnd_setting() == RND_WOZZA);
     rnd_halo = (uint8_t)(rnd_setting() == RND_HALO);
+#if !TESSERA_MIDI_ONLY
     rnd_mirror = (uint8_t)(rnd_setting() == RND_MIRROR);
+#endif
     rnd_tide = (uint8_t)(rnd_setting() == RND_TIDE);
     rnd_crate = (uint8_t)(rnd_setting() == RND_CRATE);
     rnd_phase = (uint8_t)(rnd_setting() == RND_PHASE);
+#if !TESSERA_MIDI_ONLY
     rnd_static = (uint8_t)(rnd_setting() == RND_STATIC);
     rnd_chaos = (uint8_t)(rnd_setting() == RND_CHAOS);
     rnd_frac = (uint8_t)(rnd_setting() == RND_FRACTURED);
+#endif
     rnd_forge = (uint8_t)(rnd_setting() == RND_FORGE || rnd_chaos || rnd_frac);
     rnd_cosmic = (uint8_t)(rnd_setting() == RND_COSMIC);
     if (rnd_wozza || rnd_halo || rnd_mirror || rnd_tide || rnd_crate || rnd_phase || rnd_static || rnd_forge || rnd_cosmic)
@@ -4193,6 +4220,9 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
         rnd_lp_phys = (uint8_t)(rnd_next() % RND_NT);
         rnd_lp_glass = (uint8_t)((rnd_lp_phys + 1u + rnd_next() % (RND_NT - 1u)) % RND_NT);
     }
+#if TESSERA_MIDI_ONLY
+    for (tr = 0; tr < RND_NT; tr++) rnd_midi_voice(tr, role[tr]);   /* (no sounds to pick: how each part plays) */
+#else
     undo_depth++;                                   /* (a roll is not four sound loads to undo one by one) */
     {                                               /* (the drone and the chords pick their engines first) */
         static const uint8_t order[] = {RND_ROLE_LOWPERC, RND_ROLE_DRONE, RND_ROLE_CHORDS, RND_ROLE_MELODY,
@@ -4217,6 +4247,7 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
     }
     undo_depth--;
     gen_new_engines();                              /* (the plugin's engines, now and then: GEN_NEW) */
+#endif
     if (rnd_wozza) rnd_wozza_registers(role);
     else if (rnd_halo) rnd_halo_registers(role);
     else if (rnd_mirror) rnd_mirror_registers(role);
@@ -4266,7 +4297,9 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
         if (rnd_loops) rnd_loops_generators();
         else rnd_orbit_generators();
         for (tr = 0; tr < RND_NT; tr++) {
+#if !TESSERA_MIDI_ONLY
             rnd_loops_sound(tr);
+#endif
             rnd_cpu(tr);
         }
     } else {
@@ -4276,6 +4309,15 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
         }
     }
     rnd_tails();                                    /* (rnd.c lowered BUDGET to 12 here: the player's setting, left) */
+#if TESSERA_MIDI_ONLY
+    if (rnd_halo) rnd_cords_halo(role);             /* (no effects; the cords kept: some move the generators) */
+    else if (rnd_tide) rnd_cords_tide();
+    else if (rnd_forge) rnd_cords_forge();
+    else if (rnd_crate || rnd_phase || rnd_cosmic) rnd_cords_crate();
+    else if (rnd_wozza) rnd_cords_wozza(role);
+    else if (ambient) rnd_cords_ambient();
+    else rnd_cords();
+#else
     if (rnd_halo || rnd_mirror || rnd_tide || rnd_crate || rnd_phase || rnd_forge || rnd_cosmic) {
         rnd_fx_dry();
         if (rnd_halo) rnd_cords_halo(role);
@@ -4301,12 +4343,15 @@ static void rnd_roll(void)                           /* (rnd.c's, from a new pro
     }
     rnd_vowels();
     rnd_orc_levels();
+#endif
     rnd_no_pitch();
     rnd_expression();
     rnd_in_key();                                   /* (QNT WHITE: the rolls' key; a new project's QNT is OFF, which
                                                      * lets a SERIES or a FOLLOW step off the scale, measured) */
     rnd_chord_prime();
+#if !TESSERA_MIDI_ONLY
     rnd_balance();
+#endif
     rnd_tempo();                                    /* (GEN_KEEP_TEMPO: generate puts the tempo back) */
 }
 
@@ -4492,20 +4537,29 @@ static void gen_tracks_rest(void)
 
 /* ------------------------------------------------------------ GENERATE: the API --- */
 enum { GEN_KEEP_TEMPO = 1u };                       /* generate's flags: the tempo as it is (a DAW or MIDI clock drives) */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI's styles: the ones whose notes carry them to any instrument (Theo, 2026-11-27) */
+static const uint8_t GEN_MIDI_STYLE[] = {RND_FALL, RND_TIDE, RND_WOZZA, RND_ORBIT, RND_LOOPS, RND_HALO, RND_PHASE,
+                                         RND_CRATE, RND_COSMIC, RND_FORGE, RND_FREE};
+static uint32_t generate_styles(void) { return NELEM(GEN_MIDI_STYLE); }
+static uint32_t gen_style_code(uint32_t s) { return GEN_MIDI_STYLE[s]; }
+#else
 static uint32_t generate_styles(void) { return RND_MODES - 1u; }
-static const char *generate_style_name(uint32_t s) { return s < RND_MODES - 1u ? GEN_STYLE_NAME[s] : ""; }
+static uint32_t gen_style_code(uint32_t s) { return s + 1u; }
+#endif
+static const char *generate_style_name(uint32_t s) { return s < generate_styles() ? GEN_STYLE_NAME[gen_style_code(s) - 1u] : ""; }
 /* a new piece: style 0..generate_styles()-1, seed (0 reads as 1), VARIATION 0..100. The
  * project before it is kept for generate_swap. Playing, it plays on; stopped, it stays stopped. 0 made, 1 refused */
 static uint32_t generate(uint32_t style, uint32_t seed, uint32_t variation, uint32_t flags)
 {
     uint32_t len, tr, playing = song.playing;
     int16_t bpm = song.g[G_BPM];
-    if (style >= RND_MODES - 1u) return 1;
+    if (style >= generate_styles()) return 1;
     len = gen_pack_now();
     if (!len) return 1;
     memcpy(gen_before, proj_wire_u.raw, len);
     gen_before_len = len;
-    rnd_style = (uint8_t)(style + 1u);
+    rnd_style = (uint8_t)gen_style_code(style);
     rnd_seed = seed ? seed : 1u;
     rnd_var = (uint8_t)(variation > 100u ? 100u : variation);
     project_new_blank();                            /* (from nothing: the same seed, the same piece) */

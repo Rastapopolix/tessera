@@ -714,6 +714,11 @@ if core && [ $TABLES = 1 ]; then
         generate_test_4:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 \
         -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="web"' -- env GEN_SEEDS=10 GEN_PLAY=1 \
         "$OUT/generate_test_4"
+    t "GENERATE in Tessera MIDI (TESSERA_MIDI_ONLY, 8 tracks): its 11 styles repeatable, before / after exact, in key, notes" \
+        generate_test_midi:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 \
+        -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 '-DMELODEE_VERSION="midi"' -- \
+        env GEN_SEEDS=10 GEN_PLAY=1 "$OUT/generate_test_midi"
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \

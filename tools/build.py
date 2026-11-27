@@ -259,7 +259,7 @@ def build_app(stub):
     if midi_only:
         os.environ.setdefault("MELODEE_USB_AUDIO", "0")   # (nothing to stream)
         os.environ.setdefault("MELODEE_CDC", "0")
-        flags += ["-DCORE_TRACKS=8", "-DTESS_LFO_SLOPE=1", "-DTESS_PC_IN=1",
+        flags += ["-DCORE_TRACKS=8", "-DTESS_LFO_SLOPE=1", "-DTESS_PC_IN=1", "-DMELODEE_VOICE_BUDGET=0",
                   f"-DTESS_GENERATE={os.environ.get('TESSERA_MIDI_GENERATE', '1')}"]
     for flag, v in (("MELODEE_FM6", "1"), ("MELODEE_PHYS", "0" if midi_only else "1"), ("MELODEE_ORACLE", "0" if midi_only else "1"),
                     ("MELODEE_TRIO", "0" if midi_only else "1")):
