@@ -73,6 +73,7 @@ jobs:
           git worktree add --detach ../midi HEAD
           cd ../midi && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/midi.log"
           python tools/flash_report.py build/melodee.elf --csv "$GITHUB_WORKSPACE/midi_symbols.csv" | tee "$GITHUB_WORKSPACE/midi_flash.md"
+          cp build/tessera.fwsc "$GITHUB_WORKSPACE/tessera-midi.fwsc"   # (for trying on an FM-1)
       - name: Build Tessera MIDI without GENERATE
         continue-on-error: true
         env:
@@ -111,6 +112,7 @@ jobs:
             midi.log
             midi0.log
             midi_flash.md
+            tessera-midi.fwsc
             midi_symbols.csv
             base.log
             flash_report.md
