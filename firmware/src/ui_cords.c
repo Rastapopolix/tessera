@@ -535,7 +535,7 @@ static void cu_columns(void)
     draw_column(0, "", src, c->src ? (cord_bip(c) ? "+-" : "+") : "",   /* (the bar: both ways, or one) */
                 c->src ? VAL(0u) : T_DIM, -1, ICON_NONE);
     fmt_int(val, (int32_t)cord_ui_sel + 1);
-    draw_column(1, "MOD", val, "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
+    draw_column(1, "MOD", val, CORD_LIVE > 16u ? "/32" : "/16", VAL(1u), (int32_t)cord_ui_sel * 1000 / (CORD_LIVE - 1u), ICON_NONE);
     if (c->dst && cu_global(c->dst))
         str_cpy(val, LOOK(cu_dst_name(c), cu_dst_mono(c)), sizeof val);
     else if (c->dst) {
@@ -702,7 +702,7 @@ static __attribute__((noinline)) int cu_hclk_knob(int32_t steps)
 static __attribute__((noinline)) int cu_vca_knob(int32_t steps)
 {
     uint32_t bit = 1u << cord_ui_sel;
-    if ((uint32_t)(cord_get(cord_ui_sel)->dst - CD_M1_AMT) >= CORD_LIVE) return 0;
+    if ((uint32_t)(cord_get(cord_ui_sel)->dst - CD_M1_AMT) >= CORD_MAMT) return 0;
     cord_vca_load(steps > 0 ? cord_vca_mask() | bit : cord_vca_mask() & ~bit);
     ui_message(steps > 0 ? "SCALES IT" : "ADDS TO IT");
     ui.force = 1;
