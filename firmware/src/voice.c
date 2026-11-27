@@ -246,6 +246,12 @@ static uint32_t voice_budget(void)
     return b;
 }
 
+/* Quiet tails hurry while the pool is nearly full (after JIANT FM's, 2026-11-28): a released voice under -20 dB
+ * decays twice as fast and ends at -60 dB (not -72), so BUDGET finds a quiet voice to free before it has to take a
+ * loud one. ADSR engines (FM6 and ORACLE end their voices by their own envelopes). mix_block sets it a block */
+#define VHURRY_FROM ((1 << 24) / 10)                    /* -20 dB */
+#define VHURRY_END ((1 << 24) / 1000)                   /* -60 dB */
+static uint8_t voice_hurry;
 static uint32_t voices_busy(void)                       /* budget units of all parts' sounding voices (not fading) */
 {
     uint32_t p, i, n, u = 0;
@@ -893,7 +899,9 @@ static int32_t env_tick(track_t *t, voice_t *v)
         break;
     case 3:
         v->env -= mulq16(v->env, ENV_EXP[p[P_REL] & 127]);
-        if (v->env < (1 << 12)) {
+        if (voice_hurry && v->env < VHURRY_FROM)        /* the pool nearly full: a quiet tail goes twice as fast */
+            v->env -= mulq16(v->env, ENV_EXP[p[P_REL] & 127]);
+        if (v->env < (voice_hurry ? VHURRY_END : 1 << 12)) {
             v->env = 0;
             v->stage = 0;
             v->active = 0;

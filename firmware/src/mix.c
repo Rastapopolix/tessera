@@ -418,6 +418,7 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     mix_prepare_batch(n);
 #endif
+    {uint32_t b=voice_budget();voice_hurry=(uint8_t)(voices_busy()*4u>=b*3u);}   /* (voice.c: quiet tails hurry) */
     for(uint32_t i=0;i<NPART;i++)mix_part(&trk[i],n);
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     batch_ready=0;part_buf=part_storage;spread_buf=spread_storage;
