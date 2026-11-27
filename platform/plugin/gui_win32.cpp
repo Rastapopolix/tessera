@@ -220,7 +220,10 @@ class GuiWin32 : public Gui
             return 0;
         case WM_MOUSEWHEEL:
         {
-            POINT p{x, y};   // (screen coordinates)
+            // (WM_MOUSEWHEEL's point is on the screen, not in the window: from lp itself, not x and y, which are
+            // scaled to the panel's 1:1 pixels; scaled first, at a SIZE other than 100 the wheel turned whatever
+            // was under some other point, often SELECT's knob, Theo 2026-11-27, beta 12)
+            POINT p{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
             ScreenToClient(h, &p);
             p.x = g->at(p.x), p.y = g->at(p.y);
             g->wheel_acc += GET_WHEEL_DELTA_WPARAM(wp);   // (a touchpad's small deltas gathered into notches)
