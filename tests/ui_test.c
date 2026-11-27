@@ -709,8 +709,9 @@ static int test_quad_cols(void)
     press(B_OCTUP);
     bad += check("OCT+ tapped on QUAD's GEN: nothing to enter, no sheet", !pop.on && song.octave == oct);
     hold(B_OCTUP);
-    bad += check("OCT+ held on QUAD's GEN: the generator's sheet, its one row RANGE, the octave kept",
-                 pop.on == POP_SHEET && str_eq(pop.title, "Generator") && pop.n == 1u && str_eq(pop.rows[0].label, "Range") &&
+    bad += check("OCT+ held on QUAD's GEN: the generator's sheet, its row RANGE first (8 tracks: then Note range), the "
+                 "octave kept", pop.on == POP_SHEET && str_eq(pop.title, "Generator") && str_eq(pop.rows[0].label, "Range") &&
+                 (TESS_GEN_FIT ? pop.n == 2u && str_eq(pop.rows[1].label, "Note range") : pop.n == 1u) &&
                  song.octave == oct);
     turn(EN_K2, 1);
     bad += check("..KNOB 2 there: RANGE 1 OCT", tessera_quad(song.sel)->range == GEN_QR_ONE);
@@ -1423,7 +1424,8 @@ static int test_cords_page(void)
     frame();
     bad += check("..OCT+ held on MODS, let go untouched: MODS' sheet (the MIX buses), the mod as it was (BI)",
                  pop.on == POP_SHEET && str_eq(pop.title, "Mods") && str_eq(pop.sub, cord_ui_sel ? "M2" : "M1") &&
-                 pop.n == 5u && str_eq(pop.rows[0].label, "Clear mod") && !c->uni);
+                 pop.n == (TESS_BUS_CD ? 9u : 5u) && str_eq(pop.rows[0].label, "Clear mod") && !c->uni);   /* (8 tracks:
+                                                                                                     * BUS C, D too) */
     turn(EN_K1, 1);
     turn(EN_K1 + 1u, 1);
     bad += check("..the sheet's KNOB 2 on its first row: BUS A's MODE, SUM to MAX", cord_bus_get(0) == CB_MAX &&
@@ -1610,7 +1612,8 @@ static int test_cords_scroll_playing(void)
             else ntrk++, round &= tr == (int32_t)e.dst_trk;
         }
         bad += check("..its list: every entry to its destination and back, the 10 send effects', 16 M AMT, FILL, "
-                     "TEMPO, BUS A and B, MOD DEP once after the tracks', with no track", round && globals == 31u);
+                     "TEMPO, BUS A and B (8 tracks: C, D), MOD DEP once after the tracks', with no track",
+                     round && globals == (TESS_BUS_CD ? 33u : 31u));
         for (code = CD_OFF + 1u; code < CD_N; code++) {   /* every listed code in CU_ORDER once (a new one: add it) */
             uint32_t n = 0;
             for (x = 0; x < sizeof CU_ORDER; x++) n += CU_ORDER[x] == code;

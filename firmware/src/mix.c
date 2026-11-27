@@ -363,9 +363,22 @@ static __attribute__((noinline)) void mix_part(track_t *t,uint32_t n)
     if(mod.on)mod_end(t);
     if(extra){void (*volatile run)(uint32_t)=mix_extra_sends;run(n);}
 }
+/* silence settled: no wet return, no ramp, the DC blockers at 0 (their remainders 0..4095 leave a 0 input at 0) and
+ * the limiter at rest. master_out then gives 0 for a 0 input and keeps its state, so a silent block is zeros: a third
+ * of the FM-1's idle work (host profile 2026-11-28) */
+static inline __attribute__((always_inline)) int master_silent(uint32_t n)   /* (inlined: master_samples is in RAM) */
+{
+    if(fx_bus_result||fx_bus_mix!=fx_bus_target||dc_l||dc_r||lim_env>LIM_T)return 0;
+#if MELODEE_USB_AUDIO
+    if(master_capture_on)return 0;
+#endif
+    for(uint32_t i=0;i<n;i++)if(mix_l[i]|mix_r[i])return 0;
+    return 1;
+}
 static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_t *out,uint32_t n)
 {
     int32_t gain=fx_bus_mix,target=fx_bus_target;
+    if(master_silent(n)){for(uint32_t i=0;i<2u*n;i++)out[i]=0;return;}   /* (no memset: out of branch range) */
     for(uint32_t i=0;i<n;i++){
         if(gain!=target)gain+=mix_clamp(target-gain,-128,128);
         int32_t l=mix_l[i],r=mix_r[i];
@@ -411,6 +424,7 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     mix_prepare_batch(n);
 #endif
+    {uint32_t b=voice_budget();voice_hurry=(uint8_t)(voices_busy()*4u>=b*3u);}   /* (voice.c: quiet tails hurry) */
     for(uint32_t i=0;i<NPART;i++)mix_part(&trk[i],n);
 #if MELODEE_BATCH_AUDIO && !MELODEE_LEGACY_EXTRAS
     batch_ready=0;part_buf=part_storage;spread_buf=spread_storage;

@@ -37,8 +37,17 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
 #if TESS_FR_KICKS
        TSP_FKICK = 55,
 #endif
+#if TESS_GEN_FIT
+       TSP_GFIT = 56,
+#endif
 #if CORE_TRACKS > 4
-       TSP_MX32 = 57,                                 /* (56: TSP_GFIT, ROADMAP's claim) */
+       TSP_MX32 = 57,
+#endif
+#if TESS_BUS_CD
+       TSP_BUSCD = 58,
+#endif
+#if TESS_CH_NOTES
+       TSP_CHOFS = 59,
 #endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
@@ -120,10 +129,21 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * CHORD HIT when a chop (gen.h GEN_CH_DOUBLE, BUBBLE), else 0, written
                                               * only when one is; the TRACKS part keeps what others play (OFFBEAT,
                                               * STEP); none: as that part has it;
+                                              * TSP_GFIT (an 8-track build's only: the FM-1 skips it): every track's
+                                              * LANE, then every track's RANGE (a byte each: tessera.gn_*), written
+                                              * only when one is not 0; none: ALL, OFF;
+                                              * TSP_CHOFS (an 8-track build's only: the FM-1 skips it, and plays +1 ST,
+                                              * CHMOVE's stand-in): CHORD MOVE BY NOTES, every track's 1 when its BY is
+                                              * NOTES, then every track's IN (0 ST, 1 DEG), then each track's four
+                                              * offsets + 12 (0..24), written only when one is set; none: no NOTES,
+                                              * offsets 0;
                                               * TSP_MX32 (an 8-track build's only: the FM-1 skips it, and its mods 17..32
                                               * with it): mods 17..32's HOLD mask (u16, bit i: mod 17 + i), their SCALE
                                               * mask (u16), their HOLD clocks (CORD_HCLK_BYTES nibbles, as TSP_MHCLK),
-                                              * written only when one of them is HOLD or SCALE; none: neither */
+                                              * written only when one of them is HOLD or SCALE; none: neither;
+                                              * TSP_BUSCD (an 8-track build's only: the FM-1 skips it, and the mods
+                                              * into and out of BUS C, D with it): BUS C's MODE, LAG, then D's, as
+                                              * TSP_BUS's, written only when one is not SUM, OFF; none: SUM, OFF */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -149,8 +169,17 @@ _Static_assert(TSP_FLOUR == 53 && 3u * TESSERA_TRACKS <= 255u, "the parts' numbe
 #if TESS_CHOPS
 _Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stored: never renumbered");
 #endif
+#if TESS_CH_NOTES
+_Static_assert(TSP_CHOFS == 59 && 6u * TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_GEN_FIT
+_Static_assert(TSP_GFIT == 56 && 2u * TESSERA_TRACKS <= 255u, "the parts' numbers are stored: never renumbered");
+#endif
 #if TESS_FR_KICKS
 _Static_assert(TSP_FKICK == 55, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_BUS_CD
+_Static_assert(TSP_BUSCD == 58, "the parts' numbers are stored: never renumbered");
 #endif
 #if CORE_TRACKS > 4
 _Static_assert(TSP_MX32 == 57 && CORD_LIVE == 32u, "the parts' numbers are stored: never renumbered");
@@ -485,6 +514,13 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             for (uint32_t k = 0; k < 4u; k++) tsp_byte(&w, cord_bus_get(k));
             tsp_end(&w);
         }
+#if TESS_BUS_CD
+        if (cord_bus_get(4) | cord_bus_get(5) | cord_bus_get(6) | cord_bus_get(7)) {   /* (BUS C, D: as A, B) */
+            tsp_begin(&w, TSP_BUSCD, 1);
+            for (uint32_t k = 4; k < 8u; k++) tsp_byte(&w, cord_bus_get(k));
+            tsp_end(&w);
+        }
+#endif
         tsp_begin(&w, TSP_CCN, 1);                     /* (CC OUT: each cord's CC number) */
         for (uint32_t i = 0; i < CORD_MAX; i++) tsp_byte(&w, cord_cc_num(i));   /* (past CORD_LIVE: 1) */
         tsp_end(&w);
@@ -636,7 +672,12 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
                 tsp_begin(&w, TSP_CHMOVE, 1);
 #if CORE_TRACKS > 4
                 tsp_bytes(&w, tessera.ch_when, PROJ_NTRK);
+#if TESS_CH_NOTES
+                for (uint32_t k = 0; k < PROJ_NTRK; k++)   /* (NOTES: +1 ST in its place, TSP_CHOFS the real one) */
+                    tsp_byte(&w, tessera.ch_by[k] == TESS_CB_NOTES ? TESS_CB_UP1 : tessera.ch_by[k]);
+#else
                 tsp_bytes(&w, tessera.ch_by, PROJ_NTRK);
+#endif
 #else
                 tsp_bytes(&w, tessera.ch_when, 2u * PROJ_NTRK);   /* (then ch_by, next to it) */
 #endif
@@ -714,6 +755,30 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             if (tessera.follow_rhy[t] == TESS_FR_KICK) {
                 tsp_begin(&w, TSP_FKICK, 1);
                 for (t = 0; t < TESSERA_TRACKS; t++) tsp_byte(&w, tessera.follow_rhy[t] == TESS_FR_KICK);
+                tsp_end(&w);
+                break;
+            }
+#endif
+#if TESS_CH_NOTES
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (MOVE BY NOTES: only when one is set) */
+            if (tessera.ch_by[t] == TESS_CB_NOTES || tessera.ch_odeg[t] || tessera.ch_ofs[t][0] | tessera.ch_ofs[t][1] |
+                tessera.ch_ofs[t][2] | tessera.ch_ofs[t][3]) {
+                uint32_t k, j;
+                tsp_begin(&w, TSP_CHOFS, 1);
+                for (k = 0; k < TESSERA_TRACKS; k++) tsp_byte(&w, tessera.ch_by[k] == TESS_CB_NOTES);
+                tsp_bytes(&w, tessera.ch_odeg, TESSERA_TRACKS);
+                for (k = 0; k < TESSERA_TRACKS; k++)
+                    for (j = 0; j < 4u; j++) tsp_byte(&w, (uint32_t)(tessera.ch_ofs[k][j] + 12));
+                tsp_end(&w);
+                break;
+            }
+#endif
+#if TESS_GEN_FIT
+        for (t = 0; t < TESSERA_TRACKS; t++)           /* (LANE, RANGE: only when one track has one) */
+            if (tessera.gn_lane[t] | tessera.gn_range[t]) {
+                tsp_begin(&w, TSP_GFIT, 1);
+                tsp_bytes(&w, tessera.gn_lane, TESSERA_TRACKS);
+                tsp_bytes(&w, tessera.gn_range, TESSERA_TRACKS);
                 tsp_end(&w);
                 break;
             }
@@ -857,6 +922,12 @@ static const struct { uint8_t id, a, b; uint8_t at; uint16_t len; } TSP_PLAIN[] 
 #endif
 #if TESS_FR_KICKS
     {TSP_FKICK, 1u, 0, TESSERA_TRACKS, TESSERA_TRACKS},
+#endif
+#if TESS_CH_NOTES
+    {TSP_CHOFS, 1u, 24u, 2u * TESSERA_TRACKS, 6u * TESSERA_TRACKS},   /* (NOTES, IN 0..1; offsets + 12, 0..24) */
+#endif
+#if TESS_GEN_FIT
+    {TSP_GFIT, TESS_GN_LANES, TESS_GN_RANGE, TESSERA_TRACKS, 2u * TESSERA_TRACKS},   /* (LANE 0..8; RANGE 0..3) */
 #endif
 };
 _Static_assert(PROJ_NTRK * NPAT <= 255u && CORD_MAX <= 255u && CORD_HCLK_BYTES <= 255u, "TSP_PLAIN's at: a byte");
@@ -1045,6 +1116,13 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_BUS] != 1u || tsp_seen.len[TSP_BUS] != 4u || p[0] >= CB_MODES || p[1] >= CB_LAGS ||
             p[2] >= CB_MODES || p[3] >= CB_LAGS) return 0;
     }
+#if TESS_BUS_CD
+    if (tsp_seen.at[TSP_BUSCD]) {                      /* (as TSP_BUS) */
+        const uint8_t *p = raw + tsp_seen.at[TSP_BUSCD];
+        if (tsp_seen.ver[TSP_BUSCD] != 1u || tsp_seen.len[TSP_BUSCD] != 4u || p[0] >= CB_MODES || p[1] >= CB_LAGS ||
+            p[2] >= CB_MODES || p[3] >= CB_LAGS) return 0;
+    }
+#endif
     if (tsp_seen.at[TSP_CORDS]) {
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
@@ -1130,6 +1208,10 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_MDEPTH]) cord_mdepth_set(raw[tsp_seen.at[TSP_MDEPTH]]);   /* (none: cord_reset's 100) */
     if (tsp_seen.at[TSP_BUS])                          /* (none: tessera_reset's SUM, OFF) */
         for (uint32_t k = 0; k < 4u; k++) cord_bus_set(k, raw[tsp_seen.at[TSP_BUS] + k]);
+#if TESS_BUS_CD
+    if (tsp_seen.at[TSP_BUSCD])                        /* (BUS C, D; none: SUM, OFF) */
+        for (uint32_t k = 0; k < 4u; k++) cord_bus_set(4u + k, raw[tsp_seen.at[TSP_BUSCD] + k]);
+#endif
     if (tsp_seen.at[TSP_CCN])                          /* (saved before CC OUT: tessera_reset's 1 each) */
         for (uint32_t i = 0; i < CORD_LIVE; i++) cord_cc_set(i, raw[tsp_seen.at[TSP_CCN] + i]);
     for (uint32_t k = 0; k < sizeof TSP_COPY / sizeof TSP_COPY[0]; k++) {   /* the parts copied as they are */
@@ -1212,6 +1294,13 @@ static void tsp_restore(const uint8_t *raw)
     for (t = 0; t < TESSERA_TRACKS; t++)               /* (ATLAS's BANKs; none saved: ALL) */
         tessera.grids[t].bank = tsp_seen.at[TSP_ABANK] ? raw[tsp_seen.at[TSP_ABANK] + t] : 0u;
 #endif
+#if TESS_GEN_FIT
+    for (t = 0; t < TESSERA_TRACKS; t++) {             /* (LANE, RANGE; none saved: ALL, OFF) */
+        const uint8_t *g = tsp_seen.at[TSP_GFIT] ? raw + tsp_seen.at[TSP_GFIT] : 0;
+        tessera.gn_lane[t] = g ? g[t] : 0u;
+        tessera.gn_range[t] = g ? g[TESSERA_TRACKS + t] : 0u;
+    }
+#endif
 #if TESS_FLOURISH
     for (t = 0; t < TESSERA_TRACKS; t++) {             /* (FLOURISH; none saved: OFF) */
         const uint8_t *f = tsp_seen.at[TSP_FLOUR] ? raw + tsp_seen.at[TSP_FLOUR] : 0;
@@ -1243,6 +1332,17 @@ static void tsp_restore(const uint8_t *raw)
                                                         * for tracks 5..8, XTRK's: so last) */
         for (t = 0; t < TESSERA_TRACKS; t++)
             if (raw[tsp_seen.at[TSP_CHOP] + t] >= GEN_CH_DOUBLE) tessera.chord[t].hit = raw[tsp_seen.at[TSP_CHOP] + t];
+#endif
+#if TESS_CH_NOTES
+    {   /* (MOVE BY NOTES over the CHMOVE part's and XTRK's stand-in: so last; none: offsets 0, ST) */
+        const uint8_t *c = tsp_seen.at[TSP_CHOFS] ? raw + tsp_seen.at[TSP_CHOFS] : 0;
+        for (t = 0; t < TESSERA_TRACKS; t++) {
+            if (c && c[t]) tessera.ch_by[t] = TESS_CB_NOTES;
+            tessera.ch_odeg[t] = c ? c[TESSERA_TRACKS + t] : 0u;
+            for (uint32_t j = 0; j < 4u; j++)
+                tessera.ch_ofs[t][j] = (int8_t)(c ? (int32_t)c[2u * TESSERA_TRACKS + 4u * t + j] - 12 : 0);
+        }
+    }
 #endif
 #if TESS_FR_KICKS
     if (tsp_seen.at[TSP_FKICK])                        /* (FOLLOW RHYTHM KICK over the SOURCE the FMODE part and XTRK
@@ -1320,7 +1420,15 @@ _Static_assert(sizeof XT_BMAX == XT_NB, "XT_B and XT_BMAX side by side");
 static uint32_t xt_ref(uint32_t v) { return v > PROJ_NTRK ? 0u : v; }
 static uint32_t xt_src(uint32_t v) { return v == TESS_SD_KEYS ? PROJ_NTRK + 1u : xt_ref(v); }
 /* the cords' block as the FM-1 reads it: a cord that touches a track past 4 left out (XTRK keeps it) */
-static uint32_t xt_cord_out(const uint8_t *c) { return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK; }
+/* a cord kept in XTRK, not TSP_CORDS: one touching a track past 4, or (TESS_BUS_CD) one into or out of BUS C, D, whose
+ * codes the FM-1 doesn't know (it would refuse the record): the FM-1 keeps XTRK unread and plays without them */
+static uint32_t xt_cord_out(const uint8_t *c)
+{
+#if TESS_BUS_CD
+    if (c[0] == CS_BUSC || c[0] == CS_BUSD || c[2] == CD_BUS_C || c[2] == CD_BUS_D) return 1;
+#endif
+    return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK;
+}
 
 /* track t whole, as XTRK keeps each of tracks 5..8 (and a copied track, tess_core_track_copy): its sound, patterns,
  * the Tessera block, its own settings, references, DIRs, SONG rows, PAT GEN slots */

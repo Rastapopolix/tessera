@@ -477,9 +477,12 @@ static int chk_budget(char *msg, uint32_t n)
         blk();
         for (p = 0; p < NPART; p++)
             for (i = 0; i < NVOICE; i++) {
-                a += trk[p].v[i].active;
-                va += p == 2u && trk[p].v[i].active;
-                fading += trk[p].v[i].active && trk[p].v[i].stage == 4u;
+                const voice_t *v = &trk[p].v[i];
+                uint32_t leaving = v->stage == 4u && v->kfade;   /* BUDGET's fade: KILL_FADE blocks, then free */
+                a += v->active && !leaving;
+                va += p == 2u && v->active && !leaving;
+                fading += v->active && v->stage == 4u && !leaving;
+                fading += v->kfade > KILL_FADE;
             }
         worst = a > worst ? a : worst;
         vworst = va > vworst ? va : vworst;
@@ -491,7 +494,7 @@ static int chk_budget(char *msg, uint32_t n)
     rel_at = fpos;
     finish();
     snprintf(msg, n, "4 POLY parts, random notes: at most %u voices active (budget %u), part 3 at most %u (cap %u), "
-             "%u voices taken, %u still fading after their block, all free %.2f s after the note-offs",
+             "%u voices taken, %u still fading after their fade, all free %.2f s after the note-offs",
              worst, NVOICE, vworst, VCAP, voice_kills - kills0, fading, R.free_s);
     return worst <= NVOICE && vworst <= VCAP && !fading && R.free_s >= 0 && voice_kills > kills0;
 }

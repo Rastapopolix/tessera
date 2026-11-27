@@ -400,7 +400,7 @@ int main(int argc, char **argv)
                 screen += px[(44 + 8 + y) * Panel::W + 292 + 8 + x] == (0xFF000000u | r << 16 | g << 8 | b);
             }
         CHECK(screen == TESS_SCREEN * TESS_SCREEN, "the screen at 1:1 inside the hairline (%d)", screen);
-        q.down(566 + 1 * 84 + 37, 236 + 20);   // MIX, the second row's second (TESSERA's own buttons)
+        q.down(566 + 3 * 84 + 37, 236 + 20);   // MIX, the second row's fourth (TESSERA's own buttons: SOUND MOD FX MIX SETUP)
         CHECK(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX), "MIX held where TESSERA draws it");
         q.up(0, 0);
         CHECK(!(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX)), "MIX let go");
@@ -717,7 +717,8 @@ int main(int argc, char **argv)
         CHECK(!q.menu_shown(), "Esc shuts the menu");
         // a right-click latches a button or key (a section: the FM-1 button it stands for, PIECE's GLO): GLO held
         // while FX is clicked, then let go; Esc lets every latch go
-        const int glo_x = 566 + 30, gy = 236 + 20, fx_x = 566 + 3 * 84 + 20, by = 174 + 20;   // (PIECE: row 2's first)
+        const int glo_x = 566 + 4 * 84 + 30, gy = 174 + 20, fx_x = 566 + 2 * 84 + 20, by = 236 + 20;   // (PIECE: row 1's
+                                                                                                    // last; FX row 2's third)
         const uint32_t fx_b = TESS_BTN_SECTION(TESS_SEC_FX);
         CHECK(q.latch(glo_x, gy) && (q.input.buttons & (1u << 5)), "a right-click on PIECE latches GLO");
         q.down(fx_x, by);
@@ -1727,13 +1728,13 @@ int main(int argc, char **argv)
         frames(1);
         CHECK(screen_hash(v) == h0, "Left: back to FX's first page");
         q.key(0x2A, true);   // Shift
-        CHECK(q.key(Panel::KEY_RIGHT, true) && (q.input.buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE)),
-              "Shift+Right: SHAPE's button held (%08x)", q.input.buttons);
+        CHECK(q.key(Panel::KEY_RIGHT, true) && (q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX)),
+              "Shift+Right: MIX's button held (the panel's order) (%08x)", q.input.buttons);
         run(q, 0.1);
-        CHECK(q.key(Panel::KEY_RIGHT, false) && !(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE)), "..let go with the arrow");
+        CHECK(q.key(Panel::KEY_RIGHT, false) && !(q.input.buttons & TESS_BTN_SECTION(TESS_SEC_MIX)), "..let go with the arrow");
         run(q, 0.3);
         frames(1);
-        CHECK(v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_SHAPE), "Shift+Right from FX: SHAPE");
+        CHECK(v.lit_buttons & TESS_BTN_SECTION(TESS_SEC_MIX), "Shift+Right from FX: MIX");
         CHECK(q.key(Panel::KEY_DOWN, true) && q.input.track == 1, "Shift+Down: the next track (%d)", q.input.track);
         q.key(Panel::KEY_DOWN, false);
         run(q, 0.3);

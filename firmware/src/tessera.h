@@ -255,6 +255,12 @@ typedef struct {
      * record's CHMOVE part (the two side by side), not the packed block */
     uint8_t          ch_when[TESSERA_TRACKS];    /* TESS_CW_*: OFF (as before) */
     uint8_t          ch_by[TESSERA_TRACKS];      /* TESS_CB_*: +2 ST by default */
+#if TESS_CH_NOTES
+    /* MOVE BY NOTES (an 8-track build's): each note's own move, the chord's notes from the lowest (a fifth and more:
+     * the fourth's), in semitones or (ch_odeg) scale degrees. The record's TSP_CHOFS */
+    int8_t           ch_ofs[TESSERA_TRACKS][4];  /* -12..12 */
+    uint8_t          ch_odeg[TESSERA_TRACKS];    /* 0 semitones, 1 scale degrees */
+#endif
     /* ENERGY (energy.c; the ENERGY page), the project's, not a track's: its slow tide and its rests */
     uint8_t          en_arc;                     /* 0..100: how far the tide swings, 0 off */
     uint8_t          en_rests;                   /* 0..100: how often the notes rest, 0 off */
@@ -290,6 +296,11 @@ typedef struct {
     uint8_t          fl_where[TESSERA_TRACKS];   /* 0 OFF, 1 BAR 2, 2 BAR 4, 3 BAR 8: the last bar of every 2, 4, 8 */
     uint8_t          fl_what[TESSERA_TRACKS];    /* FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE */
     uint8_t          fl_heat[TESSERA_TRACKS];    /* 0..2 (HEAT 1..3): the last step, the last two, the last two harder */
+#endif
+#if TESS_GEN_FIT
+    /* LANE and RANGE (an 8-track build's; tessera.c tess_fit; the record's TSP_GFIT). 0: as the generator plays */
+    uint8_t          gn_lane[TESSERA_TRACKS];    /* 0 ALL, 1..8 a DRUM lane (eng_drum.c DRUM_LANE_NOTE's order) */
+    uint8_t          gn_range[TESSERA_TRACKS];   /* 0 OFF, 1..3 octaves from the generator's home note */
 #endif
     /* The piece planner (planner.c; the PIECE page under GLO): the piece's LENGTH and SHAPE, steering ENERGY, Entries and
      * the CHAIN. The record's PLAN part. LENGTH FREE: nothing changes */
@@ -558,13 +569,21 @@ enum {
     TX_SECTION_PC,                                  /* (0x2A8: MIDI OUT's SECTION PC, any track's: form_chain.c) */
     TX_CH_WHEN, TX_CH_BY,                           /* (0x2A9, 0x2AA: CHORD's MOVE WHEN and BY, a CHORD track's) */
 #if TESS_ATLAS_BANKS
-    TX_RSV_2AB, TX_RSV_2AC, TX_RSV_2AD, TX_RSV_2AE, /* (0x2AB..0x2AE: claimed in ROADMAP for the BUS C / D settings; no
-                                                     * parameter yet) */
+    TX_BUSC_MODE, TX_BUSC_LAG, TX_BUSD_MODE, TX_BUSD_LAG,   /* (0x2AB..0x2AE: the MIX buses C, D's, the project's, an
+                                                     * 8-track build's: cord.c, TESS_BUS_CD) */
     TX_GRD_BANK,                                    /* (0x2AF: ATLAS's BANK, an 8-track build's: gen.h GEN_AB_*) */
 #endif
 #if TESS_FLOURISH
     TX_RSV_2B0, TX_RSV_2B1,                         /* (0x2B0, 0x2B1: claimed in ROADMAP for user samples; no parameter yet) */
     TX_FL_WHERE, TX_FL_WHAT, TX_FL_HEAT,            /* (0x2B2..0x2B4: FLOURISH, an 8-track build's: seq_sub.c fl_step) */
+#endif
+#if TESS_GEN_FIT
+    TX_GN_LANE, TX_GN_RANGE,                        /* (0x2B5, 0x2B6: a generator's LANE and RANGE, an 8-track build's:
+                                                     * tessera.c tess_fit) */
+#endif
+#if TESS_CH_NOTES
+    TX_CH_OFS1, TX_CH_OFS2, TX_CH_OFS3, TX_CH_OFS4, /* (0x2B7..0x2BA: CHORD MOVE BY NOTES, each note's offset; */
+    TX_CH_ODEG,                                     /* 0x2BB: in semitones or degrees; an 8-track build's) */
 #endif
     TX_COUNT
 };
@@ -574,11 +593,20 @@ _Static_assert(TX_TW_HOLD == 0x91 && TX_FC_KEYC == 0x93 && TX_SUB_SPLIT_HOW == 0
                TX_AN_BREAK == 0xA6 && TX_QNT_LINK == 0xA7 && TX_SECTION_PC == 0xA8 && TX_CH_BY == 0xAA,
                "parameter ids are stored: never renumbered");
 #if TESS_ATLAS_BANKS
-_Static_assert(TX_GRD_BANK == 0xAF, "parameter ids are stored: never renumbered");
+_Static_assert(TX_GRD_BANK == 0xAF && TX_BUSC_MODE == 0xAB && TX_BUSD_LAG == 0xAE, "parameter ids are stored: never renumbered");
+_Static_assert(!TESS_BUS_CD || TESS_ATLAS_BANKS, "BUS C, D: their ids in the 8-track builds' range");
 #endif
 #if TESS_FLOURISH
 _Static_assert(TESS_ATLAS_BANKS && TX_FL_WHERE == 0xB2 && TX_FL_HEAT == 0xB4, "parameter ids are stored: never renumbered");
 enum { FL_DOUBLE, FL_DROP, FL_ECHO, FL_OCTAVE, FL_WHATS };   /* TX_FL_WHAT (saved: append only) */
+#endif
+#if TESS_GEN_FIT
+_Static_assert(TESS_FLOURISH && TX_GN_LANE == 0xB5 && TX_GN_RANGE == 0xB6, "parameter ids are stored: never renumbered");
+#define TESS_GN_LANES 8u                            /* TX_GN_LANE 1..8: BD SD CP CH OH TM RS CB */
+#define TESS_GN_RANGE 3u                            /* TX_GN_RANGE 1..3 octaves */
+#endif
+#if TESS_CH_NOTES
+_Static_assert(TESS_GEN_FIT && TX_CH_OFS1 == 0xB7 && TX_CH_ODEG == 0xBB, "parameter ids are stored: never renumbered");
 #endif
 /* TX_SEQ_DIR: the order a STEP pattern plays its steps in (seq_dir.c) */
 enum { SEQ_FWD, SEQ_BACK, SEQ_PEND, SEQ_FOLD, SEQ_RAND, SEQ_DRUNK, SEQ_DIRS };
@@ -591,7 +619,12 @@ enum { TESS_STR_UP, TESS_STR_DOWN, TESS_STR_ALT, TESS_STR_DIRS };   /* TX_CH_SDI
  * only) */
 enum { TESS_CW_OFF, TESS_CW_LAST, TESS_CW_LAST2, TESS_CW_ODD, TESS_CW_CHANGE, TESS_CW_RAND, TESS_CW_N };
 enum { TESS_CB_DN2, TESS_CB_DN1, TESS_CB_UP1, TESS_CB_UP2, TESS_CB_UP3, TESS_CB_DEG1, TESS_CB_DEG2, TESS_CB_INVU,
-       TESS_CB_INVD, TESS_CB_OCT, TESS_CB_TOP, TESS_CB_LEAD, TESS_CB_N };
+       TESS_CB_INVD, TESS_CB_OCT, TESS_CB_TOP, TESS_CB_LEAD,
+#if TESS_CH_NOTES
+       TESS_CB_NOTES,                               /* (an 8-track build's: each note its own, ch_ofs; the record's
+                                                     * CHMOVE part has +1 ST in its place, TSP_CHOFS the real one) */
+#endif
+       TESS_CB_N };
 /* TX_TW_FHOW: the source's note as it is, the nearest chord tone, mirrored, a bass, CANON 1..8 notes back, or counted
  * into the CHORD track's chord (HARM, after the 8 CANONs: older firmware loads no project that uses it) */
 enum { TESS_FH_SAME, TESS_FH_CHORD, TESS_FH_CONTRA, TESS_FH_BASS, TESS_FH_CANON, TESS_FH_HARM = TESS_FH_CANON + 8,

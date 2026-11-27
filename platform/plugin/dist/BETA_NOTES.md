@@ -14,6 +14,26 @@ It's a beta: expect some rough edges. Found a problem? Open an issue:
 <https://github.com/Rastapopolix/tessera/issues> (the plugin's version, your DAW and its version, your system, the
 steps, what you expected and what happened).
 
+## New in beta 14
+- **The section buttons in a new order.** Top row, the notes (what plays), from the smallest to the largest: HOME,
+  SCALE, GEN, SHAPE, PIECE. Bottom row, the sound (how it sounds), in signal-flow order: SOUND, MOD, FX, MIX, SETUP.
+  The number keys follow the panel: **1 SCALE, 2 GEN, 3 SHAPE, 4 PIECE, 5 SOUND, 6 MOD, 7 FX, 8 MIX, 9 SETUP** (GEN
+  was 1), 0 HOME.
+- **32 mods** (the FM-1 has 16) and **four MIX buses**: BUS C and D besides A and B, as sources and destinations, each
+  with its MODE and LAG on MODS' sheet.
+- **A generator's Drum lane and Note range** (GEN sheet): on a DRUM track every hit of TURING, EUCLID and the rest on
+  one drum, or any generator's notes kept inside 1 to 3 octaves, folded in key.
+- **CHORD MOVE BY NOTES:** each of the chord's four notes moved by its own amount (-12 to 12, in semitones or scale
+  degrees) on the strikes MOVE WHEN picks.
+- **Cleaner sound:** ORACLE's fast attacks and releases no longer click on a low sub bass, and a voice BUDGET takes
+  fades out over about 3 ms instead of cutting.
+- **The mouse:** dragging the filter's peak (and any picture's handle) moves evenly, never jumping to its ends (Shift:
+  finer); click anywhere on ATLAS's map to put the cross-hair there; click a track's row on MIDI IN / MIDI OUT to select
+  it (MIDI OUT: double-click for its sheet); BACK and ROLES / CREATE are clickable on NEW SONG; clicking a sound list
+  no longer opens a help card by mistake.
+- The FM-1 opens projects that use the new features and plays them without them (16 mods, buses A and B, ALL / OFF,
+  CHORD +1 ST). Projects that use them don't open in beta 13 or earlier.
+
 ## In this beta
 - Windows (64-bit): CLAP, VST3 and the standalone app.
 - macOS 10.15 or later, Apple silicon and Intel: CLAP, VST3, Audio Unit and the standalone app.
@@ -23,7 +43,7 @@ steps, what you expected and what happened).
 - **EXPANDED:** a wider window with a second screen, TRACKS, beside the FM-1's: every track on a row of its own (its
   steps, level, M and S). It opens by itself when your screen has room; MODE in the menu switches it.
 - **SIZE:** 100, 150 or 200% (EXPANDED: 100 or 125%); drag the window's corner and it snaps from one size to the next.
-- Eight tracks. In FM-1 mode the 1-4 / 5-8 switch (or Tab) picks which four the panel works on. All eight are saved,
+- Eight tracks and 32 mods. In FM-1 mode the 1-4 / 5-8 switch (or Tab) picks which four the panel works on. All eight are saved,
   with the DAW song and in a `.tsp`.
 - **The mouse on the screen:** turn the wheel or drag a value; the wheel scrolls lists and texts; click a row, a slot,
   a pattern, a section, an ink or a mixer strip's MUTE / SOLO; double-click for OK or a default.

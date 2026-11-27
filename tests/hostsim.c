@@ -137,12 +137,13 @@ static void put_step(track_t *t, uint32_t i, uint32_t n, const uint8_t *notes, u
     s->vel = n ? 100 : 0;
 }
 
-static uint32_t busy_now(void)                   /* sounding voices of the parts (none fading after a block) */
+static uint32_t busy_now(void)                   /* sounding voices of the parts (none fading after a block); BUDGET's
+                                                  * taken voices fading over KILL_FADE blocks are leaving (voice.c) */
 {
     uint32_t p, i, n = 0;
     for (p = 0; p < NPART; p++)
         for (i = 0; i < NVOICE; i++)
-            n += trk[p].v[i].active;
+            n += trk[p].v[i].active && !(trk[p].v[i].stage == 4u && trk[p].v[i].kfade);
     return n;
 }
 

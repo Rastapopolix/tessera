@@ -50,6 +50,12 @@ _Static_assert(sizeof TX_N_GRBANK / sizeof TX_N_GRBANK[0] == GEN_AB_N, "ATLAS BA
 static const char *const TX_N_FLWHERE[] = {"OFF", "BAR 2", "BAR 4", "BAR 8"};
 static const char *const TX_N_FLWHAT[] = {"DOUBLE", "DROP", "ECHO", "OCTAVE"};   /* (FL_*) */
 static const char *const TX_N_FLHEAT[] = {"1", "2", "3"};
+#endif
+#if TESS_GEN_FIT
+static const char *const TX_N_GNLANE[] = {"ALL", "BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB"};   /* (DV_* lanes) */
+static const char *const TX_N_GNRANGE[] = {"OFF", "1 OCT", "2 OCT", "3 OCT"};
+_Static_assert(sizeof TX_N_GNLANE / sizeof TX_N_GNLANE[0] == TESS_GN_LANES + 1u, "LANE: a name a lane");
+_Static_assert(sizeof TX_N_GNRANGE / sizeof TX_N_GNRANGE[0] == TESS_GN_RANGE + 1u, "RANGE: a name a range");
 _Static_assert(sizeof TX_N_FLWHAT / sizeof TX_N_FLWHAT[0] == FL_WHATS, "FLOURISH WHAT: a name a move");
 #endif
 static const char *const TX_N_SPLITHOW[] = {"DOUBLE", "PUSH", "MIX"};   /* (TESS_SPLIT_*) */
@@ -88,7 +94,15 @@ static const char *const TX_N_SEQDIR[] = {"FWD", "BACK", "PEND", "FOLD", "RAND",
 static const char *const TX_N_SDIR[] = {"UP", "DOWN", "ALT"};   /* (TESS_STR_*) */
 static const char *const TX_N_CWHEN[] = {"OFF", "LAST", "LAST 2", "ODD", "CHANGE", "RAND"};   /* (TESS_CW_*) */
 static const char *const TX_N_CBY[] = {"-2 ST", "-1 ST", "+1 ST", "+2 ST", "+3 ST", "+1 DEG", "+2 DEG", "INV+",
-                                       "INV-", "OCT+", "TOP", "LEAD"};   /* (TESS_CB_*) */
+                                       "INV-", "OCT+", "TOP", "LEAD",
+#if TESS_CH_NOTES
+                                       "NOTES",
+#endif
+                                       };   /* (TESS_CB_*) */
+_Static_assert(sizeof TX_N_CBY / sizeof TX_N_CBY[0] == TESS_CB_N, "CHORD MOVE BY: a name a move");
+#if TESS_CH_NOTES
+static const char *const TX_N_CHODEG[] = {"ST", "DEG"};
+#endif
 static const char *const TX_N_BUSMODE[] = {"SUM", "MAX", "MIN", "DIFF"};   /* (cord.h CB_*) */
 static const char *const TX_N_BUSLAG[] = {"OFF", "10 ms", "20 ms", "50 ms", "100 ms", "200 ms", "500 ms", "1 s", "2 s",
                                           "5 s", "10 s", "20 s"};   /* (cord.c CORD_LAG_STEP) */
@@ -264,6 +278,12 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_BUSA_LAG] = PE("LAG", TX_N_BUSLAG, 0),
     [TX_BUSB_MODE] = PE("MODE", TX_N_BUSMODE, 0),
     [TX_BUSB_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+#if TESS_BUS_CD
+    [TX_BUSC_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSC_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+    [TX_BUSD_MODE] = PE("MODE", TX_N_BUSMODE, 0),
+    [TX_BUSD_LAG] = PE("LAG", TX_N_BUSLAG, 0),
+#endif
     [TX_MOD_DEPTH] = PD("MOD DEPTH", F_PCT, 0, 100, 100),
     [TX_AN_CHORD] = PE("CHORD", TX_N_ANCHORD, 0),
     [TX_AN_MODE] = PE("MODE", TX_N_ANMODE, 0),
@@ -279,6 +299,17 @@ static const param_desc_t TX_DESC[TX_COUNT] = {
     [TX_FL_WHERE] = PE("WHERE", TX_N_FLWHERE, 0),
     [TX_FL_WHAT] = PE("WHAT", TX_N_FLWHAT, 0),
     [TX_FL_HEAT] = PE("HEAT", TX_N_FLHEAT, 0),
+#endif
+#if TESS_GEN_FIT
+    [TX_GN_LANE] = PE("LANE", TX_N_GNLANE, 0),
+    [TX_GN_RANGE] = PE("RANGE", TX_N_GNRANGE, 0),
+#endif
+#if TESS_CH_NOTES
+    [TX_CH_OFS1] = PD("NOTE 1", F_INT, -12, 12, 0),
+    [TX_CH_OFS2] = PD("NOTE 2", F_INT, -12, 12, 0),
+    [TX_CH_OFS3] = PD("NOTE 3", F_INT, -12, 12, 0),
+    [TX_CH_OFS4] = PD("NOTE 4", F_INT, -12, 12, 0),
+    [TX_CH_ODEG] = PE("IN", TX_N_CHODEG, 0),
 #endif
 };
 
@@ -915,6 +946,18 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     X_(TX_CH_BY, "CHORD MOVE BY", "How far a strike moves: the whole shape by semitones (ST), up the scale in key "
                                   "(DEG), turned over (INV), an octave, the top note a degree (TOP), or the next "
                                   "chord a semitone below (LEAD). GEN sheet."),
+#if TESS_BUS_CD                                     /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    XP_(TX_BUSC_MODE, "BUS C MODE", "How the mods into BUS C combine, as BUS A's: SUM, MAX (either, OR), MIN (both, "
+                                     "AND), DIFF (the first two apart, XOR). The source BUS C reads the result a block "
+                                     "later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSC_LAG, "BUS C LAG", "A slew on BUS C, as BUS A's: the time a whole move from 0 to 1 takes. OFF: none. "
+                                   "MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSD_MODE, "BUS D MODE", "How the mods into BUS D combine, as BUS A's: SUM, MAX (either, OR), MIN (both, "
+                                     "AND), DIFF (the first two apart, XOR). The source BUS D reads the result a block "
+                                     "later. MODS' sheet (OCT+ held)."),
+    XP_(TX_BUSD_LAG, "BUS D LAG", "A slew on BUS D, as BUS A's: the time a whole move from 0 to 1 takes. OFF: none. "
+                                   "MODS' sheet (OCT+ held)."),
+#endif
 #if TESS_ATLAS_BANKS                                /* (an 8-track build's: tools/gen_help.py leaves it out) */
     X_(TX_GRD_BANK, "ATLAS BANK", "The map X and Y scan: ALL is the original one, the others a genre's own. In "
                                   "each, Y picks one of five feels of the genre and X goes from its bare skeleton to "
@@ -929,6 +972,24 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
                                     "away (bass down, the rest up; drums a roll). Always in key. TIMING sheet."),
     X_(TX_FL_HEAT, "FLOURISH HEAT", "How much: 1 the bar's last step, 2 its last two, 3 the last two harder (a faster "
                                     "roll, ECHO with REPEAT lifted). TIMING sheet."),
+#endif
+#if TESS_GEN_FIT                                    /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    X_(TX_GN_LANE, "GEN LANE", "On a DRUM track, the drum every note of the generator plays: ALL lets its pitches pick "
+                               "the drums (kick, snare, hats as the notes fall), BD to CB keep every hit on that one, so "
+                               "the generator gives only the rhythm and the accents. Other tracks: no effect. GEN sheet."),
+    X_(TX_GN_RANGE, "GEN RANGE", "Keeps any generator's notes inside 1, 2 or 3 octaves from its home note (C2 for TURING "
+                                 "and MARKOV, C3 for the others), folding the rest in by octaves, so they stay in key. "
+                                 "SPAN still spreads them first. OFF: as the generator plays. GEN sheet."),
+#endif
+#if TESS_CH_NOTES                                  /* (an 8-track build's: tools/gen_help.py leaves them out) */
+    X_(TX_CH_OFS1, "CHORD NOTE 1", "With MOVE BY NOTES, how far the chord's lowest note moves on the strikes MOVE WHEN "
+                                   "picks, -12 to 12, in semitones or scale degrees (IN). GEN sheet."),
+    X_(TX_CH_OFS2, "CHORD NOTE 2", "With MOVE BY NOTES, how far the chord's second note moves, as NOTE 1. GEN sheet."),
+    X_(TX_CH_OFS3, "CHORD NOTE 3", "With MOVE BY NOTES, how far the chord's third note moves, as NOTE 1. GEN sheet."),
+    X_(TX_CH_OFS4, "CHORD NOTE 4", "With MOVE BY NOTES, how far the chord's fourth note (and any above it) moves, as "
+                                   "NOTE 1. GEN sheet."),
+    X_(TX_CH_ODEG, "CHORD NOTES IN", "MOVE BY NOTES' offsets in semitones (ST) or steps of the track's scale (DEG: the "
+                                     "moved notes stay in key). GEN sheet."),
 #endif
 #undef FC_KEY_TEXT
 #undef QD_MOVE_TEXT

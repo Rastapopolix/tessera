@@ -13,15 +13,18 @@
  *   count, each event's place (its step), parameter, value (u16) and pattern, then MOTION on (0/1); its CHORD USER
  *   qualities (GEN_CH_USER_N bytes, gen.h uq), its cells of ENTRIES' grid (a byte: letter A's 2 bits low), its
  *   ATLAS BANK (a byte, 0 in a build without the banks) its FLOURISH WHERE, WHAT, HEAT (a byte each, 0 without) and its CHORD HIT when a chop (DOUBLE 4, BUBBLE 5;
- *   else 0: the record has the rest).
+ *   else 0: the record has the rest), then its generator's LANE and RANGE (a byte each, 0 without), then CHORD MOVE BY
+ *   NOTES' IN (0 / 1) and its four offsets + 12 (0..24; IN 0, 12 without).
  * A paste of the TRACK keeps the target's MIDI OUT channel and the mods' and references' track numbers (Theo
  * 2026-11-26: a pasted track's mods that point at other tracks keep their numbers); one of the SOUND alone changes
  * what a user preset load does (the engine and the parameters param_kept leaves, the FM6, ORACLE and DRUM patches).
  * A swap moves two tracks whole and renumbers every reference to them, so the piece plays on as before. */
 
 #if CORE_TRACKS > 4
-#define TT_VER 5u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK;
-                                                         * 4: FLOURISH's WHERE, WHAT, HEAT; 5: CHORD HIT's chop) */
+#define TT_VER 7u                                        /* (2: the qualities and the grid's cells; 3: ATLAS's BANK;
+                                                         * 4: FLOURISH's WHERE, WHAT, HEAT; 5: CHORD HIT's chop;
+                                                         * 6: the generator's LANE and RANGE; 7: CHORD MOVE BY
+                                                         * NOTES' IN and four offsets) */
 #define TT_HEAD 9u                                       /* "TTK1", version, NTRK, the track, u16 body length */
 #define TT_CORD 9u                                       /* a mod's bytes */
 #define TT_MOT 5u                                        /* a motion event's bytes */
@@ -36,6 +39,11 @@ static uint8_t tt_tmp[2][TSP_MAX] CORE_BIG;
 #define TT_FL(f, t) tessera.f[t]
 #else
 #define TT_FL(f, t) 0u
+#endif
+#if TESS_GEN_FIT
+#define TT_GN(f, t) tessera.f[t]
+#else
+#define TT_GN(f, t) 0u
 #endif              /* (two tracks' bodies: a swap, a SOUND paste's own) */
 
 /* track t's body into b (cap bytes): its length, 0 too big */
@@ -135,7 +143,7 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
         }
     out[pos++] = (uint8_t)(track < 4u && ((motion.on >> track) & 1u));
     motion_unguard(f);
-    TT_ROOM(GEN_CH_USER_N + 6u);
+    TT_ROOM(GEN_CH_USER_N + 13u);
     memcpy(out + pos, tessera.chord[track].uq, GEN_CH_USER_N);
     pos += GEN_CH_USER_N;
     out[pos++] = (uint8_t)tt_cells(track);
@@ -145,6 +153,15 @@ uint32_t tess_core_track_copy(uint32_t track, uint8_t *out, uint32_t cap)
     out[pos++] = TT_FL(fl_heat, track);
     out[pos++] = tessera.chord[track].hit >= GEN_CH_DOUBLE ? tessera.chord[track].hit : 0u;   /* (a chop: the record has
                                                          * its stand-in) */
+    out[pos++] = TT_GN(gn_lane, track);
+    out[pos++] = TT_GN(gn_range, track);
+#if TESS_CH_NOTES
+    out[pos++] = tessera.ch_odeg[track];
+    for (uint32_t j = 0; j < 4u; j++) out[pos++] = (uint8_t)(tessera.ch_ofs[track][j] + 12);
+#else
+    out[pos++] = 0u;
+    for (uint32_t j = 0; j < 4u; j++) out[pos++] = 12u;
+#endif
 #undef TT_ROOM
     return pos;
 }
@@ -193,14 +210,17 @@ static int tt_parse(const uint8_t *in, uint32_t len, tt_parts_t *q)
         if (p[0] >= NSTEP || p[1] >= P_COUNT || p[4] >= NPAT) return 0;
     if (p[0] > 1u) return 0;
     p++;
-    TT_NEED(GEN_CH_USER_N + 6u);
+    TT_NEED(GEN_CH_USER_N + 13u);
     q->more = p;
     for (i = 0; i < GEN_CH_USER_N; i++)
         if (p[i] >= CH_N) return 0;
     if (p[GEN_CH_USER_N] >> 6 || p[GEN_CH_USER_N + 1u] >= GEN_AB_N || p[GEN_CH_USER_N + 2u] > 3u ||
         p[GEN_CH_USER_N + 3u] > 3u || p[GEN_CH_USER_N + 4u] > 2u ||
-        (p[GEN_CH_USER_N + 5u] && (p[GEN_CH_USER_N + 5u] < 4u || p[GEN_CH_USER_N + 5u] > 5u))) return 0;
-    p += GEN_CH_USER_N + 6u;
+        (p[GEN_CH_USER_N + 5u] && (p[GEN_CH_USER_N + 5u] < 4u || p[GEN_CH_USER_N + 5u] > 5u)) ||
+        p[GEN_CH_USER_N + 6u] > 8u || p[GEN_CH_USER_N + 7u] > 3u || p[GEN_CH_USER_N + 8u] > 1u) return 0;
+    for (i = 9u; i < 13u; i++)
+        if (p[GEN_CH_USER_N + i] > 24u) return 0;
+    p += GEN_CH_USER_N + 13u;
 #undef TT_NEED
     return p == e;
 }
@@ -244,6 +264,14 @@ static void tt_paste_track(const tt_parts_t *q, uint32_t t)
     tessera.fl_where[t] = q->more[GEN_CH_USER_N + 2u];
     tessera.fl_what[t] = q->more[GEN_CH_USER_N + 3u];
     tessera.fl_heat[t] = q->more[GEN_CH_USER_N + 4u];
+#endif
+#if TESS_GEN_FIT
+    tessera.gn_lane[t] = q->more[GEN_CH_USER_N + 6u];
+    tessera.gn_range[t] = q->more[GEN_CH_USER_N + 7u];
+#endif
+#if TESS_CH_NOTES
+    tessera.ch_odeg[t] = q->more[GEN_CH_USER_N + 8u];
+    for (i = 0; i < 4u; i++) tessera.ch_ofs[t][i] = (int8_t)((int32_t)q->more[GEN_CH_USER_N + 9u + i] - 12);
 #endif
     tt_cords_off(t);
     for (i = at = 0; i < q->ncord; i++) {                /* (no free cord left: the rest left out) */
@@ -378,6 +406,21 @@ uint32_t tess_core_track_swap(uint32_t a, uint32_t b)
             k = tessera.fl_where[a], tessera.fl_where[a] = tessera.fl_where[b], tessera.fl_where[b] = k;
             k = tessera.fl_what[a], tessera.fl_what[a] = tessera.fl_what[b], tessera.fl_what[b] = k;
             k = tessera.fl_heat[a], tessera.fl_heat[a] = tessera.fl_heat[b], tessera.fl_heat[b] = k;
+        }
+#endif
+#if TESS_GEN_FIT
+        {
+            uint8_t k;
+            k = tessera.gn_lane[a], tessera.gn_lane[a] = tessera.gn_lane[b], tessera.gn_lane[b] = k;
+            k = tessera.gn_range[a], tessera.gn_range[a] = tessera.gn_range[b], tessera.gn_range[b] = k;
+        }
+#endif
+#if TESS_CH_NOTES
+        {
+            int8_t o[4];
+            uint8_t k = tessera.ch_odeg[a];
+            tessera.ch_odeg[a] = tessera.ch_odeg[b], tessera.ch_odeg[b] = k;
+            memcpy(o, tessera.ch_ofs[a], 4); memcpy(tessera.ch_ofs[a], tessera.ch_ofs[b], 4); memcpy(tessera.ch_ofs[b], o, 4);
         }
 #endif
         TESS_IRQ_ON();
