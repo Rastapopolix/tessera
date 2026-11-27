@@ -178,7 +178,8 @@ static void fm6_rom_patch(const fm6_rom_t *r, uint8_t *v)   /* a Melodee factory
 static void fm6_factory(uint32_t k, uint8_t *pk)
 {
     uint8_t v[FP_SIZE + 1u];
-    if (!MELODEE_FM6) { memset(pk, 0, FM6_PACKED); return; }   /* (Tessera: left out, core.h; its ROM with it) */
+    if (!MELODEE_FM6 || TESSERA_MIDI_ONLY) { memset(pk, 0, FM6_PACKED); return; }   /* (left out, core.h, or Tessera MIDI: no
+                                                                                * sound; its ROM with it) */
     if (k < FM6_NFACTORY) {
         memcpy(pk, FM6_FACTORY[k], FM6_PACKED);
         return;
@@ -233,7 +234,7 @@ static void fm6_track_loaded(const track_t *t)
         uint32_t z = t->preset - FM6_NFAC - 1u;              /* ZEN-1's: after INIT VOICE */
         if (t->preset < FM6_NFAC)
             fm6_factory(t->preset, pk);
-        else if (MELODEE_FM6 && z < FM6_NZEN)
+        else if (MELODEE_FM6 && !TESSERA_MIDI_ONLY && z < FM6_NZEN)
             memcpy(pk, FM6_ZEN[z], FM6_PACKED);
         fm6_unpack(t->preset < FM6_NFAC || z < FM6_NZEN ? pk : FM6_INIT, v);   /* (F25: INIT VOICE) */
         fm6_put_patch(tr, v, 1);
