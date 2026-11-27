@@ -38,7 +38,10 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
        TSP_FKICK = 55,
 #endif
 #if CORE_TRACKS > 4
-       TSP_MX32 = 57,                                 /* (56: TSP_GFIT, ROADMAP's claim) */
+       TSP_MX32 = 57,
+#endif
+#if TESS_BUS_CD
+       TSP_BUSCD = 58,                                 /* (56: TSP_GFIT, ROADMAP's claim) */
 #endif
        TSP_PARTS };   /* (TSP_SUB: each track's SHAPE; none: EVEN;
                                               * TSP_MIDI: each track's MIDI OUT channel; none: AUTO; TSP_KEY: KEY LINK; none: OWN;
@@ -123,7 +126,10 @@ enum { TSP_META = 1, TSP_TRACKS, TSP_STEPS, TSP_TIMING, TSP_SONG, TSP_MOTION, TS
                                               * TSP_MX32 (an 8-track build's only: the FM-1 skips it, and its mods 17..32
                                               * with it): mods 17..32's HOLD mask (u16, bit i: mod 17 + i), their SCALE
                                               * mask (u16), their HOLD clocks (CORD_HCLK_BYTES nibbles, as TSP_MHCLK),
-                                              * written only when one of them is HOLD or SCALE; none: neither */
+                                              * written only when one of them is HOLD or SCALE; none: neither;
+                                              * TSP_BUSCD (an 8-track build's only: the FM-1 skips it, and the mods
+                                              * into and out of BUS C, D with it): BUS C's MODE, LAG, then D's, as
+                                              * TSP_BUS's, written only when one is not SUM, OFF; none: SUM, OFF */
 _Static_assert(TSP_ORACLE == 21 && TSP_ENERGY == 22 && TSP_DEV == 23 && TSP_TRANSP == 24 && TSP_TUNE == 25 &&
                TSP_SOUND == 26 && TSP_CHAIN == 27 && TSP_ENTRY == 28 && TSP_PLAN == 29 && TSP_PERF == 30 &&
                TSP_HOLD == 31 && TSP_CCN == 32 && TSP_FKEY == 33 && TSP_SPLIT == 34 && TSP_FMODE == 35 &&
@@ -151,6 +157,9 @@ _Static_assert(TSP_CHOP == 54 && GEN_CH_HITS == 6u, "the parts' numbers are stor
 #endif
 #if TESS_FR_KICKS
 _Static_assert(TSP_FKICK == 55, "the parts' numbers are stored: never renumbered");
+#endif
+#if TESS_BUS_CD
+_Static_assert(TSP_BUSCD == 58, "the parts' numbers are stored: never renumbered");
 #endif
 #if CORE_TRACKS > 4
 _Static_assert(TSP_MX32 == 57 && CORD_LIVE == 32u, "the parts' numbers are stored: never renumbered");
@@ -474,6 +483,13 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
             for (uint32_t k = 0; k < 4u; k++) tsp_byte(&w, cord_bus_get(k));
             tsp_end(&w);
         }
+#if TESS_BUS_CD
+        if (cord_bus_get(4) | cord_bus_get(5) | cord_bus_get(6) | cord_bus_get(7)) {   /* (BUS C, D: as A, B) */
+            tsp_begin(&w, TSP_BUSCD, 1);
+            for (uint32_t k = 4; k < 8u; k++) tsp_byte(&w, cord_bus_get(k));
+            tsp_end(&w);
+        }
+#endif
         tsp_begin(&w, TSP_CCN, 1);                     /* (CC OUT: each cord's CC number) */
         for (uint32_t i = 0; i < CORD_MAX; i++) tsp_byte(&w, cord_cc_num(i));   /* (past CORD_LIVE: 1) */
         tsp_end(&w);
@@ -1034,6 +1050,13 @@ static int tsp_valid(const uint8_t *raw, uint32_t len)
         if (tsp_seen.ver[TSP_BUS] != 1u || tsp_seen.len[TSP_BUS] != 4u || p[0] >= CB_MODES || p[1] >= CB_LAGS ||
             p[2] >= CB_MODES || p[3] >= CB_LAGS) return 0;
     }
+#if TESS_BUS_CD
+    if (tsp_seen.at[TSP_BUSCD]) {                      /* (as TSP_BUS) */
+        const uint8_t *p = raw + tsp_seen.at[TSP_BUSCD];
+        if (tsp_seen.ver[TSP_BUSCD] != 1u || tsp_seen.len[TSP_BUSCD] != 4u || p[0] >= CB_MODES || p[1] >= CB_LAGS ||
+            p[2] >= CB_MODES || p[3] >= CB_LAGS) return 0;
+    }
+#endif
     if (tsp_seen.at[TSP_CORDS]) {
         if (tsp_seen.ver[TSP_CORDS] != 1u || tsp_seen.len[TSP_CORDS] != CORD_PK_BYTES ||
             !cord_check(raw + tsp_seen.at[TSP_CORDS])) return 0;
@@ -1119,6 +1142,10 @@ static void tsp_restore(const uint8_t *raw)
     if (tsp_seen.at[TSP_MDEPTH]) cord_mdepth_set(raw[tsp_seen.at[TSP_MDEPTH]]);   /* (none: cord_reset's 100) */
     if (tsp_seen.at[TSP_BUS])                          /* (none: tessera_reset's SUM, OFF) */
         for (uint32_t k = 0; k < 4u; k++) cord_bus_set(k, raw[tsp_seen.at[TSP_BUS] + k]);
+#if TESS_BUS_CD
+    if (tsp_seen.at[TSP_BUSCD])                        /* (BUS C, D; none: SUM, OFF) */
+        for (uint32_t k = 0; k < 4u; k++) cord_bus_set(4u + k, raw[tsp_seen.at[TSP_BUSCD] + k]);
+#endif
     if (tsp_seen.at[TSP_CCN])                          /* (saved before CC OUT: tessera_reset's 1 each) */
         for (uint32_t i = 0; i < CORD_LIVE; i++) cord_cc_set(i, raw[tsp_seen.at[TSP_CCN] + i]);
     for (uint32_t k = 0; k < sizeof TSP_COPY / sizeof TSP_COPY[0]; k++) {   /* the parts copied as they are */
@@ -1309,7 +1336,15 @@ _Static_assert(sizeof XT_BMAX == XT_NB, "XT_B and XT_BMAX side by side");
 static uint32_t xt_ref(uint32_t v) { return v > PROJ_NTRK ? 0u : v; }
 static uint32_t xt_src(uint32_t v) { return v == TESS_SD_KEYS ? PROJ_NTRK + 1u : xt_ref(v); }
 /* the cords' block as the FM-1 reads it: a cord that touches a track past 4 left out (XTRK keeps it) */
-static uint32_t xt_cord_out(const uint8_t *c) { return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK; }
+/* a cord kept in XTRK, not TSP_CORDS: one touching a track past 4, or (TESS_BUS_CD) one into or out of BUS C, D, whose
+ * codes the FM-1 doesn't know (it would refuse the record): the FM-1 keeps XTRK unread and plays without them */
+static uint32_t xt_cord_out(const uint8_t *c)
+{
+#if TESS_BUS_CD
+    if (c[0] == CS_BUSC || c[0] == CS_BUSD || c[2] == CD_BUS_C || c[2] == CD_BUS_D) return 1;
+#endif
+    return (c[1] & 0x3Fu) >= PROJ_NTRK || c[3] >= PROJ_NTRK;
+}
 
 /* track t whole, as XTRK keeps each of tracks 5..8 (and a copied track, tess_core_track_copy): its sound, patterns,
  * the Tessera block, its own settings, references, DIRs, SONG rows, PAT GEN slots */

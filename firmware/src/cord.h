@@ -7,6 +7,12 @@
 #define CORD_H
 #include <stdint.h>
 
+/* BUS C and D (Cosmati: an 8-track build's, Theo 2026-11-27): two more MIX buses, as A and B; the FM-1 has A and B,
+ * and drops a mod into or out of C or D (an unknown code) */
+#ifndef TESS_BUS_CD
+#define TESS_BUS_CD (CORE_TRACKS > 4)
+#endif
+#define CORD_NBUS (TESS_BUS_CD ? 4u : 2u)
 #define CORD_MAX 32u              /* the fixed maximum: the saved format and the worst-case cost are sized for it */
 /* how many are in use now: the FM-1's 16 (Theo 2026-10-16), an 8-track build's 32 (Cosmati, Theo 2026-11-27). The cords
  * are saved CORD_MAX wide either way, so raising it changes no format; on the FM-1 mods 17..32 load silent (dropped).
@@ -118,6 +124,9 @@ enum {
     CD_ACC_LIMIT,                                                   /* the pitch accumulator's LIMIT (STEP tracks) */
     CD_ORG_SPEED, CD_ORG_RATE,                                      /* TIDE's SPEED, SWARM's RATE (organic.c) */
     CD_ARATE, CD_AGATE, CD_AOCT,                                    /* ARP's RATE, GATE, OCT (CK_SEQ) */
+#if TESS_BUS_CD
+    CD_BUS_C = 132, CD_BUS_D,                                       /* the project's MIX buses C, D (CK_BUS) */
+#endif
 #if TESS_LFO_SLOPE
     CD_LFO_RST = 134,                                               /* the track's LFO started again (CK_LRST); 132-133
                                                                      * BUS C, BUS D (claimed) */
@@ -172,6 +181,9 @@ enum {
     CS_SLIDE,                     /* (TESS_MPE: the plugin) each note's slide, 0..1: its own MPE CC74 or CLAP BRIGHTNESS; a
                                    * note not from MIDI the track's CC74. A track's source, a value per voice as VEL's */
 #endif
+#if TESS_BUS_CD
+    CS_BUSC = 36, CS_BUSD,        /* (TESS_BUS_CD) the MIX buses C, D, as BUS A, B: the project's */
+#endif
 #if TESS_LFO_SLOPE
     CS_LFOQ = 38,                 /* (TESS_LFO_SLOPE) the track's LFO a quarter cycle on (90 degrees), -1..1 with its FADE */
     CS_LFO2X,                     /* .. at twice its rate, locked to it (a cycle starts with each of its), as CS_LFOQ.
@@ -206,10 +218,11 @@ enum { CU_BI, CU_UNI, CU_GATE, CU_HOLD };
  * of its first two cords); and LAG, a slew on the result, the time a whole 0..1 move takes (OFF none) */
 enum { CB_SUM, CB_MAX, CB_MIN, CB_DIFF, CB_MODES };
 #define CB_LAGS 12u               /* LAG: OFF, 10 ms .. 20 s (pid.c TX_N_BUSLAG; saved: append only) */
-/* setting k: 0 BUS A MODE, 1 its LAG, 2 BUS B MODE, 3 its LAG (TX_BUSA_MODE ..); set: clamped to its range */
+/* setting k: 0 BUS A MODE, 1 its LAG, 2 BUS B MODE, 3 its LAG (TX_BUSA_MODE ..), 4..7 BUS C's, D's (TX_BUSC_MODE ..);
+ * set: clamped to its range */
 uint32_t cord_bus_get(uint32_t k);
 void cord_bus_set(uint32_t k, int32_t v);
-int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), as the source BUS A / B reads it */
+int32_t cord_bus_now(uint32_t b);                   /* bus b's value now (Q15), as the source BUS A .. D reads it */
 /* MOD DEPTH (G9, TX_MOD_DEPTH): 0..100 %, 100 the off position (every mod as set). It scales the moving part of every
  * mod with a source (AMOUNT x source; never an OFFSET; not CLOCK's, a division) where it lands: a mod of mods and a mod into a bus are scaled
  * once, by the mod they turn or read them; a fixed mod's mods of mods by it here. Its own mods (CD_MOD_DEPTH) add to
