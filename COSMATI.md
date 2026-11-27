@@ -129,7 +129,7 @@ for what its pages do. Tessera's pages are the same ones, grouped:
 | Section | Pages |
 |---|---|
 | **GEN** | the generator, NOTES, ARP, PATTERN, MOTION |
-| **SOUND** | the engine's own pages, then ENV |
+| **SOUND** | PRESETS (the sound browser), the engine's own pages, then ENV |
 | **MOD** | MODS, MATRIX, the LFOs, ORGANIC |
 | **FX** | the effects |
 | **SHAPE** | EVOLVE, FORM, TWEAK, LENGTH, TIMING, ENERGY |
@@ -215,7 +215,7 @@ Hover over something you can use and it gets a thin outline, with its name and v
 
 ### Drag and drop
 
-- **A sound onto a track** (EXPANDED): in SAVE > PRESETS, press a sound and drag. Its name follows the mouse, the
+- **A sound onto a track** (EXPANDED): in the browser, press a sound and drag. Its name follows the mouse, the
   TRACKS row under it is framed (`INIT ORACLE > T6`), and letting go loads it onto that track. The selected track and the
   browser stay as they were.
 - **A mod in MATRIX:** press a cell and drag it onto another. Letting go makes a mod from the first cell's track to the
@@ -228,8 +228,11 @@ Hover over something you can use and it gets a thin outline, with its name and v
 
 ### The sound browser
 
-SAVE > PRESETS (the sound browser) has a **list** on the left (ALL, FAVES, a category, an engine) and the **sounds** on
+The sound browser (PRESETS) has a **list** on the left (ALL, FAVES, a category, an engine) and the **sounds** on
 the right. Click a name to go there; double-click a sound to keep it (OK); BACK puts the track's old sound back.
+To open it: **SOUND** (its first page), **Ctrl+B** (Cmd+B) for the selected track, **SOUNDS...** in a track's right-click
+menu (HOME's column or a TRACKS row) for that track, or double-click a track's column on HOME. It is also in SAVE's
+round, after USER and PROJECT.
 
 - **Audition:** with the transport stopped, a sound you pick (a click, the wheel, or turning LIST or SOUND) plays a
   short phrase on its track so you hear it: root, fifth, octave, root (a drum track plays kick, hat, snare, hat).
@@ -251,7 +254,7 @@ Click the window first; keys reach Cosmati only while it has focus. Keys go by w
   while you hold it (a click on the SHIFT button latches it instead).
 - **F1**: the help card of the value under the mouse. **Tab**: the 1-4 / 5-8 switch.
 - **Space** (standalone): PLAY / STOP. **Ctrl+O** and **Ctrl+S** (Cmd on a Mac): OPEN and SAVE. In a DAW these stay the DAW's.
-- **Ctrl+R**: DICE THE PAGE. **Ctrl+Shift+R**: MUTATE the selected track. **Ctrl+M**: the page map.
+- **Ctrl+R**: DICE THE PAGE. **Ctrl+Shift+R**: MUTATE the selected track. **Ctrl+M**: the page map. **Ctrl+B**: the sound browser.
 - **Ctrl+C**, **Ctrl+V**, **Ctrl+Shift+V**, **Alt+Up**, **Alt+Down**: copy, paste, paste the sound, move the track.
 - Arrow keys: see [Finding your way](#finding-your-way-sections-tabs-and-the-page-map).
 - **Naming** a project or preset: just type. Letters, digits, space and `- . _ / # +` go in; Backspace and Delete
@@ -290,7 +293,7 @@ ENERGY (how busy the piece is, and the tracks coming in and out). See their chap
 the subtractive and sampled ones, drums and ORACLE, are the manual's [Sounds](MANUAL.md#sounds). Cosmati also has
 [engines the FM-1 can't fit](#sounds-only-the-plugin-has).
 
-- **Pick a sound** in the browser (SAVE > PRESETS), with audition, FIND and drag onto a track ([above](#the-sound-browser)).
+- **Pick a sound** in the browser (SOUND's first page, **Ctrl+B**, or SOUNDS... in a track's right-click menu), with audition, FIND and drag onto a track ([above](#the-sound-browser)).
 - **Right-click a track** for MUTATE, which nudges its sound a little ([Trying things](#trying-things-dice-locks-a--b-and-morph)).
 - **FM6's** STORE page is the last of its EDIT pages, after VOICE.
 - The **ENV** and filter pages are drawn so the picture is the control ([Pictures are handles](#lists-sheets-and-pictures)).
@@ -574,6 +577,7 @@ The printable version of this table, with the mouse as well: the [Quick referenc
 | Space | PLAY / STOP (standalone) |
 | Ctrl+O, Ctrl+S | OPEN, SAVE (standalone; the DAW's in a DAW) |
 | Ctrl+M | the page map |
+| Ctrl+B | the sound browser, on the selected track |
 | Ctrl+R, Ctrl+Shift+R | DICE THE PAGE, MUTATE the track |
 | Ctrl+C, Ctrl+V, Ctrl+Shift+V | copy, paste, paste sound |
 | Alt+Up / Down | move the track |
