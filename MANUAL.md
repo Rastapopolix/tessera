@@ -569,6 +569,9 @@ clean:
 
 - **CPU**, in its second column, shows two numbers: the average, then the worst moment of about the last second
   (`55/92 %`), USB audio and MIDI included. When the second number reaches 99, notes may drop or the sound crackle.
+  **CPU 1 CORE** in place of CPU means the FM-1's second core has stopped (after a fault, or on a unit whose second
+  core misreads memory) and the first renders everything alone until power-off: about half the room, so expect FADED
+  and LATE sooner. The web editor's Health shows why; please report it.
 - Below: a **VOICES** bar (the voices sounding now, out of the BUDGET) and a **CPU** bar (the average, with a tick at
   the peak).
 - At the foot, since power-on: **FADED**, the times the FM-1 ran short of time and faded a voice to catch up (a note
