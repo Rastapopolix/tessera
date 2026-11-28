@@ -855,8 +855,8 @@ static void ref_scene(int s)
     set_engine_of(&trk[3], ENGI_FM6); apply_preset_to(&trk[3], preset_named(ENGI_FM6, "BRASS SECT"));
     for (k = 0; k < NTRK; k++) {
         trk[k].engine = trk[k].eng_req;
-        if (PAT[k]) pattern_switch(&trk[k], PAT[k]);
-        ref_steps(&trk[k], ON[k], 45u + 12u * k, k == 0u);
+        if (k < 4u && PAT[k]) pattern_switch(&trk[k], PAT[k]);
+        ref_steps(&trk[k], ON[k % 4u], 45u + 12u * k, k == 0u);   /* (tracks 5-8, Tessera MIDI's: the first four's) */
         trk[k].seq_idx = 5;
         trk[k].peak = 9000 + 3000 * (int32_t)k;
     }
@@ -1067,7 +1067,7 @@ static void ref_scene(int s)
         break;
     case S_REF_MIXER: {                              /* (R5) the mock's levels, pans, sends; 3 muted, 1 and 4 armed */
         static const int16_t LV[4] = {91, 70, 44, 112}, PN[4] = {0, -20, 0, 13}, RV[4] = {51, 15, 0, 20};
-        for (k = 0; k < NTRK; k++) { trk[k].p[P_LEVEL] = LV[k]; trk[k].p[P_PAN] = PN[k]; trk[k].p[P_RESERVED36] = RV[k]; }
+        for (k = 0; k < NTRK; k++) { trk[k].p[P_LEVEL] = LV[k % 4u]; trk[k].p[P_PAN] = PN[k % 4u]; trk[k].p[P_RESERVED36] = RV[k % 4u]; }
         trk[2].p[P_MUTE] = 1; song.rec = 1u | 8u; song.playing = 0;
         go_title("MIXER");
         break;
