@@ -57,21 +57,47 @@ int main(void)
     }
     mcheck("ECHO: every note ends", balanced());
     t->p[P_MECHO] = 0; t->p[P_MEPIT] = 0;
-    /* STRUM 20 ms DOWN, VEL 90 */
+    /* STRUM 40 (GLIDE's curve: ~18 ms) DOWN, VEL 90 */
     ngot = 0; clock_s = 0;
-    t->p[P_MSTRUM] = 20; t->p[P_MSDIR] = 1; t->p[P_MVEL] = 90;
+    t->p[P_MSTRUM] = 40; t->p[P_MSDIR] = 1; t->p[P_MVEL] = 90;
     midi_out_note(t, 60, 50); midi_out_note(t, 64, 50); midi_out_note(t, 67, 50); drain();
     run(44100u / 5u);
     {
         uint32_t o[3], c = 0;
         for (i = 0; i < ngot && c < 3u; i++) if ((got[i].st & 0xF0u) == 0x90u && got[i].vel) o[c++] = i;
         mcheck("STRUM DOWN: 67, 64, 60", c == 3u && got[o[0]].note == 67 && got[o[1]].note == 64 && got[o[2]].note == 60);
-        mcheck("STRUM: 20 ms apart (+- a block)", c == 3u && got[o[1]].at - got[o[0]].at >= 882u - 64u && got[o[1]].at - got[o[0]].at <= 882u + 64u);
+        uint32_t gap = time_ms_x10(40) * 441u / 100u;
+        mcheck("STRUM 40: ~18 ms apart (+- a block)", c == 3u && got[o[1]].at - got[o[0]].at + 64u >= gap && got[o[1]].at - got[o[0]].at <= gap + 64u);
         mcheck("VEL 90 on every note", c == 3u && got[o[0]].vel == 90 && got[o[1]].vel == 90 && got[o[2]].vel == 90);
     }
     midi_out_note(t, 60, 0); midi_out_note(t, 64, 0); midi_out_note(t, 67, 0); drain();
     run(44100u / 5u);
     mcheck("STRUM: every note ends", balanced());
+    /* the widest STRUM (~440 ms) over eight notes, released at once: each off after its own on, all over 3 s */
+    ngot = 0; clock_s = 0;
+    t->p[P_MSTRUM] = 84; t->p[P_MSDIR] = 0; t->p[P_MVEL] = 0;
+    for (i = 0; i < 8u; i++) midi_out_note(t, 48u + 3u * i, 80);
+    drain(); run(64);
+    for (i = 0; i < 8u; i++) midi_out_note(t, 48u + 3u * i, 0);
+    drain(); run(44100u * 4u);
+    {
+        int ok = 1; uint32_t j, last_on = 0;
+        for (i = 0; i < ngot; i++) {
+            if (!((got[i].st & 0xF0u) == 0x90u && got[i].vel)) continue;
+            last_on = got[i].at;
+            for (j = i + 1u; j < ngot && !(got[j].note == got[i].note && !((got[j].st & 0xF0u) == 0x90u && got[j].vel)); j++)
+                ;
+            if (j >= ngot) ok = 0;
+        }
+        mcheck("STRUM 440 ms, 8 notes: the last starts ~3 s on", last_on >= 44100u * 3u - 44100u / 5u);
+        mcheck("  each note's off after its on", ok && balanced());
+    }
+    {
+        char v[8]; const char *u;
+        param_format(&TP[P_MSTRUM], 0, v, &u);
+        mcheck("STRUM 0 reads OFF", str_eq(v, "OFF"));
+    }
+    t->p[P_MSTRUM] = 0;
     /* a chord started and stopped in the same block: on, then off */
     ngot = 0;
     midi_out_note(t, 72, 80); midi_out_note(t, 72, 0); drain();

@@ -107,12 +107,15 @@ static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: 
 typedef struct { uint32_t due; uint8_t k, ch, note, vel; } mfx_ev_t;   /* vel 0: an off */
 static mfx_ev_t mfx_q[MFX_Q];
 static uint32_t mfx_n, mfx_now;                         /* events waiting; the samples played (mfx_tick) */
-static uint8_t mfx_late[NTRK][128];                     /* each note's on went out this late, 4 ms units (its off too) */
+static uint16_t mfx_late[NTRK][128];                    /* each note's on went out this late, ms, rounded up (its off too) */
 typedef struct { uint8_t ch, note, vel, off; } mfx_pend_t;
 static mfx_pend_t mfx_pend[NTRK][8];                    /* STRUM: this block's new notes, spread at its end */
 static uint8_t mfx_npend[NTRK];
 static uint32_t mfx_rnd(void) { static uint32_t x = 0x2545F491u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return x; }
 static uint32_t mfx_ms(uint32_t ms) { return ms * 441u / 10u; }   /* (44.1 kHz) */
+static uint16_t mfx_late_ms(uint32_t late) { late = (late * 10u + 440u) / 441u; return (uint16_t)(late > 65535u ? 65535u : late); }
+static uint32_t mfx_strum(int32_t v)                    /* STRUM: 0 off, else GLIDE's curve (F_TIME), as samples */
+{ return v > 0 ? time_ms_x10((uint32_t)clamp(v, 1, 84)) * 441u / 100u : 0u; }
 
 static void mfx_put(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel, uint32_t late)
 {
@@ -135,7 +138,7 @@ static void mfx_on_at(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel, uint
     static const uint8_t TIME24[8] = {3, 4, 6, 8, 9, 12, 18, 24};   /* a beat's 24ths: 1/32 16T 1/16 8T 16D 1/8 8D 1/4 */
     uint32_t step = seq_beat_samples() * TIME24[clamp(t->p[P_METIME], 0, 7)] / 24u;
     int32_t v = (int32_t)vel, n = (int32_t)note;
-    mfx_late[k][note & 127u] = (uint8_t)((late * 10u / 441u + 3u) / 4u > 255u ? 255u : (late * 10u / 441u + 3u) / 4u);
+    mfx_late[k][note & 127u] = mfx_late_ms(late);
     mfx_put(k, ch, note, vel, late);
     for (i = 1; i <= r && step; i++) {
         v = v * (100 - clamp(t->p[P_MEFADE], 0, 100)) / 100;
@@ -159,7 +162,7 @@ static void mfx_on(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel)
     if (t->p[P_MSTRUM] > 0 && mfx_npend[k] < 8u) {     /* STRUM: spread at the block's end (mfx_tick) */
         mfx_pend_t *p = &mfx_pend[k][mfx_npend[k]++];
         p->ch = (uint8_t)ch; p->note = (uint8_t)note; p->vel = (uint8_t)v; p->off = 0;
-        mfx_late[k][note & 127u] = (uint8_t)((late * 10u / 441u + 3u) / 4u);   /* (HUMAN's part; STRUM adds its) */
+        mfx_late[k][note & 127u] = mfx_late_ms(late);   /* (HUMAN's part; STRUM adds its) */
         return;
     }
     mfx_on_at(k, ch, note, (uint32_t)v, late);
@@ -170,7 +173,7 @@ static void mfx_off(uint32_t k, uint32_t ch, uint32_t note)
     uint32_t i;
     for (i = 0; i < mfx_npend[k]; i++)                   /* its on not out yet (STRUM): it ends right after it */
         if (mfx_pend[k][i].note == note) { mfx_pend[k][i].off = 1; return; }
-    mfx_put(k, ch, note, 0, mfx_ms((uint32_t)mfx_late[k][note & 127u] * 4u));
+    mfx_put(k, ch, note, 0, mfx_ms(mfx_late[k][note & 127u]));
 }
 
 /* a track's waiting notes: the offs out now, the ons dropped (midi_out_flush) */
@@ -192,7 +195,7 @@ static void mfx_tick(uint32_t n)
     uint32_t k, i, j;
     if (mo_owed_n | mo_owed_ano) mo_owed_drain();      /* (the offs owed first) */
     for (k = 0; k < NTRK; k++) {
-        uint32_t c = mfx_npend[k], gap = mfx_ms((uint32_t)clamp(trk[k].p[P_MSTRUM], 0, 100)), dir = (uint32_t)trk[k].p[P_MSDIR];
+        uint32_t c = mfx_npend[k], gap = mfx_strum(trk[k].p[P_MSTRUM]), dir = (uint32_t)trk[k].p[P_MSDIR];
         uint8_t ord[8];
         if (!c) continue;
         for (i = 0; i < c; i++) ord[i] = (uint8_t)i;
@@ -206,7 +209,7 @@ static void mfx_tick(uint32_t n)
         mfx_npend[k] = 0;
         for (i = 0; i < c; i++) {
             const mfx_pend_t *p = &mfx_pend[k][ord[i]];
-            uint32_t late = mfx_ms((uint32_t)mfx_late[k][p->note] * 4u) + i * gap;
+            uint32_t late = mfx_ms(mfx_late[k][p->note]) + i * gap;
             mfx_on_at(k, p->ch, p->note, p->vel, late);
             if (p->off) mfx_put(k, p->ch, p->note, 0, late + mfx_ms(10u));
         }

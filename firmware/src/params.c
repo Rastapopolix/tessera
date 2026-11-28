@@ -245,7 +245,7 @@ static const param_desc_t TP[P_COUNT] = {
     [P_PAN] = PD("PAN", F_BIPCT, -64, 63, 0),
     [P_MUTE] = PE("MUTE", N_ONOFF, 0),
 #if TESSERA_MIDI_ONLY
-    [P_MSTRUM] = {"STRUM", F_INT, 0, 100, 0, 0, "MS"},
+    [P_MSTRUM] = PD("STRUM", F_TIME, 0, 84, 0),        /* (0 OFF, then GLIDE's curve: 1 ms .. ~440 ms) */
     [P_MSDIR] = {"DIR", F_ENUM, 0, 2, 0, (const char *const []){"UP", "DOWN", "RAND"}, 0},
     [P_MVEL] = PD("VEL", F_INT, 0, 127, 0),
     [P_MHUMAN] = {"HUMAN", F_INT, 0, 100, 0, 0, "%"},
@@ -441,6 +441,13 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         fmt_named = 1;
         return;
     }
+#if TESSERA_MIDI_ONLY
+    if (d == &TP[P_MSTRUM] && !v) {                    /* (STRUM 0: the notes together) */
+        str_cpy(val, "OFF", 8);
+        fmt_named = 1;
+        return;
+    }
+#endif
     switch (d->fmt) {
     case F_PCT:                                     /* a 0..100 range (SWG) is its value, others a share of 127 */
         fmt_int(val, d->max == 100 ? v : (v * 100 + 63) / 127);
