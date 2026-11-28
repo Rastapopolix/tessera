@@ -331,9 +331,16 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_DEC, "ENV DECAY", "How long it then takes to fall to SUSTAIN."),
     T_(P_SUS, "ENV SUSTAIN", "The level a held note stays at."),
     T_(P_REL, "ENV RELEASE", "How long a note takes to fade once let go."),
+#if TESSERA_MIDI_ONLY
+    T_(P_ECC, "ENV CC", "The CC the envelope sends on the track's MIDI channel, each note starting it again: 74 "
+                        "is often brightness, 1 the mod wheel."),
+    T_(P_EDEPTH, "ENV CC DEPTH", "How far the envelope moves its CC from BASE, up or (below 0) down. 0: no CC sent."),
+    T_(P_EBASE, "ENV CC BASE", "The CC's value with the envelope at rest."),
+#else
     T_(P_ED_FLT, "ENV TO FILTER", "How far the envelope opens (or, below 0, closes) the filter."),
     T_(P_ED_PIT, "ENV TO PITCH", "How far the envelope bends the pitch."),
     T_(P_ED_SHP, "ENV TO SHAPE", "How far the envelope moves the engine's SHAPE."),
+#endif
     T_(P_RECQ, "RECORD QUANTIZE",
         "Moves a recorded take onto this grid when recording ends; OFF keeps the timing as played."),
     T_(P_LRATE, "LFO RATE", "How fast the track's LFO moves."),
@@ -347,9 +354,15 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_LPHASE, "LFO PHASE", "Where in its cycle the LFO starts."),
 #endif
     T_(P_LFADE, "LFO FADE", "How long the LFO takes to fade in after a note starts."),
+#if TESSERA_MIDI_ONLY
+    T_(P_LCC, "LFO CC", "The CC the track's LFO sends on its MIDI channel: 1 is often the mod wheel."),
+    T_(P_LDEPTH, "LFO CC DEPTH", "How far the LFO swings its CC either side of BASE. 0: no CC sent."),
+    T_(P_LBASE, "LFO CC BASE", "The CC's middle: where the LFO swings around."),
+#else
     T_(P_LD_PIT, "LFO TO PITCH", "How far the LFO moves the pitch (vibrato)."),
     T_(P_LD_FLT, "LFO TO FILTER", "How far the LFO moves the filter."),
     T_(P_LD_SHP, "LFO TO SHAPE", "How far the LFO moves the engine's SHAPE."),
+#endif
     T_(P_LD_AMP, "LFO TO LEVEL", "How far the LFO moves the level (tremolo)."),
     T_(P_AMODE, "ARP MODE",
         "The arpeggio: UP, DN down, UPDN up then down, DNUP down then up, RND a new random note each step, RND1 one "

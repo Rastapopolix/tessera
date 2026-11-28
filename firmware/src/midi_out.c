@@ -164,6 +164,89 @@ static void mfx_tick(uint32_t n)
 }
 #define MFX_ON(k, ch, note, vel) mfx_on(k, ch, note, vel)
 #define MFX_OFF(k, ch, note) mfx_off(k, ch, note)
+
+/* ENV CC and LFO CC (core.h P_ECC ..): with no voices, each track's envelope runs here, at control rate: ATK DEC SUS
+ * REL as straight segments (ENV_LIN, the times the voices' have), every note starting it again from where it is,
+ * the release once the track's last note ended (tm_gate: notes played, MIDI OUT's or not). It is the track's ENV for
+ * the mods too (t->m_env), and the LFO ticks here (voice.c track_lfo_tick; it restarts with a phrase there). Each
+ * goes out as its CC on the track's MIDI channel when DEPTH is not 0: BASE + 2 x DEPTH x ENV (0..1: 100 % the whole
+ * 0..127), BASE + DEPTH x the LFO (-1..1, or 0..1 UNI: 100 % from 0 to 127 around 64), when the value changed and at most every 12 blocks (~9 ms) each, as a mod onto CC */
+enum { TM_IDLE, TM_ATK, TM_DEC, TM_SUS, TM_REL };
+static uint32_t tm_held[NTRK][4];                       /* the notes playing on each track, a bit each */
+static uint8_t tm_stage[NTRK], tm_peak;                /* tm_peak bit k: its attack just ended (its top goes out
+                                                         * at once, not 12 blocks on) */
+static int32_t tm_lvl[NTRK];                            /* the envelope, Q24 */
+static uint8_t tm_cc_was[NTRK][2], tm_cc_num[NTRK][2];  /* the value sent last (0xFF: none) and on which CC */
+static uint16_t tm_cc_at[NTRK][2], tm_blocks;
+
+static void tm_gate(const track_t *t, uint32_t note, uint32_t on)   /* (voice.c trk_note_on / trk_note_off; note
+                                                                      * past 127, off: all, trk_all_off) */
+{
+    uint32_t k = trk_index(t) % NTRK, bit = 1u << (note & 31u), *w = &tm_held[k][(note >> 5) & 3u];
+    if (note > 127u) memset(tm_held[k], 0, sizeof tm_held[k]);
+    else if (on) {
+        *w |= bit;
+        tm_stage[k] = TM_ATK;
+        return;
+    }
+    *w &= ~bit;
+    if (!(tm_held[k][0] | tm_held[k][1] | tm_held[k][2] | tm_held[k][3]) && tm_stage[k] != TM_IDLE)
+        tm_stage[k] = TM_REL;
+}
+
+static void tm_env_tick(track_t *t, uint32_t k, uint32_t n)
+{
+#define TM_STEP(x) ((int32_t)(ENV_LIN[(uint32_t)(x) & 127u] >> 5) * (int32_t)n)   /* (ENV_LIN: Q24 a CTL = 32) */
+    int32_t v = tm_lvl[k], sus = clamp(t->p[P_SUS], 0, 127) * 132104;
+    switch (tm_stage[k]) {
+    case TM_ATK:
+        v += TM_STEP(t->p[P_ATK]);
+        if (v >= 1 << 24) v = 1 << 24, tm_stage[k] = TM_DEC, tm_peak |= (uint8_t)(1u << k);
+        break;
+    case TM_DEC:
+        v -= TM_STEP(t->p[P_DEC]);
+        if (v <= sus) v = sus, tm_stage[k] = TM_SUS;
+        break;
+    case TM_SUS:
+        v = sus;
+        break;
+    case TM_REL:
+        v -= TM_STEP(t->p[P_REL]);
+        if (v <= 0) v = 0, tm_stage[k] = TM_IDLE;
+        break;
+    default:
+        v = 0;
+    }
+#undef TM_STEP
+    tm_lvl[k] = v;
+    t->m_env = v >> 9;
+}
+
+static void tm_mod_tick(uint32_t n)                     /* (mix.c mix_block, each block) */
+{
+    uint32_t k, j;
+    tm_blocks++;
+    for (k = 0; k < NTRK; k++) {
+        track_t *t = &trk[k];
+        uint32_t ch = midi_out_channel(t);
+        track_lfo_tick(t);
+        tm_env_tick(t, k, n);
+        if (settings_midi_out == MIDI_OUT_OFF || ch == MIDI_OUT_NONE || t->p[P_MUTE]) continue;
+        for (j = 0; j < 2u; j++) {
+            int32_t depth = t->p[j ? P_LDEPTH : P_EDEPTH], src, v;
+            uint32_t cc = (uint32_t)clamp(t->p[j ? P_LCC : P_ECC], 1, 119);
+            if (!depth || ((uint16_t)(tm_blocks - tm_cc_at[k][j]) < 12u && (j || !(tm_peak >> k & 1u)))) continue;
+            src = j ? mulq15(t->lfo_val, t->lfo_fade) : t->m_env;
+            v = clamp(t->p[j ? P_LBASE : P_EBASE] + (((j ? 1 : 2) * depth * src) >> 15), 0, 127);
+            if (cc == tm_cc_num[k][j] && (uint32_t)v == tm_cc_was[k][j]) continue;
+            tm_cc_was[k][j] = (uint8_t)v;
+            tm_cc_num[k][j] = (uint8_t)cc;
+            tm_cc_at[k][j] = tm_blocks;
+            midi_out_event(0x0Bu | (0xB0u | ch) << 8 | cc << 16 | (uint32_t)v << 24);
+        }
+    }
+    tm_peak = 0;
+}
 #else
 #define MFX_ON(k, ch, note, vel) midi_out_send(ch, note, vel)
 #define MFX_OFF(k, ch, note) midi_out_send(ch, note, 0)

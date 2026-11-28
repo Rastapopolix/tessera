@@ -397,7 +397,7 @@ static __attribute__((noinline,section(".dsp_text"))) void master_samples(int32_
     fx_bus_mix=gain;
 }
 #if TESSERA_MIDI_ONLY
-static void mfx_tick(uint32_t n);                       /* midi_out.c */
+static void mfx_tick(uint32_t n), tm_mod_tick(uint32_t n);   /* midi_out.c */
 #endif
 static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
 {
@@ -405,6 +405,7 @@ static __attribute__((noinline)) void mix_block(int32_t *out,uint32_t n)
     memset(out,0,n*2u*sizeof *out);                     /* (no sound: the block keeps the sequencer's clock) */
     events_block(n);
     mfx_tick(n);                                        /* (MIDI FX: STRUM, ECHO, HUMAN's late notes: midi_out.c) */
+    tm_mod_tick(n);                                     /* (ENV and LFO, and their CCs: midi_out.c) */
     cord_tick();
     return;
 #endif

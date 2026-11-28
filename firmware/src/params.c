@@ -181,9 +181,15 @@ static const param_desc_t TP[P_COUNT] = {
     [P_DEC] = PD("DEC", F_TIME, 0, 127, 70),
     [P_SUS] = PD("SUS", F_PCT, 0, 127, 90),
     [P_REL] = PD("REL", F_TIME, 0, 127, 60),
+#if TESSERA_MIDI_ONLY                                   /* (ENV CC, LFO CC: core.h P_ECC ..; voice.c tm_mod_tick) */
+    [P_ECC] = PD("CC", F_INT, 1, 119, 74),
+    [P_EDEPTH] = PD("DEPTH", F_BIPCT, -64, 63, 0),
+    [P_EBASE] = PD("BASE", F_INT, 0, 127, 0),
+#else
     [P_ED_FLT] = PD("FLT", F_BIPCT, -64, 63, 0),
     [P_ED_PIT] = PD("PIT", F_BIPCT, -64, 63, 0),
     [P_ED_SHP] = PD("SHP", F_BIPCT, -64, 63, 0),
+#endif
     [P_RECQ] = PE("QNT", N_RECQ, 0),
     [P_LSYNC] = PE("SYNC", N_LSYNC, 0),
     [P_LTRIG] = PE("TRIG", N_LTRIG, 0),
@@ -193,9 +199,15 @@ static const param_desc_t TP[P_COUNT] = {
     [P_LWAVE] = PE("WAVE", N_LWAVE, 0),
     [P_LPHASE] = PD("PHS", F_INT, 0, 127, 0),
     [P_LFADE] = PD("FADE", F_TIME, 0, 127, 0),
+#if TESSERA_MIDI_ONLY
+    [P_LCC] = PD("CC", F_INT, 1, 119, 1),
+    [P_LDEPTH] = PD("DEPTH", F_BIPCT, -64, 63, 0),
+    [P_LBASE] = PD("BASE", F_INT, 0, 127, 64),
+#else
     [P_LD_PIT] = PD("PIT", F_BIPCT, -64, 63, 0),
     [P_LD_FLT] = PD("FLT", F_BIPCT, -64, 63, 0),
     [P_LD_SHP] = PD("SHP", F_BIPCT, -64, 63, 0),
+#endif
     [P_LD_AMP] = PD("AMP", F_PCT, 0, 127, 0),
     [P_AMODE] = PE("MODE", N_AMODE, 0),
     [P_ARATE] = PE("RATE", N_DIV, 2),
@@ -597,7 +609,11 @@ static const page_t PAGES[] = {
     {"SEND FX 2", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX2TYPE, G_MFX2MIX, G_MFX2RATE, G_MFX2CHAR}},
     {"SEND FX 3", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX3TYPE, G_MFX3MIX, G_MFX3RATE, G_MFX3CHAR}},
     {"ENV", FAM_ENV, SC_TRACK, GR_ADSR, {P_ATK, P_DEC, P_SUS, P_REL}},
-    {"ENV DEST", FAM_ENV, SC_TRACK, GR_NONE, {P_ED_FLT, P_ED_PIT, P_ED_SHP, 0xFF}},   /* the former fourth slot: SEQ > TEMPO's QNT */
+#if TESSERA_MIDI_ONLY
+    {"ENV CC", FAM_ENV, SC_TRACK, GR_NONE, {P_ECC, P_EDEPTH, P_EBASE, 0xFF}},   /* (voice.c tm_mod_tick) */
+#else
+    {"ENV DEST", FAM_ENV, SC_TRACK, GR_NONE, {P_ED_FLT, P_ED_PIT, P_ED_SHP, 0xFF}},
+#endif   /* the former fourth slot: SEQ > TEMPO's QNT */
     /* Tessera: MODS first (where everything is routed), then the sources; LFO DEST, the fixed routes, last */
     {"MODS", FAM_LFO, SC_GLOBAL, GR_CORDS, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the cords (cord.c, ui_cords.c), MOD's
                                                                      * place (MOD hidden: ui.c page_visible) */
@@ -607,7 +623,11 @@ static const page_t PAGES[] = {
     {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot); hidden (ui.c), its code
                                                                       * only in the detailed look */
     {"ORGANIC", FAM_LFO, SC_TRACK, GR_ORGANIC, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SLOTH SPEED, OCHD RATE (organic.c) */
+#if TESSERA_MIDI_ONLY
+    {"LFO CC", FAM_LFO, SC_TRACK, GR_NONE, {P_LCC, P_LDEPTH, P_LBASE, 0xFF}},
+#else
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
+#endif
     {"SCALES", FAM_SCL, SC_TRACK, GR_SCALE_PICKER, {0xFF, P_SCALE, P_ROOT, P_QUANT}},
     {"SCL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, 0xFF, P_QUANT, P_TRANS}}, /* K2: scale favorite */
     {"KEY", FAM_SCL, SC_GLOBAL, GR_KEYLINK, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KEY LINK, a row of SCL's list */

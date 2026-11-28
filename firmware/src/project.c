@@ -134,7 +134,8 @@ static void proj_legacy_perc(track_t *t)
     t->p[P_DEC] = pr->env[1];
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
-    t->p[P_ED_FLT] = pr->fenv;
+    if (!TESSERA_MIDI_ONLY)                     /* (Tessera MIDI: that is ENV CC's number) */
+        t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;
 }
 

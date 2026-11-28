@@ -368,6 +368,8 @@ static const char *const *native_titles(uint32_t fam)
     uint32_t e = TSEL->eng_req;
     static const char *const OR_ENV[] = {"FILT ENV", "AMP ENV", 0};
     static const char *const OR_LFO[] = {"LFO MOD", "LFO ROUTE", 0};
+    if (TESSERA_MIDI_ONLY)                              /* (no engine: the track's ENV and LFO, whatever eng_req) */
+        return 0;
     if (fam == FAM_ENV)
         return e == ENGI_FM6 ? FM_ENV : MELODEE_ORACLE && e == ENGI_ORACLE ? OR_ENV : 0;
     if (fam == FAM_LFO)
@@ -473,17 +475,16 @@ static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
 static uint8_t ui_csec;                                 /* (below: the sections on) */
 #endif
 #if TESSERA_MIDI_ONLY
-/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects (FX opens MIDI OUT and MIDI IN instead,
- * tm_midi_pages), ENV DEST and LFO DEST, the sound's EDIT pages and VOICE 3 (VOICE stays: how a part plays its notes
- * on the gear), PRESETS and USER (SAVE opens PROJECT), SYSTEM (voices, CPU, tuning). ENV and LFO stay: mod sources,
- * for CCs */
+/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects (FX opens the MIDI pages instead,
+ * tm_midi_pages), the sound's EDIT pages and VOICE 3 (VOICE stays: how a part plays its notes on the gear), PRESETS
+ * and USER (SAVE opens PROJECT), SYSTEM (voices, CPU, tuning). ENV and LFO stay, with ENV CC and LFO CC in place of
+ * their DEST pages (voice.c tm_mod_tick) */
 static int midi_page_gone(uint32_t i)
 {
     const page_t *pg = &PAGES[i];
     if (pg->fam == FAM_FX || pg->graph == GR_BROWSE || pg->graph == GR_USER || pg->graph == GR_FMSTORE)
         return 1;
-    if (str_eq(pg->title, "ENV DEST") || str_eq(pg->title, "LFO DEST") || str_eq(pg->title, "VOICE 3") ||
-        str_eq(pg->title, "SYSTEM"))                    /* (VOICE 3: the stereo spread; SYSTEM: voices, CPU, tuning) */
+    if (str_eq(pg->title, "VOICE 3") || str_eq(pg->title, "SYSTEM"))                    /* (VOICE 3: the stereo spread; SYSTEM: voices, CPU, tuning) */
         return 1;
     return pg->fam == FAM_EDIT && !str_eq(pg->title, "VOICE");
 }
@@ -941,10 +942,6 @@ static void open_family(uint32_t fam)
 #if TESSERA_MIDI_ONLY
     if (fam == FAM_FX && tm_midi_pages())
         return;
-    if (fam == FAM_ENV) {                               /* (no envelope to shape: say so, not nothing) */
-        ui_message("NO ENV IN MIDI");
-        return;
-    }
 #endif
     if (fam == FAM_ARP || ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam))) {   /* ARP's lane (ui.c
                                                          * arp_page); ENV / LFO of FM6 */
@@ -1362,7 +1359,8 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_DEC] = pr->env[1];
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
-    t->p[P_ED_FLT] = pr->fenv;
+    if (!TESSERA_MIDI_ONLY)                           /* (Tessera MIDI: that is ENV CC's number) */
+        t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     fm6_track_loaded(t);                              /* FM6: the preset's patch */
     or_track_loaded(t);                               /* ORACLE: the preset's patch */

@@ -151,7 +151,11 @@ static void rnd_tx(uint32_t tr, uint32_t id, int32_t v) { pid_set(PID_TESS(id), 
  * LFO's depths but pitch, its wave, sync, trigger and fade-in */
 static void rnd_tp_still(uint32_t tr)
 {
+#if TESSERA_MIDI_ONLY                               /* (ENV CC, LFO CC there: the player's, left alone) */
+    static const uint8_t ids[] = {P_LWAVE, P_LSYNC, P_LTRIG, P_LFADE};
+#else
     static const uint8_t ids[] = {P_ED_PIT, P_ED_SHP, P_LD_FLT, P_LD_SHP, P_LD_AMP, P_LWAVE, P_LSYNC, P_LTRIG, P_LFADE};
+#endif
     uint32_t i;
     for (i = 0; i < NELEM(ids); i++) rnd_tp(tr, ids[i], 0);
 }

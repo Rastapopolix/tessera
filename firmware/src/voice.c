@@ -741,6 +741,9 @@ static void trk_note_on_work(track_t *t, uint32_t note, uint32_t vel)
 
 static void midi_out_on(const track_t *t, uint32_t note, uint32_t vel);   /* seq.c midi_out.c: MIDI OUT */
 static void midi_out_off(const track_t *t, uint32_t note);
+#if TESSERA_MIDI_ONLY
+static void tm_gate(const track_t *t, uint32_t note, uint32_t on);   /* midi_out.c: the envelope's gate */
+#endif
 static void midi_out_flush(uint32_t k);
 
 static int tess_sound_off(const track_t *t);           /* tessera.c: SOUND OFF, MIDI OUT and the mods only */
@@ -765,6 +768,9 @@ static void trk_note_on(track_t *t,uint32_t note,uint32_t vel)
     vel = cord_vel((uint32_t)(t - trk), vel);          /* (VELO as its mods move it: cord.c) */
     land_note(t, note, vel);
     midi_out_on(t, note, entries_vel(t, vel));         /* (only MIDI OUT's: the voice's level fades in the mix) */
+#if TESSERA_MIDI_ONLY
+    if (vel && !t->p[P_MUTE]) tm_gate(t, note, 1);
+#endif
 #if CORE_OUT_HOOKS
     if (out_note_hook && !t->p[P_MUTE])               /* (a platform's own outs: Andamento's CV / gate) */
         out_note_hook(t, note, vel ? vel : 1u);
@@ -780,6 +786,9 @@ static void trk_note_off(track_t *t, uint32_t note)
     uint32_t chord = trk_chord(t), held = 0;
 #endif
     midi_out_off(t, note);
+#if TESSERA_MIDI_ONLY
+    tm_gate(t, note, 0);
+#endif
 #if CORE_OUT_HOOKS
     if (out_note_hook)
         out_note_hook(t, note, 0);
@@ -827,6 +836,9 @@ static void trk_all_off(track_t *t)
 {
     uint32_t i;
     midi_out_flush((uint32_t)(t - trk));
+#if TESSERA_MIDI_ONLY
+    tm_gate(t, 255u, 0);                                /* (the envelope lets go too) */
+#endif
     for (i = 0; i < NVOICE; i++) {
         t->v[i].gate = 0;
         t->v[i].stage = t->v[i].active ? 3 : 0;

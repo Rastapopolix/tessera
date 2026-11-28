@@ -80,7 +80,11 @@ static __attribute__((noinline)) void midi_cc(track_t *t, uint32_t ch, uint32_t 
     } else if (cc >= 20u && cc <= 27u)
         pid = PID_TRACK(P_E0 + cc - 20u);
     else if (cc >= 76u && cc <= 79u)
+#if TESSERA_MIDI_ONLY                                   /* (no LFO depths: 77, 78 would turn LFO CC's number, DEPTH) */
+        pid = cc == 76u || cc == 79u ? PID_TRACK(cc == 76u ? P_LRATE : P_SUS) : PID_NONE;
+#else
         pid = PID_TRACK(((const uint8_t[]){P_LRATE, P_LD_PIT, P_LD_FLT, P_SUS})[cc - 76u]);
+#endif
     else if (cc == 91u || cc == 93u || cc == 94u)
         pid = PID_TRACK(cc == 91u ? P_FXSEND : cc == 93u ? P_FXSEND2 : P_FXSEND3);
     else if (cc == 102u)

@@ -315,6 +315,14 @@ static int param_master_fx(uint32_t id){return id>=G_MFXTYPE && id<=G_MFX3CHAR;}
 #define P_MSDIR P_RESERVED46     /* DIR: UP, DOWN, RAND */
 #define P_MVEL P_RESERVED47      /* VEL: 0 as played, 1..127 every note's */
 #define P_MHUMAN P_RESERVED48    /* HUMAN: % of 20 ms late, and of 20 velocity either way, at random */
+/* ENV CC and LFO CC (voice.c tm_mod_tick): each a CC number, a DEPTH (0: none sent) and a BASE, in ENV DEST's and
+ * LFO DEST's slots (no sound to move). The standard build reads them as those depths */
+#define P_ECC P_ED_FLT           /* ENV CC: its CC number, 1..119 */
+#define P_EDEPTH P_ED_PIT        /* DEPTH: how far the envelope moves it, -64..63 (twice that in CC steps); 0 OFF */
+#define P_EBASE P_ED_SHP         /* BASE: the value with the envelope at 0 */
+#define P_LCC P_LD_PIT           /* LFO CC: the same for the track's LFO */
+#define P_LDEPTH P_LD_FLT
+#define P_LBASE P_LD_SHP
 static int param_reserved(uint32_t id) { (void)id; return 0; }
 #else
 static int param_reserved(uint32_t id)
