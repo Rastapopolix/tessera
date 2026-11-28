@@ -918,16 +918,18 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
  * one, after the last the first (the button wraps; SELECT stops at the ends: page_scroll). One routine for every
  * group (Theo 2026-11-26: the buttons act alike) */
 #if TESSERA_MIDI_ONLY
-/* Tessera MIDI's FX button (no effects): MIDI OUT, again MIDI IN (GLO's pages, where they stay) */
+/* Tessera MIDI's FX button (no effects): MIDI FX, MIDI FX 2, MIDI OUT, MIDI IN, in turn (GLO's pages) */
 static int tm_midi_pages(void)
 {
-    uint32_t i, out = NPAGES, in = NPAGES;
-    for (i = 0; i < NPAGES; i++) {
-        if (PAGES[i].graph == GR_MIDICH) out = i;
-        else if (str_eq(PAGES[i].title, "MIDI IN")) in = i;
+    static const char *const ORDER[4] = {"MIDI FX", "MIDI FX 2", "MIDI OUT", "MIDI IN"};
+    uint32_t i, j, at[4], next = 0;
+    for (j = 0; j < 4u; j++) {
+        for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, ORDER[j]); i++) {}
+        if (i >= NPAGES) return 0;
+        at[j] = i;
+        if (!ui.home && ui.page == i) next = (j + 1u) % 4u;
     }
-    if (out >= NPAGES || in >= NPAGES) return 0;
-    ui.page = (uint8_t)(!ui.home && ui.page == out ? in : out);
+    ui.page = (uint8_t)at[next];
     ui.home = 0;
     page_entered();
     ui.via = (uint8_t)FAM_GLO;

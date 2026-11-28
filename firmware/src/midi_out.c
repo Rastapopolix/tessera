@@ -40,9 +40,141 @@ static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: 
     midi_out_event(vel ? 0x09u | (0x90u | ch) << 8 | note << 16 | vel << 24 : 0x08u | (0x80u | ch) << 8 | note << 16);
 }
 
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI's MIDI FX, a track's (MIDI FX / MIDI FX 2 under the FX button; core.h P_MECHO ..). Every note the
+ * track sends passes here (midi_out_note): VEL fixes its velocity, HUMAN plays it up to 20 ms late and up to 20
+ * softer or harder, STRUM spreads a chord's notes (those starting in one block) by its ms, UP, DOWN or at random, and
+ * ECHO repeats it every TIME (a beat's 1/32 .. 1/4), each repeat FADE % softer and PITCH semitones on, a repeat as
+ * long as half the TIME. A note's off goes out after its on, as late as the on went. The queue: 96 events; full, a
+ * repeat is dropped, never an off. STOP, a channel or TRANSPOSE change (midi_out_flush) sends the offs waiting and
+ * drops the notes not out yet */
+#define MFX_Q 96u
+typedef struct { uint32_t due; uint8_t k, ch, note, vel; } mfx_ev_t;   /* vel 0: an off */
+static mfx_ev_t mfx_q[MFX_Q];
+static uint32_t mfx_n, mfx_now;                         /* events waiting; the samples played (mfx_tick) */
+static uint8_t mfx_late[NTRK][128];                     /* each note's on went out this late, 4 ms units (its off too) */
+typedef struct { uint8_t ch, note, vel, off; } mfx_pend_t;
+static mfx_pend_t mfx_pend[NTRK][8];                    /* STRUM: this block's new notes, spread at its end */
+static uint8_t mfx_npend[NTRK];
+static uint32_t mfx_rnd(void) { static uint32_t x = 0x2545F491u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return x; }
+static uint32_t mfx_ms(uint32_t ms) { return ms * 441u / 10u; }   /* (44.1 kHz) */
+
+static void mfx_put(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel, uint32_t late)
+{
+    uint32_t i;
+    if (!late) { midi_out_send(ch, note, vel); return; }
+    if (mfx_n >= MFX_Q) {                               /* full: an off goes now, an on is lost */
+        if (!vel) midi_out_send(ch, note, 0);
+        return;
+    }
+    i = mfx_n++;
+    mfx_q[i].due = mfx_now + late;
+    mfx_q[i].k = (uint8_t)k; mfx_q[i].ch = (uint8_t)ch; mfx_q[i].note = (uint8_t)note; mfx_q[i].vel = (uint8_t)vel;
+}
+
+/* a note's on, late by `late` samples, and its echoes */
+static void mfx_on_at(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel, uint32_t late)
+{
+    const track_t *t = &trk[k];
+    uint32_t r = (uint32_t)clamp(t->p[P_MECHO], 0, 8), i;
+    static const uint8_t TIME24[8] = {3, 4, 6, 8, 9, 12, 18, 24};   /* a beat's 24ths: 1/32 16T 1/16 8T 16D 1/8 8D 1/4 */
+    uint32_t step = seq_beat_samples() * TIME24[clamp(t->p[P_METIME], 0, 7)] / 24u;
+    int32_t v = (int32_t)vel, n = (int32_t)note;
+    mfx_late[k][note & 127u] = (uint8_t)((late * 10u / 441u + 3u) / 4u > 255u ? 255u : (late * 10u / 441u + 3u) / 4u);
+    mfx_put(k, ch, note, vel, late);
+    for (i = 1; i <= r && step; i++) {
+        v = v * (100 - clamp(t->p[P_MEFADE], 0, 100)) / 100;
+        n += t->p[P_MEPIT];
+        if (v < 1 || n < 0 || n > 127) break;
+        mfx_put(k, ch, (uint32_t)n, (uint32_t)v, late + i * step);
+        mfx_put(k, ch, (uint32_t)n, 0, late + i * step + step / 2u);
+    }
+}
+
+static void mfx_on(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel)
+{
+    const track_t *t = &trk[k];
+    uint32_t h = (uint32_t)clamp(t->p[P_MHUMAN], 0, 100), late = 0;
+    int32_t v = t->p[P_MVEL] > 0 ? t->p[P_MVEL] : (int32_t)vel;
+    if (h) {
+        late = mfx_ms(mfx_rnd() % (h * 20u / 100u + 1u));
+        v += (int32_t)(mfx_rnd() % (2u * (h * 20u / 100u) + 1u)) - (int32_t)(h * 20u / 100u);
+    }
+    v = clamp(v, 1, 127);
+    if (t->p[P_MSTRUM] > 0 && mfx_npend[k] < 8u) {     /* STRUM: spread at the block's end (mfx_tick) */
+        mfx_pend_t *p = &mfx_pend[k][mfx_npend[k]++];
+        p->ch = (uint8_t)ch; p->note = (uint8_t)note; p->vel = (uint8_t)v; p->off = 0;
+        mfx_late[k][note & 127u] = (uint8_t)((late * 10u / 441u + 3u) / 4u);   /* (HUMAN's part; STRUM adds its) */
+        return;
+    }
+    mfx_on_at(k, ch, note, (uint32_t)v, late);
+}
+
+static void mfx_off(uint32_t k, uint32_t ch, uint32_t note)
+{
+    uint32_t i;
+    for (i = 0; i < mfx_npend[k]; i++)                   /* its on not out yet (STRUM): it ends right after it */
+        if (mfx_pend[k][i].note == note) { mfx_pend[k][i].off = 1; return; }
+    mfx_put(k, ch, note, 0, mfx_ms((uint32_t)mfx_late[k][note & 127u] * 4u));
+}
+
+/* a track's waiting notes: the offs out now, the ons dropped (midi_out_flush) */
+static void mfx_purge(uint32_t k)
+{
+    uint32_t i, j = 0;
+    mfx_npend[k] = 0;
+    for (i = 0; i < mfx_n; i++) {
+        if (mfx_q[i].k != k) { mfx_q[j++] = mfx_q[i]; continue; }
+        if (!mfx_q[i].vel) midi_out_send(mfx_q[i].ch, mfx_q[i].note, 0);
+    }
+    mfx_n = j;
+    memset(mfx_late[k], 0, sizeof mfx_late[k]);
+}
+
+/* mix_block, each block after its notes: STRUM's spread, then the time on and what is due out */
+static void mfx_tick(uint32_t n)
+{
+    uint32_t k, i, j;
+    for (k = 0; k < NTRK; k++) {
+        uint32_t c = mfx_npend[k], gap = mfx_ms((uint32_t)clamp(trk[k].p[P_MSTRUM], 0, 100)), dir = (uint32_t)trk[k].p[P_MSDIR];
+        uint8_t ord[8];
+        if (!c) continue;
+        for (i = 0; i < c; i++) ord[i] = (uint8_t)i;
+        for (i = 1; i < c; i++)                          /* low to high (UP), high to low (DOWN), or shuffled */
+            for (j = i; j > 0 && (dir == 1u ? mfx_pend[k][ord[j]].note > mfx_pend[k][ord[j - 1]].note
+                                            : mfx_pend[k][ord[j]].note < mfx_pend[k][ord[j - 1]].note); j--) {
+                uint8_t x = ord[j]; ord[j] = ord[j - 1]; ord[j - 1] = x;
+            }
+        if (dir == 2u)
+            for (i = c - 1u; i > 0; i--) { uint8_t x; j = mfx_rnd() % (i + 1u); x = ord[i]; ord[i] = ord[j]; ord[j] = x; }
+        mfx_npend[k] = 0;
+        for (i = 0; i < c; i++) {
+            const mfx_pend_t *p = &mfx_pend[k][ord[i]];
+            uint32_t late = mfx_ms((uint32_t)mfx_late[k][p->note] * 4u) + i * gap;
+            mfx_on_at(k, p->ch, p->note, p->vel, late);
+            if (p->off) mfx_put(k, p->ch, p->note, 0, late + mfx_ms(10u));
+        }
+    }
+    mfx_now += n;
+    for (i = 0, j = 0; i < mfx_n; i++) {                /* due: out, in the order they were queued */
+        if ((int32_t)(mfx_now - mfx_q[i].due) >= 0) midi_out_send(mfx_q[i].ch, mfx_q[i].note, mfx_q[i].vel);
+        else mfx_q[j++] = mfx_q[i];
+    }
+    mfx_n = j;
+}
+#define MFX_ON(k, ch, note, vel) mfx_on(k, ch, note, vel)
+#define MFX_OFF(k, ch, note) mfx_off(k, ch, note)
+#else
+#define MFX_ON(k, ch, note, vel) midi_out_send(ch, note, vel)
+#define MFX_OFF(k, ch, note) midi_out_send(ch, note, 0)
+#endif
+
 /* every note track k still has on goes off */
 static void midi_out_flush(uint32_t k)
 {
+#if TESSERA_MIDI_ONLY
+    mfx_purge(k);
+#endif
     for (uint32_t w = 0; w < 4u; w++)
         for (uint32_t b = midi_out_held[k][w]; b; b &= b - 1u)
             midi_out_send(midi_out_chan[k], (uint32_t)((int32_t)(w * 32u + (uint32_t)__builtin_ctz(b)) + midi_out_tr[k]), 0);
@@ -71,7 +203,7 @@ static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
     w = &midi_out_held[k][(note >> 5) & 3u];
     if (!vel) {
         if (*w & bit)
-            midi_out_send(midi_out_chan[k], (uint32_t)((int32_t)note + midi_out_tr[k]), 0);
+            MFX_OFF(k, midi_out_chan[k], (uint32_t)((int32_t)note + midi_out_tr[k]));
         *w &= ~bit;
         return;
     }
@@ -86,8 +218,8 @@ static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
     if (ch == MIDI_OUT_NONE || s < 0 || s > 127)  /* (OFF, or moved out of MIDI's range: nothing held to end later) */
         return;
     if (*w & bit)                                 /* sounding already: it starts again */
-        midi_out_send(ch, (uint32_t)s, 0);
-    midi_out_send(ch, (uint32_t)s, vel > 127u ? 127u : vel);
+        MFX_OFF(k, ch, (uint32_t)s);
+    MFX_ON(k, ch, (uint32_t)s, vel > 127u ? 127u : vel);
     *w |= bit;
 }
 

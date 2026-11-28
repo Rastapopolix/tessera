@@ -213,10 +213,17 @@ static const param_desc_t TP[P_COUNT] = {
     [P_SDIV] = PE("DIV", N_DIV, 2),
     [P_SSWING] = PD("SWG", F_PCT, 0, 100, 0),
     [P_SGATE] = PD("GATE", F_PCT, 1, 127, 64),
+#if TESSERA_MIDI_ONLY                                   /* (MIDI FX: core.h P_MECHO ..; midi_out.c) */
+    [P_MECHO] = {"ECHO", F_ENUM, 0, 8, 0, (const char *const []){"OFF", "1", "2", "3", "4", "5", "6", "7", "8"}, 0},
+    [P_METIME] = {"TIME", F_ENUM, 0, 7, 5, (const char *const []){"1/32", "16T", "1/16", "8T", "16D", "1/8", "8D", "1/4"}, 0},
+    [P_MEFADE] = {"FADE", F_INT, 0, 100, 30, 0, "%"},
+    [P_MEPIT] = PD("PITCH", F_SEMI, -12, 12, 0),
+#else
     [P_RESERVED33] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED34] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED35] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED36] = PD("", F_INT, 0, 127, 0),
+#endif
     [P_VOICE] = PE("VCE", N_VOICE, 0),
     [P_GLIDE] = PD("GLD", F_TIME, 0, 127, 0),
     [P_GLMODE] = PE("GLMOD", N_GLMODE, 0),
@@ -225,10 +232,17 @@ static const param_desc_t TP[P_COUNT] = {
     [P_DETUNE] = PD("DTUNE", F_INT, 0, 127, 40),
     [P_PAN] = PD("PAN", F_BIPCT, -64, 63, 0),
     [P_MUTE] = PE("MUTE", N_ONOFF, 0),
+#if TESSERA_MIDI_ONLY
+    [P_MSTRUM] = {"STRUM", F_INT, 0, 100, 0, 0, "MS"},
+    [P_MSDIR] = {"DIR", F_ENUM, 0, 2, 0, (const char *const []){"UP", "DOWN", "RAND"}, 0},
+    [P_MVEL] = PD("VEL", F_INT, 0, 127, 0),
+    [P_MHUMAN] = {"HUMAN", F_INT, 0, 100, 0, 0, "%"},
+#else
     [P_RESERVED45] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED46] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED47] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED48] = PD("", F_INT, 0, 127, 0),
+#endif
 #define MSLOT(k) [P_M##k##SRC] = PE("SRC" #k, N_MSRC, 0), [P_M##k##DST] = PE("DST" #k, N_MDST, 0), \
                  [P_M##k##AMT] = PD("AMT" #k, F_BIPCT, -64, 63, 0)
     MSLOT(1), MSLOT(2), MSLOT(3), MSLOT(4),
@@ -677,6 +691,10 @@ static const page_t PAGES[] = {
                                                                                    * channel, ROUT, the clock
                                                                                    * (ui_mono.c mo_pic_midiin) */
     {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
+#if TESSERA_MIDI_ONLY
+    {"MIDI FX", FAM_GLO, SC_TRACK, GR_NONE, {P_MECHO, P_METIME, P_MEFADE, P_MEPIT}},   /* Tessera MIDI: the FX button's */
+    {"MIDI FX 2", FAM_GLO, SC_TRACK, GR_NONE, {P_MSTRUM, P_MSDIR, P_MVEL, P_MHUMAN}},  /* (ui.c tm_midi_pages) */
+#endif
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},

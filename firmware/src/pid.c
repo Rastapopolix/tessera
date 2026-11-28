@@ -385,6 +385,16 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_GLIDE, "GLIDE", "How long a note takes to slide to the next."),
     T_(P_PAN, "PAN", "The track's place from left to right."),
     T_(P_MUTE, "MUTE", "ON silences the track; it keeps playing in time."),
+#if TESSERA_MIDI_ONLY
+    T_(P_MECHO, "MIDI ECHO", "Repeats each note the track sends, up to 8 times: an echo for any gear. OFF: none."),
+    T_(P_METIME, "ECHO TIME", "The time between the echoes, a part of the beat: 1/32 to 1/4 (T triplet, D dotted)."),
+    T_(P_MEFADE, "ECHO FADE", "How much softer each echo is than the one before, in %: 0 keeps them all as loud."),
+    T_(P_MEPIT, "ECHO PITCH", "How far each echo moves, in semitones: 12 climbs an octave a repeat, 0 repeats the note."),
+    T_(P_MSTRUM, "STRUM", "Spreads the notes of a chord out, this many ms apart, like a strummed guitar. 0: together."),
+    T_(P_MSDIR, "STRUM DIR", "The order of a strum: UP low to high, DOWN high to low, RAND a new order each chord."),
+    T_(P_MVEL, "MIDI VELOCITY", "Every note the track sends at this velocity. 0: as played."),
+    T_(P_MHUMAN, "MIDI HUMAN", "Plays each note a little late (up to 20 ms) and softer or harder (up to 20), at random."),
+#endif
     T_(P_GLMODE, "GLIDE MODE", "RATE: the slide's speed is fixed; TIME: every slide takes the same time, however far."),
     T_(P_PRIO, "NOTE PRIORITY",
         "Which note sounds in MONO when several are held: the last, the lowest or the highest."),
