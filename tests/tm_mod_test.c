@@ -103,6 +103,16 @@ int main(void)
         mcheck("a saved mod onto CUTOFF still shows where it goes", w.at != 0u);
         c->dst = CD_OFF;
     }
+    {                                                   /* FX's four pages: FX's alone, never GLO's (ui.c tm_fx_at) */
+        uint8_t pg[64];
+        uint32_t n = fam_pages(FAM_GLO, pg), k, bad = 0;
+        for (k = 0; k < n; k++) bad += tm_fx_at(pg[k]) != 0;
+        for (k = 0; k < 40u; k++) { open_family(FAM_GLO); bad += tm_fx_at(ui.page) != 0; }
+        mcheck("GLO never reaches ECHO, FEEL, MIDI OUT, MIDI IN", !bad);
+        open_family(FAM_FX);
+        for (k = 0; k < 8u; k++) { page_scroll(1); bad += !tm_fx_at(ui.page); }
+        mcheck("SELECT on FX's pages stays in the four", !bad);
+    }
     printf(mfails ? "tm_mod_test FAILED\n" : "tm_mod_test passed\n");
     return mfails != 0;
 }

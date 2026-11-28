@@ -933,7 +933,11 @@ static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i)))
+        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i))
+#if TESSERA_MIDI_ONLY
+            && !tm_fx_at(i)                             /* (FX's four, not GLO's: tm_midi_pages) */
+#endif
+            )
             pg[n++] = (uint8_t)i;
     for (i = 0; fam == FAM_LFO && i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))
