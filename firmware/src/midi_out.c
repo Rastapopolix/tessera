@@ -100,7 +100,9 @@ static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: 
  * track sends passes here (midi_out_note): VEL fixes its velocity, HUMAN plays it up to 20 ms late and up to 20
  * softer or harder, STRUM spreads a chord's notes (those starting in one block) by its ms, UP, DOWN or at random, and
  * ECHO repeats it every TIME (a beat's 1/32 .. 1/4), each repeat FADE % softer and PITCH semitones on, a repeat as
- * long as half the TIME. A note's off goes out after its on, as late as the on went. The queue: 96 events; full, a
+ * long as half the TIME. A note's off goes out after its on, as late as the on went; a note started again right
+ * after its off (a repeated or tied step) waits 1.5 ms after it, so the envelope on the other side fires again (an
+ * off and an on in one USB packet are one event to many synths). The queue: 96 events; full, a
  * repeat is dropped, never an off. STOP, a channel or TRANSPOSE change (midi_out_flush) sends the offs waiting and
  * drops the notes not out yet */
 #define MFX_Q 96u
@@ -112,6 +114,9 @@ typedef struct { uint8_t ch, note, vel, off; } mfx_pend_t;
 static mfx_pend_t mfx_pend[NTRK][8];                    /* STRUM: this block's new notes, spread at its end */
 static uint8_t mfx_npend[NTRK], mfx_legato;           /* mfx_legato: the off being sent is LEGATO's, ending the
                                                          * note before the one just started (midi_out.c mo_mono_to) */
+static uint32_t mfx_gone[2][NTRK][4];                  /* the notes whose off went out this block and the one
+                                                         * before, a bit each: their next on waits (MFX_GAP) */
+#define MFX_GAP 66u                                     /* 1.5 ms between a note's off and its next on */
 static uint32_t mfx_last[NTRK];                         /* the latest note on went out this late, samples (HUMAN's) */
 static uint32_t mfx_rnd(void) { static uint32_t x = 0x2545F491u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return x; }
 static uint32_t mfx_ms(uint32_t ms) { return ms * 441u / 10u; }   /* (44.1 kHz) */
@@ -161,6 +166,10 @@ static void mfx_on(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel)
         v += (int32_t)(mfx_rnd() % (2u * (h * 20u / 100u) + 1u)) - (int32_t)(h * 20u / 100u);
     }
     v = clamp(v, 1, 127);
+    if ((mfx_gone[0][k][(note >> 5) & 3u] | mfx_gone[1][k][(note >> 5) & 3u]) >> (note & 31u) & 1u
+        && late < mfx_ms(mfx_late[k][note & 127u]) + MFX_GAP)   /* its off just went: a gap, so the envelope
+                                                                  * on the other side starts again */
+        late = mfx_ms(mfx_late[k][note & 127u]) + MFX_GAP;
     mfx_last[k] = late;
     if (t->p[P_MSTRUM] > 0 && mfx_npend[k] < 8u) {     /* STRUM: spread at the block's end (mfx_tick) */
         mfx_pend_t *p = &mfx_pend[k][mfx_npend[k]++];
@@ -177,6 +186,7 @@ static void mfx_off(uint32_t k, uint32_t ch, uint32_t note)
     for (i = 0; i < mfx_npend[k]; i++)                   /* its on not out yet (STRUM): it ends right after it */
         if (mfx_pend[k][i].note == note) { mfx_pend[k][i].off = 1; return; }
     i = mfx_ms(mfx_late[k][note & 127u]);
+    mfx_gone[0][k][(note >> 5) & 3u] |= 1u << (note & 31u);
     if (mfx_legato && i < mfx_last[k] + mfx_ms(1u))     /* LEGATO: after the new note's on, whatever HUMAN did */
         i = mfx_last[k] + mfx_ms(1u);
     mfx_put(k, ch, note, 0, i);
@@ -220,6 +230,8 @@ static void mfx_tick(uint32_t n)
             if (p->off) mfx_put(k, p->ch, p->note, 0, late + mfx_ms(10u));
         }
     }
+    memcpy(mfx_gone[1], mfx_gone[0], sizeof mfx_gone[0]);
+    memset(mfx_gone[0], 0, sizeof mfx_gone[0]);
     mfx_now += n;
     for (i = 0, j = 0; i < mfx_n; i++) {                /* due: out, in the order they were queued */
         if ((int32_t)(mfx_now - mfx_q[i].due) >= 0) midi_out_send(mfx_q[i].ch, mfx_q[i].note, mfx_q[i].vel);

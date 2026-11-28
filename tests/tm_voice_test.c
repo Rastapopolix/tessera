@@ -148,6 +148,38 @@ int main(void)
         if (!h) mcheck("  the overlap about a millisecond", n == 7u);
     }
     t->p[P_MHUMAN] = 0;
+    /* the retrigger gap: a note started again right after its off (or while it sounds) waits ~1.5 ms after the off */
+    for (uint32_t v = V_POLY; v <= V_MONO; v++) {
+        uint32_t i, off_at = ~0u, on_at = ~0u;
+        fresh(t, v, 0);
+        midi_out_note(t, 60, 100); drain(); run(4410);
+        ngot = 0;
+        midi_out_note(t, 60, 0); midi_out_note(t, 60, 100); drain(); run(4410);   /* a repeated step: off, on, one block */
+        for (i = 0; i < ngot; i++) {
+            if (is_off(&got[i]) && got[i].d1 == 60 && off_at == ~0u) off_at = i;
+            if (is_on(&got[i]) && got[i].d1 == 60 && on_at == ~0u) on_at = i;
+        }
+        mcheck(v ? "MONO: a repeated note: off, then on 1.5 ms later" : "POLY: a repeated note: off, then on 1.5 ms later",
+               off_at < on_at && on_at != ~0u && got[on_at].at - got[off_at].at >= 64u && got[on_at].at - got[off_at].at <= 64u + 64u);
+        ngot = 0;
+        midi_out_note(t, 60, 100); drain(); run(4410);                             /* on again while it sounds (a tie) */
+        off_at = on_at = ~0u;
+        for (i = 0; i < ngot; i++) {
+            if (is_off(&got[i]) && got[i].d1 == 60 && off_at == ~0u) off_at = i;
+            if (is_on(&got[i]) && got[i].d1 == 60 && on_at == ~0u) on_at = i;
+        }
+        mcheck("  on again while sounding: off, then on 1.5 ms later",
+               off_at < on_at && on_at != ~0u && got[on_at].at - got[off_at].at >= 64u);
+        midi_out_note(t, 60, 0); drain(); run(4410);
+        mcheck("  every note ends", balanced());
+    }
+    /* a different note in the same block is not held back */
+    fresh(t, V_POLY, 0);
+    midi_out_note(t, 60, 100); drain(); run(4410);
+    ngot = 0;
+    midi_out_note(t, 60, 0); midi_out_note(t, 62, 100); drain();
+    mcheck("POLY: a new note after another's off goes at once", ngot == 2u && is_on(&got[1]) && got[1].d1 == 62);
+    midi_out_note(t, 62, 0); drain(); run(4410);
     /* POLY again after MONO: every note */
     fresh(t, V_POLY, 0);
     chord(t, 100); chord(t, 0);
