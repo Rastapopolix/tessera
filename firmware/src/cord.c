@@ -154,6 +154,21 @@ const cord_dest_t *cord_dest(uint32_t code)
     return code < CD_N && CORD_DESTS[code].name ? &CORD_DESTS[code] : 0;
 }
 
+/* whether a mod onto destination code does anything in this build (the MODS list and the FX-held shortcut offer only
+ * these; a saved one stays as it is). Tessera MIDI: no voices and no track render, so not the voices' (PITCH ..),
+ * the ones the render reads (LEVEL, PAN, the envelope's and LFO's knobs, the engine's, the effects'), LFO DEPTH, the
+ * send effects', nor GLIDE (no slide goes out over MIDI) */
+#if TESSERA_MIDI_ONLY
+static int cord_dest_live(uint32_t code)
+{
+    const cord_dest_t *d = cord_dest(code);
+    return d && d->kind != CK_VOICE && d->kind != CK_BLOCK && d->kind != CK_DEPTH && d->kind != CK_GLOBAL &&
+           code != CD_GLIDE;
+}
+#else
+#define cord_dest_live(code) (cord_dest(code) != 0)
+#endif
+
 /* ------------------------------------------------------------ sources --- */
 _Static_assert(CS_LFO == MS_LFO && CS_SLEW == MS_SLEW && CS_EXPR == MS_EXPR, "CS_LFO .. CS_SLEW == mod.c's MS_*");
 static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "S&H",

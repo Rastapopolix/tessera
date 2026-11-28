@@ -125,6 +125,14 @@ int main(void)
             n2 = tess_core_save(b, sizeof b);
             CHECK(n2 == n1 && !memcmp(a, b, n1), "%s seed %08X: after is not the piece", nm, (unsigned)seed);
             checks += 3;
+#if TESSERA_MIDI_ONLY
+            {                                                    /* (no mod onto what acts on no MIDI: cord_dest_live) */
+                uint32_t k, dead = 0;
+                for (k = 0; k < CORD_LIVE; k++) dead += cord_get(k)->dst != CD_OFF && !cord_dest_live(cord_get(k)->dst);
+                CHECK(!dead, "%s seed %08X: %u mods onto a sound", nm, (unsigned)seed, (unsigned)dead);
+                checks++;
+            }
+#endif
         }
         n1 = made(st, 77u, 0, a);                                /* VARIATION 0 */
         n2 = made(st, 77u, 0, b);

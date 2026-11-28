@@ -76,6 +76,33 @@ int main(void)
     settings_midi_out = MIDI_OUT_OFF;
     run(500);
     mcheck("MIDI OUT OFF: no CC", !cnt[1]);
+    /* the mods' VEL and KEY follow the notes (sources a cord reads) */
+    settings_midi_out = MIDI_OUT_ALL;
+    trk_note_on(t, 72, 99);
+    mcheck("a note sets the mods' VEL and KEY", t->m_vel == 99 && t->m_key == 72);
+    trk_note_off(t, 72);
+    /* MODS offers only what acts over MIDI: no voice, render, LFO DEPTH, send effect or GLIDE destination */
+    {
+        cord_t *c = (cord_t *)cord_get(0);
+        cu_walk_t w;
+        uint32_t i, n, bad = 0, gen = 0, cc = 0;
+        c->dst = CD_OFF;
+        n = cu_ndst(c);
+        for (i = 1; i < n; i++) {
+            const cord_dest_t *d;
+            cu_walk(c, i, &w);
+            d = cord_dest(w.code);
+            if (d->kind == CK_VOICE || d->kind == CK_BLOCK || d->kind == CK_DEPTH || d->kind == CK_GLOBAL || w.code == CD_GLIDE)
+                bad++;
+            gen += w.code == CD_VELO; cc += w.code == CD_CC;
+        }
+        mcheck("MODS: no sound destinations listed", !bad);
+        mcheck("MODS: VELO and CC still listed", gen && cc);
+        c->dst = CD_CUTOFF; c->dst_trk = (uint8_t)(song.sel % NTRK);
+        cu_walk(c, 0u, &w);
+        mcheck("a saved mod onto CUTOFF still shows where it goes", w.at != 0u);
+        c->dst = CD_OFF;
+    }
     printf(mfails ? "tm_mod_test FAILED\n" : "tm_mod_test passed\n");
     return mfails != 0;
 }

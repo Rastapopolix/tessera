@@ -179,6 +179,21 @@ enum { RND_ROLE_FREE, RND_ROLE_DRONE, RND_ROLE_CHORDS, RND_ROLE_MELODY, RND_ROLE
 static uint8_t rnd_role_of[RND_NT];                  /* the last roll's roles (rnd_cpu, rnd_drift, the tests) */
 static uint8_t rnd_wozza;                          /* 1: this roll is WOZZA's */
 static uint8_t rnd_halo;                           /* 1: this roll is HALO's */
+#if TESSERA_MIDI_ONLY                               /* Tessera MIDI: a style's mod onto what acts on no MIDI (CUTOFF,
+                                                     * PAN, the engine's ..: cord.c cord_dest_live) is left out, its
+                                                     * slot empty (0: a style's loop tries its next one there) */
+static int rnd_cord_set(uint32_t i, const cord_t *c)
+{
+    if (c->dst != CD_OFF && !cord_dest_live(c->dst)) {
+        cord_t z;
+        memset(&z, 0, sizeof z);
+        cord_set(i, &z);
+        return 0;
+    }
+    return cord_set(i, c);
+}
+#define cord_set(i, c) rnd_cord_set(i, c)
+#endif
 #if TESSERA_MIDI_ONLY                               /* Tessera MIDI: STATIC, CHAOS, FRACTURED and MIRROR left out (their
                                                      * character is the FM-1's sounds; MIRROR's tunings no MIDI note
                                                      * carries): 0 here, so their code compiles away */

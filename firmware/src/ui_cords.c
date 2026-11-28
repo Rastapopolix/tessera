@@ -124,6 +124,9 @@ static void cu_walk(const cord_t *c, uint32_t want, cu_walk_t *w)
             uint32_t code = CU_ORDER[k];
             if (code >= CU_G) { g = code; continue; }
             if ((i == NTRK) != (g >= CU_SENDS) || !cord_dest(code)) continue;
+#if TESSERA_MIDI_ONLY
+            if (!cord_dest_live(code) && c->dst != code) continue;   /* (none in this build: cord.c; the cord's own stays) */
+#endif
             if (i < NTRK && !cu_acts(code, tr) && !(c->dst == code && c->dst_trk == tr)) continue;
             if (c->dst == code && (i == NTRK || c->dst_trk == tr)) w->at = w->n;
             if (w->n == want) w->code = code, w->grp = g, w->tr = (uint8_t)tr;
