@@ -2129,7 +2129,7 @@ static void ui_confirm_accept(void)
         if (ui.ptc_on && ui.ptc_trk == ui.confirm_trk)
             ptc_paste(1);
     } else if (kind == CF_INIT_SOUND) {
-        if (!chain_busy()) { sound_init_of(TSEL, TSEL->eng_req); ui_message("SOUND INIT"); }
+        if (!chain_busy()) { sound_init_of(TSEL, TSEL->eng_req); ui_message(TESSERA_MIDI_ONLY ? "SETTINGS RESET" : "SOUND INIT"); }
     } else {
         track_t *t = &trk[ui.confirm_trk % NTRK];
         if(recording_head[recording_owner(t)]<RECORD_MAX){

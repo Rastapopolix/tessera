@@ -1818,7 +1818,7 @@ static void confirm_text(char *a, char *b)
         str_cpy(b + str_len(b), " rows replaced", 16);
         break;
     case CF_INIT_SOUND:
-        str_cpy(a, "INITIALIZE SOUND?", 24);
+        str_cpy(a, TESSERA_MIDI_ONLY ? "RESET THE SETTINGS?" : "INITIALIZE SOUND?", 24);
         break;
     case CF_DEL_PAT:                                    /* PATTERNS: the track's pattern, its notes and motion */
         str_cpy(a, "DELETE PATTERN 1?", 24);
