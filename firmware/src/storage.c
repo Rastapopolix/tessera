@@ -17,8 +17,14 @@
 #define ST_PAYLOAD_OFF 256u
 #define ST_PAYLOAD_MAX (ST_SECTOR - ST_PAYLOAD_OFF)
 #define ST_TAIL 256u                           /* a sector's last bytes, kept erased (see the flash map) */
+#if TESSERA_MIDI_ONLY
+#define ST_PROJ_SECTORS 12u                    /* Tessera MIDI: two more a copy, from the sound's idle storage (below):
+                                                * an 8-track record outgrows ten */
+#else
 #define ST_PROJ_SECTORS 10u                    /* a project copy (Tessera's own format, docs/design/PROJECT_FORMAT.md) */
-#define ST_PROJ_MAX ((ST_SECTOR - ST_TAIL - 32u) + (ST_PROJ_SECTORS - 1u) * (ST_SECTOR - ST_TAIL))   /* 38,368 B */
+#endif
+#define ST_PROJ_MAX ((ST_SECTOR - ST_TAIL - 32u) + (ST_PROJ_SECTORS - 1u) * (ST_SECTOR - ST_TAIL))   /* 38,368 B
+                                                * (Tessera MIDI: 46,048) */
 
 /* Flash map (Tessera, 2026-10-22: docs/design/PROJECT_FORMAT.md in tessera-notes): app area 0x4000..0x92FFF; project
  * copies (OBJ_PROJ0..3, ten sectors each, ST_PROJ_RUN) in 0x93000..0x9CFFF, 0xA0000..0xD7FFF and 0xEA000..0xF7FFF;
@@ -39,14 +45,35 @@
  * U01..U32 reuse the old bank pair, U33..U64 use E9000/FA000. E0000..E4FFF remains reserved for OTA loader staging. */
 enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_FM6BANK = OBJ_UPRESET0 + 2, OBJ_BANK0, OBJ_CZBANK0 = OBJ_BANK0 + 4, OBJ_UPRESET_EXT0 = OBJ_CZBANK0 + 8, OBJ_UPFM6_EXT = OBJ_UPRESET_EXT0 + 2, OBJ_NATIVEFM0, OBJ_P5BANK0 = OBJ_NATIVEFM0 + 2, OBJ_LEARN = OBJ_P5BANK0 + 5, OBJ_PROJ0, OBJ_COUNT = OBJ_PROJ0 + 4 };
 #define OBJ_SLOT(slot) (OBJ_PROJ0 + ((slot) & 3u))   /* a project slot's object */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI (2026-11-28, Theo): no sound, so the sound's storage is idle: the native FM6 voices (0xD8000..0xDBFFF),
+ * the user preset banks (0xDC000..0xDFFFF), the preset extensions (0xE5000..0xE8FFF), the owned FM6 U33..U64 pair
+ * (0xE9000, 0xFA000) and the FM6 patch bank's copy A (0x9F000) never load, save or erase here (st_gone), and the
+ * projects take sixteen of them, two a copy, plus the free 0xF8000..0xF9FFF (slot D's B copy: its run grows). All
+ * inside FL_STORE_OK and the update loader's scan, each project sector's tail kept erased as before. The first ten
+ * sectors of every copy are the standard build's, so a record of ten sectors or fewer reads the same in either build;
+ * a longer one is too long for the standard build (st_head: len > ST_PROJ_MAX), its slot empty there. Going back to
+ * the standard build, the presets kept in those sectors are gone once a long project was saved over them. */
+#define ST_PROJ_RUNS 3u
+static const struct { uint32_t at; uint8_t n; } ST_PROJ_RUN[8][ST_PROJ_RUNS] = {
+    {{0xA0000u, 10}, {0xD8000u, 2}, {0, 0}}, {{0xAA000u, 10}, {0xDA000u, 2}, {0, 0}},   /* slot A (+ native FM6) */
+    {{0xB4000u, 10}, {0xDC000u, 2}, {0, 0}}, {{0xBE000u, 10}, {0xDE000u, 2}, {0, 0}},   /* slot B (+ user presets) */
+    {{0xC8000u, 10}, {0xE5000u, 2}, {0, 0}}, {{0xEA000u, 10}, {0xE7000u, 2}, {0, 0}},   /* slot C (+ preset ext.) */
+    {{0x93000u, 10}, {0x9F000u, 1}, {0xE9000u, 1}},                                     /* slot D, A copy */
+    {{0xD2000u, 6}, {0xF4000u, 6}, {0, 0}},                                             /* slot D, B copy: + the free
+                                                                                         * 0xF8000..0xF9FFF */
+};
+#else
+#define ST_PROJ_RUNS 2u
 /* Each project copy (slot * 2 + copy): its ten sectors as up to two runs of consecutive sectors */
-static const struct { uint32_t at; uint8_t n; } ST_PROJ_RUN[8][2] = {
+static const struct { uint32_t at; uint8_t n; } ST_PROJ_RUN[8][ST_PROJ_RUNS] = {
     {{0xA0000u, 10}, {0, 0}}, {{0xAA000u, 10}, {0, 0}},   /* slot A: Melodee's bank projects' base sectors */
     {{0xB4000u, 10}, {0, 0}}, {{0xBE000u, 10}, {0, 0}},   /* slot B */
     {{0xC8000u, 10}, {0, 0}}, {{0xEA000u, 10}, {0, 0}},   /* slot C: the CZ-1 banks', the old extensions */
     {{0x93000u, 10}, {0, 0}},                             /* slot D, A copy: the Prophet banks' */
     {{0xD2000u, 6}, {0xF4000u, 4}},                       /* slot D, B copy: the CZ-1 banks' rest, the extensions' */
 };
+#endif
 
 typedef struct {
     uint32_t magic;
@@ -79,8 +106,15 @@ static int st_proj(uint32_t obj) { return obj >= OBJ_PROJ0 && obj < OBJ_PROJ0 + 
 /* sector i (0..ST_PROJ_SECTORS - 1) of a project copy */
 static uint32_t st_proj_sector(uint32_t obj, uint32_t copy, uint32_t i)
 {
+#if TESSERA_MIDI_ONLY
+    uint32_t c = (obj - OBJ_PROJ0) * 2u + copy, r;
+    for (r = 0; r + 1u < ST_PROJ_RUNS && i >= ST_PROJ_RUN[c][r].n; r++)
+        i -= ST_PROJ_RUN[c][r].n;
+    return ST_PROJ_RUN[c][r].at + i * ST_SECTOR;
+#else
     uint32_t c = (obj - OBJ_PROJ0) * 2u + copy;
     return i < ST_PROJ_RUN[c][0].n ? ST_PROJ_RUN[c][0].at + i * ST_SECTOR : ST_PROJ_RUN[c][1].at + (i - ST_PROJ_RUN[c][0].n) * ST_SECTOR;
+#endif
 }
 static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy A (0) / B (1): its first sector */
 {
@@ -141,10 +175,19 @@ static uint8_t st_buf[256] __attribute__((aligned(4)));
 
 /* retired, their numbers reserved, never loaded, saved or erased: the legacy single-pattern projects, Melodee's bank
  * projects, the CZ-1 and Prophet banks (their sectors are the projects' now: the flash map, above) */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: the sound's objects, their sectors the projects' now (ST_PROJ_RUN): never loaded, saved or erased */
+static int st_gone(uint32_t obj)
+{
+    return (obj >= OBJ_UPRESET0 && obj <= OBJ_FM6BANK) || (obj >= OBJ_UPRESET_EXT0 && obj < OBJ_NATIVEFM0 + 2u);
+}
+#else
+#define st_gone(obj) 0
+#endif
 static int st_retired(uint32_t obj)
 {
     return (obj >= OBJ_PROJECT0 && obj < OBJ_PROJECT0 + 4u) || (obj >= OBJ_BANK0 && obj < OBJ_CZBANK0 + 8u) ||
-           (obj >= OBJ_P5BANK0 && obj < OBJ_P5BANK0 + 5u);
+           (obj >= OBJ_P5BANK0 && obj < OBJ_P5BANK0 + 5u) || st_gone(obj);
 }
 
 static int st_head(uint32_t obj, uint32_t copy, st_hdr_t *h)   /* commit record valid: 0 */
@@ -214,7 +257,7 @@ static int st_load(uint32_t obj, void *dst, uint32_t max)
 {
     st_hdr_t h;
     int cur;
-    if (obj >= OBJ_COUNT || (cur = st_current(obj, &h)) < 0 || h.len > max) return -1;
+    if (obj >= OBJ_COUNT || st_gone(obj) || (cur = st_current(obj, &h)) < 0 || h.len > max) return -1;
     if (st_read_range(obj, (uint32_t)cur, 0, dst, h.len)) return -1;
     return (int)h.len;
 }
@@ -231,6 +274,9 @@ static int st_save(uint32_t obj, const void *src, uint32_t len)
     uint32_t seq, base, off;
     int cur, rc;
     st_hdr_t h;
+    if (st_gone(obj))
+        return 0;                                    /* (Tessera MIDI: a sound bank, from a backup made in the standard
+                                                      * build, dropped: not an error, nothing written) */
     if (obj >= OBJ_COUNT || st_retired(obj) || len > st_capacity(obj))
         return -1;
     cur = st_current(obj, &h);

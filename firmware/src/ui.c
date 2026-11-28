@@ -368,6 +368,8 @@ static const char *const *native_titles(uint32_t fam)
     uint32_t e = TSEL->eng_req;
     static const char *const OR_ENV[] = {"FILT ENV", "AMP ENV", 0};
     static const char *const OR_LFO[] = {"LFO MOD", "LFO ROUTE", 0};
+    if (TESSERA_MIDI_ONLY)                              /* (no engine: the track's ENV and LFO, whatever eng_req) */
+        return 0;
     if (fam == FAM_ENV)
         return e == ENGI_FM6 ? FM_ENV : MELODEE_ORACLE && e == ENGI_ORACLE ? OR_ENV : 0;
     if (fam == FAM_LFO)
@@ -398,7 +400,31 @@ static int arp_page(uint32_t i)
     return g == GR_NONE || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TWEAK2 || g == GR_NOTELEN ||
            g == GR_TIMING || g == GR_ENERGY;
 }
-static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i); }
+#if TESSERA_MIDI_ONLY
+/* the FX button's pages in Tessera MIDI (tm_midi_pages), in turn; their place in it + 1, 0: not one */
+static uint32_t tm_fx_at(uint32_t i)
+{
+    static const char *const ORDER[4] = {"ECHO", "FEEL", "MIDI OUT", "MIDI IN"};
+    uint32_t j;
+    for (j = 0; i < NPAGES && j < 4u; j++)
+        if (str_eq(PAGES[i].title, ORDER[j]) && PAGES[i].fam == FAM_GLO) return j + 1u;
+    return 0;
+}
+static uint32_t tm_fx_pages(uint8_t *pg)
+{
+    uint32_t i, n = 0;
+    for (i = 0; i < NPAGES; i++)
+        if (tm_fx_at(i)) pg[tm_fx_at(i) - 1u] = (uint8_t)i, n++;
+    return n;
+}
+#endif
+static int in_fam(uint32_t i, uint32_t fam)
+{
+#if TESSERA_MIDI_ONLY
+    if (tm_fx_at(i)) return fam_grp(fam) == FAM_FX;     /* (FX's, not GLO's: tm_midi_pages) */
+#endif
+    return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i);
+}
 static uint32_t seqm_get(uint32_t tr)
 {
     tr %= NTRK;
@@ -472,8 +498,27 @@ static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
 #if TESS_HAS_POINTER
 static uint8_t ui_csec;                                 /* (below: the sections on) */
 #endif
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects (FX opens the MIDI pages instead,
+ * tm_midi_pages), the sound's EDIT pages and VOICE 3 (VOICE stays: how a part plays its notes on the gear), PRESETS
+ * and USER (SAVE opens PROJECT), SYSTEM (voices, CPU, tuning). ENV and LFO stay, with ENV CC and LFO CC in place of
+ * their DEST pages (voice.c tm_mod_tick) */
+static int midi_page_gone(uint32_t i)
+{
+    const page_t *pg = &PAGES[i];
+    if (pg->fam == FAM_FX || pg->graph == GR_BROWSE || pg->graph == GR_USER || pg->graph == GR_FMSTORE)
+        return 1;
+    if (str_eq(pg->title, "VOICE 3") || str_eq(pg->title, "SYSTEM"))                    /* (VOICE 3: the stereo spread; SYSTEM: voices, CPU, tuning) */
+        return 1;
+    return pg->fam == FAM_EDIT && !str_eq(pg->title, "VOICE");
+}
+#endif
 static int page_visible(uint32_t i)
 {
+#if TESSERA_MIDI_ONLY
+    if (midi_page_gone(i))
+        return 0;
+#endif
 #if TESS_HAS_POINTER
     if (PAGES[i].graph == GR_SETTINGS)                  /* SETTINGS: SETUP's page while the sections are on */
         return ui_csec;
@@ -832,6 +877,9 @@ static uint32_t page_nf(void)
     if (ui_csec && cs_of(ui.page) < UI_SEC_N) return FAM_CS + cs_of(ui.page);
 #endif
     if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
+#if TESSERA_MIDI_ONLY
+    if (tm_fx_at(ui.page)) return FAM_FX;               /* (the FX button's four: tm_midi_pages) */
+#endif
     if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
 }
@@ -875,6 +923,9 @@ static void page_scroll(int32_t dir)
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
 {
     uint32_t i, n = 0;
+#if TESSERA_MIDI_ONLY
+    if (fam == FAM_FX) return tm_fx_pages(pg);
+#endif
 #if TESS_HAS_POINTER
     if (fam >= FAM_CS) return cs_pages(fam - FAM_CS, pg);
 #endif
@@ -882,7 +933,11 @@ static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
         if (native_page(i, fam) && page_visible(i))
             pg[n++] = (uint8_t)i;
     for (i = 0; i < NPAGES; i++)
-        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i)))
+        if (PAGES[i].fam == fam && page_visible(i) && !native_page(i, fam) && (fam != FAM_ARP || arp_page(i))
+#if TESSERA_MIDI_ONLY
+            && !tm_fx_at(i)                             /* (FX's four, not GLO's: tm_midi_pages) */
+#endif
+            )
             pg[n++] = (uint8_t)i;
     for (i = 0; fam == FAM_LFO && i < NPAGES; i++)
         if (native_page(i, fam) && page_visible(i))
@@ -897,8 +952,34 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
 /* a group's button: from elsewhere the page last used there (first time its first; SAVE always USER), again the next
  * one, after the last the first (the button wraps; SELECT stops at the ends: page_scroll). One routine for every
  * group (Theo 2026-11-26: the buttons act alike) */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI's FX button (no effects): ECHO, FEEL (the MIDI FX), MIDI OUT, MIDI IN, in turn: its own family
+ * (fam_pages FAM_FX, page_nf, so SELECT, the footer's tabs and the position count these four, not GLO's), from
+ * elsewhere the one last used */
+static int tm_midi_pages(void)
+{
+    uint8_t pg[4];
+    uint32_t k, n = tm_fx_pages(pg);
+    if (n < 4u) return 0;
+    for (k = 0; k < n && pg[k] != ui.page; k++) {}
+    if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
+    else {
+        for (k = 0; k < n && pg[k] != ui.fam_last[FAM_FX]; k++) {}
+        ui.page = pg[k < n ? k : 0u];
+    }
+    ui.fam_last[FAM_FX] = ui.page;
+    ui.home = 0;
+    page_entered();
+    ui.via = (uint8_t)FAM_FX;
+    return 1;
+}
+#endif
 static void open_family(uint32_t fam)
 {
+#if TESSERA_MIDI_ONLY
+    if (fam == FAM_FX && tm_midi_pages())
+        return;
+#endif
     if (fam == FAM_ARP || ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam))) {   /* ARP's lane (ui.c
                                                          * arp_page); ENV / LFO of FM6 */
         uint8_t pg[NPAGES];
@@ -923,7 +1004,7 @@ static void open_family(uint32_t fam)
             if (in_fam(i, fam) && page_visible(i)) break;
         }
         ui.page = (uint8_t)i;
-    } else if (fam == FAM_SAVE) {
+    } else if (fam == FAM_SAVE && !TESSERA_MIDI_ONLY) {   /* (Tessera MIDI: no sounds to save; SAVE: PROJECT, below) */
         uint32_t i;
         for (i = 0; i < NPAGES; i++)
             if (PAGES[i].graph == GR_USER) break;
@@ -1315,7 +1396,8 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_DEC] = pr->env[1];
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
-    t->p[P_ED_FLT] = pr->fenv;
+    if (!TESSERA_MIDI_ONLY)                           /* (Tessera MIDI: that is ENV CC's number) */
+        t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     fm6_track_loaded(t);                              /* FM6: the preset's patch */
     or_track_loaded(t);                               /* ORACLE: the preset's patch */

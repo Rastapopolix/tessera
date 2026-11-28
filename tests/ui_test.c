@@ -2600,6 +2600,7 @@ static void go_title(const char *title)
     uint32_t i;
     for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, title); i++)
         ;
+    if (i >= NPAGES) i = 0;                       /* (a page this build leaves out: Tessera MIDI's renders) */
     ui.home = 0;
     ui.page = (uint8_t)i;
     page_entered();

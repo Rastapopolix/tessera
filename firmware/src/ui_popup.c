@@ -80,6 +80,11 @@ static const sheet_row_t SHEET_SOUND[] = {
     {"Init sound", 0, 0, 0, CF_INIT_SOUND}, {"Save as user\x85", 0, 0, ps_save, 0}, {"Favourite", ps_fav_v, 0, ps_fav, 0},
     {"Undo last load", 0, 0, ps_undo, 0}, {"Page map", 0, 0, smap_open, 0}};   /* (the map: an EDIT page's only,
                                                          * page_sheet_open; EDIT itself turns the pages, Theo 2026-11-26) */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: no sounds, no presets to save or mark: the track's settings (ENV, LFO, VOICE ..) back to their
+ * defaults, and the undo */
+static const sheet_row_t SHEET_TM_TRACK[] = {{"Reset settings", 0, 0, 0, CF_INIT_SOUND}, {"Undo last load", 0, 0, ps_undo, 0}};
+#endif
 /* the song's (SONG) */
 static int ps_song_free(void)
 {
@@ -561,9 +566,15 @@ static void page_sheet_open(void)
     char nm[20];
     switch (page_sheet()) {
     case 1:
+#if TESSERA_MIDI_ONLY
+        str_cpy(nm, "Track 1", sizeof nm);
+        nm[6] = (char)('1' + song.sel % NTRK);
+        sheet_open(nm, "settings", SHEET_TM_TRACK, NELEM(SHEET_TM_TRACK));
+#else
         sound_name(TSEL, nm);
         sheet_open(nm[0] ? nm : "Sound", ENGINES[eng_idx(TSEL->eng_req)]->name, SHEET_SOUND,
                    NELEM(SHEET_SOUND) - !sec_on());     /* (Page map: on an EDIT page of an engine in sections) */
+#endif
         break;
     case 2:
         fmt_int(nm, chain_config.count);
@@ -598,10 +609,12 @@ static void page_sheet_open(void)
         break;
     case 7:
         sr.n = 0;
+#if !TESSERA_MIDI_ONLY                                  /* (Tessera MIDI: no sound to turn off) */
         sr_tracks("Sound T1", TX_SOUND);
+#endif
         sr_tracks("Drum map T1", TX_MIDI_DMAP);
         sr_tracks("Section PC T1", TX_SECTION_PC);
-        sheet_open("MIDI out", "sound, map, PC", SHEET_SR, sr.n);
+        sheet_open("MIDI out", TESSERA_MIDI_ONLY ? "map, PC" : "sound, map, PC", SHEET_SR, sr.n);
         break;
     case 8:
         sr.n = 0;

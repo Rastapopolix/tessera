@@ -134,6 +134,11 @@ DECY	decay
 DRV	drive
 DTN	detune
 DTUN	detune
+VCE	voice
+CP	clap
+EXP	exponential
+DNB	drum and bass
+DEG	degrees
 FB	feedback
 CONSTL	constellation
 MLVL	modulator level

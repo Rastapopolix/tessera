@@ -64,6 +64,25 @@ jobs:
         run: |
           git worktree add --detach ../access HEAD
           cd ../access && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/access.log"
+      - name: Build Tessera MIDI (TESSERA_MIDI_ONLY=1, 8 tracks, no sound; dual core)
+        continue-on-error: true                  # (a second image for now: reported, not yet a gate)
+        env:
+          MELODEE_DUAL_CORE: '1'
+          TESSERA_MIDI_ONLY: '1'
+        run: |
+          git worktree add --detach ../midi HEAD
+          cd ../midi && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/midi.log"
+          python tools/flash_report.py build/melodee.elf --csv "$GITHUB_WORKSPACE/midi_symbols.csv" | tee "$GITHUB_WORKSPACE/midi_flash.md"
+          cp build/tessera.fwsc "$GITHUB_WORKSPACE/tessera-midi.fwsc"   # (for trying on an FM-1)
+      - name: Build Tessera MIDI without GENERATE
+        continue-on-error: true
+        env:
+          MELODEE_DUAL_CORE: '1'
+          TESSERA_MIDI_ONLY: '1'
+          TESSERA_MIDI_GENERATE: '0'
+        run: |
+          git worktree add --detach ../midi0 HEAD
+          cd ../midi0 && ./build.sh 2>&1 | tee "$GITHUB_WORKSPACE/midi0.log"
       - name: Build the base branch (dual core)
         if: github.event_name == 'pull_request'
         continue-on-error: true                  # (for comparison: a broken base must not fail this PR)
@@ -75,7 +94,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          for f in head access base; do
+          for f in head access midi midi0 base; do
             [ -f $f.log ] || continue
             echo "### $f" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -90,6 +109,11 @@ jobs:
             build/*.fwsc
             head.log
             access.log
+            midi.log
+            midi0.log
+            midi_flash.md
+            tessera-midi.fwsc
+            midi_symbols.csv
             base.log
             flash_report.md
             flash_symbols.csv

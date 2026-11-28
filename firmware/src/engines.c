@@ -7,6 +7,13 @@
 #if MELODEE_SID || MELODEE_SID_KIT
 #include "eng_sid.c"            /* SID: the chip (also DRUM's SID KIT); plugin and Daisy builds, not the FM-1 */
 #endif
+#if TESSERA_MIDI_ONLY
+static void midi_only_note_on(struct track *t, voice_t *v) { (void)t; (void)v; }   /* (wip/midi-only-size) */
+static void midi_only_render(struct track *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+{
+    (void)t; (void)v; (void)out; (void)n; (void)m;
+}
+#endif
 #include "eng_formant.c"
 #include "eng_trio.c"
 #include "eng_wheel.c"

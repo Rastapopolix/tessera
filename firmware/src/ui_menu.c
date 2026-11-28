@@ -307,17 +307,26 @@ static int32_t menu_document(int32_t y, int draw)
 {
     uint32_t i;
 #if MELODEE_LOOK                                        /* (Mono: the name twice the size, the QR code under the tempo) */
+#if TESSERA_MIDI_ONLY
+#define ABOUT_MIDI_H 34                                 /* (Tessera MIDI: MIDI under the name, as on the splash) */
+#else
+#define ABOUT_MIDI_H 0
+#endif
     if (draw) {
         char d[16];
         mo_text_s("TESSERA", 3, (y + 4) / 2, 2, MO_INK);
-        mo_text("FOR THE FM-1", 3, (y + 38) / 2, MO_INK);
-        mo_text(MELODEE_VERSION, 3, (y + 58) / 2, MO_INK);
+#if TESSERA_MIDI_ONLY
+        mo_text_s("MIDI", 3, (y + 38) / 2, 2, MO_INK);
+#endif
+        mo_text("FOR THE FM-1", 3, (y + ABOUT_MIDI_H + 38) / 2, MO_INK);
+        mo_text(TESS_VERSION_SHOWN, 3, (y + ABOUT_MIDI_H + 58) / 2, MO_INK);
         mo_ascii(d, __DATE__, sizeof d);
-        mo_text(d, 3, (y + 76) / 2, MO_DIM);
+        mo_text(d, 3, (y + ABOUT_MIDI_H + 76) / 2, MO_DIM);
         draw_about_qr(158, y + 38);
     }
-    y += 124;
-    y = menu_text("TESSERA by Theo Dainis (Rastapopolix)", y, T_TEXT, draw);
+    y += 124 + ABOUT_MIDI_H;
+    y = menu_text(TESSERA_MIDI_ONLY ? "TESSERA MIDI by Theo Dainis (Rastapopolix)" : "TESSERA by Theo Dainis (Rastapopolix)", y,
+                  T_TEXT, draw);
     y = menu_text("Thanks: Inputsignwave", y, T_SEC, draw);
     y = menu_text("Based on MELODEE by Kerem Kilic", y, T_TEXT, draw);
     y = menu_text("(C) 2026 Kerem Kilic, Ellic Studio", y, T_SEC, draw);
@@ -329,7 +338,7 @@ static int32_t menu_document(int32_t y, int draw)
         int32_t x;                                    /* (docs/design: mock/r6_pages About) */
         cv_text(6, y + 4, &AF_L, "Tessera", T_THEME);
         cv_text(6, y + 36, &AF_M, "for the FM-1", T_THEME);
-        x = cv_text(6, y + 62, &AF_M, MELODEE_VERSION, T_TEXT);
+        x = cv_text(6, y + 62, &AF_M, TESS_VERSION_SHOWN, T_TEXT);
         cv_text(x + 8, y + 67, &AF_X, __DATE__, T_MID);
         draw_about_qr(158, y + 4);
         cv_text(6, y + 94, &AF_S, "TESSERA by Theo Dainis (Rastapopolix)", T_TEXT);

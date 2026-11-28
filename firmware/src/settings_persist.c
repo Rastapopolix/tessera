@@ -3,6 +3,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Kerem Kilic (Ellic Studio)
  * Portions Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+#if defined(TESSERA_MIDI_ONLY) && TESSERA_MIDI_ONLY
+/* Tessera MIDI: NOTES OUT's KEYS (0) and ALL (1) swapped in the stored bits, so a fresh unit, and one coming from the
+ * standard build, sends the sequencer's notes (ALL); the standard build reads the swap back as its default, KEYS */
+#define SP_MIDI_OUT(v) ((v) < 2u ? (v) ^ 1u : (v))
+#else
+#define SP_MIDI_OUT(v) (v)
+#endif
 /* Shared PER5 layout: each feature updates only its own fields, preserving
  * the other feature's saved preferences when either is built independently.
  * PER5 keeps the compatible layout; boot validates the complete object before import. Its ext block:
@@ -109,7 +116,7 @@ static int settings_import(persist_t *p, int n)
     p->palette = palette_to_stored(palette_from_stored(p->palette));
     settings_screen=p->favorites.factory[15][27] < 8u ? p->favorites.factory[15][27] : 0u;
     settings_autosave = p->favorites.factory[15][28] != AUTOSAVE_OFF_TAG;
-    settings_midi_out = (uint8_t)((p->favorites.factory[15][30] >> 5) & 3u) % MIDI_OUT_N;   /* (midi_out.c) */
+    settings_midi_out = (uint8_t)SP_MIDI_OUT(((p->favorites.factory[15][30] >> 5) & 3u) % MIDI_OUT_N);   /* (midi_out.c) */
     settings_clock_out = (uint8_t)(p->favorites.factory[15][30] >> 7);
     settings_cc_off = (uint8_t)((p->favorites.factory[15][24] >> 4) & 1u);   /* (midi_cc.c) */
     settings_batt_off = (uint8_t)((p->favorites.factory[15][24] >> 5) & 1u);   /* (MENU BATTERY, core.h) */
@@ -189,7 +196,8 @@ static void settings_export(persist_t *p)
         u[0] = (uint8_t)m; u[1] = (uint8_t)(m >> 8);
     }
     p->favorites.factory[15][28] = settings_autosave ? 0u : AUTOSAVE_OFF_TAG;
-    p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) | settings_midi_out << 5 |
+    p->favorites.factory[15][30] = (uint8_t)((p->favorites.factory[15][30] & 0x1Fu) |
+                                             SP_MIDI_OUT(settings_midi_out) << 5 |
                                              (settings_clock_out != 0u) << 7);
     p->favorites.factory[15][24] = (uint8_t)((p->favorites.factory[15][24] & ~0xF0u) | (settings_cc_off != 0u) << 4 |
                                              (settings_batt_off != 0u) << 5 | (settings_mute_q % 3u) << 6);

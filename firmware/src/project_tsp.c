@@ -184,7 +184,8 @@ _Static_assert(TSP_BUSCD == 58, "the parts' numbers are stored: never renumbered
 #if CORE_TRACKS > 4
 _Static_assert(TSP_MX32 == 57 && CORD_LIVE == 32u, "the parts' numbers are stored: never renumbered");
 #endif
-#if MELODEE_FLASH
+#if MELODEE_FLASH && (CORE_TRACKS <= 4 || TESSERA_MIDI_ONLY)   /* (an 8-track test build with the standard flash map: a
+                                                                 * record past 38,368 B is refused at the save) */
 _Static_assert(TSP_MAX <= ST_PROJ_MAX, "a record fits one project copy");
 #endif
 
@@ -196,11 +197,19 @@ _Static_assert(TSP_PARTS <= TSP_KEEP, "the parts this firmware reads stay under 
 /* ---- writing */
 typedef struct { uint8_t *b; uint32_t pos, part, n; int ok; } tsp_w_t;
 static uint32_t tsp_cap = TSP_MAX;              /* the room tsp_pack may fill (less while kept parts wait at the end) */
-static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < tsp_cap - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0; }
+#if CORE_TRACKS > 4
+static uint8_t tsp_full;                        /* the last tsp_pack ran out of room (not a fault in the music; 8 tracks:
+                                                 * 4 never fill a record, and the standard build's flash is too tight) */
+#define TSP_FULL() (tsp_full = 1)
+#else
+#define tsp_full 0
+#define TSP_FULL() ((void)0)
+#endif
+static void tsp_byte(tsp_w_t *w, uint32_t v) { if (w->pos < tsp_cap - 4u) w->b[w->pos++] = (uint8_t)v; else w->ok = 0, TSP_FULL(); }
 static void tsp_u16(tsp_w_t *w, uint32_t v) { tsp_byte(w, v); tsp_byte(w, v >> 8); }
 static void tsp_bytes(tsp_w_t *w, const void *p, uint32_t n)
 {
-    if (w->pos + n > tsp_cap - 4u) { w->ok = 0; return; }
+    if (w->pos + n > tsp_cap - 4u) { w->ok = 0; TSP_FULL(); return; }
     memcpy(w->b + w->pos, p, n);
     w->pos += n;
 }
@@ -346,6 +355,9 @@ static uint32_t tsp_pack(uint8_t *raw, const project_t *q, int runtime)
 {
     tsp_w_t w = {raw, TSP_HEAD, 0, 0, 1};
     uint32_t t, b, i, f = motion_guard(), sum, magic = TSP_MAGIC;
+#if CORE_TRACKS > 4
+    tsp_full = 0;
+#endif
     for (t = 0; t < PROJ_NTRK; t++)
         if (q->pattern[t] >= NPAT || q->t[t].engine >= NENGINES || !drum_patch_valid(&q->drum[t])) { motion_unguard(f); return 0; }
     if (!chain_valid(&q->chain) || !motion_valid(&q->motion) || P_COUNT > 255u || G_COUNT > 255u) { motion_unguard(f); return 0; }

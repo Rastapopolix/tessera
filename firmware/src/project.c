@@ -54,7 +54,12 @@ _Static_assert(G_MFXTYPE == PROJ_GLOBALS && G_FXMODE==40u && G_BUDGET==41u && G_
 #define PROJ_DEF_SOUND 0xFFu                   /* preset byte: the track's power-on sound, no steps (kept from an
                                                 * import of before 1.0) */
 #define PROJ_DEF_KEEP 0xFEu                    /* .. the 808 DRUM sound, steps and the rest kept (old drums) */
+#if CORE_TRACKS > 4
+#define TSP_MAX 46048u                         /* (8 tracks: tracks 5..8 in XTRK, a full project ~50 KB; Tessera MIDI's
+                                                * project copy, storage.c, holds 46,048 B; the plugin reads as much) */
+#else
 #define TSP_MAX 34816u                         /* a TSP1 record at most (project_tsp.c): its RAM buffers are in the pool, beside the audio arena */
+#endif
 #if !defined(FM1_IRQ_TARGET)
 static uint8_t proj_bank_slot[4][TSP_MAX];    /* host-only: each slot's TSP1 record (MELODEE_FLASH 0: the slots) */
 static uint32_t proj_bank_len[4];             /* (0: empty) */
@@ -129,7 +134,8 @@ static void proj_legacy_perc(track_t *t)
     t->p[P_DEC] = pr->env[1];
     t->p[P_SUS] = pr->env[2];
     t->p[P_REL] = pr->env[3];
-    t->p[P_ED_FLT] = pr->fenv;
+    if (!TESSERA_MIDI_ONLY)                     /* (Tessera MIDI: that is ENV CC's number) */
+        t->p[P_ED_FLT] = pr->fenv;
     t->p[P_VOICE] = pr->mono ? V_LEGATO : V_POLY;
 }
 
@@ -315,7 +321,7 @@ static int project_save_as(uint32_t slot, const char *name)
     }
     int lost;
     uint32_t len = proj_pack(p, &lost);                 /* (the generators and cords in it too) */
-    if (!len) { ui_message("SAVE FORMAT ERR"); return 2; }
+    if (!len) { ui_message(tsp_full ? "PROJECT TOO BIG" : "SAVE FORMAT ERR"); return 2; }   /* (too many notes for a copy) */
     if (proj_write_slot(slot, proj_wire_u.raw, len)) { ui_message("SAVE ERROR"); return 2; }
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
@@ -969,7 +975,12 @@ static void persist_boot(void)                    /* before settings_init / pane
                 proj_fetch(i);
     }
     settings_init();                               /* maintenance uses the saved palette */
+#if TESSERA_MIDI_ONLY
+    up_cache_reset();                              /* (Tessera MIDI: no presets, their storage the projects', storage.c;
+                                                    * no boot work for them, which would show before the splash) */
+#else
     up_boot();                                     /* user presets */
+#endif
 #endif
 }
 

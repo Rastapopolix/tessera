@@ -2304,9 +2304,27 @@ static void knob(int32_t x, int32_t y, int32_t r, const uint8_t *cov, const uint
 
 static uint32_t trk_level(uint32_t c) { return (uint32_t)trk[c].p[P_LEVEL] & 127u; }   /* LEVEL 0..127 */
 
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: no sound; where the UI names a track's sound it names where its notes go: "CH 3", or "OFF" (MIDI OUT
+ * OFF), and "MIDI" where it names the engine */
+static void tm_chan_name(const track_t *t, char *b)
+{
+    uint32_t ch = midi_out_channel(t);
+    if (ch >= 16u) { str_cpy(b, "OFF", 4); return; }
+    str_cpy(b, "CH ", 4);
+    fmt_int(b + 3, (int32_t)ch + 1);
+}
+#define TM_ENG(name) "MIDI"
+#else
+#define TM_ENG(name) (name)
+#endif
 static void trk_short_name(uint32_t c, char *b)      /* the track's sound, b holds 13 */
 {
     const track_t *t = &trk[c];
+#if TESSERA_MIDI_ONLY
+    tm_chan_name(t, b);
+    return;
+#endif
     const engine_t *e = ENGINES[t->eng_req % NENGINES];
     if(user_of(t)<USER_NONE && t->user_native)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)up_name(user_of(t), b);

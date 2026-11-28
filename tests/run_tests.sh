@@ -175,7 +175,7 @@ start=$(date +%s)
 G_UI="ui_renders ui_test speak_test layer_screen_test theme_test text_ref_test text_spacing_test msg_len_test"
 G_SEQ="seq_edit_test seq_notes_test pattern_test note_tools_test swing_test split_test follow_test cordclock_test motion_test recording_test lfo_seek_test lfo_seek_test_8"
 G_GEN="gen_test tessera_test chain_test entries_test planner_test split_test follow_test cordclock_test recipes_test generate_test"
-G_STORE="storage_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
+G_STORE="storage_test storage_midi_test persistence_test upgrade_test backup_test demo_projects settings_test upreset_test storage_safety_test
     settings_origin_test preset_boot_reset_test fm6_preset_test tsp_cross"
 G_MIDI="midi_control_test midi_out_test seq_dir_test midi_timing_test midi_scale_test midi_uart_test recording_test"
 G_USB="usb_audio_test usb_audio_driver_test usb_audio_tracks_test usb_host_test usb_audio_desc_test"
@@ -558,6 +558,7 @@ sound && [ $TABLES = 1 ] && run "sample rate: every engine in tune at 48 kHz as 
 
 if core; then
     t "flash storage (A/B, torn writes)" storage_test
+    t "Tessera MIDI's project storage: twelve sectors a copy from the sound's idle storage, no clash, tails erased" storage_midi_test
     for _p in FM1 PLUGIN SIM DAISY; do   # each target's profile agrees with the core API (firmware/src/tess_profile.h)
         t "platform profile $_p: its facts as the core API's" "profile_$_p:profile_test" -DTESS_TARGET=TESS_T_$_p \
             -Iplatform/core $FW
@@ -714,6 +715,27 @@ if core && [ $TABLES = 1 ]; then
         generate_test_4:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DMELODEE_USB_AUDIO=1 -DMELODEE_ACCESS=0 \
         -DMELODEE_LOOK=1 -DMELODEE_FM6=1 -DMELODEE_PHYS=1 '-DMELODEE_VERSION="web"' -- env GEN_SEEDS=10 GEN_PLAY=1 \
         "$OUT/generate_test_4"
+    t "Tessera MIDI's MIDI FX: ECHO, STRUM, VEL, HUMAN; every note ends" \
+        midi_fx_test -O1 $FW -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 \
+        -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 \
+        -DTESS_GENERATE=1 '-DMELODEE_VERSION="midi"'
+    t "Tessera MIDI's ENV CC and LFO CC: the envelope and LFO out as CCs, quiet at DEPTH 0" \
+        tm_mod_test -O1 $FW -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 \
+        -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 \
+        -DTESS_GENERATE=1 '-DMELODEE_VERSION="midi"'
+    t "Tessera MIDI's STOP: 8 tracks of chords, a slow or stalled device, every note ends; CC 123" \
+        tm_stop_test -O1 $FW -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 \
+        -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 \
+        -DTESS_GENERATE=1 '-DMELODEE_VERSION="midi"'
+    t "Tessera MIDI's project: each track's MIDI settings saved and back (tracks 1 and 7); keys on a track's channel" \
+        tm_save_test -O1 $FW -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 \
+        -DMELODEE_ACCESS=1 -DMELODEE_LOOK=1 -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 \
+        -DTESS_GENERATE=1 '-DMELODEE_VERSION="midi"'
+    t "GENERATE in Tessera MIDI (TESSERA_MIDI_ONLY, 8 tracks): its 11 styles repeatable, before / after exact, in key, notes" \
+        generate_test_midi:generate_test -O1 $FW -Iplatform/core -DTESS_GENERATE=1 -DTESSERA_MIDI_ONLY=1 -DMELODEE_PHYS=0 \
+        -DMELODEE_ORACLE=0 -DMELODEE_TRIO=0 -DMELODEE_USB_AUDIO=0 -DMELODEE_ACCESS=0 -DMELODEE_LOOK=1 -DMELODEE_FM6=1 \
+        -DCORE_TRACKS=8 -DMELODEE_VOICE_BUDGET=0 -DTESS_LFO_SLOPE=1 -DTESS_PC_IN=1 '-DMELODEE_VERSION="midi"' -- \
+        env GEN_SEEDS=10 GEN_PLAY=1 "$OUT/generate_test_midi"
     t "GEN: each generator on its own (gen.c alone): ranges, rests, draws per step, determinism, mutation, sections" \
         gen_test -O2 $FW
     t "LONG-FORM: 8 hours of 10 patches: no long silence, one-note collapse, frozen loop or thinning out" longform_test \
@@ -759,8 +781,12 @@ if sound && [ $TABLES = 1 ]; then
     fi
 fi
 if sound; then
+    if [ "${TESSERA_MIDI_ONLY:-0}" = 1 ]; then          # (a Tessera MIDI device build: no render loops to cost)
+        note "== skip the target cost (TESSERA_MIDI_ONLY: no sound)"
+    else
     run "regression: target cost of the render loops (pi32v2 disassembly)" python3 tests/target_budget.py \
         build/melodee.dis tests/target_budget.txt
+    fi
 fi
 [ $TABLES = 1 ] || note "== skip hostsim (run ./build.sh once)"
 

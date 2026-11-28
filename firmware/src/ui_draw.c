@@ -189,7 +189,8 @@ static void head_chip_text(char *b)
         b[10] = (char)('1' + ui.ptc_dst % NPAT);
     } else if (ui.home) {                               /* Stage: the engine (a kit: its name, "909 KIT") */
         if (browse_pending()) { uint32_t kk, s = browse_shown(&kk); e = src_engine(s, kk); }
-        if (ENGINES[eng_idx(e)] == &ENG_DRUM && !browse_pending()) sound_name(TSEL, b);
+        if (TESSERA_MIDI_ONLY) sound_name(TSEL, b);   /* (Tessera MIDI: the track's channel) */
+        else if (ENGINES[eng_idx(e)] == &ENG_DRUM && !browse_pending()) sound_name(TSEL, b);
         else str_cpy(b, ENGINES[eng_idx(e)]->name, 16);
     } else if (sec_map_on()) {                          /* the map: the engine */
         str_cpy(b, ENGINES[e]->name, 16);
@@ -675,6 +676,10 @@ static void sound_name(const track_t *t, char *b)
 {
     const engine_t *e = ENGINES[t->eng_req % NENGINES];
     b[0] = 0;
+#if TESSERA_MIDI_ONLY
+    tm_chan_name(t, b);                                 /* (no sound: where its notes go, ui_graph.c) */
+    return;
+#endif
     if(t->user_native && user_of(t)<USER_NONE)native_name(t->eng_req,user_of(t),b);
     else if (user_of(t) < UP_SLOTS)
         up_name(user_of(t), b);
@@ -1813,7 +1818,7 @@ static void confirm_text(char *a, char *b)
         str_cpy(b + str_len(b), " rows replaced", 16);
         break;
     case CF_INIT_SOUND:
-        str_cpy(a, "INITIALIZE SOUND?", 24);
+        str_cpy(a, TESSERA_MIDI_ONLY ? "RESET THE SETTINGS?" : "INITIALIZE SOUND?", 24);
         break;
     case CF_DEL_PAT:                                    /* PATTERNS: the track's pattern, its notes and motion */
         str_cpy(a, "DELETE PATTERN 1?", 24);

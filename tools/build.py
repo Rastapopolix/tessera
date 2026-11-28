@@ -254,7 +254,15 @@ def build_app(stub):
     subprocess.run([sys.executable, SRC / "tools/gen_909_tables.py", GEN / "x0x_drum_tables.h"], check=True)
     flags = [*CFLAGS, "-Ifirmware/hal", "-Ifirmware/src", "-Ibuild/gen"]
     os.environ.setdefault("MELODEE_HELP_PACKED", "1")   # melodee-tess: the help texts byte-pair coded (tools/gen_help.py)
-    for flag, v in (("MELODEE_FM6", "1"), ("MELODEE_PHYS", "1")):
+    os.environ.setdefault("TESSERA_MIDI_ONLY", "0")   # Tessera MIDI (=1): no sound, 8 tracks; the sequencer, generators and
+    midi_only = os.environ["TESSERA_MIDI_ONLY"] == "1"   # MIDI only (docs: BUILDING.md)
+    if midi_only:
+        os.environ.setdefault("MELODEE_USB_AUDIO", "0")   # (nothing to stream)
+        os.environ.setdefault("MELODEE_CDC", "0")
+        flags += ["-DCORE_TRACKS=8", "-DTESS_LFO_SLOPE=1", "-DTESS_PC_IN=1", "-DMELODEE_VOICE_BUDGET=0",
+                  f"-DTESS_GENERATE={os.environ.get('TESSERA_MIDI_GENERATE', '1')}"]
+    for flag, v in (("MELODEE_FM6", "1"), ("MELODEE_PHYS", "0" if midi_only else "1"), ("MELODEE_ORACLE", "0" if midi_only else "1"),
+                    ("MELODEE_TRIO", "0" if midi_only else "1")):
         os.environ.setdefault(flag, v)   # melodee-tess: FM6, PHYS (back 2026-10-31) and TRIO in; SID, DRUM's SID KIT and
                                          # MACRO removed from the code (2026-11-12)
     os.environ.setdefault("MELODEE_ACCESS", "1")   # melodee-tess: no help cards, room for the screen reader (Theo 2026-11-07:
@@ -262,7 +270,7 @@ def build_app(stub):
     os.environ.setdefault("MELODEE_LOOK", "1")   # melodee-tess: the Mono look, what 3.0 ships (2026-10-30); =0 the detailed
                                                  # look (the host tests keep it: firmware/src/core.h)
     for flag in ("MELODEE_HELP_PACKED", "MELODEE_ACCESS", "MELODEE_FLASH", "MELODEE_OTA", "MELODEE_OTA_DRYRUN", "MELODEE_OTA_RAMONLY", "MELODEE_CDC",
-                 "MELODEE_UART", "MELODEE_USB_AUDIO", "MELODEE_USB_HOST", "MELODEE_ICONS", "MELODEE_FM6", "MELODEE_TRIO", "MELODEE_PHYS", "MELODEE_LOOK",
+                 "MELODEE_UART", "MELODEE_USB_AUDIO", "MELODEE_USB_HOST", "MELODEE_ICONS", "MELODEE_FM6", "MELODEE_TRIO", "MELODEE_PHYS", "MELODEE_ORACLE", "TESSERA_MIDI_ONLY", "MELODEE_LOOK",
                  "MELODEE_BENCH_SILENT", "MELODEE_FX_PROFILE", "MELODEE_AUDIO_PROFILE", "MELODEE_BATCH_AUDIO", "MELODEE_ADMISSION", "MELODEE_AUDIO_BENCH", "MELODEE_DUAL_CORE", "MELODEE_CACHE_RAM", "MELODEE_CORE1_TEST", "MELODEE_RAM_AUDIO", "MELODEE_HW_EQ"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/melodee.c
         if v in ("0", "1"):
@@ -297,6 +305,8 @@ def build_app(stub):
         raise SystemExit("resident audio requires MELODEE_SIZE=1 for the verified IR placement pass")
     elf = OUT / "melodee.elf"
     extra_ld = ["--defsym=AUDIO_RESIDENT=1"] if os.environ.get("MELODEE_RAM_AUDIO") == "1" else []
+    if os.environ.get("TESSERA_MIDI_ONLY") == "1":
+        extra_ld.append("--defsym=MIDI_ONLY=1")   # (no voices or FX: the arena holds tracks 5..8's patterns, app.ld)
     tc("pi32v2/bin/ld", "--gc-sections", *extra_ld, "-T", FW / "app.ld", OUT / "crt0.o", OUT / "fm1_vec.o", OUT / "fm1_isr.o",
        OUT / "melodee.o", "-o", elf)
     for sect in ("text.bin", "data.bin", "ramtext.bin", "dsptext.bin", "dsptables.bin", "audiotext.bin"):

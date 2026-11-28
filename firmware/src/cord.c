@@ -154,6 +154,21 @@ const cord_dest_t *cord_dest(uint32_t code)
     return code < CD_N && CORD_DESTS[code].name ? &CORD_DESTS[code] : 0;
 }
 
+/* whether a mod onto destination code does anything in this build (the MODS list and the FX-held shortcut offer only
+ * these; a saved one stays as it is). Tessera MIDI: no voices and no track render, so not the voices' (PITCH ..),
+ * the ones the render reads (LEVEL, PAN, the envelope's and LFO's knobs, the engine's, the effects'), LFO DEPTH, the
+ * send effects', nor GLIDE (no slide goes out over MIDI) */
+#if TESSERA_MIDI_ONLY
+static int cord_dest_live(uint32_t code)
+{
+    const cord_dest_t *d = cord_dest(code);
+    return d && d->kind != CK_VOICE && d->kind != CK_BLOCK && d->kind != CK_DEPTH && d->kind != CK_GLOBAL &&
+           code != CD_GLIDE;
+}
+#else
+#define cord_dest_live(code) (cord_dest(code) != 0)
+#endif
+
 /* ------------------------------------------------------------ sources --- */
 _Static_assert(CS_LFO == MS_LFO && CS_SLEW == MS_SLEW && CS_EXPR == MS_EXPR, "CS_LFO .. CS_SLEW == mod.c's MS_*");
 static const char *const CORD_SRC_NAME[CS_N] = {"--", "LFO", "ENV", "VEL", "KEY", "RAND", "MODW", "AT", "EXPR", "S&H",
@@ -179,6 +194,9 @@ static uint32_t cord_blocks;
 static uint32_t cord_cmask, cord_amask;                 /* (the mods of mods: below, at cord_now) */
 static uint32_t cord_tmask, cord_gates, cord_fmask, cord_pmask;   /* (GATE, FILL, TEMPO: below, at cord_now) */
 static void cord_amounts(void), cord_gates_tick(void), cord_fill_tick(void), cord_tempo_tick(void), cord_cc_tick(void);
+#if TESSERA_MIDI_ONLY
+static void cord_mix_tick(void);
+#endif
 static void cord_bus_tick(void), cord_clock_tick(uint32_t was);
 static uint32_t cord_clmask;                            /* CLOCK: bit i, cords[i] is one (cord_clock_tick; seq.c cord_clk_trk) */
 static uint8_t cord_clcnt[CORD_LIVE];                   /* ... its edges counted towards its division */
@@ -230,6 +248,9 @@ void cord_tick(void)
     if (cord_pmask) cord_tempo_tick();
     else seq_tempo_q12 = 4096;
     if (cord_ccmask) cord_cc_tick();
+#if TESSERA_MIDI_ONLY
+    cord_mix_tick();                                    /* (MIXER's LEVEL and PAN out as CC 7 and 10) */
+#endif
     if (cord_playm[0] | cord_playm[1] | cord_playm[2] | cord_playm[3]) cord_play_tick();
     else cord_shut = 0;
 #if TESS_LFO_SLOPE
@@ -917,6 +938,37 @@ static __attribute__((noinline)) void cord_tempo_tick(void)
     seq_tempo_q12 = (uint16_t)(k >= 16u ? EXP2[16] : EXP2[k] + (((int32_t)EXP2[k + 1u] - EXP2[k]) * (x & 4095) >> 12));
 }
 
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI: a track's MIXER LEVEL and PAN out as CC 7 (volume) and CC 10 (pan, 64 the centre) on its MIDI OUT
+ * channel, each block one changed (cord_tick): when it changes, not at boot (the gear's own levels stand until one is
+ * turned; a project loaded with other ones sends them). Not with MIDI OUT OFF or the track's channel OFF; a muted track
+ * still sends them (MUTE stops its notes) */
+static int16_t cord_mix_was[NTRK][2];                  /* the values last sent (or seen at boot), -1: none yet */
+static void cord_mix_tick(void)
+{
+    static uint8_t seen;
+    uint32_t k, j;
+    if (!seen) {
+        for (k = 0; k < NTRK; k++) cord_mix_was[k][0] = cord_mix_was[k][1] = -1;
+        seen = 1;
+    }
+    if (settings_midi_out == MIDI_OUT_OFF) return;
+    for (k = 0; k < NTRK; k++) {
+        const track_t *t = &trk[k];
+        uint32_t ch = midi_out_channel(t);
+        int32_t v[2];
+        v[0] = clamp(t->p[P_LEVEL], 0, 127);
+        v[1] = clamp(t->p[P_PAN] + 64, 0, 127);
+        for (j = 0; j < 2u; j++) {
+            if (cord_mix_was[k][j] < 0) { cord_mix_was[k][j] = (int16_t)v[j]; continue; }   /* (boot: as it is) */
+            if (v[j] == cord_mix_was[k][j] || ch == MIDI_OUT_NONE) continue;
+            cord_mix_was[k][j] = (int16_t)v[j];
+            midi_out_event(0x0Bu | (0xB0u | ch) << 8 | (j ? 10u : 7u) << 16 | (uint32_t)v[j] << 24);
+            return;                                     /* (one CC a block: a project load's 16 go out over 16) */
+        }
+    }
+}
+#endif
 /* each block with a mod onto CC (cord_tick): its value out on its track's MIDI OUT channel, when it changed and
  * at most every 12 blocks (~9 ms) a mod, so a fast LFO does not flood the cable. 0..127: a source both ways centred
  * on 64 (the whole range at 100 %), one way (and a fixed mod's OFFSET) from 0. Not with MIDI OUT OFF, the track's

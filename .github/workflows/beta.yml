@@ -43,6 +43,9 @@ jobs:
           echo "$v" | grep -Eq '^[0-9]\.[0-9]{1,2}(\.[0-9])?-[A-Za-z0-9]+$' ||
             { echo "branch $GITHUB_REF_NAME: use beta/X.Y[.Z]-suffix, e.g. beta/3.3-beta1"; exit 1; }
           echo "V=$v" >> "$GITHUB_ENV"
+          case "$v" in *-tm*) echo "TESSERA_MIDI_ONLY=1" >> "$GITHUB_ENV"   # (beta/X.Y-tmN: a Tessera MIDI test build, tools/build.py)
+                              echo "NOTES=docs/BETA_NOTES_MIDI.md" >> "$GITHUB_ENV" ;;
+                       *) echo "NOTES=docs/BETA_NOTES.md" >> "$GITHUB_ENV" ;; esac
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -89,6 +92,7 @@ jobs:
           path: .nightly-deps/emsdk
           key: emsdk-6.0.12-v1
       - name: The beta's web simulator (Emscripten 6.0.12, as the maintainer's)
+        if: env.TESSERA_MIDI_ONLY != '1'                 # (Tessera MIDI makes no sound: no simulator of its own)
         env:
           EMSDK: ${{ github.workspace }}/.nightly-deps/emsdk
         run: |
@@ -100,13 +104,14 @@ jobs:
           web/sim/build.sh --release "$V" | tee -a "$GITHUB_STEP_SUMMARY"
           node web/sim/test_sim.mjs build/sim/melodee.wasm
       - name: The installer's Beta, pushed to site-beta-${{ env.V }}
+        if: env.TESSERA_MIDI_ONLY != '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           commit=$(git rev-parse HEAD)
           git worktree add -B "site-beta-$V" ../page origin/main
           python web/publish_beta.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
-            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes docs/BETA_NOTES.md --sim build/sim
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES" --sim build/sim
           cd ../page
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -118,3 +123,23 @@ jobs:
           gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "site-beta-$V" --title "Installer: Tessera $V beta" \
             --body "The public installer's **Beta** choice: Tessera $V (both cores) from $GITHUB_REF_NAME at ${commit:0:7}. Merging makes it live. Built by .github/workflows/beta.yml (run $GITHUB_RUN_ID)." ||
             echo "::notice::No pull request opened (the token may not be allowed to): open one from site-beta-$V into main"
+      - name: The installer's Tessera MIDI choice, pushed to site-midi-${{ env.V }}
+        if: env.TESSERA_MIDI_ONLY == '1'                 # (beta/X.Y-tmN: its own choice beside the beta, publish_midi.py)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          commit=$(git rev-parse HEAD)
+          git worktree add -B "site-midi-$V" ../page origin/main
+          python web/publish_midi.py ../page/docs --dual "$RUNNER_TEMP/pkgs/tessera-$V.fwsc" --single "$RUNNER_TEMP/pkgs/tessera-$V-1core.fwsc" \
+            --version "$V" --commit "$commit" --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --notes "$NOTES"
+          cd ../page
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/webapp/installer docs/firmware docs/words
+          git add -f docs/firmware/*.fwsc
+          git commit -q -m "Installer: Tessera MIDI $V (${commit:0:7})" -m "Built by .github/workflows/beta.yml from $GITHUB_REF_NAME."
+          git show --stat HEAD | tail -5
+          git push -f origin "site-midi-$V"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "site-midi-$V" --title "Installer: Tessera MIDI $V test build" \
+            --body "The public installer's **Tessera MIDI** choice (its own, beside the Beta, which stays): $V (both cores) from $GITHUB_REF_NAME at ${commit:0:7}. Merging makes it live. Built by .github/workflows/beta.yml (run $GITHUB_RUN_ID)." ||
+            echo "::notice::No pull request opened (the token may not be allowed to): open one from site-midi-$V into main"

@@ -178,7 +178,8 @@ static void fm6_rom_patch(const fm6_rom_t *r, uint8_t *v)   /* a Melodee factory
 static void fm6_factory(uint32_t k, uint8_t *pk)
 {
     uint8_t v[FP_SIZE + 1u];
-    if (!MELODEE_FM6) { memset(pk, 0, FM6_PACKED); return; }   /* (Tessera: left out, core.h; its ROM with it) */
+    if (!MELODEE_FM6 || TESSERA_MIDI_ONLY) { memset(pk, 0, FM6_PACKED); return; }   /* (left out, core.h, or Tessera MIDI: no
+                                                                                * sound; its ROM with it) */
     if (k < FM6_NFACTORY) {
         memcpy(pk, FM6_FACTORY[k], FM6_PACKED);
         return;
@@ -233,7 +234,7 @@ static void fm6_track_loaded(const track_t *t)
         uint32_t z = t->preset - FM6_NFAC - 1u;              /* ZEN-1's: after INIT VOICE */
         if (t->preset < FM6_NFAC)
             fm6_factory(t->preset, pk);
-        else if (MELODEE_FM6 && z < FM6_NZEN)
+        else if (MELODEE_FM6 && !TESSERA_MIDI_ONLY && z < FM6_NZEN)
             memcpy(pk, FM6_ZEN[z], FM6_PACKED);
         fm6_unpack(t->preset < FM6_NFAC || z < FM6_NZEN ? pk : FM6_INIT, v);   /* (F25: INIT VOICE) */
         fm6_put_patch(tr, v, 1);
@@ -1163,10 +1164,14 @@ static const engine_t ENG_FM6 = {
     },
     .presets = FM6_PRESETS,
     .npresets = NELEM(FM6_PRESETS),
-    .note_on = fm6_note_on,
-    .render = fm6_render,
     .knob = {P_E2, P_E3, P_E4, P_E6},
     .poly = NVOICE,                                      /* Dexed's 16: a voice takes one budget unit */
+#if TESSERA_MIDI_ONLY
+    .note_on = midi_only_note_on,
+    .render = midi_only_render,
+#else
+    .note_on = fm6_note_on,
+    .render = fm6_render,
     .block = fm6_block,
     .ownenv = 1,
     .done = fm6_done,
@@ -1174,4 +1179,5 @@ static const engine_t ENG_FM6 = {
     .legato = fm6_legato,
     .mono_key = fm6_key,
     .post = fm6_post,
+#endif
 };

@@ -36,3 +36,6 @@ pierce
 meantone
 unsaved
 maqam
+downtempo
+electro
+harmonizer

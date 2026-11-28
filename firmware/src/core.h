@@ -107,6 +107,16 @@ static uint8_t dub_throw_fb;             /* and the echo's REPEAT lifted with th
  * stays reserved and a project's track of it loads SID's INIT (project.c). Its code goes where nothing reaches it */
 /* CZ-1 and PROPHET: retired as engines 2026-10-22 (their IDs stay reserved), their stores and tones with the own
  * project format. The Prophet's engine came back as ORACLE (2026-10-29, ID 19): its own sounds, no factory bank */
+#ifndef TESSERA_MIDI_ONLY
+#define TESSERA_MIDI_ONLY 0      /* Tessera MIDI (tools/build.py): no sound; the sequencer, generators and MIDI only */
+#endif
+/* the version as the screen shows it (the splash, ABOUT): Tessera MIDI's marked, so a screenshot or a report says which
+ * firmware; MELODEE_VERSION itself (the editor's and the console's, the installer's) stays the plain number */
+#if TESSERA_MIDI_ONLY
+#define TESS_VERSION_SHOWN MELODEE_VERSION " MIDI"
+#else
+#define TESS_VERSION_SHOWN MELODEE_VERSION
+#endif
 #ifndef MELODEE_ORACLE
 #define MELODEE_ORACLE 1         /* ORACLE (eng_oracle.c): two oscillators, Poly-Mod, a 4-pole ladder (after the Prophet-5) */
 #endif
@@ -294,8 +304,30 @@ static int param_master_fx(uint32_t id){return id>=G_MFXTYPE && id<=G_MFX3CHAR;}
 #define G_DRLVL G_RESERVED25         /* (their meaning in a project from before 1.0: proj_drums_to_part) */
 #define G_DRREV G_RESERVED26
 
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI's MIDI FX (midi_out.c mfx_*): a track's, in the eight reserved slots, so they save with its
+ * parameters (no new save part). The standard build zeroes them on load: they are Tessera MIDI's only */
+#define P_MECHO P_RESERVED33     /* ECHO: repeats of each note, 0 OFF .. 8 */
+#define P_METIME P_RESERVED34    /* TIME: between them, a beat's 1/32 .. 1/4 (MFX_TIME) */
+#define P_MEFADE P_RESERVED35    /* FADE: each repeat this % softer (0: as loud; a project from before: 0) */
+#define P_MEPIT P_RESERVED36     /* PITCH: each repeat moves, semitones */
+#define P_MSTRUM P_RESERVED45    /* STRUM: ms between a chord's notes */
+#define P_MSDIR P_RESERVED46     /* DIR: UP, DOWN, RAND */
+#define P_MVEL P_RESERVED47      /* VEL: 0 as played, 1..127 every note's */
+#define P_MHUMAN P_RESERVED48    /* HUMAN: % of 20 ms late, and of 20 velocity either way, at random */
+/* ENV CC and LFO CC (voice.c tm_mod_tick): each a CC number, a DEPTH (0: none sent) and a BASE, in ENV DEST's and
+ * LFO DEST's slots (no sound to move). The standard build reads them as those depths */
+#define P_ECC P_ED_FLT           /* ENV CC: its CC number, 1..119 */
+#define P_EDEPTH P_ED_PIT        /* DEPTH: how far the envelope moves it, -64..63 (twice that in CC steps); 0 OFF */
+#define P_EBASE P_ED_SHP         /* BASE: the value with the envelope at 0 */
+#define P_LCC P_LD_PIT           /* LFO CC: the same for the track's LFO */
+#define P_LDEPTH P_LD_FLT
+#define P_LBASE P_LD_SHP
+static int param_reserved(uint32_t id) { (void)id; return 0; }
+#else
 static int param_reserved(uint32_t id)
 { return (id>=P_RESERVED33 && id<=P_RESERVED36) || (id>=P_RESERVED45 && id<=P_RESERVED48); }
+#endif
 static int global_reserved(uint32_t id)
 { return (id>=G_RESERVED5 && id<=G_RESERVED11) || (id>=G_RESERVED24 && id<=G_RESERVED26); }
 

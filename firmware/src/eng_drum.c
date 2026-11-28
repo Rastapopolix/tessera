@@ -480,10 +480,15 @@ static const engine_t ENG_DRUM = {
     },
     .presets = DRUM_PRESETS,
     .npresets = NELEM(DRUM_PRESETS),
+#if TESSERA_MIDI_ONLY
+    .note_on = midi_only_note_on,
+    .render = midi_only_render,
+#else
     .note_on = drum_note_on,
     .render = drum_render,
     .amp = drum_amp,
     .block = drum_block,
+#endif
     .knob = {P_E1, P_E2, P_E3, P_E4},
     .poly = DV_NLANE,
 #if MELODEE_SID_KIT

@@ -181,9 +181,15 @@ static const param_desc_t TP[P_COUNT] = {
     [P_DEC] = PD("DEC", F_TIME, 0, 127, 70),
     [P_SUS] = PD("SUS", F_PCT, 0, 127, 90),
     [P_REL] = PD("REL", F_TIME, 0, 127, 60),
+#if TESSERA_MIDI_ONLY                                   /* (ENV CC, LFO CC: core.h P_ECC ..; voice.c tm_mod_tick) */
+    [P_ECC] = PD("CC", F_INT, 1, 119, 74),
+    [P_EDEPTH] = PD("DEPTH", F_BIPCT, -64, 63, 0),
+    [P_EBASE] = PD("BASE", F_INT, 0, 127, 0),
+#else
     [P_ED_FLT] = PD("FLT", F_BIPCT, -64, 63, 0),
     [P_ED_PIT] = PD("PIT", F_BIPCT, -64, 63, 0),
     [P_ED_SHP] = PD("SHP", F_BIPCT, -64, 63, 0),
+#endif
     [P_RECQ] = PE("QNT", N_RECQ, 0),
     [P_LSYNC] = PE("SYNC", N_LSYNC, 0),
     [P_LTRIG] = PE("TRIG", N_LTRIG, 0),
@@ -193,9 +199,15 @@ static const param_desc_t TP[P_COUNT] = {
     [P_LWAVE] = PE("WAVE", N_LWAVE, 0),
     [P_LPHASE] = PD("PHS", F_INT, 0, 127, 0),
     [P_LFADE] = PD("FADE", F_TIME, 0, 127, 0),
+#if TESSERA_MIDI_ONLY
+    [P_LCC] = PD("CC", F_INT, 1, 119, 1),
+    [P_LDEPTH] = PD("DEPTH", F_BIPCT, -64, 63, 0),
+    [P_LBASE] = PD("BASE", F_INT, 0, 127, 64),
+#else
     [P_LD_PIT] = PD("PIT", F_BIPCT, -64, 63, 0),
     [P_LD_FLT] = PD("FLT", F_BIPCT, -64, 63, 0),
     [P_LD_SHP] = PD("SHP", F_BIPCT, -64, 63, 0),
+#endif
     [P_LD_AMP] = PD("AMP", F_PCT, 0, 127, 0),
     [P_AMODE] = PE("MODE", N_AMODE, 0),
     [P_ARATE] = PE("RATE", N_DIV, 2),
@@ -213,10 +225,17 @@ static const param_desc_t TP[P_COUNT] = {
     [P_SDIV] = PE("DIV", N_DIV, 2),
     [P_SSWING] = PD("SWG", F_PCT, 0, 100, 0),
     [P_SGATE] = PD("GATE", F_PCT, 1, 127, 64),
+#if TESSERA_MIDI_ONLY                                   /* (MIDI FX: core.h P_MECHO ..; midi_out.c) */
+    [P_MECHO] = {"ECHO", F_ENUM, 0, 8, 0, (const char *const []){"OFF", "1", "2", "3", "4", "5", "6", "7", "8"}, 0},
+    [P_METIME] = {"TIME", F_ENUM, 0, 7, 5, (const char *const []){"1/32", "16T", "1/16", "8T", "16D", "1/8", "8D", "1/4"}, 0},
+    [P_MEFADE] = {"FADE", F_INT, 0, 100, 30, 0, "%"},
+    [P_MEPIT] = PD("PITCH", F_SEMI, -12, 12, 0),
+#else
     [P_RESERVED33] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED34] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED35] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED36] = PD("", F_INT, 0, 127, 0),
+#endif
     [P_VOICE] = PE("VCE", N_VOICE, 0),
     [P_GLIDE] = PD("GLD", F_TIME, 0, 127, 0),
     [P_GLMODE] = PE("GLMOD", N_GLMODE, 0),
@@ -225,10 +244,17 @@ static const param_desc_t TP[P_COUNT] = {
     [P_DETUNE] = PD("DTUNE", F_INT, 0, 127, 40),
     [P_PAN] = PD("PAN", F_BIPCT, -64, 63, 0),
     [P_MUTE] = PE("MUTE", N_ONOFF, 0),
+#if TESSERA_MIDI_ONLY
+    [P_MSTRUM] = PD("STRUM", F_TIME, 0, 84, 0),        /* (0 OFF, then GLIDE's curve: 1 ms .. ~440 ms) */
+    [P_MSDIR] = {"DIR", F_ENUM, 0, 2, 0, (const char *const []){"UP", "DOWN", "RAND"}, 0},
+    [P_MVEL] = PD("VEL", F_INT, 0, 127, 0),
+    [P_MHUMAN] = {"HUMAN", F_INT, 0, 100, 0, 0, "%"},
+#else
     [P_RESERVED45] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED46] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED47] = PD("", F_INT, 0, 127, 0),
     [P_RESERVED48] = PD("", F_INT, 0, 127, 0),
+#endif
 #define MSLOT(k) [P_M##k##SRC] = PE("SRC" #k, N_MSRC, 0), [P_M##k##DST] = PE("DST" #k, N_MDST, 0), \
                  [P_M##k##AMT] = PD("AMT" #k, F_BIPCT, -64, 63, 0)
     MSLOT(1), MSLOT(2), MSLOT(3), MSLOT(4),
@@ -415,6 +441,13 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         fmt_named = 1;
         return;
     }
+#if TESSERA_MIDI_ONLY
+    if (d == &TP[P_MSTRUM] && !v) {                    /* (STRUM 0: the notes together) */
+        str_cpy(val, "OFF", 8);
+        fmt_named = 1;
+        return;
+    }
+#endif
     switch (d->fmt) {
     case F_PCT:                                     /* a 0..100 range (SWG) is its value, others a share of 127 */
         fmt_int(val, d->max == 100 ? v : (v * 100 + 63) / 127);
@@ -583,7 +616,11 @@ static const page_t PAGES[] = {
     {"SEND FX 2", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX2TYPE, G_MFX2MIX, G_MFX2RATE, G_MFX2CHAR}},
     {"SEND FX 3", FAM_FX, SC_GLOBAL, GR_NONE, {G_MFX3TYPE, G_MFX3MIX, G_MFX3RATE, G_MFX3CHAR}},
     {"ENV", FAM_ENV, SC_TRACK, GR_ADSR, {P_ATK, P_DEC, P_SUS, P_REL}},
-    {"ENV DEST", FAM_ENV, SC_TRACK, GR_NONE, {P_ED_FLT, P_ED_PIT, P_ED_SHP, 0xFF}},   /* the former fourth slot: SEQ > TEMPO's QNT */
+#if TESSERA_MIDI_ONLY
+    {"ENV CC", FAM_ENV, SC_TRACK, GR_NONE, {P_ECC, P_EDEPTH, P_EBASE, 0xFF}},   /* (voice.c tm_mod_tick) */
+#else
+    {"ENV DEST", FAM_ENV, SC_TRACK, GR_NONE, {P_ED_FLT, P_ED_PIT, P_ED_SHP, 0xFF}},
+#endif   /* the former fourth slot: SEQ > TEMPO's QNT */
     /* Tessera: MODS first (where everything is routed), then the sources; LFO DEST, the fixed routes, last */
     {"MODS", FAM_LFO, SC_GLOBAL, GR_CORDS, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: the cords (cord.c, ui_cords.c), MOD's
                                                                      * place (MOD hidden: ui.c page_visible) */
@@ -593,7 +630,11 @@ static const page_t PAGES[] = {
     {"MOD", FAM_LFO, SC_TRACK, GR_MOD, {P_M1SRC, 0xFF, P_M1DST, P_M1AMT}},   /* KNOB 2: the route (mod_ui_slot); hidden (ui.c), its code
                                                                       * only in the detailed look */
     {"ORGANIC", FAM_LFO, SC_TRACK, GR_ORGANIC, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: SLOTH SPEED, OCHD RATE (organic.c) */
+#if TESSERA_MIDI_ONLY
+    {"LFO CC", FAM_LFO, SC_TRACK, GR_NONE, {P_LCC, P_LDEPTH, P_LBASE, 0xFF}},
+#else
     {"LFO DEST", FAM_LFO, SC_TRACK, GR_NONE, {P_LD_PIT, P_LD_FLT, P_LD_SHP, P_LD_AMP}},
+#endif
     {"SCALES", FAM_SCL, SC_TRACK, GR_SCALE_PICKER, {0xFF, P_SCALE, P_ROOT, P_QUANT}},
     {"SCL", FAM_SCL, SC_TRACK, GR_SCALE, {P_ROOT, 0xFF, P_QUANT, P_TRANS}}, /* K2: scale favorite */
     {"KEY", FAM_SCL, SC_GLOBAL, GR_KEYLINK, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KEY LINK, a row of SCL's list */
@@ -677,6 +718,10 @@ static const page_t PAGES[] = {
                                                                                    * channel, ROUT, the clock
                                                                                    * (ui_mono.c mo_pic_midiin) */
     {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
+#if TESSERA_MIDI_ONLY
+    {"ECHO", FAM_GLO, SC_TRACK, GR_NONE, {P_MECHO, P_METIME, P_MEFADE, P_MEPIT}},   /* Tessera MIDI: the FX button's */
+    {"FEEL", FAM_GLO, SC_TRACK, GR_NONE, {P_MSTRUM, P_MSDIR, P_MVEL, P_MHUMAN}},  /* (ui.c tm_midi_pages) */
+#endif
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
     {"PROJECT", FAM_SAVE, SC_GLOBAL, GR_SLOTS, {G_SLOT, G_BOOT, G_LOAD, G_SAVE}},

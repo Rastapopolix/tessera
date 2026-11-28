@@ -106,7 +106,8 @@ int main(void)
     uint32_t st, i, n1, n2, nb, checks = 0;
     tess_core_boot();
     load_demo();
-    CHECK(generate_styles() == 15u, "styles: %u", (unsigned)generate_styles());
+    CHECK(generate_styles() == (TESSERA_MIDI_ONLY ? 11u : 15u), "styles: %u", (unsigned)generate_styles());   /* (Tessera
+                                                     * MIDI: STATIC, CHAOS, FRACTURED, MIRROR left out) */
     for (st = 0; st < generate_styles(); st++) {
         const char *nm = generate_style_name(st);
         for (i = 0; i < (uint32_t)seeds; i++) {
@@ -124,6 +125,14 @@ int main(void)
             n2 = tess_core_save(b, sizeof b);
             CHECK(n2 == n1 && !memcmp(a, b, n1), "%s seed %08X: after is not the piece", nm, (unsigned)seed);
             checks += 3;
+#if TESSERA_MIDI_ONLY
+            {                                                    /* (no mod onto what acts on no MIDI: cord_dest_live) */
+                uint32_t k, dead = 0;
+                for (k = 0; k < CORD_LIVE; k++) dead += cord_get(k)->dst != CD_OFF && !cord_dest_live(cord_get(k)->dst);
+                CHECK(!dead, "%s seed %08X: %u mods onto a sound", nm, (unsigned)seed, (unsigned)dead);
+                checks++;
+            }
+#endif
         }
         n1 = made(st, 77u, 0, a);                                /* VARIATION 0 */
         n2 = made(st, 77u, 0, b);

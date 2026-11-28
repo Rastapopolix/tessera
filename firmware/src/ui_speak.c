@@ -559,11 +559,19 @@ static void sp_screen(void)
         sp_add(". ");
         sp_add(w);
     }
+#if TESSERA_MIDI_ONLY
+    if (ui.home)                                        /* (HOME: the bank's four tracks and their channels, as shown) */
+        for (k = UI_BASE; k < UI_BASE + UI_NT; k++) {
+            char nm[16];
+            trk_short_name(k, nm);
+            sp_add(k != UI_BASE ? ", T" : ". TRACKS T");
+#else
     if (ui.home)                                        /* (HOME: the four tracks' sounds too, as it shows them) */
         for (k = 0; k < NTRK; k++) {
             char nm[16];
             trk_short_name(k, nm);
             sp_add(k ? ", T" : ". SOUNDS T");
+#endif
             b[0] = (char)('1' + k);
             b[1] = ' ';
             str_cpy(b + 2, nm, sizeof b - 2u);
