@@ -598,10 +598,12 @@ static void page_sheet_open(void)
         break;
     case 7:
         sr.n = 0;
+#if !TESSERA_MIDI_ONLY                                  /* (Tessera MIDI: no sound to turn off) */
         sr_tracks("Sound T1", TX_SOUND);
+#endif
         sr_tracks("Drum map T1", TX_MIDI_DMAP);
         sr_tracks("Section PC T1", TX_SECTION_PC);
-        sheet_open("MIDI out", "sound, map, PC", SHEET_SR, sr.n);
+        sheet_open("MIDI out", TESSERA_MIDI_ONLY ? "map, PC" : "sound, map, PC", SHEET_SR, sr.n);
         break;
     case 8:
         sr.n = 0;

@@ -2248,6 +2248,21 @@ static void mo_pic_track_rows(void)
 static void mo_pic_midich(void)
 {
     mo_pic_track_rows();
+#if TESSERA_MIDI_ONLY
+    for (uint32_t k = 0; k < NTRK; k++) {               /* (all 8, in two columns: the channel and TRANSPOSE; the bank's
+                                                         * four, the knobs', inverse; ROUT / DRUM on MIDI OUT's sheet) */
+        int32_t y = 54 + (int32_t)(k % 4u) * 11, x = k < 4u ? 0 : 61;
+        uint32_t ch = midi_out_channel(&trk[k]);
+        char n[3] = {'T', (char)('1' + k), 0}, b[12];
+        if (k >= UI_BASE && k < UI_BASE + UI_NT) mo_invc(n, x + 3, y, MO_TRK(k));
+        else mo_text(n, x + 3, y, mo_tdim(k));
+        if (ch == MIDI_OUT_NONE) str_cpy(b, "OFF", sizeof b);
+        else fmt_int(b, (int32_t)ch + 1);
+        if (tessera.midi_tr[k]) midi_tr_text(b + str_len(b), tessera.midi_tr[k]);
+        mo_text(b, x + 18, y, ch == MIDI_OUT_NONE ? mo_tdim(k) : MO_TRK(k));
+    }
+    if (0)
+#endif
     for (uint32_t k = UI_BASE; k < UI_BASE + UI_NT; k++) {   /* (8 tracks: the selected track's bank) */
         int32_t y = 54 + (int32_t)(k - UI_BASE) * 11;
         uint32_t ch = midi_out_channel(&trk[k]);
