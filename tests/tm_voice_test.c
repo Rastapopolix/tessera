@@ -185,6 +185,35 @@ int main(void)
     chord(t, 100); chord(t, 0);
     mcheck("POLY after MONO: three notes again", ons(l, 16) == 3u && balanced());
 
+    /* MIXER LEVEL / PAN (CC 7 / 10): nothing at boot, every track's at PLAY and on a project load, one a block */
+    {
+        uint32_t i, k, n7 = 0, n10 = 0, ok = 1, most = 0, blk;
+        for (k = 0; k < NTRK; k++) { trk[k].p[P_LEVEL] = (int32_t)(60u + k); trk[k].p[P_PAN] = (int32_t)k - 4; }
+        ngot = 0;
+        for (i = 0; i < 40u; i++) { cord_tick(); drain(); }
+        mcheck("MIXER: no CC 7 / 10 at boot", ngot == 0u);
+        midi_out_start(); drain();
+        for (blk = 0; blk < 40u; blk++) {
+            uint32_t before = ngot;
+            cord_tick(); drain();
+            if (ngot - before > most) most = ngot - before;
+        }
+        for (i = 0; i < ngot; i++) {
+            uint32_t ch = got[i].st & 15u;
+            if ((got[i].st & 0xF0u) != 0xB0u || ch >= NTRK) continue;
+            if (got[i].d1 == 7) { n7++; ok &= got[i].d2 == 60u + ch; }
+            if (got[i].d1 == 10) { n10++; ok &= got[i].d2 == 60u + ch; }
+        }
+        mcheck("MIXER at PLAY: CC 7 and CC 10 for each of the 8 tracks", n7 == 8u && n10 == 8u && ok);
+        mcheck("  one CC a block", most == 1u);
+        ngot = 0;
+        for (i = 0; i < 40u; i++) { cord_tick(); drain(); }
+        mcheck("  then nothing while unchanged", ngot == 0u);
+        cord_mix_resend();                              /* (project_load's) */
+        for (i = 0; i < 40u; i++) { cord_tick(); drain(); }
+        mcheck("MIXER on a project load: all 16 again", ngot == 16u);
+        midi_out_stop(); drain(); run(441);
+    }
     printf("%s\n", mfails ? "FAILED" : "all ok");
     return mfails != 0;
 }

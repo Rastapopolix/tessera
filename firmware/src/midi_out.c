@@ -491,8 +491,14 @@ static void midi_out_key(const track_t *t, uint32_t note, uint32_t vel)
 
 static int midi_out_clock_on(void) { return settings_clock_out && !midi_clock.mode; }
 
+#if TESSERA_MIDI_ONLY
+static void cord_mix_resend(void);                      /* cord.c: MIXER LEVEL / PAN out again (CC 7 / 10) */
+#endif
 static void midi_out_start(void)
 {
+#if TESSERA_MIDI_ONLY
+    cord_mix_resend();
+#endif
     midi_out_clk = ~0u;
     midi_out_clk_live = (uint8_t)midi_out_clock_on();
     if (midi_out_clk_live)

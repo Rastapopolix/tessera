@@ -940,10 +940,17 @@ static __attribute__((noinline)) void cord_tempo_tick(void)
 
 #if TESSERA_MIDI_ONLY
 /* Tessera MIDI: a track's MIXER LEVEL and PAN out as CC 7 (volume) and CC 10 (pan, 64 the centre) on its MIDI OUT
- * channel, each block one changed (cord_tick): when it changes, not at boot (the gear's own levels stand until one is
- * turned; a project loaded with other ones sends them). Not with MIDI OUT OFF or the track's channel OFF; a muted track
- * still sends them (MUTE stops its notes) */
-static int16_t cord_mix_was[NTRK][2];                  /* the values last sent (or seen at boot), -1: none yet */
+ * channel, each block one (cord_tick): when it changes, and all of them again at PLAY and on a project load
+ * (cord_mix_resend), so the gear plays at the project's levels; not at boot (the gear's own levels stand until PLAY
+ * or a turn). Not with MIDI OUT OFF or the track's channel OFF (owed until it is on); a muted track still sends them
+ * (MUTE stops its notes) */
+static int16_t cord_mix_was[NTRK][2];                  /* the values last sent (or seen at boot), -1: none yet, -2: owed */
+static void cord_mix_resend(void)                       /* (seq.c midi_out_start, project.c project_load) */
+{
+    uint32_t k;
+    for (k = 0; k < NTRK; k++)
+        if (cord_mix_was[k][0] != -1) cord_mix_was[k][0] = cord_mix_was[k][1] = -2;   /* (before boot's look: no) */
+}
 static void cord_mix_tick(void)
 {
     static uint8_t seen;
@@ -960,7 +967,7 @@ static void cord_mix_tick(void)
         v[0] = clamp(t->p[P_LEVEL], 0, 127);
         v[1] = clamp(t->p[P_PAN] + 64, 0, 127);
         for (j = 0; j < 2u; j++) {
-            if (cord_mix_was[k][j] < 0) { cord_mix_was[k][j] = (int16_t)v[j]; continue; }   /* (boot: as it is) */
+            if (cord_mix_was[k][j] == -1) { cord_mix_was[k][j] = (int16_t)v[j]; continue; }   /* (boot: as it is) */
             if (v[j] == cord_mix_was[k][j] || ch == MIDI_OUT_NONE) continue;
             cord_mix_was[k][j] = (int16_t)v[j];
             midi_out_event(0x0Bu | (0xB0u | ch) << 8 | (j ? 10u : 7u) << 16 | (uint32_t)v[j] << 24);
