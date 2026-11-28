@@ -638,6 +638,9 @@ static int entries_note(const track_t *t, uint32_t note)
     b = 1u << tr;
     et.heard |= (uint8_t)b;
     et.avg[tr] = (uint16_t)(et.avg[tr] ? (int32_t)et.avg[tr] + ((int32_t)(note << 4) - (int32_t)et.avg[tr]) / 8 : (int32_t)(note << 4));
+#if TESSERA_MIDI_ONLY
+    if (track_solo && !(track_solo & b)) return 0;      /* (SOLO: the others' notes stay in, Entries still hears them) */
+#endif
     if (!(et_heard_out() & b) || (track_solo & b)) return 1;
     if ((et.pend_in & b) && tess_flourish(t, tr)) {   /* (its FLOURISH leads it in) */
         et.out &= (uint8_t)~b;
