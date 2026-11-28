@@ -2198,6 +2198,10 @@ static int sim_input(void)                              /* ui_input, every pass:
     return 1;
 }
 
+#if TESSERA_MIDI_ONLY
+static uint32_t tm_stop_t0;                             /* PLAY's press that stopped the transport | 1, while held */
+static void tm_panic(void) { midi_out_panic(); ui_message("ALL NOTES OFF"); }
+#endif
 static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
@@ -2233,6 +2237,12 @@ static void ui_input(void)
             m |= 1u << panel.btn[PG[k]];
         if (pressed & m)
             menu_leave();
+    }
+#endif
+#if TESSERA_MIDI_ONLY
+    if (tm_stop_t0) {                                   /* STOP (PLAY) held on 0.7 s: MIDI PANIC (midi_out.c) */
+        if (!((fm1_in.buttons >> panel.btn[B_PLAY]) & 1u)) tm_stop_t0 = 0;
+        else if (now - (tm_stop_t0 & ~1u) > OCT_HOLD_MS * 1000u * FM1_TICKS_PER_US) { tm_stop_t0 = 0; tm_panic(); }
     }
 #endif
     uint32_t bank_notes = notes;
@@ -2546,9 +2556,12 @@ static void ui_input(void)
             }
             if (layer_play())                           /* (GLO held: RESTART) */
                 break;
-            if (song.playing || seq_counting() || chain_busy())
+            if (song.playing || seq_counting() || chain_busy()) {
                 transport_req = 2;
-            else if (!ui.home && cur_page()->graph == GR_SONG)
+#if TESSERA_MIDI_ONLY
+                tm_stop_t0 = now | 1u;                  /* (held on: MIDI PANIC, below) */
+#endif
+            } else if (!ui.home && cur_page()->graph == GR_SONG)
                 chain_play_ui();
             else
                 transport_req = 1;

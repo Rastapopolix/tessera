@@ -43,7 +43,10 @@ static uint32_t midi_out_channel(const track_t *t)
  * start again until it did (its on is dropped instead). STOP then ends with All Notes Off (CC 123) on each channel the
  * tracks played on since START, owed the same way. */
 static uint32_t mo_owed[16][4];                         /* the offs owed, a bit each, by channel */
-static uint16_t mo_owed_n, mo_owed_ano, mo_used;       /* how many; CC 123 owed; the channels played on, a bit each */
+static uint16_t mo_owed_n, mo_used;                     /* how many; the channels played on, a bit each */
+static uint16_t mo_owed_cc[3];                          /* MO_CC[i] owed, a bit a channel */
+static const uint8_t MO_CC[3] = {123, 120, 121};        /* All Notes Off, All Sound Off, Reset All Controllers */
+#define mo_owed_ano (mo_owed_cc[0] | mo_owed_cc[1] | mo_owed_cc[2])
 static int mo_room(void) { return !usb_midi_out_ready() || mo_w - mo_r < MQ; }   /* (nowhere to go: nothing owed) */
 
 static void mo_owed_drain(void)
@@ -58,12 +61,13 @@ static void mo_owed_drain(void)
                 mo_owed[c][w] &= mo_owed[c][w] - 1u;
                 mo_owed_n--;
             }
-    for (c = 0; c < 16u && mo_owed_ano; c++)
-        if (mo_owed_ano >> c & 1u) {
-            if (!mo_room()) return;
-            midi_out_event(0x0Bu | (0xB0u | c) << 8 | 123u << 16);
-            mo_owed_ano &= (uint16_t)~(1u << c);
-        }
+    for (w = 0; w < 3u; w++)
+        for (c = 0; c < 16u && mo_owed_cc[w]; c++)
+            if (mo_owed_cc[w] >> c & 1u) {
+                if (!mo_room()) return;
+                midi_out_event(0x0Bu | (0xB0u | c) << 8 | (uint32_t)MO_CC[w] << 16);
+                mo_owed_cc[w] &= (uint16_t)~(1u << c);
+            }
 }
 
 static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: the note-off */
@@ -84,7 +88,7 @@ static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: 
 
 static void midi_out_all_notes_off(void)                /* (STOP: after the offs) */
 {
-    mo_owed_ano |= mo_used;
+    mo_owed_cc[0] |= mo_used;
     mo_used = 0;
     mo_owed_drain();
 }
@@ -517,6 +521,23 @@ static void midi_out_stop(void)
         midi_out_event(0x0Fu | 0xFCu << 8);
     midi_out_clk_live = 0;
 }
+
+#if TESSERA_MIDI_ONLY
+/* MIDI PANIC (STOP held on, GLO + PLAY while stopped: ui_input.c, ui_layer.c): every track lets go of its notes (their
+ * offs, the MIDI FX queue's), then All Notes Off, All Sound Off and Reset All Controllers (CC 123, 120, 121) on all
+ * 16 channels, for notes and pedals this firmware never sent too (MIDI IN thru, another sequencer); owed as the offs
+ * are, so a slow device gets them all. MIXER LEVEL / PAN (CC 7 / 10, which 121 leaves) go out again */
+static void midi_out_panic(void)
+{
+    uint32_t k;
+    for (k = 0; k < NTRK; k++)
+        trk_all_off(&trk[k]);
+    mo_used = 0;
+    mo_owed_cc[0] = mo_owed_cc[1] = mo_owed_cc[2] = 0xFFFFu;
+    mo_owed_drain();
+    cord_mix_resend();
+}
+#endif
 
 /* seq_advance: n samples played (beat: a beat's); the first pulse on START's block, then every 1/PPQN beat.
  * CLOCK OUT turned off while playing sends STOP; turned on, it waits for the next START */

@@ -435,11 +435,18 @@ static void layer_knob(uint32_t k, int32_t s)
     }
 }
 
-/* PLAY with GLO held open: RESTART (from the top, playing on); stopped: PLAY. 1 = done here */
+/* PLAY with GLO held open: RESTART (from the top, playing on); stopped: PLAY (Tessera MIDI: MIDI PANIC). 1 = done
+ * here */
 static int layer_play(void)
 {
     if (layer_open() != LAYER_GLO || chain_busy())
         return 0;
+#if TESSERA_MIDI_ONLY
+    if (!song.playing && !seq_counting()) {             /* (stopped: MIDI PANIC, as STOP held on; ui_input.c) */
+        tm_panic();
+        return 1;
+    }
+#endif
     if (song.g[G_CLOCK] && song.playing) {
         ui_message("CLOCK IS EXT");
         return 1;
