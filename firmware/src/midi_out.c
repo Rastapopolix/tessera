@@ -103,7 +103,7 @@ static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: 
 /* Tessera MIDI's MIDI FX, a track's (MIDI FX / MIDI FX 2 under the FX button; core.h P_MECHO ..). Every note the
  * track sends passes here (midi_out_note): VEL fixes its velocity, HUMAN plays it up to 20 ms late and up to 20
  * softer or harder, STRUM spreads a chord's notes (those starting in one block) by its ms, UP, DOWN or at random, and
- * ECHO repeats it every TIME (a beat's 1/32 .. 1/4), each repeat FADE % softer and PITCH semitones on, a repeat as
+ * ECHO repeats it every TIME (a beat's 1/32 .. 1/4, or 10 .. 500 ms), each repeat FADE % softer and PITCH semitones on, a repeat as
  * long as half the TIME. A note's off goes out after its on, as late as the on went; a note started again right
  * after its off (a repeated or tied step) waits 1.5 ms after it, so the envelope on the other side fires again (an
  * off and an on in one USB packet are one event to many synths). The queue: 96 events; full, a
@@ -147,7 +147,10 @@ static void mfx_on_at(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel, uint
     const track_t *t = &trk[k];
     uint32_t r = (uint32_t)clamp(t->p[P_MECHO], 0, 8), i;
     static const uint8_t TIME24[8] = {3, 4, 6, 8, 9, 12, 18, 24};   /* a beat's 24ths: 1/32 16T 1/16 8T 16D 1/8 8D 1/4 */
-    uint32_t step = seq_beat_samples() * TIME24[clamp(t->p[P_METIME], 0, 7)] / 24u;
+    static const uint16_t MFX_MS[12] = {10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500};   /* then ms, whatever
+                                                                                                * the tempo */
+    uint32_t ti = (uint32_t)clamp(t->p[P_METIME], 0, 19);
+    uint32_t step = ti < 8u ? seq_beat_samples() * TIME24[ti] / 24u : mfx_ms(MFX_MS[ti - 8u]);
     int32_t v = (int32_t)vel, n = (int32_t)note;
     mfx_late[k][note & 127u] = mfx_late_ms(late);
     mfx_put(k, ch, note, vel, late);

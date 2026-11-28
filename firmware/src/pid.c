@@ -400,7 +400,7 @@ static const pid_entry_t PIDS[] = {             /* in id order (pid_test checks 
     T_(P_MUTE, "MUTE", "ON silences the track; it keeps playing in time."),
 #if TESSERA_MIDI_ONLY
     T_(P_MECHO, "MIDI ECHO", "Repeats each note the track sends, up to 8 times: an echo for any gear. OFF: none."),
-    T_(P_METIME, "ECHO TIME", "The time between the echoes, a part of the beat: 1/32 to 1/4 (T triplet, D dotted)."),
+    T_(P_METIME, "ECHO TIME", "The time between the echoes: a part of the beat, 1/32 to 1/4 (T triplet, D dotted), or 10 to 500 ms whatever the tempo."),
     T_(P_MEFADE, "ECHO FADE", "How much softer each echo is than the one before, in %: 0 keeps them all as loud."),
     T_(P_MEPIT, "ECHO PITCH", "How far each echo moves, in semitones: 12 climbs an octave a repeat, 0 repeats the note."),
     T_(P_MSTRUM, "STRUM", "Spreads the notes of a chord out, this long apart, like a strummed guitar: a few ms tight, up to ~440 ms a slow roll. OFF: together."),

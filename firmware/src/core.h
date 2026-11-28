@@ -308,7 +308,7 @@ static int param_master_fx(uint32_t id){return id>=G_MFXTYPE && id<=G_MFX3CHAR;}
 /* Tessera MIDI's MIDI FX (midi_out.c mfx_*): a track's, in the eight reserved slots, so they save with its
  * parameters (no new save part). The standard build zeroes them on load: they are Tessera MIDI's only */
 #define P_MECHO P_RESERVED33     /* ECHO: repeats of each note, 0 OFF .. 8 */
-#define P_METIME P_RESERVED34    /* TIME: between them, a beat's 1/32 .. 1/4 (MFX_TIME) */
+#define P_METIME P_RESERVED34    /* TIME: between them, a beat's 1/32 .. 1/4, then 10 .. 500 ms */
 #define P_MEFADE P_RESERVED35    /* FADE: each repeat this % softer (0: as loud; a project from before: 0) */
 #define P_MEPIT P_RESERVED36     /* PITCH: each repeat moves, semitones */
 #define P_MSTRUM P_RESERVED45    /* STRUM: ms between a chord's notes */

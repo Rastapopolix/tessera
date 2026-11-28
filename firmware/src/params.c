@@ -227,7 +227,9 @@ static const param_desc_t TP[P_COUNT] = {
     [P_SGATE] = PD("GATE", F_PCT, 1, 127, 64),
 #if TESSERA_MIDI_ONLY                                   /* (MIDI FX: core.h P_MECHO ..; midi_out.c) */
     [P_MECHO] = {"ECHO", F_ENUM, 0, 8, 0, (const char *const []){"OFF", "1", "2", "3", "4", "5", "6", "7", "8"}, 0},
-    [P_METIME] = {"TIME", F_ENUM, 0, 7, 5, (const char *const []){"1/32", "16T", "1/16", "8T", "16D", "1/8", "8D", "1/4"}, 0},
+    [P_METIME] = {"TIME", F_ENUM, 0, 19, 5, (const char *const []){"1/32", "16T", "1/16", "8T", "16D", "1/8", "8D", "1/4",
+                  "10ms", "20ms", "30ms", "40ms", "50ms", "75ms", "100ms", "150ms", "200ms", "300ms", "400ms", "500ms"}, 0},
+                                                    /* (the ms free of the tempo: midi_out.c MFX_MS) */
     [P_MEFADE] = {"FADE", F_INT, 0, 100, 30, 0, "%"},
     [P_MEPIT] = PD("PITCH", F_SEMI, -12, 12, 0),
 #else

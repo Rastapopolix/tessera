@@ -56,6 +56,26 @@ int main(void)
         mcheck("repeats: +12 a time, 50 % each, an eighth apart", okp);
     }
     mcheck("ECHO: every note ends", balanced());
+    /* TIME in ms (8.. : 10 .. 500 ms), the same at any tempo */
+    {
+        static const uint16_t MS[12] = {10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 500};
+        int okt = 1;
+        for (uint32_t ti = 8; ti < 20u; ti++)
+            for (uint32_t bpm = 60; bpm <= 180u; bpm += 120u) {
+                uint32_t o[3], c = 0, want = MS[ti - 8u] * 441u / 10u;
+                song.g[G_BPM] = (int16_t)bpm;
+                ngot = 0; clock_s = 0;
+                t->p[P_MECHO] = 2; t->p[P_MEFADE] = 0; t->p[P_MEPIT] = 0; t->p[P_METIME] = (int32_t)ti;
+                midi_out_note(t, 60, 100); drain(); run(64);
+                midi_out_note(t, 60, 0); drain(); run(2u * 44100u);
+                for (i = 0; i < ngot && c < 3u; i++) if ((got[i].st & 0xF0u) == 0x90u && got[i].vel) o[c++] = i;
+                if (c != 3u || got[o[1]].at - got[o[0]].at + 64u < want || got[o[1]].at - got[o[0]].at > want + 64u
+                    || got[o[2]].at - got[o[1]].at + 64u < want || got[o[2]].at - got[o[1]].at > want + 64u || !balanced())
+                    okt = 0;
+            }
+        mcheck("ECHO TIME 10 .. 500 ms: repeats that far apart at 60 and 180 BPM", okt);
+        song.g[G_BPM] = 120;
+    }
     t->p[P_MECHO] = 0; t->p[P_MEPIT] = 0;
     /* STRUM 40 (GLIDE's curve: ~18 ms) DOWN, VEL 90 */
     ngot = 0; clock_s = 0;
