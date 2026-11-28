@@ -4621,3 +4621,6 @@ static uint32_t generate_last(uint32_t *style, uint32_t *seed, uint32_t *variati
 }
 
 #endif /* TESS_GENERATE */
+#if TESSERA_MIDI_ONLY
+#undef cord_set                                     /* (rnd_cord_set: GENERATE's own, above) */
+#endif
