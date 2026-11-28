@@ -110,7 +110,9 @@ static uint32_t mfx_n, mfx_now;                         /* events waiting; the s
 static uint16_t mfx_late[NTRK][128];                    /* each note's on went out this late, ms, rounded up (its off too) */
 typedef struct { uint8_t ch, note, vel, off; } mfx_pend_t;
 static mfx_pend_t mfx_pend[NTRK][8];                    /* STRUM: this block's new notes, spread at its end */
-static uint8_t mfx_npend[NTRK];
+static uint8_t mfx_npend[NTRK], mfx_legato;           /* mfx_legato: the off being sent is LEGATO's, ending the
+                                                         * note before the one just started (midi_out.c mo_mono_to) */
+static uint32_t mfx_last[NTRK];                         /* the latest note on went out this late, samples (HUMAN's) */
 static uint32_t mfx_rnd(void) { static uint32_t x = 0x2545F491u; x ^= x << 13; x ^= x >> 17; x ^= x << 5; return x; }
 static uint32_t mfx_ms(uint32_t ms) { return ms * 441u / 10u; }   /* (44.1 kHz) */
 static uint16_t mfx_late_ms(uint32_t late) { late = (late * 10u + 440u) / 441u; return (uint16_t)(late > 65535u ? 65535u : late); }
@@ -159,6 +161,7 @@ static void mfx_on(uint32_t k, uint32_t ch, uint32_t note, uint32_t vel)
         v += (int32_t)(mfx_rnd() % (2u * (h * 20u / 100u) + 1u)) - (int32_t)(h * 20u / 100u);
     }
     v = clamp(v, 1, 127);
+    mfx_last[k] = late;
     if (t->p[P_MSTRUM] > 0 && mfx_npend[k] < 8u) {     /* STRUM: spread at the block's end (mfx_tick) */
         mfx_pend_t *p = &mfx_pend[k][mfx_npend[k]++];
         p->ch = (uint8_t)ch; p->note = (uint8_t)note; p->vel = (uint8_t)v; p->off = 0;
@@ -173,7 +176,10 @@ static void mfx_off(uint32_t k, uint32_t ch, uint32_t note)
     uint32_t i;
     for (i = 0; i < mfx_npend[k]; i++)                   /* its on not out yet (STRUM): it ends right after it */
         if (mfx_pend[k][i].note == note) { mfx_pend[k][i].off = 1; return; }
-    mfx_put(k, ch, note, 0, mfx_ms(mfx_late[k][note & 127u]));
+    i = mfx_ms(mfx_late[k][note & 127u]);
+    if (mfx_legato && i < mfx_last[k] + mfx_ms(1u))     /* LEGATO: after the new note's on, whatever HUMAN did */
+        i = mfx_last[k] + mfx_ms(1u);
+    mfx_put(k, ch, note, 0, i);
 }
 
 /* a track's waiting notes: the offs out now, the ons dropped (midi_out_flush) */
@@ -378,7 +384,8 @@ static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
 #if TESSERA_MIDI_ONLY
 /* VOICE MONO / LEGATO / UNISON over MIDI: one note at a time. The notes held are a stack (as voice.c's mono_stack, kept
  * here: MIDI OUT's notes are not the voices'); PRIO LAST / LOW / HIGH picks the one that sounds. A new winner ends the
- * old note first; a released winner hands over to the next held note. A drum track (VOICE does not apply) plays
+ * old note first in MONO, just after its own on in LEGATO and UNISON (an overlap: a mono synth glides, its envelope
+ * goes on); a released winner hands over to the next held note. A drum track (VOICE does not apply) plays
  * every note */
 static uint32_t mo_mono_pick(uint32_t k, uint32_t prio)
 {
@@ -399,6 +406,14 @@ static void mo_mono_drop(uint32_t k, uint32_t note)
 
 static void mo_mono_to(const track_t *t, uint32_t k, uint32_t from, uint32_t to, uint32_t vel)   /* from + 1, 0: none */
 {
+    if (from && trk_vmode(t) != V_MONO) {               /* LEGATO / UNISON: the new note on first, the old one's off a
+                                                         * millisecond after it, so a mono synth on the other side glides */
+        midi_out_note1(t, to, vel);
+        mfx_legato = 1;
+        midi_out_note1(t, from - 1u, 0);
+        mfx_legato = 0;
+        return;
+    }
     if (from) midi_out_note1(t, from - 1u, 0);
     midi_out_note1(t, to, vel);
 }

@@ -126,6 +126,28 @@ int main(void)
     midi_out_stop(); drain(); run(441);
     chord(t, 0);
     mcheck("MONO: STOP mid-chord, every note ends", balanced());
+    /* LEGATO: the new note's on before the old note's off (an overlap of about a millisecond), also with HUMAN */
+    for (uint32_t h = 0; h <= 100u; h += 100u) {
+        uint32_t i, k, ok = 1, n = 0;
+        fresh(t, V_LEGATO, 0);
+        t->p[P_MHUMAN] = (int32_t)h;
+        for (k = 0; k < 8u; k++) { midi_out_note(t, 60u + k, 100); drain(); run(4410); }   /* each held on, a line up */
+        for (k = 0; k < 8u; k++) midi_out_note(t, 60u + k, 0);
+        drain(); run(4410);
+        for (k = 1; k < 8u; k++) {
+            uint32_t on_at = ~0u, off_at = ~0u;
+            for (i = 0; i < ngot; i++) {
+                if (is_on(&got[i]) && got[i].d1 == 60u + k && on_at == ~0u) on_at = i;
+                if (is_off(&got[i]) && got[i].d1 == 60u + k - 1u && off_at == ~0u) off_at = i;
+            }
+            ok &= on_at < off_at && off_at != ~0u;
+            n += on_at < off_at && got[off_at].at - got[on_at].at <= 64u + 32u;
+        }
+        mcheck(h ? "LEGATO, HUMAN 100: still each on before the old note's off" : "LEGATO: each new on before the old note's off", ok);
+        mcheck("  never more than two notes on, every note ends", max_sounding() == 2u && balanced());
+        if (!h) mcheck("  the overlap about a millisecond", n == 7u);
+    }
+    t->p[P_MHUMAN] = 0;
     /* POLY again after MONO: every note */
     fresh(t, V_POLY, 0);
     chord(t, 100); chord(t, 0);
