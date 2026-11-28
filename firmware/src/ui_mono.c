@@ -463,7 +463,11 @@ static void mo_head(void)
     if (UI_BASE && !(ui.msg_t && ui.msg[0]))            /* tracks 5..8 (8 tracks): their bank, inverted, before the */
         right -= mo_tw("5-8") + 4;                      /* dots (1..4: nothing, as the FM-1) */
 #endif
+#if TESSERA_MIDI_ONLY
+    sound_name(TSEL, sub);                              /* (no engine: the selected track's channel) */
+#else
     str_cpy(sub, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), sizeof sub);
+#endif
     mo_place(at);                                       /* more pages than the footer shows: where this one is */
     room = right - mo_tw(sub) - 4 - (at[0] ? mo_tw(at) + 6 : 0);
     if (bat >= 0)
@@ -3495,6 +3499,10 @@ static void mo_stage_col(uint32_t k, int top)
         stage_entry(k, &src, &kk);
         cat = entry_cat(src, kk) % CAT_N;
         if (arm) str_cpy(a, "REC", sizeof a);
+#if TESSERA_MIDI_ONLY
+        else if (k < TESSERA_TRACKS) mo_abbr(a, TX_N_MODE[tessera.mode[k] % TESS_ENG_COUNT]);   /* (no sound category:
+                                                         * what plays the track: STEP, TURING ..) */
+#endif
         else if (cat == CAT_DRUM) str_cpy(a, "DRUM", sizeof a);
         else if (cat == CAT_KEYS) str_cpy(a, "CHRD", sizeof a);
         else if (cat && cat != CAT_OTHER) mo_abbr(a, CAT_NAME[cat]);
@@ -3511,7 +3519,11 @@ static void mo_stage_col(uint32_t k, int top)
         mo_textc(b, cx, 31, ink);
     }
     if (top) {
+#if TESSERA_MIDI_ONLY
+        str_cpy(a, t->p[P_VOICE] == V_POLY ? "POLY" : "MONO", 5);   /* (no engine: how the part plays on the gear) */
+#else
         str_cpy(a, eng_abbr(ENGINES[eng_idx(t->eng_req)]->name), 5);
+#endif
         mo_textc(a, cx, 41, dim);
         mo_fill(x0 + 3, 50, 13, 9, ink);                /* the pattern playing; the next one dashed */
         mo_text(chip, x0 + 4, 51, MO_BG);
@@ -3583,12 +3595,18 @@ static void mo_stage_head(void)
 #endif
     }
     if (!msg && !lit) {                                 /* (a message: in the engine's place too; overload: the dots) */
+#if TESSERA_MIDI_ONLY
+        sound_name(TSEL, b);                            /* (no engine: the selected track's channel) */
+#else
         str_cpy(b, eng_abbr(ENGINES[TSEL->eng_req % NENGINES]->name), 8);
+#endif
 #if CORE_TRACKS > 4
         if (right > 118) right = 118;
-        if (UI_BASE) {                                  /* tracks 5..8: their bank, inverted, after the engine (mo_head) */
-            right -= mo_tw("5-8") + 4;
-            mo_inv("5-8", right + 3, 1);
+        if (UI_BASE || TESSERA_MIDI_ONLY) {             /* tracks 5..8: their bank, inverted, after the engine (mo_head);
+                                                         * Tessera MIDI: 1-4 too, so the other bank is seen to be there */
+            const char *bk = UI_BASE ? "5-8" : "1-4";
+            right -= mo_tw(bk) + 4;
+            mo_inv(bk, right + 3, 1);
         }
         mo_textr(b, right, 1, MO_DIM);
 #else
@@ -4693,7 +4711,7 @@ static void mo_slot_sound(void)
 {
     char nm[20];
     sound_name(TSEL, nm);
-    mo_sound_strip(PV_SOUND_Y - 20, ENGINES[eng_idx(TSEL->eng_req)]->name, nm);
+    mo_sound_strip(PV_SOUND_Y - 20, TM_ENG(ENGINES[eng_idx(TSEL->eng_req)]->name), nm);
 }
 /* the line over the page tabs (mo_foot draws it on row 109, which a slot or list page's foot, from row 110, leaves
  * out) */

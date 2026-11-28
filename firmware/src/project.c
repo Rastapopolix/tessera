@@ -974,7 +974,12 @@ static void persist_boot(void)                    /* before settings_init / pane
                 proj_fetch(i);
     }
     settings_init();                               /* maintenance uses the saved palette */
+#if TESSERA_MIDI_ONLY
+    up_cache_reset();                              /* (Tessera MIDI: no presets, their storage the projects', storage.c;
+                                                    * no boot work for them, which would show before the splash) */
+#else
     up_boot();                                     /* user presets */
+#endif
 #endif
 }
 

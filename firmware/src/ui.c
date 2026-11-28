@@ -473,17 +473,19 @@ static int gen_pattern_page(const page_t *pg)          /* (params.c page_id) */
 static uint8_t ui_csec;                                 /* (below: the sections on) */
 #endif
 #if TESSERA_MIDI_ONLY
-/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects, ENV DEST and LFO DEST, the sound's EDIT pages
- * (VOICE stays: how a part plays its notes on the gear), PRESETS and USER (SAVE opens PROJECT). ENV and LFO stay: mod
- * sources, for CCs */
+/* Tessera MIDI: no sound, so no pages that shape one. Gone: the effects (FX opens MIDI OUT and MIDI IN instead,
+ * tm_midi_pages), ENV DEST and LFO DEST, the sound's EDIT pages and VOICE 3 (VOICE stays: how a part plays its notes
+ * on the gear), PRESETS and USER (SAVE opens PROJECT), SYSTEM (voices, CPU, tuning). ENV and LFO stay: mod sources,
+ * for CCs */
 static int midi_page_gone(uint32_t i)
 {
     const page_t *pg = &PAGES[i];
     if (pg->fam == FAM_FX || pg->graph == GR_BROWSE || pg->graph == GR_USER || pg->graph == GR_FMSTORE)
         return 1;
-    if (str_eq(pg->title, "ENV DEST") || str_eq(pg->title, "LFO DEST"))
+    if (str_eq(pg->title, "ENV DEST") || str_eq(pg->title, "LFO DEST") || str_eq(pg->title, "VOICE 3") ||
+        str_eq(pg->title, "SYSTEM"))                    /* (VOICE 3: the stereo spread; SYSTEM: voices, CPU, tuning) */
         return 1;
-    return pg->fam == FAM_EDIT && !str_prefix(pg->title, "VOICE");
+    return pg->fam == FAM_EDIT && !str_eq(pg->title, "VOICE");
 }
 #endif
 static int page_visible(uint32_t i)
@@ -915,8 +917,33 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
 /* a group's button: from elsewhere the page last used there (first time its first; SAVE always USER), again the next
  * one, after the last the first (the button wraps; SELECT stops at the ends: page_scroll). One routine for every
  * group (Theo 2026-11-26: the buttons act alike) */
+#if TESSERA_MIDI_ONLY
+/* Tessera MIDI's FX button (no effects): MIDI OUT, again MIDI IN (GLO's pages, where they stay) */
+static int tm_midi_pages(void)
+{
+    uint32_t i, out = NPAGES, in = NPAGES;
+    for (i = 0; i < NPAGES; i++) {
+        if (PAGES[i].graph == GR_MIDICH) out = i;
+        else if (str_eq(PAGES[i].title, "MIDI IN")) in = i;
+    }
+    if (out >= NPAGES || in >= NPAGES) return 0;
+    ui.page = (uint8_t)(!ui.home && ui.page == out ? in : out);
+    ui.home = 0;
+    page_entered();
+    ui.via = (uint8_t)FAM_GLO;
+    return 1;
+}
+#endif
 static void open_family(uint32_t fam)
 {
+#if TESSERA_MIDI_ONLY
+    if (fam == FAM_FX && tm_midi_pages())
+        return;
+    if (fam == FAM_ENV) {                               /* (no envelope to shape: say so, not nothing) */
+        ui_message("NO ENV IN MIDI");
+        return;
+    }
+#endif
     if (fam == FAM_ARP || ((fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam))) {   /* ARP's lane (ui.c
                                                          * arp_page); ENV / LFO of FM6 */
         uint8_t pg[NPAGES];
@@ -941,7 +968,7 @@ static void open_family(uint32_t fam)
             if (in_fam(i, fam) && page_visible(i)) break;
         }
         ui.page = (uint8_t)i;
-    } else if (fam == FAM_SAVE) {
+    } else if (fam == FAM_SAVE && !TESSERA_MIDI_ONLY) {   /* (Tessera MIDI: no sounds to save; SAVE: PROJECT, below) */
         uint32_t i;
         for (i = 0; i < NPAGES; i++)
             if (PAGES[i].graph == GR_USER) break;
