@@ -311,11 +311,17 @@ static void tm_mod_tick(uint32_t n)                     /* (mix.c mix_block, eac
 #define MFX_OFF(k, ch, note) midi_out_send(ch, note, 0)
 #endif
 
+#if TESSERA_MIDI_ONLY
+static uint8_t mo_mono[NTRK][8], mo_mono_n[NTRK], mo_mono_out[NTRK], mo_mono_vel[NTRK];   /* VOICE MONO over MIDI
+                                                         * (midi_out_note): the notes held, the one out + 1, its velocity */
+#endif
+
 /* every note track k still has on goes off */
 static void midi_out_flush(uint32_t k)
 {
 #if TESSERA_MIDI_ONLY
     mfx_purge(k);
+    mo_mono_n[k % NTRK] = 0; mo_mono_out[k % NTRK] = 0;
 #endif
     for (uint32_t w = 0; w < 4u; w++)
         for (uint32_t b = midi_out_held[k][w]; b; b &= b - 1u)
@@ -335,7 +341,11 @@ static uint32_t midi_out_map(uint32_t dm, uint32_t note)
 }
 static uint8_t midi_out_dm[NTRK];                        /* the DRUM MAP the notes held went out with */
 
+#if TESSERA_MIDI_ONLY
+static void midi_out_note1(const track_t *t, uint32_t note, uint32_t vel)   /* (midi_out_note: MONO's choice first) */
+#else
 static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
+#endif
 {
     uint32_t k = trk_index(t), ch = midi_out_channel(t), bit, *w;
     uint32_t dm = k < TESSERA_TRACKS && (drum_track(t) || tessera.mode[k] == TESS_ENG_GRIDS) ? tessera.midi_dmap[k] : 0u;
@@ -364,6 +374,72 @@ static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
     MFX_ON(k, ch, (uint32_t)s, vel > 127u ? 127u : vel);
     *w |= bit;
 }
+
+#if TESSERA_MIDI_ONLY
+/* VOICE MONO / LEGATO / UNISON over MIDI: one note at a time. The notes held are a stack (as voice.c's mono_stack, kept
+ * here: MIDI OUT's notes are not the voices'); PRIO LAST / LOW / HIGH picks the one that sounds. A new winner ends the
+ * old note first; a released winner hands over to the next held note. A drum track (VOICE does not apply) plays
+ * every note */
+static uint32_t mo_mono_pick(uint32_t k, uint32_t prio)
+{
+    uint32_t i, n = mo_mono[k][mo_mono_n[k] - 1u];
+    for (i = 0; i < mo_mono_n[k]; i++)
+        if (prio == 1u ? mo_mono[k][i] < n : prio == 2u && mo_mono[k][i] > n)
+            n = mo_mono[k][i];
+    return n;
+}
+
+static void mo_mono_drop(uint32_t k, uint32_t note)
+{
+    uint32_t i, j = 0;
+    for (i = 0; i < mo_mono_n[k]; i++)
+        if (mo_mono[k][i] != note) mo_mono[k][j++] = mo_mono[k][i];
+    mo_mono_n[k] = (uint8_t)j;
+}
+
+static void mo_mono_to(const track_t *t, uint32_t k, uint32_t from, uint32_t to, uint32_t vel)   /* from + 1, 0: none */
+{
+    if (from) midi_out_note1(t, from - 1u, 0);
+    midi_out_note1(t, to, vel);
+}
+
+static void midi_out_note(const track_t *t, uint32_t note, uint32_t vel)
+{
+    uint32_t k = trk_index(t) % NTRK, out, want;
+    if (trk_vmode(t) == V_POLY) {                       /* (a mode change: the stack starts afresh) */
+        mo_mono_n[k] = 0; mo_mono_out[k] = 0;
+        midi_out_note1(t, note, vel);
+        return;
+    }
+    note &= 127u;
+    out = mo_mono_out[k];
+    if (vel) {
+        mo_mono_drop(k, note);
+        if (mo_mono_n[k] >= sizeof mo_mono[k]) mo_mono_drop(k, mo_mono[k][0]);   /* (full: the oldest goes) */
+        mo_mono[k][mo_mono_n[k]++] = (uint8_t)note;
+        mo_mono_vel[k] = (uint8_t)(vel > 127u ? 127u : vel);
+        want = mo_mono_pick(k, (uint32_t)t->p[P_PRIO]);
+        if (out == want + 1u && want != note)
+            return;                                     /* LOW / HIGH: this note does not win */
+        mo_mono_to(t, k, out == want + 1u ? 0u : out, want, vel);   /* (the same note again: it starts again) */
+        mo_mono_out[k] = (uint8_t)(want + 1u);
+        return;
+    }
+    mo_mono_drop(k, note);
+    if (out != note + 1u) {
+        midi_out_note1(t, note, 0);                     /* (not the one sounding: nothing out, or a note from before) */
+        return;
+    }
+    if (!mo_mono_n[k]) {
+        midi_out_note1(t, note, 0);
+        mo_mono_out[k] = 0;
+        return;
+    }
+    want = mo_mono_pick(k, (uint32_t)t->p[P_PRIO]);     /* back to a note still held */
+    mo_mono_to(t, k, out, want, mo_mono_vel[k]);
+    mo_mono_out[k] = (uint8_t)(want + 1u);
+}
+#endif
 
 /* voice.c trk_note_on / trk_note_off: the sequencer's notes (ALL) */
 static void midi_out_on(const track_t *t, uint32_t note, uint32_t vel)
