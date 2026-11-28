@@ -81,6 +81,10 @@ def texts():
     body = re.sub(r"^#if (TESS_ATLAS_BANKS|TESS_FLOURISH|TESS_GEN_FIT|TESS_CH_NOTES|TESS_BUS_CD)\b.*?^#endif[^\n]*$", "", body, flags=re.S | re.M)
     # (TESS_LFO_SLOPE, the plugin's: the device packs the #else branch, the FM-1's texts)
     body = re.sub(r"^#if TESS_LFO_SLOPE\b.*?^#else[^\n]*$(.*?)^#endif[^\n]*$", r"\1", body, flags=re.S | re.M)
+    # (TESSERA_MIDI_ONLY, Tessera MIDI's: an accessible build, no help cards, no pack; the pack is the standard
+    # build's, so its #else branch, or nothing)
+    body = re.sub(r"^#if TESSERA_MIDI_ONLY\b((?:(?!^#endif).)*?)^#else[^\n]*$(.*?)^#endif[^\n]*$", r"\2", body, flags=re.S | re.M)
+    body = re.sub(r"^#if TESSERA_MIDI_ONLY\b.*?^#endif[^\n]*$", "", body, flags=re.S | re.M)
     macros, out, i = {}, [], body.index("{") + 1
     for m in re.finditer(r"^#define\s+(\w+)\s+(.*)$", body, re.M):
         macros[m.group(1)] = strings(m.group(2), macros)
