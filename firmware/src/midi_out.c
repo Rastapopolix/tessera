@@ -35,10 +35,65 @@ static uint32_t midi_out_channel(const track_t *t)
     return (first + trk_index(t)) & 15u;
 }
 
+#if TESSERA_MIDI_ONLY
+/* A note-off is never lost. The USB queue (usb.c midi_out_q, MQ 64) drops what does not fit, and in Tessera MIDI eight
+ * tracks of chords put a step's offs and ons into it in one block, while a device on the host port takes a packet at a
+ * time and may NAK for a while (Theo on tm2: PLAY|STOP left notes on a Digitone). So an off that does not fit is owed:
+ * it goes out first, as soon as there is room (each block, mfx_tick, and before any other note), and the note does not
+ * start again until it did (its on is dropped instead). STOP then ends with All Notes Off (CC 123) on each channel the
+ * tracks played on since START, owed the same way. */
+static uint32_t mo_owed[16][4];                         /* the offs owed, a bit each, by channel */
+static uint16_t mo_owed_n, mo_owed_ano, mo_used;       /* how many; CC 123 owed; the channels played on, a bit each */
+static int mo_room(void) { return !usb_midi_out_ready() || mo_w - mo_r < MQ; }   /* (nowhere to go: nothing owed) */
+
+static void mo_owed_drain(void)
+{
+    uint32_t c, w;
+    for (c = 0; c < 16u && mo_owed_n; c++)
+        for (w = 0; w < 4u; w++)
+            while (mo_owed[c][w]) {
+                uint32_t b = (uint32_t)__builtin_ctz(mo_owed[c][w]);
+                if (!mo_room()) return;
+                midi_out_event(0x08u | (0x80u | c) << 8 | (w * 32u + b) << 16);
+                mo_owed[c][w] &= mo_owed[c][w] - 1u;
+                mo_owed_n--;
+            }
+    for (c = 0; c < 16u && mo_owed_ano; c++)
+        if (mo_owed_ano >> c & 1u) {
+            if (!mo_room()) return;
+            midi_out_event(0x0Bu | (0xB0u | c) << 8 | 123u << 16);
+            mo_owed_ano &= (uint16_t)~(1u << c);
+        }
+}
+
+static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: the note-off */
+{
+    uint32_t *w = &mo_owed[ch & 15u][(note >> 5) & 3u], bit = 1u << (note & 31u);
+    if (mo_owed_n | mo_owed_ano) mo_owed_drain();
+    if (!vel) {
+        if (*w & bit) return;                           /* (owed already) */
+        if (mo_room() && !mo_owed_n) { midi_out_event(0x08u | (0x80u | ch) << 8 | note << 16); return; }
+        *w |= bit;
+        mo_owed_n++;
+        return;
+    }
+    if (*w & bit) return;                               /* its off not out yet: it does not start again before it */
+    mo_used |= (uint16_t)(1u << (ch & 15u));
+    midi_out_event(0x09u | (0x90u | ch) << 8 | note << 16 | vel << 24);
+}
+
+static void midi_out_all_notes_off(void)                /* (STOP: after the offs) */
+{
+    mo_owed_ano |= mo_used;
+    mo_used = 0;
+    mo_owed_drain();
+}
+#else
 static void midi_out_send(uint32_t ch, uint32_t note, uint32_t vel)   /* vel 0: the note-off */
 {
     midi_out_event(vel ? 0x09u | (0x90u | ch) << 8 | note << 16 | vel << 24 : 0x08u | (0x80u | ch) << 8 | note << 16);
 }
+#endif
 
 #if TESSERA_MIDI_ONLY
 /* Tessera MIDI's MIDI FX, a track's (MIDI FX / MIDI FX 2 under the FX button; core.h P_MECHO ..). Every note the
@@ -135,6 +190,7 @@ static void mfx_purge(uint32_t k)
 static void mfx_tick(uint32_t n)
 {
     uint32_t k, i, j;
+    if (mo_owed_n | mo_owed_ano) mo_owed_drain();      /* (the offs owed first) */
     for (k = 0; k < NTRK; k++) {
         uint32_t c = mfx_npend[k], gap = mfx_ms((uint32_t)clamp(trk[k].p[P_MSTRUM], 0, 100)), dir = (uint32_t)trk[k].p[P_MSDIR];
         uint8_t ord[8];
@@ -342,6 +398,9 @@ static void midi_out_stop(void)
     uint32_t k;
     for (k = 0; k < NTRK; k++)
         midi_out_flush(k);
+#if TESSERA_MIDI_ONLY
+    midi_out_all_notes_off();
+#endif
     if (midi_out_clk_live)
         midi_out_event(0x0Fu | 0xFCu << 8);
     midi_out_clk_live = 0;
