@@ -2329,7 +2329,8 @@ static void ui_input(void)
         combo = 1;
         bpm_turn(s);
     }
-    if (knob_layer && ui.ly == LAYER_GLO && (s = panel_enc(EN_PRESET)) != 0) {   /* GLO + PRESETS: the sounds, a combo */
+    if (knob_layer && ui.ly == LAYER_GLO && !TESSERA_MIDI_ONLY && (s = panel_enc(EN_PRESET)) != 0) {   /* GLO + PRESETS: the
+                                                         * sounds, a combo (Tessera MIDI: none) */
         combo = 1;
         glo_preset_turn(s);
     }
@@ -2728,6 +2729,11 @@ static void ui_input(void)
     if (s) step_edit_combo();
     if (s && !ui.home && cur_page()->graph == GR_SCALE_PICKER) {
         scale_picker_step(list_accel(EN_PRESET, s, scale_picker_count(), 0));
+#if TESSERA_MIDI_ONLY
+    } else if (s && ui.home) {                          /* Tessera MIDI, no sounds to browse: PRESETS on HOME picks the
+                                                         * bank, right 5-8, left 1-4 (the selected track's twin: T2, T6) */
+        track_select(s > 0 ? song.sel % 4u + 4u : song.sel % 4u);
+#endif
     } else if (s && (ui.home || cur_page()->graph == GR_BROWSE)) {
         /* PRESETS browses the selected part's sounds (all engines, then user presets) on HOME and the
          * PRESETS page only (never the steps); elsewhere (TRACKS too, where one records) a stray turn
