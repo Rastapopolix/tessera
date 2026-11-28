@@ -12,13 +12,13 @@ the steps, what you expected and what happened).
 - 32 mods instead of 16, and no voice limit: any track can send full chords.
 - The 8-track features: the ATLAS genre banks, GEN LANE and RANGE, CHORD USER qualities, chord chops, FOLLOW KICK, ENTRIES across 8 tracks, DROP.
 - SLOPE (a rise and fall LFO) and Program Change in.
-- The buttons: FX opens MIDI FX, MIDI FX 2, MIDI OUT (each track's channel and transpose), then MIDI IN. EDIT opens VOICE (POLY or MONO, PRIO, ALLOC, MUTE). SAVE opens PROJECT; hold SAVE to quick-save. The sound and effect pages are gone.
+- The buttons: FX opens ECHO and FEEL (the MIDI FX), MIDI OUT (each track's channel and transpose), then MIDI IN. EDIT opens VOICE (POLY or MONO, PRIO, ALLOC, MUTE). SAVE opens PROJECT; hold SAVE to quick-save. The sound and effect pages are gone.
 - Where a sound's name was, a track shows its MIDI channel (CH 3, or OFF); HOME shows what plays each track (STEP, TURING ..).
 - NOTES OUT is ALL: the sequencer's notes go out, not only the keys.
 
 ## New in tm3
-- MIDI FX (on FX): ECHO repeats each note (up to 8, TIME 1/32 to 1/4), each FADE % softer and PITCH semitones apart.
-- MIDI FX 2: STRUM spreads a chord's notes (up to 100 ms, DIR up, down or random); VEL sends every note at one velocity (0: as played); HUMAN plays notes a little late and softer or harder, at random.
+- MIDI FX, on FX: the ECHO page repeats each note (up to 8, TIME 1/32 to 1/4), each FADE % softer and PITCH semitones apart.
+- The FEEL page: STRUM spreads a chord's notes (up to 100 ms, DIR up, down or random); VEL sends every note at one velocity (0: as played); HUMAN plays notes a little late and softer or harder, at random.
 - ENV: each track has an envelope again (ATK DEC SUS REL), started by every note. ENV CC sends it as a CC (CC number, DEPTH, BASE; DEPTH 0 sends nothing).
 - LFO CC (in place of LFO DEST): the track's LFO as a CC, swinging around BASE. ENV and LFO now also work as mod sources.
 - MIXER: LEVEL goes out as CC 7 and PAN as CC 10 when you move them.

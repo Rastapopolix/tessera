@@ -712,8 +712,8 @@ static const page_t PAGES[] = {
                                                                                    * (ui_mono.c mo_pic_midiin) */
     {"MIDI OUT", FAM_GLO, SC_GLOBAL, GR_MIDICH, {0xFF, 0xFF, 0xFF, 0xFF}},   /* Tessera: KNOB k track k's channel (midi_out.c) */
 #if TESSERA_MIDI_ONLY
-    {"MIDI FX", FAM_GLO, SC_TRACK, GR_NONE, {P_MECHO, P_METIME, P_MEFADE, P_MEPIT}},   /* Tessera MIDI: the FX button's */
-    {"MIDI FX 2", FAM_GLO, SC_TRACK, GR_NONE, {P_MSTRUM, P_MSDIR, P_MVEL, P_MHUMAN}},  /* (ui.c tm_midi_pages) */
+    {"ECHO", FAM_GLO, SC_TRACK, GR_NONE, {P_MECHO, P_METIME, P_MEFADE, P_MEPIT}},   /* Tessera MIDI: the FX button's */
+    {"FEEL", FAM_GLO, SC_TRACK, GR_NONE, {P_MSTRUM, P_MSDIR, P_MVEL, P_MHUMAN}},  /* (ui.c tm_midi_pages) */
 #endif
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: KNOB 1 LIST, 2 / PRESETS the sounds */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */

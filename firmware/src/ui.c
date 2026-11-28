@@ -400,7 +400,31 @@ static int arp_page(uint32_t i)
     return g == GR_NONE || g == GR_EVOLVE || g == GR_FORM || g == GR_TWEAK || g == GR_TWEAK2 || g == GR_NOTELEN ||
            g == GR_TIMING || g == GR_ENERGY;
 }
-static int in_fam(uint32_t i, uint32_t fam) { return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i); }
+#if TESSERA_MIDI_ONLY
+/* the FX button's pages in Tessera MIDI (tm_midi_pages), in turn; their place in it + 1, 0: not one */
+static uint32_t tm_fx_at(uint32_t i)
+{
+    static const char *const ORDER[4] = {"ECHO", "FEEL", "MIDI OUT", "MIDI IN"};
+    uint32_t j;
+    for (j = 0; i < NPAGES && j < 4u; j++)
+        if (str_eq(PAGES[i].title, ORDER[j]) && PAGES[i].fam == FAM_GLO) return j + 1u;
+    return 0;
+}
+static uint32_t tm_fx_pages(uint8_t *pg)
+{
+    uint32_t i, n = 0;
+    for (i = 0; i < NPAGES; i++)
+        if (tm_fx_at(i)) pg[tm_fx_at(i) - 1u] = (uint8_t)i, n++;
+    return n;
+}
+#endif
+static int in_fam(uint32_t i, uint32_t fam)
+{
+#if TESSERA_MIDI_ONLY
+    if (tm_fx_at(i)) return fam_grp(fam) == FAM_FX;     /* (FX's, not GLO's: tm_midi_pages) */
+#endif
+    return fam_grp(PAGES[i].fam) == fam_grp(fam) && !arp_page(i);
+}
 static uint32_t seqm_get(uint32_t tr)
 {
     tr %= NTRK;
@@ -853,6 +877,9 @@ static uint32_t page_nf(void)
     if (ui_csec && cs_of(ui.page) < UI_SEC_N) return FAM_CS + cs_of(ui.page);
 #endif
     if ((ui.via == FAM_ENV || ui.via == FAM_LFO) && native_page(ui.page, ui.via)) return ui.via;
+#if TESSERA_MIDI_ONLY
+    if (tm_fx_at(ui.page)) return FAM_FX;               /* (the FX button's four: tm_midi_pages) */
+#endif
     if (arp_page(ui.page)) return FAM_ARP;              /* (ARP, ARP 2: fam_pages) */
     return (fam == FAM_ENV || fam == FAM_LFO) && native_titles(fam) ? fam : 0u;
 }
@@ -896,6 +923,9 @@ static void page_scroll(int32_t dir)
 static uint32_t fam_pages(uint32_t fam, uint8_t *pg)
 {
     uint32_t i, n = 0;
+#if TESSERA_MIDI_ONLY
+    if (fam == FAM_FX) return tm_fx_pages(pg);
+#endif
 #if TESS_HAS_POINTER
     if (fam >= FAM_CS) return cs_pages(fam - FAM_CS, pg);
 #endif
@@ -919,21 +949,24 @@ static int fam_has(uint32_t fam, uint32_t page)         /* page: one the family'
  * one, after the last the first (the button wraps; SELECT stops at the ends: page_scroll). One routine for every
  * group (Theo 2026-11-26: the buttons act alike) */
 #if TESSERA_MIDI_ONLY
-/* Tessera MIDI's FX button (no effects): MIDI FX, MIDI FX 2, MIDI OUT, MIDI IN, in turn (GLO's pages) */
+/* Tessera MIDI's FX button (no effects): ECHO, FEEL (the MIDI FX), MIDI OUT, MIDI IN, in turn: its own family
+ * (fam_pages FAM_FX, page_nf, so SELECT, the footer's tabs and the position count these four, not GLO's), from
+ * elsewhere the one last used */
 static int tm_midi_pages(void)
 {
-    static const char *const ORDER[4] = {"MIDI FX", "MIDI FX 2", "MIDI OUT", "MIDI IN"};
-    uint32_t i, j, at[4], next = 0;
-    for (j = 0; j < 4u; j++) {
-        for (i = 0; i < NPAGES && !str_eq(PAGES[i].title, ORDER[j]); i++) {}
-        if (i >= NPAGES) return 0;
-        at[j] = i;
-        if (!ui.home && ui.page == i) next = (j + 1u) % 4u;
+    uint8_t pg[4];
+    uint32_t k, n = tm_fx_pages(pg);
+    if (n < 4u) return 0;
+    for (k = 0; k < n && pg[k] != ui.page; k++) {}
+    if (!ui.home && k < n) ui.page = pg[(k + 1u) % n];
+    else {
+        for (k = 0; k < n && pg[k] != ui.fam_last[FAM_FX]; k++) {}
+        ui.page = pg[k < n ? k : 0u];
     }
-    ui.page = (uint8_t)at[next];
+    ui.fam_last[FAM_FX] = ui.page;
     ui.home = 0;
     page_entered();
-    ui.via = (uint8_t)FAM_GLO;
+    ui.via = (uint8_t)FAM_FX;
     return 1;
 }
 #endif
